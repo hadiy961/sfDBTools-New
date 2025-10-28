@@ -46,7 +46,7 @@ Jika flag tidak lengkap, proses dapat meminta input secara interaktif.`,
 		}
 
 		// Inisialisasi service profile
-		profileService := profile.NewService(cfg, logger, ProfileCreateOptions)
+		profileService := profile.NewProfileService(cfg, logger, ProfileCreateOptions)
 
 		// Panggil method CreateProfile
 		// Jalankan proses create

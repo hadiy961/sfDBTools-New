@@ -75,7 +75,7 @@ func (s *Service) SaveProfile(mode string) error {
 	iniContent := s.formatConfigToINI()
 
 	// 5. Resolusi kunci enkripsi dan enkripsi konten
-	key, _, err := helper.ResolveEncryptionKey(s.ProfileInfo.EncryptionKey, consts.ENV_PROFILE_ENC_KEY)
+	key, _, err := helper.ResolveEncryptionKey(s.ProfileInfo.EncryptionKey, consts.ENV_SOURCE_PROFILE_KEY)
 	if err != nil {
 		return fmt.Errorf("kunci enkripsi tidak tersedia: %w", err)
 	}

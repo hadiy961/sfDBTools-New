@@ -58,7 +58,7 @@ Pastikan profil ditentukan melalui --file/-f agar profil yang tepat dapat ditemu
 			ProfileEditOptions.NewName,
 		)
 		// Inisialisasi service profile
-		profileService := profile.NewService(cfg, logger, ProfileEditOptions)
+		profileService := profile.NewProfileService(cfg, logger, ProfileEditOptions)
 
 		// Panggil method EditProfile
 		// Jalankan proses edit

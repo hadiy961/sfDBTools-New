@@ -32,7 +32,7 @@ func LoadAndParseProfile(absPath string, key string) (*types.ProfileInfo, error)
 	if k == "" {
 		var src string
 		// Jika kunci tidak diberikan, minta dari env atau prompt
-		k, src, err = helper.ResolveEncryptionKey(key, consts.ENV_PROFILE_ENC_KEY)
+		k, src, err = helper.ResolveEncryptionKey(key, consts.ENV_SOURCE_PROFILE_KEY)
 		if err != nil {
 			return nil, fmt.Errorf("kunci enkripsi tidak tersedia: %w", err)
 		}
@@ -45,7 +45,7 @@ func LoadAndParseProfile(absPath string, key string) (*types.ProfileInfo, error)
 		// Berikan konteks tambahan agar user tahu kemungkinan penyebab
 		var hint string
 		if info.EncryptionSource == "env" {
-			hint = "Menggunakan kunci enkripsi dari environment variable " + consts.ENV_PROFILE_ENC_KEY + ", pastikan sesuai dengan yang digunakan saat enkripsi"
+			hint = "Menggunakan kunci enkripsi dari environment variable " + consts.ENV_SOURCE_PROFILE_KEY + ", pastikan sesuai dengan yang digunakan saat enkripsi"
 		} else {
 			hint = "Menggunakan kunci enkripsi dari prompt, pastikan sesuai dengan yang digunakan saat enkripsi"
 		}

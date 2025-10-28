@@ -36,7 +36,7 @@ var CmdProfileDelete = &cobra.Command{
 		logger.Info("Memulai proses menghapus konfigurasi database...")
 
 		// Buat service dbconfig tanpa perlu state khusus
-		service := profile.NewService(cfg, logger, nil)
+		service := profile.NewProfileService(cfg, logger, nil)
 
 		// Jalankan proses delete dengan prompt konfirmasi
 		if err := service.PromptDeleteProfile(); err != nil {

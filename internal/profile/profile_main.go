@@ -21,7 +21,7 @@ type Service struct {
 	OriginalProfileInfo *types.ProfileInfo
 }
 
-func NewService(cfg *appconfig.Config, logs applog.Logger, profile interface{}) *Service {
+func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interface{}) *Service {
 	svc := &Service{
 		Log:    logs,
 		Config: cfg, // Perbaikan: set field Config agar tidak nil

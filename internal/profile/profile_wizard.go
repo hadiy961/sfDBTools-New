@@ -68,7 +68,7 @@ func (s *Service) runWizard(mode string) error {
 	ui.PrintSuccess("Konfirmasi diterima. Mempersiapkan enkripsi dan penyimpanan...")
 
 	// 1. Dapatkan password enkripsi dari pengguna (atau env var)
-	key, source, err := helper.ResolveEncryptionKey(s.ProfileInfo.EncryptionKey, consts.ENV_PROFILE_ENC_KEY)
+	key, source, err := helper.ResolveEncryptionKey(s.ProfileInfo.EncryptionKey, consts.ENV_SOURCE_PROFILE_KEY)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan password enkripsi: %w", err)
 	}

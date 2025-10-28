@@ -50,3 +50,9 @@ func ProfileDelete(cmd *cobra.Command) {
 	cmd.Flags().StringP("file", "f", "", "Nama file profil yang akan dihapus")
 	cmd.Flags().BoolP("force", "F", false, "Hapus profil tanpa konfirmasi")
 }
+
+// ProfileList - Flag untuk daftar profil yang ada
+func ProfileSelect(cmd *cobra.Command) {
+	cmd.Flags().StringP("file", "f", "", "Nama file profil yang akan dipilih")
+	cmd.Flags().StringP("key", "k", "", "kunci enkripsi untuk mendekripsi file profil")
+}

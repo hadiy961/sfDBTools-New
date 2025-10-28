@@ -42,7 +42,7 @@ Gunakan flag --file/-f untuk menampilkan profil tertentu. Jika tidak memberikan 
 			return fmt.Errorf("gagal memparsing flags: %v", err)
 		}
 		// Inisialisasi service profile
-		profileService := profile.NewService(cfg, logger, ProfileShowOptions)
+		profileService := profile.NewProfileService(cfg, logger, ProfileShowOptions)
 
 		// Panggil method CreateProfile
 		// Jalankan proses create
