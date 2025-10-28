@@ -1,0 +1,107 @@
+backup:
+    compression:
+        type: gzip # gzip, zstd, lz4, none
+        level: standard # best, fastest, standard
+        required: true # true, false
+    encryption:
+        enabled: true # true, false
+    exclude:
+        # Daftar database yang akan dikecualikan dari proses backup
+        # Gunakan format YAML list untuk menambahkan lebih dari satu database
+        # Contoh:
+        # databases:
+        #   - dbsaas_host
+        #   - mysql
+        #   - performance_schema
+        #   - sys
+        #   - test
+        databases:
+            - dbsaas_host
+            - dbsaas_host_dba
+            - dbsf7_empty_jtrust
+            - dbsf7_empty_mariadb
+            - dbsf_biznet_dadfs_dmart
+        user: false
+        system_databases: true
+        data: false
+    db_list: # Daftar database yang akan di-backup
+        file: config/db_list.txt
+    mysqldump_args: -CfQq --max-allowed-packet=1G --hex-blob --order-by-primary --single-transaction --routines=true --triggers=true --opt
+    retention:
+        cleanup_enabled: true
+        cleanup_schedule: daily
+        days: 1
+    output:
+        base_directory: /mnt/nfs/backup
+        capture_gtid: true
+        create_backup_info: true
+        cleanup_temp: true
+        naming:
+            include_client_code: true
+            include_hostname: true
+            pattern: '{database}_{timestamp}_{type}'
+        structure:
+            create_subdirs: true
+            # Pola subdirektori untuk menyimpan backup.
+            # Token yang didukung:
+            # - {date} atau {date:FORMAT}    -> FORMAT menggunakan Go time layout, default: "2006-01-02"
+            # - {timestamp} atau {timestamp:FORMAT} -> default: "20060102T150405"
+            # - {year}, {month}, {day}
+            # - {client} atau {client_code} -> diisi dari general.client_code
+            # - {hostname} -> nama host saat runtime (jika tersedia)
+            # Contoh:
+            #   '{date}/{client}' -> '2025-10-13/dataon'
+            #   '{date:2006/01}/{client_code}' -> '2025/10/dataon'
+            pattern: '{year}/{month}/{day}/'
+        temp_directory: /tmp/sfDBTools_backup
+    verification:
+        compare_checksums: true
+        disk_space_check: true
+        verify_after_write: true
+config_dir:
+    database_profile: /etc/sfDBTools/config/db_profile
+    database_list: /etc/sfDBTools/config/db_list
+    mariadb_config_templates: config/templates/server.cnf
+general:
+    app_name: sfDBTools
+    author: Hadiyatna Muflihun
+    client_code: dataon
+    locale:
+        date_format: "2006-01-02"
+        time_format: "15:04:05"
+        timezone: Asia/Jakarta
+    version: 1.0.0
+log:
+    format: text # text, json
+    level: debug # debug, info, warn, error, fatal
+    output:
+        console:
+            enabled: true # true, false
+        file:
+            dir: /var/log/sfDBTools
+            enabled: true
+            filename_pattern: sfDBTools_{date}.log
+            rotation:
+                compress_old: true
+                daily: true
+                max_size: 100MB
+                retention_days: 7
+    timezone: Asia/Jakarta
+mariadb:
+    binlog_dir: /mnt/nfs/mariadb/binlogs
+    config_dir: /etc/my.cnf.d/server.cnf
+    data_dir: /mnt/nfs/mariadb/data
+    encryption_key_file: /etc/sfDBTools/key_maria_nbc.txt
+    innodb_encrypt_tables: true
+    log_dir: /mnt/nfs/mariadb/logs
+    port: 3306
+    server_id: 1
+    version: 10.6.23
+system_users:
+    users:
+        - sst_user
+        - papp
+        - sysadmin
+        - backup_user
+        - dbaDO
+        - maxscale
