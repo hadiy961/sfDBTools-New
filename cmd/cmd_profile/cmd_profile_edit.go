@@ -13,10 +13,17 @@ import (
 
 var CmdProfileEdit = &cobra.Command{
 	Use:   "edit",
-	Short: "Mengelola profil pengguna (generate, edit, delete, validate, show)",
-	Long: `Perintah 'profile' digunakan untuk mengelola file profil pengguna.
-Terdapat beberapa sub-perintah seperti create, edit, delete, validate, dan show.
-Gunakan 'profile <sub-command> --help' untuk informasi lebih lanjut tentang masing-masing sub-perintah.`,
+	Short: "Edit profil koneksi database yang sudah ada",
+	Long: `Mengubah nilai pada profil koneksi yang sudah tersimpan.
+Anda dapat menjalankan secara non-interaktif dengan flag yang menunjuk field yang ingin diubah, atau menjalankan mode interaktif untuk mengedit nilai langkah demi langkah.
+Pastikan profil ditentukan melalui --file/-f agar profil yang tepat dapat ditemukan; untuk mengganti nama gunakan --new-name/-N.`,
+	Example: `
+	# Edit host pada profil dengan file/nama myprofile
+	sfdbtools profile edit --file myprofile --host 192.168.1.10
+
+	# Edit interaktif (akan menanyakan field yang ingin diubah)
+	sfdbtools profile edit --file myprofile --interactive
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
 		if types.Deps == nil {
@@ -37,7 +44,19 @@ Gunakan 'profile <sub-command> --help' untuk informasi lebih lanjut tentang masi
 			logger.Errorf("Gagal memparsing flags: %v", err)
 			return
 		}
-		fmt.Println("Interaktif  ", ProfileEditOptions.Interactive)
+		// Debug: tunjukkan bahwa perintah terpanggil dan nilai flag
+		fmt.Println("DEBUG: profile edit handler invoked")
+		fmt.Printf("DEBUG: parsed options: interactive=%v, file=%s, new-name=%s\n",
+			ProfileEditOptions.Interactive,
+			ProfileEditOptions.ProfileInfo.Path,
+			ProfileEditOptions.NewName,
+		)
+		// Tampilkan juga ke logger jika tersedia (logger mungkin tidak ke-stdout bergantung pada config)
+		logger.Infof("ProfileEdit options: interactive=%v, file=%s, new-name=%s",
+			ProfileEditOptions.Interactive,
+			ProfileEditOptions.ProfileInfo.Path,
+			ProfileEditOptions.NewName,
+		)
 		// Inisialisasi service profile
 		profileService := profile.NewService(cfg, logger, ProfileEditOptions)
 
@@ -48,7 +67,9 @@ Gunakan 'profile <sub-command> --help' untuk informasi lebih lanjut tentang masi
 				logger.Warn("Dibatalkan oleh pengguna.")
 				return
 			}
-			// logger.Errorf("Edit konfigurasi gagal: %v", err)
+			// Laporkan error lain agar terlihat di konsol/log
+			logger.Errorf("Edit konfigurasi gagal: %v", err)
+			return
 		}
 	},
 }

@@ -12,10 +12,18 @@ import (
 
 var CmdProfileCreate = &cobra.Command{
 	Use:   "create",
-	Short: "Mengelola profil pengguna (generate, edit, delete, validate, show)",
-	Long: `Perintah 'profile' digunakan untuk mengelola file profil pengguna.
-Terdapat beberapa sub-perintah seperti create, edit, delete, validate, dan show.
-Gunakan 'profile <sub-command> --help' untuk informasi lebih lanjut tentang masing-masing sub-perintah.`,
+	Short: "Buat profil koneksi database baru",
+	Long: `Membuat profil koneksi database baru dan menyimpannya ke konfigurasi lokal.
+Anda dapat memberikan detail melalui flag (mis. --profil/-n untuk nama profil, --host/-H, --port/-P, --user/-U).
+Tersedia juga opsi seperti --output-dir/-o untuk lokasi penyimpanan, --key/-k untuk kunci enkripsi, dan --interactive/-i untuk mode interaktif.
+Jika flag tidak lengkap, proses dapat meminta input secara interaktif.`,
+	Example: `
+	# Buat profil non-interaktif (gunakan flag --profil/-n untuk nama profil)
+	sfdbtools profile create --profil myprofile --host 127.0.0.1 --port 3306 --user root
+
+	# Buat profil interaktif (akan menanyakan nilai yang belum diisi)
+	sfdbtools profile create --interactive
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
 		if types.Deps == nil {
@@ -43,7 +51,6 @@ Gunakan 'profile <sub-command> --help' untuk informasi lebih lanjut tentang masi
 		// Panggil method CreateProfile
 		// Jalankan proses create
 		if err := profileService.CreateProfile(); err != nil {
-			// logger.Errorf("Proses pembuatan profil gagal: %v", err)
 			return
 		}
 	},

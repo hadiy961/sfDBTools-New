@@ -70,12 +70,9 @@ func (s *Service) ShowProfile() error {
 	}
 	// Uji koneksi database dan tampilkan status
 	if err := database.ConnectionTest(&s.ProfileInfo.DBInfo, s.Log); err != nil {
-		ui.PrintWarning("Koneksi database gagal: " + err.Error())
-		s.Log.Warn("Koneksi database gagal saat menampilkan profil: " + err.Error())
-	} else {
-		s.Log.Info("Koneksi database berhasil saat menampilkan profil")
+		return nil
 	}
-	s.Log.Info("File ditemukan. Menampilkan konten...")
+
 	s.DisplayProfileDetails()
 
 	return nil

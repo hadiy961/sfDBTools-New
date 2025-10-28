@@ -43,7 +43,7 @@ func (s *Service) promptSelectExistingConfig() error {
 		LastModified: info.LastModified,
 	}
 
-	ui.PrintInfo("Memuat konfigurasi dari: " + info.Path + " Name: " + info.Name + " (Last Modified: " + info.LastModified.String() + ", Size: " + info.Size + ")")
+	s.Log.Debug("Memuat konfigurasi dari: " + info.Path + " Name: " + info.Name)
 	return nil
 }
 

@@ -96,7 +96,7 @@ func ConnectToDestinationDatabase(creds types.DestinationDBConnection) (*Client,
 
 // ConnectionTest - Menguji koneksi database berdasarkan informasi yang diberikan
 func ConnectionTest(dbInfo *types.DBInfo, applog applog.Logger) error {
-	applog.Info("Memeriksa koneksi database...")
+	applog.Info("Memeriksa koneksi database ke " + dbInfo.Host + ":" + fmt.Sprintf("%d", dbInfo.Port) + "...")
 	connectionInfo := types.DestinationDBConnection{
 		DBInfo:   *dbInfo,
 		Database: "mysql", // Tidak perlu database spesifik untuk tes koneksi
@@ -107,6 +107,6 @@ func ConnectionTest(dbInfo *types.DBInfo, applog applog.Logger) error {
 		return err
 	}
 	defer client.db.Close()
-	applog.Info("Koneksi database berhasil.")
+	applog.Info("Koneksi database ke " + dbInfo.Host + ":" + fmt.Sprintf("%d", dbInfo.Port) + " berhasil.")
 	return nil
 }

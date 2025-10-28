@@ -1,7 +1,6 @@
 package cmdprofile
 
 import (
-	"errors"
 	"fmt"
 	"sfDBTools/internal/profile"
 	"sfDBTools/internal/types"
@@ -13,9 +12,16 @@ import (
 
 var CmdProfileShow = &cobra.Command{
 	Use:   "show",
-	Short: "Menampilkan detail profil pengguna",
-	Long: `Perintah 'profile show' digunakan untuk menampilkan detail dari file profil pengguna yang ada.
-Gunakan 'profile show --help' untuk informasi lebih lanjut tentang perintah ini.`,
+	Short: "Tampilkan detail profil koneksi",
+	Long: `Menampilkan informasi lengkap dari profil koneksi yang tersimpan, seperti host, port, user, database, dan status enkripsi password.
+Gunakan flag --file/-f untuk menampilkan profil tertentu. Jika tidak memberikan --file, perintah dapat meminta pilihan secara interaktif (jika didukung).`,
+	Example: `
+	# Tampilkan detail profil bernama myprofile
+	sfdbtools profile show --file myprofile
+
+	# Tampilkan profil dan perlihatkan password secara jelas (jika diizinkan)
+	sfdbtools profile show --file myprofile --reveal-password
+`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Pastikan dependencies tersedia
 		if types.Deps == nil {
@@ -41,10 +47,7 @@ Gunakan 'profile show --help' untuk informasi lebih lanjut tentang perintah ini.
 		// Panggil method CreateProfile
 		// Jalankan proses create
 		if err := profileService.ShowProfile(); err != nil {
-			if errors.Is(err, types.ErrUserCancelled) {
-				return nil
-			}
-			return fmt.Errorf("create konfigurasi gagal: %w", err)
+			return err
 		}
 		return nil
 	},

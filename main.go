@@ -7,6 +7,7 @@ import (
 	config "sfDBTools/internal/appconfig"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
+	"sfDBTools/pkg/ui"
 	"time"
 
 	applog "sfDBTools/internal/applog"
@@ -19,6 +20,8 @@ var cfg *config.Config
 var appLogger applog.Logger
 
 func main() {
+	ui.Headers("Main Menu")
+
 	// 1. Muat Konfigurasi
 	var err error
 	cfg, err = config.LoadConfigFromEnv()
