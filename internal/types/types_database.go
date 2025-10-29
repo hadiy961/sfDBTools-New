@@ -24,6 +24,16 @@ type AppDBConnection struct {
 	Database string
 }
 
+// ServerDBConnection menyimpan kredensial server database tujuan sederhana
+// Digunakan untuk menampilkan/merangkai koneksi target (app database)
+type ServerDBConnection struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+	Database string
+}
+
 // FilterOptions berisi opsi untuk filtering database
 type FilterOptions struct {
 	ExcludeSystem    bool     // Exclude system databases (information_schema, mysql, etc)

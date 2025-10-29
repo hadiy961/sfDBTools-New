@@ -9,7 +9,10 @@ import (
 
 // GetEnvOrDefault mengambil nilai dari environment variable atau mengembalikan defaultValue jika tidak ada
 func GetEnvOrDefault(key, defaultValue string) string {
-	return os.Getenv(key)
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
 
 // GetEnvOrDefaultInt mengambil nilai integer dari environment variable atau mengembalikan defaultValue jika tidak ada atau tidak valid

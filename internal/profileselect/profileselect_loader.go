@@ -21,7 +21,7 @@ func LoadAndParseProfile(absPath string, key string) (*types.ProfileInfo, error)
 	// Baca file
 	data, err := os.ReadFile(absPath)
 	if err != nil {
-		return nil, fmt.Errorf("gagal membaca file konfigurasi '%s': %w", absPath, err)
+		return nil, err
 	}
 
 	// Dapatkan kunci enkripsi (jika tidak diberikan)

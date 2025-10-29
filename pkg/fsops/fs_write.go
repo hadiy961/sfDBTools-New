@@ -40,3 +40,14 @@ func ReadLinesFromFile(path string) ([]string, error) {
 	}
 	return lines, nil
 }
+
+// EnsureDir ensures a directory exists
+func EnsureDir(dir string) (string, error) {
+	if dir == "" {
+		return "", nil
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", err
+	}
+	return dir, nil
+}

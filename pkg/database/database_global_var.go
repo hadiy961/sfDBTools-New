@@ -11,7 +11,8 @@ import (
 func (c *Client) GetMaxStatementsTime(ctx context.Context) (float64, error) {
 	var name string
 	var raw sql.NullString
-	if err := c.db.QueryRowContext(ctx, "SHOW GLOBAL VARIABLES LIKE 'max_statement_time'").Scan(&name, &raw); err != nil {
+	// Gunakan SESSION agar perubahan hanya berlaku pada koneksi ini
+	if err := c.db.QueryRowContext(ctx, "SHOW SESSION VARIABLES LIKE 'max_statement_time'").Scan(&name, &raw); err != nil {
 		// Jika tidak ada baris, MariaDB biasanya mengembalikan nilai default,
 		// jadi error ini jarang terjadi kecuali ada masalah koneksi.
 		return 0, fmt.Errorf("query max_statement_time gagal: %w", err)
@@ -29,11 +30,11 @@ func (c *Client) GetMaxStatementsTime(ctx context.Context) (float64, error) {
 	return val, nil
 }
 
-// SetMaxStatementsTime mengatur nilai max_statements_time untuk sesi saat ini.
+// SetMaxStatementsTime mengatur nilai max_statements_time untuk sesi saat ini (SESSION scope).
 func (c *Client) SetMaxStatementsTime(ctx context.Context, seconds float64) error {
-	_, err := c.db.ExecContext(ctx, "SET GLOBAL max_statement_time = ?", seconds)
+	_, err := c.db.ExecContext(ctx, "SET SESSION max_statement_time = ?", seconds)
 	if err != nil {
-		return fmt.Errorf("gagal set GLOBAL max_statement_time: %w", err)
+		return fmt.Errorf("gagal set SESSION max_statement_time: %w", err)
 	}
 	return nil
 }

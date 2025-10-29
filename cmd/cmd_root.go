@@ -8,6 +8,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	cmddbscan "sfDBTools/cmd/cmd_db_scan"
 	cmdprofile "sfDBTools/cmd/cmd_profile"
 	"sfDBTools/internal/types"
 
@@ -60,4 +61,5 @@ func init() {
 	// Kita anggap 'versionCmd' ada di cmd/version.go
 	rootCmd.AddCommand(versionCmd) // (Perlu diinisialisasi di cmd/version.go)
 	rootCmd.AddCommand(cmdprofile.CmdProfileMain)
+	rootCmd.AddCommand(cmddbscan.CmdDBScanMain)
 }

@@ -46,11 +46,8 @@ func (c *Config) DSN() string {
 		AllowOldPasswords:    true, // Aktifkan untuk kompatibilitas MariaDB lama
 		// Aktifkan ini untuk kompatibilitas dengan beberapa konfigurasi MariaDB
 		AllowCleartextPasswords: false,
-		// Tambahan untuk menangani berbagai plugin autentikasi
-		Params: map[string]string{
-			"charset": "utf8mb4",
-		},
 	}
+
 	return cfg.FormatDSN()
 }
 
