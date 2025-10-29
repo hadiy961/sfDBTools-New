@@ -8,6 +8,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	cmdcrypto "sfDBTools/cmd/cmd_crypto"
 	cmddbscan "sfDBTools/cmd/cmd_db_scan"
 	cmdprofile "sfDBTools/cmd/cmd_profile"
 	"sfDBTools/internal/types"
@@ -62,4 +63,5 @@ func init() {
 	rootCmd.AddCommand(versionCmd) // (Perlu diinisialisasi di cmd/version.go)
 	rootCmd.AddCommand(cmdprofile.CmdProfileMain)
 	rootCmd.AddCommand(cmddbscan.CmdDBScanMain)
+	rootCmd.AddCommand(cmdcrypto.CmdCryptoMain)
 }

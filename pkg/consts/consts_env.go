@@ -14,6 +14,10 @@ const (
 	// Encryption Key
 	ENV_SOURCE_PROFILE_KEY = "SFDB_SOURCE_PROFILE_KEY"
 	ENV_TARGET_PROFILE_KEY = "SFDB_TARGET_PROFILE_KEY"
+	// Quiet mode flag to suppress banners/logs on stdout for piping
+	ENV_QUIET = "SFDB_QUIET"
+	// Generic encryption key for utility commands
+	ENV_ENCRYPTION_KEY = "SFDB_ENCRYPTION_KEY"
 
 	// Other constants can be added here as needed
 
