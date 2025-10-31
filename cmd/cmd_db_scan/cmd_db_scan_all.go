@@ -13,7 +13,7 @@ import (
 
 var scanAllOpts types.ScanOptions
 
-var CmdScanAllDB = &cobra.Command{
+var CmdDBScanAll = &cobra.Command{
 	Use:   "all",
 	Short: "Scan semua database dan collect informasi detail",
 	Long: `Scan semua database dari server yang dikonfigurasi dan mengumpulkan informasi detail.
@@ -71,5 +71,5 @@ func init() {
 	scanAllOpts = defaultOpts
 
 	// Tambahkan hanya flags yang diminta untuk 'all'
-	flags.AddDbScanAllFlags(CmdScanAllDB, &scanAllOpts)
+	flags.AddDbScanAllFlags(CmdDBScanAll, &scanAllOpts)
 }

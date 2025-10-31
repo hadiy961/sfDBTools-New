@@ -40,6 +40,7 @@ type FilterOptions struct {
 	ExcludeDatabases []string // Blacklist - database yang harus di-exclude
 	IncludeDatabases []string // Whitelist - hanya database ini yang diizinkan (priority tertinggi)
 	IncludeFile      string   // Path ke file berisi whitelist database (satu per baris)
+	ExcludeDBFile    string   // Path ke file berisi blacklist database (satu per baris)
 }
 
 // FilterStats berisi statistik hasil filtering

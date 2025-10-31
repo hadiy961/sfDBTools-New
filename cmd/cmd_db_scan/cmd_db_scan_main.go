@@ -16,9 +16,6 @@ Tersedia beberapa sub-perintah seperti all dan filter. Gunakan 'dbscan <sub-comm
 
 func init() {
 	// Tambahkan semua sub-command (Perlu diinisialisasi di file masing-masing)
-	CmdDBScanMain.AddCommand(CmdScanAllDB)
-	CmdDBScanMain.AddCommand(CmdScanFilter)
-	// CmdProfileMain.AddCommand(CmdProfileShow)
-	// CmdProfileMain.AddCommand(CmdProfileDelete)
-	// CmdProfileMain.AddCommand(CmdProfileEdit)
+	CmdDBScanMain.AddCommand(CmdDBScanAll)
+	CmdDBScanMain.AddCommand(CmdDBScanFilter)
 }

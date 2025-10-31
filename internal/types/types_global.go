@@ -13,3 +13,23 @@ type Dependencies struct {
 
 // Global variable untuk menyimpan dependensi yang di-inject
 var Deps *Dependencies
+
+// CompressionOptions menyimpan opsi kompresi untuk backup.
+type CompressionOptions struct {
+	CompressOutput bool
+	CompressType   string
+	CompressLevel  int
+}
+
+// EncryptionOptions menyimpan opsi enkripsi untuk backup.
+type EncryptionOptions struct {
+	EncryptOutput bool
+	EncryptKey    string
+}
+
+// RetentionOptions menyimpan opsi retention untuk backup.
+type RetentionOptions struct {
+	EnableRetention bool
+	RetentionDays   int
+	CleanupSchedule string
+}

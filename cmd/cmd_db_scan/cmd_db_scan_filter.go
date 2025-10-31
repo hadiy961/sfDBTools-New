@@ -10,9 +10,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CmdScanFilter mengimplementasikan perintah `dbscan filter`
+// CmdDBScanFilter mengimplementasikan perintah `dbscan filter`
 // untuk melakukan scan database dengan opsi include/exclude yang fleksibel.
-var CmdScanFilter = &cobra.Command{
+var CmdDBScanFilter = &cobra.Command{
 	Use:   "filter",
 	Short: "Scan database dengan filter include/exclude",
 	Long: `Command untuk melakukan scan pada database tertentu dengan opsi untuk mengecualikan database.
@@ -61,5 +61,5 @@ func init() {
 	// Delegasikan pendaftaran flags ke paket flags agar konsisten dengan command lain
 	// (mengikuti pattern seperti AddDbScanFlags)
 	// Catatan: flags ini tidak di-bind ke struct langsung; parsing dilakukan di pkg/parsing
-	flags.AddDbScanFilterFlags(CmdScanFilter)
+	flags.AddDbScanFilterFlags(CmdDBScanFilter)
 }
