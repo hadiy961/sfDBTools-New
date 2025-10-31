@@ -29,9 +29,9 @@ type BackupConfig struct {
 }
 
 type CompressionConfig struct {
-	Type     string `yaml:"type"`
-	Level    string `yaml:"level"`
-	Required bool   `yaml:"required"`
+	Type    string `yaml:"type"`
+	Level   int    `yaml:"level"`
+	Enabled bool   `yaml:"enabled"`
 }
 
 type DBListConfig struct {
