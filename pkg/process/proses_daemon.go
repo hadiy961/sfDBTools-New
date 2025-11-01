@@ -34,7 +34,7 @@ func CheckAndReadPID(pidFile string) (int, bool) {
 
 // SpawnDaemon starts a background process with stdout/stderr redirected to a log file under logDir.
 // If pidFile is provided, it will be written after start; if an active pid is found, returns error.
-func SpawnDaemon(executable string, args []string, env []string, logDir string, pidFile string) (pid int, logFile string, err error) {
+func SpawnDaemon(executable string, args []string, env []string, logDir string, pidFile string, mode string) (pid int, logFile string, err error) {
 	if _, running := CheckAndReadPID(pidFile); running {
 		return 0, "", fmt.Errorf("background process sudah berjalan (pidfile=%s)", pidFile)
 	}
@@ -46,7 +46,7 @@ func SpawnDaemon(executable string, args []string, env []string, logDir string, 
 
 	var out *os.File
 	if logDir != "" {
-		logFile = filepath.Join(logDir, fmt.Sprintf("scan_%s.log", timestamp()))
+		logFile = filepath.Join(logDir, fmt.Sprintf("%s_%s.log", mode, timestamp()))
 		f, ferr := os.Create(logFile)
 		if ferr == nil {
 			out = f

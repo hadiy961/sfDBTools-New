@@ -8,6 +8,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	cmdbackup "sfDBTools/cmd/cmd_backup"
 	cmdcleanup "sfDBTools/cmd/cmd_cleanup"
 	cmdcrypto "sfDBTools/cmd/cmd_crypto"
 	cmddbscan "sfDBTools/cmd/cmd_db_scan"
@@ -66,4 +67,5 @@ func init() {
 	rootCmd.AddCommand(cmddbscan.CmdDBScanMain)
 	rootCmd.AddCommand(cmdcrypto.CmdCryptoMain)
 	rootCmd.AddCommand(cmdcleanup.CmdCleanupMain)
+	rootCmd.AddCommand(cmdbackup.CmdDBBackupMain)
 }

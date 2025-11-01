@@ -1,6 +1,7 @@
 package cmddbscan
 
 import (
+	"errors"
 	"fmt"
 	"sfDBTools/internal/dbscan"
 	"sfDBTools/internal/types"
@@ -53,7 +54,14 @@ Catatan:
 			Mode:        "database",
 		}
 
-		return svc.ExecuteScanCommand(scanConfig)
+		if err := svc.ExecuteScanCommand(scanConfig); err != nil {
+			if errors.Is(err, types.ErrUserCancelled) {
+				logger.Warn("Proses dibatalkan oleh pengguna.")
+				return nil
+			}
+			return err
+		}
+		return nil
 	},
 }
 

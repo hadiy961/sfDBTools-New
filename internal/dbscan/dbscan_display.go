@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
+	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 )
 
-// DisplayScanOptions menampilkan opsi scanning yang sedang aktif.
-func (s *Service) DisplayScanOptions() {
+// DisplayScanOptions menampilkan opsi scanning yang sedang aktif dan meminta konfirmasi.
+// Mengembalikan:
+// - proceed=true jika pengguna memilih untuk melanjutkan
+// - proceed=false jika pengguna membatalkan (tanpa error)
+// - err != nil jika terjadi kegagalan saat meminta input
+func (s *Service) DisplayScanOptions() (proceed bool, err error) {
 	ui.PrintSubHeader("Opsi Scanning")
 	targetConn := s.getTargetDBConfig()
 
@@ -31,6 +36,18 @@ func (s *Service) DisplayScanOptions() {
 	}
 
 	ui.FormatTable([]string{"Parameter", "Value"}, data)
+
+	// Konfirmasi sebelum melanjutkan
+	confirm, askErr := input.AskYesNo("Apakah Anda ingin melanjutkan?", true)
+	if askErr != nil {
+		s.Logger.Error("gagal mendapatkan konfirmasi user: " + askErr.Error())
+		return false, askErr
+	}
+	if !confirm {
+		return false, types.ErrUserCancelled
+	}
+	s.Logger.Info("Proses scanning dilanjutkan.")
+	return true, nil
 }
 
 // DisplayFilterStats menampilkan statistik hasil pemfilteran database.

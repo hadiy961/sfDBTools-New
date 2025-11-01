@@ -20,6 +20,22 @@ func ParsingCreateProfile(cmd *cobra.Command, applog applog.Logger) (*types.Prof
 	key := helper.GetStringFlagOrEnv(cmd, "key", consts.ENV_SOURCE_PROFILE_KEY)
 	interactive := helper.GetBoolFlagOrEnv(cmd, "interactive", "")
 
+	if port == 0 {
+		port = 3306
+	}
+	if host == "" {
+		host = "localhost"
+	}
+	if user == "" {
+		user = "root"
+	}
+	if name == "" {
+		name = "localhost_3306"
+	}
+	if outputDir == "" {
+		outputDir = "."
+	}
+
 	profileOptions := &types.ProfileCreateOptions{
 		ProfileInfo: types.ProfileInfo{
 			Name:          name,

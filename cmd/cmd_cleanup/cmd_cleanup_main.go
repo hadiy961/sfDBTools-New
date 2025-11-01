@@ -16,5 +16,5 @@ atau membersihkan berdasarkan pola tertentu.`,
 }
 
 func init() {
-	// Sub-commands ditambahkan di file masing-masing
+	CmdCleanupMain.AddCommand(CmdCleanupRun)
 }

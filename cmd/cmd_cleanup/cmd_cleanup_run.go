@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sfDBTools/internal/cleanup"
 	"sfDBTools/internal/types"
+	defaultVal "sfDBTools/pkg/defaultval"
+	"sfDBTools/pkg/flags"
 
 	"github.com/spf13/cobra"
 )
@@ -32,5 +34,8 @@ File yang lebih tua dari jumlah hari retensi akan dihapus.`,
 }
 
 func init() {
-	CmdCleanupMain.AddCommand(CmdCleanupRun)
+	// Set default values
+	defaultOpts := defaultVal.DefaultCleanupOptions()
+
+	flags.AddCleanupFlags(CmdCleanupRun, &defaultOpts)
 }

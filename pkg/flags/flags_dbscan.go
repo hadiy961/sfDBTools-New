@@ -36,4 +36,5 @@ func AddDbScanAllFlags(cmd *cobra.Command, opts *types.ScanOptions) {
 
 	cmd.Flags().BoolVar(&opts.Background, "background", opts.Background,
 		"Jalankan scanning di background (async mode)")
+	cmd.Flags().BoolVar(&opts.ShowOptions, "show-options", opts.ShowOptions, "Tampilkan opsi scanning yang digunakan sebelum eksekusi")
 }

@@ -16,7 +16,7 @@ backup:
         data: false
     db_list:
         file: config/db_list.txt
-    retention:
+    cleanup:
         enabled: true
         schedule: 0 2 * * *
         days: 1

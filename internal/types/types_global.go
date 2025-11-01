@@ -26,10 +26,3 @@ type EncryptionOptions struct {
 	EncryptOutput bool
 	EncryptKey    string
 }
-
-// RetentionOptions menyimpan opsi retention untuk backup.
-type RetentionOptions struct {
-	EnableRetention bool
-	RetentionDays   int
-	CleanupSchedule string
-}

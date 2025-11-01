@@ -44,13 +44,7 @@ Pastikan profil ditentukan melalui --file/-f agar profil yang tepat dapat ditemu
 			logger.Errorf("Gagal memparsing flags: %v", err)
 			return
 		}
-		// Debug: tunjukkan bahwa perintah terpanggil dan nilai flag
-		fmt.Println("DEBUG: profile edit handler invoked")
-		fmt.Printf("DEBUG: parsed options: interactive=%v, file=%s, new-name=%s\n",
-			ProfileEditOptions.Interactive,
-			ProfileEditOptions.ProfileInfo.Path,
-			ProfileEditOptions.NewName,
-		)
+
 		// Tampilkan juga ke logger jika tersedia (logger mungkin tidak ke-stdout bergantung pada config)
 		logger.Infof("ProfileEdit options: interactive=%v, file=%s, new-name=%s",
 			ProfileEditOptions.Interactive,

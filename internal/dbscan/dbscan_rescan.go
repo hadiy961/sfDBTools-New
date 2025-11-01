@@ -22,7 +22,11 @@ func (s *Service) PrepareRescanSession(ctx context.Context, headerTitle string, 
 		s.Logger.Infof("=== %s ===", headerTitle)
 	}
 	if showOptions {
-		s.DisplayScanOptions()
+		if proceed, askErr := s.DisplayScanOptions(); askErr != nil {
+			return nil, nil, nil, askErr
+		} else if !proceed {
+			return nil, nil, nil, types.ErrUserCancelled
+		}
 	}
 
 	if err = s.CheckAndSelectConfigFile(); err != nil {

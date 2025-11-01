@@ -27,6 +27,7 @@ func ParsingScanAllOptions(cmd *cobra.Command) (types.ScanOptions, error) {
 	// Options lain yang diminta
 	opts.ExcludeSystem = helper.GetBoolFlagOrEnv(cmd, "exclude-system", "")
 	opts.Background = helper.GetBoolFlagOrEnv(cmd, "background", "")
+	opts.ShowOptions = helper.GetBoolFlagOrEnv(cmd, "show-options", "")
 
 	return opts, nil
 }

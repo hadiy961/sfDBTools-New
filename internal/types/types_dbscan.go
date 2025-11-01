@@ -40,7 +40,7 @@ type DatabaseFilterStats struct {
 type ScanOptions struct {
 	// Database Configuration
 	ProfileInfo ProfileInfo
-
+	LocalScan   bool
 	// Encryption
 	Encryption struct {
 		Key string
@@ -76,7 +76,8 @@ type ScanOptions struct {
 	Background     bool // Jalankan scanning di background
 
 	// Internal use only
-	Mode string // "all" atau "selection" atau "single" atau "rescan"
+	Mode        string // "all" atau "selection" atau "single" atau "rescan"
+	ShowOptions bool   // Tampilkan opsi scanning sebelum eksekusi
 }
 
 // SystemDatabases adalah canonical list dari database sistem MySQL/MariaDB

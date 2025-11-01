@@ -18,6 +18,8 @@ import (
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/ui"
+
+	"github.com/dustin/go-humanize"
 )
 
 // ExecuteScanInBackground menjalankan scanning tanpa UI output (pure logging)
@@ -174,6 +176,37 @@ func (s *Service) ExecuteScan(ctx context.Context, sourceClient *database.Client
 	// Mulai scanning dan simpan segera; hentikan pada kegagalan simpan
 	s.Logger.Info("Memulai pengumpulan detail database...")
 
+	// Opsi LocalScan: hanya metrik SIZE yang diambil dari filesystem (datadir),
+	// metrik lain tetap melalui query seperti biasa.
+	var localSizes map[string]int64
+	if s.ScanOptions.LocalScan {
+		s.Logger.Info("Mode Local Scan diaktifkan: ukuran database diambil dari datadir, metrik lain via query.")
+
+		// Coba ambil datadir dari source terlebih dahulu; fallback ke target bila perlu
+		var datadir string
+		if sourceClient != nil {
+			if err := sourceClient.DB().QueryRowContext(ctx, "SELECT @@datadir").Scan(&datadir); err != nil {
+				s.Logger.Warnf("Gagal mendapatkan datadir dari source: %v", err)
+			}
+		}
+		if datadir == "" && targetClient != nil {
+			if err := targetClient.DB().QueryRowContext(ctx, "SELECT @@datadir").Scan(&datadir); err != nil {
+				s.Logger.Warnf("Gagal mendapatkan datadir dari target: %v", err)
+			}
+		}
+		if datadir == "" {
+			return nil, fmt.Errorf("tidak dapat menentukan datadir dari source maupun target")
+		}
+
+		// Hitung ukuran setiap database dari datadir
+		sizes, err := s.LocalScanSizes(ctx, datadir, dbNames)
+		if err != nil {
+			return nil, fmt.Errorf("gagal melakukan local size scan: %v", err)
+		}
+		localSizes = sizes
+		s.Logger.Infof("Local size scan selesai untuk %d database.", len(localSizes))
+	}
+
 	// Kumpulan detail jika nanti ingin ditampilkan
 	detailsMap := make(map[string]database.DatabaseDetailInfo)
 
@@ -183,15 +216,42 @@ func (s *Service) ExecuteScan(ctx context.Context, sourceClient *database.Client
 	var errors []string
 
 	// Ambil server info untuk penyimpanan
+	if err := sourceClient.DB().QueryRowContext(ctx, "SELECT @@hostname, @@port").Scan(&s.ScanOptions.ProfileInfo.DBInfo.Host, &s.ScanOptions.ProfileInfo.DBInfo.Port); err != nil {
+		s.Logger.Warnf("Gagal mendapatkan datadir dari target: %v", err)
+	}
+
 	serverHost := s.ScanOptions.ProfileInfo.DBInfo.Host
 	serverPort := s.ScanOptions.ProfileInfo.DBInfo.Port
 
 	saveEnabled := s.ScanOptions.SaveToDB && targetClient != nil
 
 	// Kumpulkan detail sambil langsung menyimpan setiap hasil
-	detailsMap, collectErr := sourceClient.CollectDatabaseDetails(ctx, dbNames, s.Logger, func(detail database.DatabaseDetailInfo) error {
+	// Siapkan opsi untuk override size menggunakan hasil local scan (jika ada)
+	var collectOpts *database.DetailCollectOptions
+	if s.ScanOptions.LocalScan {
+		sizeProvider := func(ctx context.Context, dbName string) (int64, error) {
+			if localSizes == nil {
+				return 0, nil
+			}
+			if sz, ok := localSizes[dbName]; ok {
+				return sz, nil
+			}
+			return 0, nil
+		}
+		collectOpts = &database.DetailCollectOptions{SizeProvider: sizeProvider}
+	}
+
+	detailsMap, collectErr := sourceClient.CollectDatabaseDetailsWithOptions(ctx, dbNames, s.Logger, collectOpts, func(detail database.DatabaseDetailInfo) error {
 		// Simpan ke map untuk pelaporan/penampilan opsional
 		detailsMap[detail.DatabaseName] = detail
+
+		// Jika LocalScan aktif dan ada ukuran lokal, pastikan nilai size sudah sesuai (idempotent)
+		if s.ScanOptions.LocalScan && localSizes != nil {
+			if sz, ok := localSizes[detail.DatabaseName]; ok {
+				detail.SizeBytes = sz
+				detail.SizeHuman = humanize.Bytes(uint64(sz))
+			}
+		}
 
 		// Jika tidak perlu simpan ke DB, anggap sukses koleksi
 		if !saveEnabled {
@@ -243,4 +303,78 @@ func (s *Service) ExecuteScan(ctx context.Context, sourceClient *database.Client
 		Duration:       duration.String(),
 		Errors:         errors,
 	}, nil
+}
+
+func (s *Service) LocalScan(ctx context.Context, sourceClient *database.Client, datadir string) error {
+	// Deprecated signature kept temporarily; redirect to the new implementation requiring dbNames.
+	return fmt.Errorf("LocalScan(ctx, *Client, datadir) deprecated - gunakan LocalScan(ctx, datadir, dbNames)")
+}
+
+// LocalScan menghitung ukuran setiap database (folder) langsung dari filesystem datadir.
+// Hanya ukuran (size) yang dihitung; metrik lain tetap dikumpulkan melalui query.
+func (s *Service) LocalScanSizes(ctx context.Context, datadir string, dbNames []string) (map[string]int64, error) {
+	s.Logger.Infof("Memulai local size scan di datadir: %s", datadir)
+
+	sizes := make(map[string]int64, len(dbNames))
+	for _, dbName := range dbNames {
+		select {
+		case <-ctx.Done():
+			return sizes, ctx.Err()
+		default:
+		}
+
+		dbPath := filepath.Join(datadir, dbName)
+		size, err := dirSize(ctx, dbPath)
+		if err != nil {
+			// Catat per-db error, tapi lanjutkan database lain
+			s.Logger.Warnf("Gagal menghitung size untuk %s: %v", dbName, err)
+			sizes[dbName] = 0
+			continue
+		}
+		sizes[dbName] = size
+	}
+
+	// Catatan: Perhitungan ini tidak mencakup shared tablespace (mis. ibdata1),
+	// sehingga total bisa lebih kecil dibandingkan information_schema.
+	// Ini sesuai permintaan: hanya menghitung dari direktori per-database.
+	return sizes, nil
+}
+
+// dirSize menghitung total ukuran semua file regular di dalam sebuah direktori secara rekursif.
+func dirSize(ctx context.Context, root string) (int64, error) {
+	var total int64
+
+	info, err := os.Stat(root)
+	if err != nil {
+		return 0, err
+	}
+	if !info.IsDir() {
+		// Jika bukan direktori, kembalikan ukuran file (kasus langka)
+		return info.Size(), nil
+	}
+
+	walkErr := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		// cek pembatalan secara berkala
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		if d.Type().IsRegular() {
+			fi, ferr := d.Info()
+			if ferr != nil {
+				return ferr
+			}
+			total += fi.Size()
+		}
+		return nil
+	})
+	if walkErr != nil {
+		return 0, walkErr
+	}
+	return total, nil
 }

@@ -60,7 +60,7 @@ func main() {
 			appLogger.Warn(fmt.Sprintf("Gagal menginisialisasi koneksi database: %v", err))
 			return
 		} else {
-			fmt.Println("✓ Berhasil terhubung ke database")
+			// fmt.Println("✓ Berhasil terhubung ke database")
 			defer dbClient.Close()
 		}
 	} else {

@@ -22,7 +22,7 @@ type BackupConfig struct {
 	MysqlDumpArgs string             `yaml:"mysqldump_args"`
 	Exclude       ExcludeConfig      `yaml:"exclude"`
 	DBList        DBListConfig       `yaml:"db_list"`
-	Retention     RetentionConfig    `yaml:"retention"`
+	Cleanup       CleanupConfig      `yaml:"cleanup"`
 	Encryption    EncryptionConfig   `yaml:"encryption"`
 	Output        OutputConfig       `yaml:"output"`
 	Verification  VerificationConfig `yaml:"verification"`
@@ -45,7 +45,7 @@ type ExcludeConfig struct {
 	Data            bool     `yaml:"data"`
 }
 
-type RetentionConfig struct {
+type CleanupConfig struct {
 	Enabled  bool   `yaml:"enabled"`
 	Schedule string `yaml:"schedule"`
 	Days     int    `yaml:"days"`

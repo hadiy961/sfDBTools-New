@@ -64,7 +64,7 @@ func cleanupCore(dryRun bool, pattern string) error {
 		Logger.Infof("%s proses cleanup backup...", mode)
 	}
 
-	retentionDays := cfg.Backup.Retention.Days
+	retentionDays := cfg.Backup.Cleanup.Days
 	if retentionDays <= 0 {
 		Logger.Info("Retention days tidak valid, melewati proses")
 		return nil

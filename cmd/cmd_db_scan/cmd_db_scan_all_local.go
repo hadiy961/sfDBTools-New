@@ -12,19 +12,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var scanAllOpts types.ScanOptions
+var scanAllLocalOpts types.ScanOptions
 
-var CmdDBScanAll = &cobra.Command{
-	Use:   "all",
+var CmdDBScanAllLocal = &cobra.Command{
+	Use:   "all-local",
 	Short: "Scan semua database dan collect informasi detail",
 	Long: `Scan semua database dari server yang dikonfigurasi dan mengumpulkan informasi detail.
 
 Hasil scanning dapat disimpan ke database_details dan database_detail_history table untuk tracking dan monitoring.
 
 Contoh penggunaan:
-	sfdbtools dbscan all --profile /path/to/profile.cnf.enc --profile-key SECRET
-	sfdbtools dbscan all --profile /path/to/profile.cnf.enc --exclude-system=false
-	sfdbtools dbscan all --profile /path/to/profile.cnf.enc --background
+	sfdbtools dbscan all-local --profile /path/to/profile.cnf.enc --profile-key SECRET
+	sfdbtools dbscan all-local --profile /path/to/profile.cnf.enc --exclude-system=false
+	sfdbtools dbscan all-local --background
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
@@ -52,11 +52,11 @@ Contoh penggunaan:
 
 		// Execute scan
 		scanConfig := types.ScanEntryConfig{
-			HeaderTitle: "Database Scanning - Semua Database",
+			HeaderTitle: "Database Scanning - Semua Database (Local Scan)",
 			ShowOptions: parsedOpts.ShowOptions,
 			SuccessMsg:  "Proses scanning database selesai.",
 			LogPrefix:   "Proses database scan",
-			Mode:        "all",
+			Mode:        "all-local",
 		}
 
 		if err := svc.ExecuteScanCommand(scanConfig); err != nil {
@@ -75,5 +75,5 @@ func init() {
 	scanAllOpts = defaultOpts
 
 	// Tambahkan hanya flags yang diminta untuk 'all'
-	flags.AddDbScanAllFlags(CmdDBScanAll, &scanAllOpts)
+	flags.AddDbScanAllFlags(CmdDBScanAllLocal, &scanAllLocalOpts)
 }

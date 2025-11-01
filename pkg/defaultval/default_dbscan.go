@@ -69,6 +69,12 @@ func GetDefaultScanOptions(mode string) types.ScanOptions {
 	opts.DisplayResults = true
 	opts.SaveToDB = true
 	opts.Background = false
+	if opts.Background {
+		opts.DisplayResults = false
+	}
+	opts.ShowOptions = true
+
+	// Mode
 	opts.Mode = mode
 
 	return opts

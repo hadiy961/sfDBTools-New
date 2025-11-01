@@ -49,9 +49,7 @@ func (s *Service) promptSelectExistingConfig() error {
 
 // PERBAIKAN: Fungsi ini juga sekarang hanya mengembalikan error.
 func (s *Service) promptDBConfigName(mode string) error {
-	if s.ProfileInfo.Name == "" {
-		s.ProfileInfo.Name = "my_database_config" // Set default jika kosong
-	}
+
 	ui.PrintSubHeader("Please provide the configuration name:")
 
 	// Mulai loop untuk meminta input sampai valid
