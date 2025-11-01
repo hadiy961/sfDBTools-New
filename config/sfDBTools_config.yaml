@@ -1,20 +1,10 @@
 backup:
     compression:
-        type: gzip # gzip, zstd, lz4, none
-        level: standard # best, fastest, standard
-        required: true # true, false
-    encryption:
-        enabled: true # true, false
+        type: gzip
+        level: 3
+        enabled: true
+    mysqldump_args: -CfQq --max-allowed-packet=1G --hex-blob --order-by-primary --single-transaction --routines=true --triggers=true --opt
     exclude:
-        # Daftar database yang akan dikecualikan dari proses backup
-        # Gunakan format YAML list untuk menambahkan lebih dari satu database
-        # Contoh:
-        # databases:
-        #   - dbsaas_host
-        #   - mysql
-        #   - performance_schema
-        #   - sys
-        #   - test
         databases:
             - dbsaas_host
             - dbsaas_host_dba
@@ -24,17 +14,17 @@ backup:
         user: false
         system_databases: true
         data: false
-    db_list: # Daftar database yang akan di-backup
+    db_list:
         file: config/db_list.txt
-    mysqldump_args: -CfQq --max-allowed-packet=1G --hex-blob --order-by-primary --single-transaction --routines=true --triggers=true --opt
     retention:
-        cleanup_enabled: true
-        cleanup_schedule: daily
+        enabled: true
+        schedule: 0 2 * * *
         days: 1
+    encryption:
+        enabled: true
+        key: ""
     output:
         base_directory: /mnt/nfs/backup
-        capture_gtid: true
-        create_backup_info: true
         cleanup_temp: true
         naming:
             include_client_code: true
@@ -42,18 +32,10 @@ backup:
             pattern: '{database}_{timestamp}_{type}'
         structure:
             create_subdirs: true
-            # Pola subdirektori untuk menyimpan backup.
-            # Token yang didukung:
-            # - {date} atau {date:FORMAT}    -> FORMAT menggunakan Go time layout, default: "2006-01-02"
-            # - {timestamp} atau {timestamp:FORMAT} -> default: "20060102T150405"
-            # - {year}, {month}, {day}
-            # - {client} atau {client_code} -> diisi dari general.client_code
-            # - {hostname} -> nama host saat runtime (jika tersedia)
-            # Contoh:
-            #   '{date}/{client}' -> '2025-10-13/dataon'
-            #   '{date:2006/01}/{client_code}' -> '2025/10/dataon'
             pattern: '{year}/{month}/{day}/'
         temp_directory: /tmp/sfDBTools_backup
+        capture_gtid: true
+        create_backup_info: true
     verification:
         compare_checksums: true
         disk_space_check: true
@@ -72,11 +54,11 @@ general:
         timezone: Asia/Jakarta
     version: 1.0.0
 log:
-    format: text # text, json
-    level: debug # debug, info, warn, error, fatal
+    format: text
+    level: debug
     output:
         console:
-            enabled: true # true, false
+            enabled: true
         file:
             dir: /var/log/sfDBTools
             enabled: true

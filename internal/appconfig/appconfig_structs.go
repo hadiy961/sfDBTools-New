@@ -46,9 +46,9 @@ type ExcludeConfig struct {
 }
 
 type RetentionConfig struct {
-	CleanupEnabled  bool   `yaml:"cleanup_enabled"`
-	CleanupSchedule string `yaml:"cleanup_schedule"`
-	Days            int    `yaml:"days"`
+	Enabled  bool   `yaml:"enabled"`
+	Schedule string `yaml:"schedule"`
+	Days     int    `yaml:"days"`
 }
 
 type EncryptionConfig struct {
