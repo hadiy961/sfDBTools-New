@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/ui"
+	"strings"
 	"time"
 )
 
@@ -38,15 +40,30 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 
 	result.TotalTimeTaken = time.Since(startTime)
 
-	// 3. Kembalikan hasil backup
+	// 3. Cek apakah ada error dalam result
+	if len(result.Errors) > 0 || len(result.FailedDatabaseInfos) > 0 {
+		// Jika ada error, kembalikan sebagai error
+		return &types.BackupResult{
+			TotalDatabases:      len(dbFiltered),
+			SuccessfulBackups:   0,
+			FailedBackups:       len(dbFiltered),
+			FailedDatabases:     map[string]string{},
+			BackupInfo:          result.BackupInfo,
+			FailedDatabaseInfos: result.FailedDatabaseInfos,
+			Errors:              result.Errors,
+			TotalTimeTaken:      result.TotalTimeTaken,
+		}, fmt.Errorf("backup gagal: %s", result.Errors[0])
+	}
+
+	// 4. Kembalikan hasil backup sukses
 	return &types.BackupResult{
 		TotalDatabases:    len(dbFiltered),
-		SuccessfulBackups: len(dbFiltered), // Asumsikan semua berhasil untuk placeholder
+		SuccessfulBackups: len(dbFiltered),
 		FailedBackups:     0,
 		FailedDatabases:   map[string]string{},
 		BackupInfo:        result.BackupInfo,
 		TotalTimeTaken:    result.TotalTimeTaken,
-	}, err
+	}, nil
 }
 
 // executeBackupCombined melakukan backup semua database dalam satu file
@@ -64,25 +81,42 @@ func (s *Service) executeBackupCombined(ctx context.Context, dbFiltered []string
 	}
 
 	mysqldumpArgs := s.buildMysqldumpArgs(s.Config.Backup.MysqlDumpArgs, dbFiltered, "", totalDBFound)
-	fullOutputPath := s.BackupDBOptions.OutputDir
+
+	filename := s.BackupDBOptions.File.Path
+	fullOutputPath := filepath.Join(s.BackupDBOptions.OutputDir, filename)
+	s.Log.Info("Generated backup filename: " + fullOutputPath)
+
 	Compression := s.BackupDBOptions.Compression.Enabled
 	CompressionType := s.BackupDBOptions.Compression.Type
 	stderrOutput, err := s.executeMysqldumpWithPipe(ctx, mysqldumpArgs, fullOutputPath, Compression, CompressionType)
 	if err != nil {
+		// Hapus file backup yang gagal/kosong
+		if _, statErr := os.Stat(fullOutputPath); statErr == nil {
+			s.Log.Infof("Menghapus file backup yang gagal: %s", fullOutputPath)
+			os.Remove(fullOutputPath)
+		}
+
+		// Tampilkan error detail dari mysqldump
+		ui.PrintHeader("ERROR : Mysqldump Gagal dijalankan")
+
+		if stderrOutput != "" {
+			ui.PrintSubHeader("Detail Error dari mysqldump:")
+			ui.PrintError(stderrOutput)
+		}
+
 		errorMsg := fmt.Errorf("gagal menjalankan mysqldump: %w", err)
 		res.Errors = append(res.Errors, errorMsg.Error())
 		for _, dbName := range dbFiltered {
 			res.FailedDatabaseInfos = append(res.FailedDatabaseInfos, types.FailedDatabaseInfo{DatabaseName: dbName, Error: errorMsg.Error()})
 		}
 		return res
-	}
-
-	// Tentukan status berdasarkan stderr output
+	} // Tentukan status berdasarkan stderr output (hanya untuk NON-FATAL warnings)
+	// Jika sampai sini berarti mysqldump berhasil, tapi mungkin ada warning
 	backupStatus := "success"
-	var errorLogFile string
 	if stderrOutput != "" {
 		backupStatus = "success_with_warnings"
-		s.Log.Warnf("Backup combined selesai dengan warning (lihat: %s)", errorLogFile)
+		ui.PrintWarning("Backup selesai dengan warning (data ter-backup tapi ada pesan):")
+		ui.PrintWarning(stderrOutput)
 	}
 
 	backupDuration := time.Since(backupStartTime)
@@ -92,18 +126,22 @@ func (s *Service) executeBackupCombined(ctx context.Context, dbFiltered []string
 		fileSize = fileInfo.Size()
 	}
 
-	for _, dbName := range dbFiltered {
-		res.BackupInfo = append(res.BackupInfo, types.DatabaseBackupInfo{
-			DatabaseName:  dbName,
-			OutputFile:    fullOutputPath,
-			FileSize:      fileSize,
-			FileSizeHuman: global.FormatFileSize(fileSize),
-			Duration:      global.FormatDuration(backupDuration),
-			Status:        backupStatus,
-			Warnings:      stderrOutput,
-			ErrorLogFile:  errorLogFile,
-		})
+	// Untuk combined mode, buat satu entry dengan info semua database
+	dbListStr := fmt.Sprintf("Combined backup (%d databases)", len(dbFiltered))
+	if len(dbFiltered) <= 10 {
+		// Tampilkan nama database jika tidak terlalu banyak
+		dbListStr = fmt.Sprintf("%d databases: %s", len(dbFiltered), strings.Join(dbFiltered, ", "))
 	}
+
+	res.BackupInfo = append(res.BackupInfo, types.DatabaseBackupInfo{
+		DatabaseName:  dbListStr,
+		OutputFile:    fullOutputPath,
+		FileSize:      fileSize,
+		FileSizeHuman: global.FormatFileSize(fileSize),
+		Duration:      global.FormatDuration(backupDuration),
+		Status:        backupStatus,
+		Warnings:      stderrOutput,
+	})
 
 	return res
 }

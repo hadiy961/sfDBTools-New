@@ -70,15 +70,10 @@ func (s *Service) SetupBackupExecution() error {
 
 	// Membuat direktori output jika belum ada
 	s.Log.Info("Membuat direktori output jika belum ada : " + s.BackupDBOptions.OutputDir)
-	created, err := fsops.CreateBackupDirs(s.BackupDBOptions.OutputDir, s.Config.Backup.Output.Structure.CreateSubdirs, s.Config.Backup.Output.Structure.Pattern, s.Config.General.ClientCode)
-	if err != nil {
+	if err := fsops.CreateDirIfNotExist(s.BackupDBOptions.OutputDir); err != nil {
 		return fmt.Errorf("gagal membuat direktori output: %w", err)
 	}
-	if created {
-		s.Log.Info("Direktori output siap: " + s.BackupDBOptions.OutputDir)
-	} else {
-		s.Log.Info("Direktori output sudah ada: " + s.BackupDBOptions.OutputDir)
-	}
+	s.Log.Info("Direktori output siap: " + s.BackupDBOptions.OutputDir)
 
 	// Log konfigurasi
 	if s.BackupDBOptions.Encryption.Enabled {

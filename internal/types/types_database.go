@@ -3,6 +3,7 @@ package types
 // DBInfo - Struct to hold database connection details
 type DBInfo struct {
 	Host     string
+	HostName string
 	Port     int
 	User     string
 	Password string

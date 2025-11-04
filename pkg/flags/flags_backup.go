@@ -11,7 +11,7 @@ func AddBackupFlags(cmd *cobra.Command, opts *types.BackupDBOptions) {
 	AddProfileFlags(cmd, &opts.Profile)
 
 	// Filters
-	cmd.Flags().Bool("exclude-system", true, "Kecualikan system databases (information_schema, mysql, dll)")
+	cmd.Flags().Bool("exclude-system", opts.Filter.ExcludeSystem, "Kecualikan system databases (information_schema, mysql, dll)")
 	cmd.Flags().StringArray("exclude-db", opts.Filter.ExcludeDatabases, "Daftar database yang akan dikecualikan. Dapat dikombinasi dengan --exclude-db-file.")
 	cmd.Flags().String("exclude-db-file", opts.Filter.ExcludeDBFile, "File berisi daftar database yang akan dikecualikan (satu per baris). Dapat dikombinasi dengan --exclude-db.")
 	cmd.Flags().StringArray("db", opts.Filter.IncludeDatabases, "Daftar database yang akan di-backup. Dapat dikombinasi dengan --db-file.")

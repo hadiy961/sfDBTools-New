@@ -14,9 +14,10 @@ type BackupDBOptions struct {
 	Background  bool
 	DryRun      bool
 	OutputDir   string
-	Mode        string // "separate" atau "combined"
-	ShowOptions bool   // Tampilkan opsi backup sebelum eksekusi
-	NamePattern string // Pola penamaan file backup
+	Mode        string         // "separate" atau "combined"
+	ShowOptions bool           // Tampilkan opsi backup sebelum eksekusi
+	NamePattern string         // Pola penamaan file backup
+	File        BackupFileInfo // Nama file backup lengkap dengan ekstensi
 	Entry       BackupEntryConfig
 	CaptureGTID bool // Tangkap informasi GTID saat backup
 }

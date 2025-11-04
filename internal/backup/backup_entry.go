@@ -26,7 +26,7 @@ func (s *Service) ExecuteBackupCommand(config types.BackupEntryConfig) error {
 	// Lakukan backup
 	result, err := s.ExecuteBackup(ctx, sourceClient, dbFiltered, config.BackupMode)
 	if err != nil {
-		s.Log.Error(config.LogPrefix + " gagal: " + err.Error())
+		// s.Log.Error(config.LogPrefix + " gagal: " + err.Error())
 		return err
 	}
 

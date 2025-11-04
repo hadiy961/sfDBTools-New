@@ -1,24 +1,24 @@
 backup:
     compression:
-        type: gzip # Tipe kompresi: gzip, zstd, xz, zlib, pgzip
-        level: 9 # Compression level dari 1 (tercepat, kompresi paling rendah) hingga 9 (paling lambat, kompresi paling tinggi)
+        type: pgzip # Tipe kompresi: gzip, zstd, xz, zlib, pgzip
+        level: 6 # Compression level dari 1 (tercepat, kompresi paling rendah) hingga 9 (paling lambat, kompresi paling tinggi)
         enabled: true
     mysqldump_args: -CfQq --max-allowed-packet=1G --hex-blob --order-by-primary --single-transaction --routines=true --triggers=true --opt
     exclude:
-        databases:
-            - teguhth
-            - dbsaas_host
+        # databases:
+        #     - teguhth
+        #     - dbsaas_host
         user: false
         system_databases: true
         data: false
         empty: true
     #     file : config/exclude_db_list.txt
-    # include:
-    #     databases: 
-    #         - dbsf_biznet_dadfs
-    #         - dbsf_biznet_jtrust
-    #         - dbsf_biznet_mariadb
-    #     file : config/db_list.txt
+    include:
+        # databases: 
+        #     - dbsf_biznet_dadfs
+        #     - dbsf_biznet_jtrust
+        #     - dbsf_biznet_mariadb
+        file : config/db_list.txt
     cleanup:
         enabled: true
         schedule: 0 2 * * *
@@ -27,7 +27,7 @@ backup:
         enabled: true
         key: ""
     output:
-        base_directory: /mnt/nfs/backup
+        base_directory: /mnt/c/VM/NFS/sfDBTools/backups
         # NamePattern digunakan untuk menentukan pola penamaan file backup yang akan dihasilkan.
         # Pattern yang tersedia:
         # {database} - nama database

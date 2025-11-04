@@ -9,7 +9,7 @@ import (
 // DisplayFilterStats menampilkan statistik hasil pemfilteran database secara reusable.
 // Context parameter untuk menyesuaikan label (contoh: "Akan di-backup" atau "Akan di-scan")
 // Logger parameter opsional untuk logging (bisa nil)
-func DisplayFilterStats(stats *types.DatabaseFilterStats, context string, logger applog.Logger) {
+func DisplayFilterStats(stats *types.DatabaseFilterStats, konteks string, logger applog.Logger) {
 	PrintSubHeader("Statistik Filtering Database")
 
 	// Hitung total excluded
@@ -17,16 +17,16 @@ func DisplayFilterStats(stats *types.DatabaseFilterStats, context string, logger
 
 	// Tentukan label action berdasarkan context
 	actionLabel := "Akan diproses"
-	if context == "backup" {
+	if konteks == "backup" {
 		actionLabel = "Akan di-backup"
-	} else if context == "scan" {
+	} else if konteks == "scan" {
 		actionLabel = "Akan di-scan"
 	}
 
 	// Log statistik filtering
 	if logger != nil {
 		logger.WithFields(map[string]interface{}{
-			"context":          context,
+			"context":          konteks,
 			"total_found":      stats.TotalFound,
 			"total_included":   stats.TotalIncluded,
 			"total_excluded":   totalExcluded,

@@ -21,10 +21,11 @@ type PathPatternReplacer struct {
 	Second         string
 	CompressionExt string // Ekstensi kompresi (.gz, .zst, etc)
 	EncryptionExt  string // Ekstensi enkripsi (.enc)
+	IsFilename     bool   // true jika untuk filename (butuh ekstensi), false jika untuk directory path
 }
 
 // NewPathPatternReplacer membuat instance baru PathPatternReplacer dengan timestamp saat ini
-func NewPathPatternReplacer(database string, hostname string, compressionType compress.CompressionType, encrypted bool) (*PathPatternReplacer, error) {
+func NewPathPatternReplacer(database string, hostname string, compressionType compress.CompressionType, encrypted bool, isFilename bool) (*PathPatternReplacer, error) {
 	// Gunakan hostname yang diberikan (dari database server)
 	if hostname == "" {
 		hostname = "unknown"
@@ -33,11 +34,10 @@ func NewPathPatternReplacer(database string, hostname string, compressionType co
 	now := time.Now()
 
 	// Tentukan ekstensi kompresi
-	compressionExt := ".sql"
+	compressionExt := ""
 	if compressionType != compress.CompressionNone && compressionType != "" {
 		compressionExt = compress.GetFileExtension(compressionType)
 	}
-
 	// Tentukan ekstensi enkripsi
 	encryptionExt := ""
 	if encrypted {
@@ -56,6 +56,7 @@ func NewPathPatternReplacer(database string, hostname string, compressionType co
 		Second:         now.Format("05"),
 		CompressionExt: compressionExt,
 		EncryptionExt:  encryptionExt,
+		IsFilename:     isFilename,
 	}, nil
 }
 
@@ -81,8 +82,17 @@ func (r *PathPatternReplacer) ReplacePattern(pattern string) string {
 		result = strings.ReplaceAll(result, pattern, value)
 	}
 
-	// Tambahkan ekstensi kompresi dan enkripsi di akhir
-	result = result + r.CompressionExt + r.EncryptionExt
+	// Tambahkan ekstensi hanya jika ini untuk filename (bukan directory path)
+	if r.IsFilename {
+		// Tambahkan ekstensi .sql jika tidak ada kompresi
+		// (file mentah SQL harus punya ekstensi .sql)
+		if r.CompressionExt == "" {
+			result = result + ".sql"
+		}
+
+		// Tambahkan ekstensi kompresi dan enkripsi di akhir
+		result = result + r.CompressionExt + r.EncryptionExt
+	}
 
 	return result
 }
@@ -95,7 +105,7 @@ func GenerateBackupFilename(pattern string, database string, mode string, hostna
 		database = "all_databases"
 	}
 
-	replacer, err := NewPathPatternReplacer(database, hostname, compressionType, encrypted)
+	replacer, err := NewPathPatternReplacer(database, hostname, compressionType, encrypted, true)
 	if err != nil {
 		return "", fmt.Errorf("gagal membuat pattern replacer: %w", err)
 	}
@@ -108,7 +118,7 @@ func GenerateBackupFilename(pattern string, database string, mode string, hostna
 func GenerateBackupDirectory(baseDir string, structurePattern string, hostname string) (string, error) {
 	// Gunakan database kosong karena directory tidak butuh nama database
 	// Untuk directory tidak perlu ekstensi kompresi/enkripsi
-	replacer, err := NewPathPatternReplacer("", hostname, compress.CompressionNone, false)
+	replacer, err := NewPathPatternReplacer("", hostname, compress.CompressionNone, false, false)
 	if err != nil {
 		return "", fmt.Errorf("gagal membuat pattern replacer: %w", err)
 	}

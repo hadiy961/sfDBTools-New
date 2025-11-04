@@ -46,7 +46,7 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 		serverHostname = s.BackupDBOptions.Profile.DBInfo.Host
 	} else {
 		// Update profile dengan hostname asli dari server
-		s.BackupDBOptions.Profile.DBInfo.Host = serverHostname
+		s.BackupDBOptions.Profile.DBInfo.HostName = serverHostname
 		s.Log.Infof("menggunakan hostname dari server: %s", serverHostname)
 	}
 
