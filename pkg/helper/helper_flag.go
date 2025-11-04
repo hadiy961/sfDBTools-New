@@ -81,3 +81,39 @@ func GetStringSliceFlagOrEnv(cmd *cobra.Command, flagName, envName string) []str
 
 	return nil
 }
+
+// GetStringArrayFlagOrEnv mengambil nilai dari StringArray flag atau environment variable
+func GetStringArrayFlagOrEnv(cmd *cobra.Command, flagName, envName string) []string {
+	// 1. Coba ambil nilai dari CLI Flag (StringArray)
+	val, _ := cmd.Flags().GetStringArray(flagName)
+
+	// Jika flag diubah secara eksplisit, kembalikan nilai flag.
+	if cmd.Flags().Changed(flagName) {
+		return val
+	}
+
+	// 2. Cek Environment Variable (diasumsikan format comma-separated)
+	if envName != "" {
+		env := os.Getenv(envName)
+		if env != "" {
+			// Pisahkan string ENV berdasarkan koma
+			slice := strings.Split(env, ",")
+
+			var cleanedSlice []string
+			// Bersihkan spasi dan filter elemen kosong
+			for _, s := range slice {
+				trimmed := strings.TrimSpace(s)
+				if trimmed != "" {
+					cleanedSlice = append(cleanedSlice, trimmed)
+				}
+			}
+
+			if len(cleanedSlice) > 0 {
+				return cleanedSlice
+			}
+		}
+	}
+
+	// 3. Kembalikan nilai default dari flag (bisa empty atau dari opts)
+	return val
+}

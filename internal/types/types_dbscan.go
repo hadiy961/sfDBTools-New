@@ -26,15 +26,9 @@ type ScanResult struct {
 	Errors         []string
 }
 
-// DatabaseFilterStats menyimpan statistik hasil filtering database.
-type DatabaseFilterStats struct {
-	TotalFound     int
-	ToScan         int
-	ExcludedSystem int
-	ExcludedByList int
-	ExcludedByFile int // Merepresentasikan database yang tidak ada di include list
-	ExcludedEmpty  int
-}
+// DatabaseFilterStats adalah alias untuk FilterStats untuk backward compatibility
+// DEPRECATED: Gunakan FilterStats langsung dari types_database.go
+type DatabaseFilterStats = FilterStats
 
 // ScanOptions berisi opsi untuk database scan
 type ScanOptions struct {
@@ -60,6 +54,7 @@ type ScanOptions struct {
 	ExcludeSystem bool
 	IncludeList   []string
 	ExcludeList   []string
+	ExcludeFile   string // Path ke file berisi blacklist database
 
 	// Target Database untuk menyimpan hasil scan
 	TargetDB struct {
@@ -88,4 +83,27 @@ var SystemDatabases = map[string]struct{}{
 	"performance_schema": {},
 	"sys":                {},
 	"innodb":             {},
+}
+
+// FailedDatabaseScanInfo berisi informasi database yang gagal
+type FailedDatabaseScanInfo struct {
+	DatabaseName   string
+	ErrorMessage   string
+	CollectionTime string
+	ServerHost     string
+	ServerPort     int
+}
+
+// DatabaseDetailInfo berisi informasi detail database
+type DatabaseDetailInfo struct {
+	DatabaseName   string `json:"database_name"`
+	SizeBytes      int64  `json:"size_bytes"`
+	SizeHuman      string `json:"size_human"`
+	TableCount     int    `json:"table_count"`
+	ProcedureCount int    `json:"procedure_count"`
+	FunctionCount  int    `json:"function_count"`
+	ViewCount      int    `json:"view_count"`
+	UserGrantCount int    `json:"user_grant_count"`
+	CollectionTime string `json:"collection_time"`
+	Error          string `json:"error,omitempty"` // jika ada error saat collect
 }

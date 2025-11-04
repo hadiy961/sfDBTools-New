@@ -38,3 +38,20 @@ func (c *Client) SetMaxStatementsTime(ctx context.Context, seconds float64) erro
 	}
 	return nil
 }
+
+// GetServerHostname mendapatkan hostname dari MySQL/MariaDB server menggunakan query SELECT @@hostname
+func (c *Client) GetServerHostname(ctx context.Context) (string, error) {
+	var hostname string
+	if err := c.db.QueryRowContext(ctx, "SELECT @@hostname").Scan(&hostname); err != nil {
+		return "", fmt.Errorf("gagal mendapatkan server hostname: %w", err)
+	}
+	return hostname, nil
+}
+
+// GetServerInfo mendapatkan hostname dan port dari MySQL/MariaDB server
+func (c *Client) GetServerInfo(ctx context.Context) (hostname string, port int, err error) {
+	if err := c.db.QueryRowContext(ctx, "SELECT @@hostname, @@port").Scan(&hostname, &port); err != nil {
+		return "", 0, fmt.Errorf("gagal mendapatkan server info: %w", err)
+	}
+	return hostname, port, nil
+}

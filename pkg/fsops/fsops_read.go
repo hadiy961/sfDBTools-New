@@ -34,24 +34,3 @@ func CheckDirExists(dir string) (bool, error) {
 	}
 	return info.IsDir(), nil
 }
-
-// CreateDirIfNotExist membuat direktori jika belum ada
-func CreateDirIfNotExist(dir string) error {
-	// Cek apakah direktori sudah ada
-	exists, err := CheckDirExists(dir)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		// Buat direktori beserta parent-nya
-		if err := CreateDir(dir); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// CreateDir membuat direktori beserta parent-nya jika belum ada
-func CreateDir(dir string) error {
-	return os.MkdirAll(dir, os.ModePerm)
-}

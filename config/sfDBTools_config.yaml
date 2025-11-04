@@ -1,21 +1,24 @@
 backup:
     compression:
-        type: gzip
-        level: 3
+        type: gzip # Tipe kompresi: gzip, zstd, xz, zlib, pgzip
+        level: 9 # Compression level dari 1 (tercepat, kompresi paling rendah) hingga 9 (paling lambat, kompresi paling tinggi)
         enabled: true
     mysqldump_args: -CfQq --max-allowed-packet=1G --hex-blob --order-by-primary --single-transaction --routines=true --triggers=true --opt
     exclude:
         databases:
+            - teguhth
             - dbsaas_host
-            - dbsaas_host_dba
-            - dbsf7_empty_jtrust
-            - dbsf7_empty_mariadb
-            - dbsf_biznet_dadfs_dmart
         user: false
         system_databases: true
         data: false
-    db_list:
-        file: config/db_list.txt
+        empty: true
+    #     file : config/exclude_db_list.txt
+    # include:
+    #     databases: 
+    #         - dbsf_biznet_dadfs
+    #         - dbsf_biznet_jtrust
+    #         - dbsf_biznet_mariadb
+    #     file : config/db_list.txt
     cleanup:
         enabled: true
         schedule: 0 2 * * *
@@ -25,11 +28,21 @@ backup:
         key: ""
     output:
         base_directory: /mnt/nfs/backup
-        cleanup_temp: true
-        naming:
-            include_client_code: true
-            include_hostname: true
-            pattern: '{database}_{timestamp}_{type}'
+        # NamePattern digunakan untuk menentukan pola penamaan file backup yang akan dihasilkan.
+        # Pattern yang tersedia:
+        # {database} - nama database
+        # {timestamp} - timestamp saat backup dilakukan (format: YYYYMMDD_HHMMSS)
+        # {client_code} - kode klien
+        # {hostname} - nama host server database
+        # {year} - tahun saat backup dilakukan (format: YYYY)
+        # {month} - bulan saat backup dilakukan (format: MM)
+        # {day} - hari saat backup dilakukan (format: DD)
+        # {hour} - jam saat backup dilakukan (format: HH)
+        # {minute} - menit saat backup dilakukan (format: MM)
+        # {second} - detik saat backup dilakukan (format: SS)
+        # Contoh penggunaan:
+        # '{database}_{timestamp}_{hostname}' -> mydb_20231015_153045_dbserver1
+        name_pattern: '{database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}'
         structure:
             create_subdirs: true
             pattern: '{year}/{month}/{day}/'
@@ -53,6 +66,7 @@ general:
         time_format: "15:04:05"
         timezone: Asia/Jakarta
     version: 1.0.0
+    PrimaryDBPattern: 'dbsf_nbc_{hour}{minute}{second}_{hostname}'
 log:
     format: text
     level: debug

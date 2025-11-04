@@ -8,13 +8,13 @@ import (
 
 type Service struct {
 	Config        *appconfig.Config
+	Log           applog.Logger
 	ProfileCreate *types.ProfileCreateOptions
 	ProfileInfo   *types.ProfileInfo
 	ProfileShow   *types.ProfileShowOptions
 	ProfileDelete *types.ProfileDeleteOptions
 	ProfileEdit   *types.ProfileEditOptions
 	DBInfo        *types.DBInfo
-	Log           applog.Logger
 	// OriginalProfileName menyimpan nama file profil yang dibuka untuk mode edit.
 	OriginalProfileName string
 	// OriginalProfileInfo menyimpan salinan data profil sebelum diedit (jika tersedia)

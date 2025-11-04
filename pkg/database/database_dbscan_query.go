@@ -2,11 +2,12 @@ package database
 
 import (
 	"context"
+	"sfDBTools/internal/types"
 	"time"
 )
 
 // SaveDatabaseDetail menyimpan detail database ke tabel database_details menggunakan stored procedure
-func (s *Client) SaveDatabaseDetail(ctx context.Context, detail DatabaseDetailInfo, serverHost string, serverPort int) error {
+func (s *Client) SaveDatabaseDetail(ctx context.Context, detail types.DatabaseDetailInfo, serverHost string, serverPort int) error {
 	// Parse collection time
 	collectionTime, err := time.Parse("2006-01-02 15:04:05", detail.CollectionTime)
 	if err != nil {

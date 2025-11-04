@@ -76,14 +76,10 @@ func (s *Service) PrepareRescanSession(ctx context.Context, headerTitle string, 
 		}
 	}()
 
-	// Display stats untuk rescan
+	// Display stats untuk rescan (simplified - only set relevant fields)
 	stats := &types.DatabaseFilterStats{
-		TotalFound:     len(failedDBNames),
-		ToScan:         len(failedDBNames),
-		ExcludedSystem: 0,
-		ExcludedByList: 0,
-		ExcludedByFile: 0,
-		ExcludedEmpty:  0,
+		TotalFound:    len(failedDBNames),
+		TotalIncluded: len(failedDBNames),
 	}
 	s.DisplayFilterStats(stats)
 

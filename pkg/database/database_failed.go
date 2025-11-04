@@ -10,20 +10,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sfDBTools/internal/types"
 )
-
-// FailedDatabaseInfo berisi informasi database yang gagal
-type FailedDatabaseInfo struct {
-	DatabaseName   string
-	ErrorMessage   string
-	CollectionTime string
-	ServerHost     string
-	ServerPort     int
-}
 
 // GetFailedDatabases mengambil list database yang gagal di-scan (error_message IS NOT NULL)
 // dari table database_details
-func GetFailedDatabases(ctx context.Context, client *Client) ([]FailedDatabaseInfo, error) {
+func GetFailedDatabases(ctx context.Context, client *Client) ([]types.FailedDatabaseScanInfo, error) {
 	query := `
 		SELECT 
 			database_name,
@@ -42,9 +34,9 @@ func GetFailedDatabases(ctx context.Context, client *Client) ([]FailedDatabaseIn
 	}
 	defer rows.Close()
 
-	var failedDatabases []FailedDatabaseInfo
+	var failedDatabases []types.FailedDatabaseScanInfo
 	for rows.Next() {
-		var info FailedDatabaseInfo
+		var info types.FailedDatabaseScanInfo
 		var collectionTime sql.NullString
 
 		err := rows.Scan(

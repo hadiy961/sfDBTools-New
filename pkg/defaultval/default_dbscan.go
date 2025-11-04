@@ -28,7 +28,7 @@ func GetDefaultScanOptions(mode string) types.ScanOptions {
 
 	// Jika cfg nil (mis. environment SFDB_APPS_CONFIG tidak diset), gunakan fallback
 	if cfg != nil {
-		opts.DatabaseList.File = cfg.Backup.DBList.File
+		opts.DatabaseList.File = cfg.Backup.Include.File
 	} else {
 		// Fallback ke file list yang umum di-repo jika tidak ada konfigurasi
 		opts.DatabaseList.File = "config/db_list.txt"

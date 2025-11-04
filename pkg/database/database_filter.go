@@ -21,7 +21,10 @@ func FilterDatabases(ctx context.Context, client *Client, options types.FilterOp
 
 	// Initialize stats
 	stats := &types.FilterStats{
-		TotalFound: len(allDatabases),
+		TotalFound:          len(allDatabases),
+		NotFoundInInclude:   []string{},
+		NotFoundInExclude:   []string{},
+		NotFoundInWhitelist: []string{},
 	}
 
 	// 2. Load whitelist from file if specified (priority tertinggi)
@@ -35,18 +38,93 @@ func FilterDatabases(ctx context.Context, client *Client, options types.FilterOp
 		whitelistFromFile = helper.ListTrimNonEmpty(whitelistFromFile)
 	}
 
-	// 3. Merge whitelist: file takes priority, then IncludeDatabases
-	var whitelist []string
-	if len(whitelistFromFile) > 0 {
-		whitelist = whitelistFromFile
-	} else if len(options.IncludeDatabases) > 0 {
-		whitelist = helper.ListTrimNonEmpty(options.IncludeDatabases)
+	// 3. Load blacklist from file if specified
+	var blacklistFromFile []string
+	if options.ExcludeDBFile != "" {
+		blacklistFromFile, err = fsops.ReadLinesFromFile(options.ExcludeDBFile)
+		if err != nil {
+			return nil, nil, fmt.Errorf("gagal membaca file blacklist %s: %w", options.ExcludeDBFile, err)
+		}
+		// Clean blacklist
+		blacklistFromFile = helper.ListTrimNonEmpty(blacklistFromFile)
 	}
 
-	// 4. Clean blacklist
-	blacklist := helper.ListTrimNonEmpty(options.ExcludeDatabases)
+	// 4. Merge whitelist: combine file and direct list
+	var whitelist []string
+	if len(whitelistFromFile) > 0 {
+		whitelist = append(whitelist, whitelistFromFile...)
+	}
+	if len(options.IncludeDatabases) > 0 {
+		whitelist = append(whitelist, helper.ListTrimNonEmpty(options.IncludeDatabases)...)
+	}
+	// Remove duplicates from whitelist using map
+	var isFromFile bool
+	if len(whitelist) > 0 {
+		seen := make(map[string]bool)
+		uniqueWhitelist := make([]string, 0, len(whitelist))
+		for _, db := range whitelist {
+			dbLower := strings.ToLower(strings.TrimSpace(db))
+			if dbLower != "" && !seen[dbLower] {
+				seen[dbLower] = true
+				uniqueWhitelist = append(uniqueWhitelist, db)
+			}
+		}
+		whitelist = uniqueWhitelist
+		// Track if any came from file for warning purposes
+		isFromFile = len(whitelistFromFile) > 0
+	}
 
-	// 5. Filter databases
+	// 5. Merge blacklist: combine file and direct list
+	var blacklist []string
+	var blacklistIsFromFile bool
+	if len(blacklistFromFile) > 0 {
+		blacklist = append(blacklist, blacklistFromFile...)
+		blacklistIsFromFile = true
+	}
+	if len(options.ExcludeDatabases) > 0 {
+		blacklist = append(blacklist, helper.ListTrimNonEmpty(options.ExcludeDatabases)...)
+	}
+	// Remove duplicates from blacklist using map
+	if len(blacklist) > 0 {
+		seen := make(map[string]bool)
+		uniqueBlacklist := make([]string, 0, len(blacklist))
+		for _, db := range blacklist {
+			dbLower := strings.ToLower(strings.TrimSpace(db))
+			if dbLower != "" && !seen[dbLower] {
+				seen[dbLower] = true
+				uniqueBlacklist = append(uniqueBlacklist, db)
+			}
+		}
+		blacklist = uniqueBlacklist
+	}
+
+	// 6. Validate whitelist - check if databases in whitelist exist on server
+	if len(whitelist) > 0 {
+		for _, dbName := range whitelist {
+			if !helper.StringSliceContainsFold(allDatabases, dbName) {
+				if isFromFile {
+					stats.NotFoundInWhitelist = append(stats.NotFoundInWhitelist, dbName)
+				} else {
+					stats.NotFoundInInclude = append(stats.NotFoundInInclude, dbName)
+				}
+			}
+		}
+	}
+
+	// 6. Validate blacklist - check if databases in blacklist exist on server
+	if len(blacklist) > 0 {
+		for _, dbName := range blacklist {
+			if !helper.StringSliceContainsFold(allDatabases, dbName) {
+				if blacklistIsFromFile && helper.StringSliceContainsFold(blacklistFromFile, dbName) {
+					stats.NotFoundInBlacklist = append(stats.NotFoundInBlacklist, dbName)
+				} else {
+					stats.NotFoundInExclude = append(stats.NotFoundInExclude, dbName)
+				}
+			}
+		}
+	}
+
+	// 7. Filter databases
 	filtered := make([]string, 0, len(allDatabases))
 	for _, dbName := range allDatabases {
 		dbName = strings.TrimSpace(dbName)
@@ -62,12 +140,7 @@ func FilterDatabases(ctx context.Context, client *Client, options types.FilterOp
 
 	stats.TotalIncluded = len(filtered)
 
-	// Validate result
-	if len(filtered) == 0 {
-		return nil, stats, fmt.Errorf("database %s tidak ada (found: %d, excluded: %d)",
-			strings.Join(whitelist, ", "), stats.TotalFound, stats.TotalExcluded)
-	}
-
+	// Return hasil tanpa error - biar caller yang handle empty result dengan UI yang lebih baik
 	return filtered, stats, nil
 }
 

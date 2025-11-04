@@ -15,10 +15,10 @@ func AddDbScanFilterFlags(cmd *cobra.Command) {
 
 	// Filters
 	cmd.Flags().Bool("exclude-system", true, "Kecualikan system databases (information_schema, mysql, dll)")
-	cmd.Flags().String("exclude-db", "", "Daftar database yang akan dikecualikan (comma-separated)")
-	cmd.Flags().String("exclude-db-file", "", "File berisi daftar database yang akan dikecualikan (satu per baris)")
-	cmd.Flags().String("db", "", "Daftar database yang akan di-scan (comma-separated)")
-	cmd.Flags().String("db-file", "", "File berisi daftar database yang akan di-scan (satu per baris)")
+	cmd.Flags().String("exclude-db", "", "Daftar database yang akan dikecualikan (comma-separated). Dapat dikombinasi dengan --exclude-file.")
+	cmd.Flags().String("exclude-file", "", "File berisi daftar database yang akan dikecualikan (satu per baris). Dapat dikombinasi dengan --exclude-db.")
+	cmd.Flags().String("db", "", "Daftar database yang akan di-scan (comma-separated). Dapat dikombinasi dengan --db-file.")
+	cmd.Flags().String("db-file", "", "File berisi daftar database yang akan di-scan (satu per baris). Dapat dikombinasi dengan --db.")
 }
 
 // AddDbScanAllFlags mendaftarkan flags minimal untuk command `dbscan all`.

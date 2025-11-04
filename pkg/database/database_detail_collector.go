@@ -11,26 +11,13 @@ import (
 	"fmt"
 	"runtime"
 	"sfDBTools/internal/applog"
+	"sfDBTools/internal/types"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/dustin/go-humanize"
 )
-
-// DatabaseDetailInfo berisi informasi detail database
-type DatabaseDetailInfo struct {
-	DatabaseName   string `json:"database_name"`
-	SizeBytes      int64  `json:"size_bytes"`
-	SizeHuman      string `json:"size_human"`
-	TableCount     int    `json:"table_count"`
-	ProcedureCount int    `json:"procedure_count"`
-	FunctionCount  int    `json:"function_count"`
-	ViewCount      int    `json:"view_count"`
-	UserGrantCount int    `json:"user_grant_count"`
-	CollectionTime string `json:"collection_time"`
-	Error          string `json:"error,omitempty"` // jika ada error saat collect
-}
 
 // DatabaseDetailJob untuk worker pattern
 type DatabaseDetailJob struct {
@@ -48,18 +35,18 @@ type DetailCollectOptions struct {
 // CollectDatabaseDetails mengumpulkan detail informasi untuk semua database secara concurrent
 // dan memanggil callback onDetail setiap kali hasil untuk sebuah database tersedia.
 // Jika onDetail mengembalikan error, proses akan dihentikan (early-cancel) dan error dikembalikan.
-func (c *Client) CollectDatabaseDetails(ctx context.Context, dbNames []string, logger applog.Logger, onDetail func(DatabaseDetailInfo) error) (map[string]DatabaseDetailInfo, error) {
+func (c *Client) CollectDatabaseDetails(ctx context.Context, dbNames []string, logger applog.Logger, onDetail func(types.DatabaseDetailInfo) error) (map[string]types.DatabaseDetailInfo, error) {
 	return c.CollectDatabaseDetailsWithOptions(ctx, dbNames, logger, nil, onDetail)
 }
 
 // CollectDatabaseDetailsWithOptions sama seperti CollectDatabaseDetails namun menerima opsi tambahan.
-func (c *Client) CollectDatabaseDetailsWithOptions(ctx context.Context, dbNames []string, logger applog.Logger, opts *DetailCollectOptions, onDetail func(DatabaseDetailInfo) error) (map[string]DatabaseDetailInfo, error) {
+func (c *Client) CollectDatabaseDetailsWithOptions(ctx context.Context, dbNames []string, logger applog.Logger, opts *DetailCollectOptions, onDetail func(types.DatabaseDetailInfo) error) (map[string]types.DatabaseDetailInfo, error) {
 	const jobTimeout = 300 * time.Second // Increase overall timeout
 
 	// If there are no databases, return early.
 	if len(dbNames) == 0 {
 		logger.Infof("No databases to collect details for")
-		return map[string]DatabaseDetailInfo{}, nil
+		return map[string]types.DatabaseDetailInfo{}, nil
 	}
 
 	// Determine number of workers dynamically from available CPUs.
@@ -87,7 +74,7 @@ func (c *Client) CollectDatabaseDetailsWithOptions(ctx context.Context, dbNames 
 	defer cancel()
 
 	jobs := make(chan DatabaseDetailJob)
-	results := make(chan DatabaseDetailInfo, maxWorkers*2)
+	results := make(chan types.DatabaseDetailInfo, maxWorkers*2)
 
 	// Start workers
 	var wg sync.WaitGroup
@@ -120,7 +107,7 @@ func (c *Client) CollectDatabaseDetailsWithOptions(ctx context.Context, dbNames 
 	}()
 
 	// Collect results dan panggil callback segera setelah tersedia
-	detailMap := make(map[string]DatabaseDetailInfo)
+	detailMap := make(map[string]types.DatabaseDetailInfo)
 	var firstErr error
 	for result := range results {
 		// simpan ke map untuk pelaporan/penampilan
@@ -151,7 +138,7 @@ func (c *Client) CollectDatabaseDetailsWithOptions(ctx context.Context, dbNames 
 // StreamDatabaseDetails: dihapus demi menyederhanakan API; gunakan CollectDatabaseDetails dengan callback
 
 // databaseDetailWorker adalah worker untuk mengumpulkan detail database
-func (c *Client) databaseDetailWorker(ctx context.Context, logger applog.Logger, jobs <-chan DatabaseDetailJob, results chan<- DatabaseDetailInfo, wg *sync.WaitGroup, timeout time.Duration, started *int32, completed *int32, failed *int32, total int, workerID int, sizeProvider func(context.Context, string) (int64, error)) {
+func (c *Client) databaseDetailWorker(ctx context.Context, logger applog.Logger, jobs <-chan DatabaseDetailJob, results chan<- types.DatabaseDetailInfo, wg *sync.WaitGroup, timeout time.Duration, started *int32, completed *int32, failed *int32, total int, workerID int, sizeProvider func(context.Context, string) (int64, error)) {
 	defer wg.Done()
 
 	for job := range jobs {
@@ -185,9 +172,9 @@ func (c *Client) databaseDetailWorker(ctx context.Context, logger applog.Logger,
 }
 
 // collectSingleDatabaseDetail mengumpulkan detail untuk satu database
-func (c *Client) collectSingleDatabaseDetail(ctx context.Context, logger applog.Logger, dbName string, sizeProvider func(context.Context, string) (int64, error)) DatabaseDetailInfo {
+func (c *Client) collectSingleDatabaseDetail(ctx context.Context, logger applog.Logger, dbName string, sizeProvider func(context.Context, string) (int64, error)) types.DatabaseDetailInfo {
 	startTime := time.Now()
-	detail := DatabaseDetailInfo{
+	detail := types.DatabaseDetailInfo{
 		DatabaseName:   dbName,
 		CollectionTime: startTime.Format("2006-01-02 15:04:05"),
 	}

@@ -208,7 +208,7 @@ func (s *Service) ExecuteScan(ctx context.Context, sourceClient *database.Client
 	}
 
 	// Kumpulan detail jika nanti ingin ditampilkan
-	detailsMap := make(map[string]database.DatabaseDetailInfo)
+	detailsMap := make(map[string]types.DatabaseDetailInfo)
 
 	// Counter
 	successCount := 0
@@ -241,7 +241,7 @@ func (s *Service) ExecuteScan(ctx context.Context, sourceClient *database.Client
 		collectOpts = &database.DetailCollectOptions{SizeProvider: sizeProvider}
 	}
 
-	detailsMap, collectErr := sourceClient.CollectDatabaseDetailsWithOptions(ctx, dbNames, s.Logger, collectOpts, func(detail database.DatabaseDetailInfo) error {
+	detailsMap, collectErr := sourceClient.CollectDatabaseDetailsWithOptions(ctx, dbNames, s.Logger, collectOpts, func(detail types.DatabaseDetailInfo) error {
 		// Simpan ke map untuk pelaporan/penampilan opsional
 		detailsMap[detail.DatabaseName] = detail
 

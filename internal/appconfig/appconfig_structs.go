@@ -21,11 +21,16 @@ type BackupConfig struct {
 	Compression   CompressionConfig  `yaml:"compression"`
 	MysqlDumpArgs string             `yaml:"mysqldump_args"`
 	Exclude       ExcludeConfig      `yaml:"exclude"`
-	DBList        DBListConfig       `yaml:"db_list"`
+	Include       IncludeConfig      `yaml:"include"`
 	Cleanup       CleanupConfig      `yaml:"cleanup"`
 	Encryption    EncryptionConfig   `yaml:"encryption"`
 	Output        OutputConfig       `yaml:"output"`
 	Verification  VerificationConfig `yaml:"verification"`
+}
+
+type IncludeConfig struct {
+	Databases []string `yaml:"databases"`
+	File      string   `yaml:"file"`
 }
 
 type CompressionConfig struct {
@@ -34,15 +39,13 @@ type CompressionConfig struct {
 	Enabled bool   `yaml:"enabled"`
 }
 
-type DBListConfig struct {
-	File string `yaml:"file"`
-}
-
 type ExcludeConfig struct {
 	Databases       []string `yaml:"databases"`
 	User            bool     `yaml:"user"`
 	SystemDatabases bool     `yaml:"system_databases"`
 	Data            bool     `yaml:"data"`
+	Empty           bool     `yaml:"empty"`
+	File            string   `yaml:"file"`
 }
 
 type CleanupConfig struct {
@@ -59,12 +62,8 @@ type EncryptionConfig struct {
 type OutputConfig struct {
 	BaseDirectory string `yaml:"base_directory"`
 	CleanupTemp   bool   `yaml:"cleanup_temp"`
-	Naming        struct {
-		IncludeClientCode bool   `yaml:"include_client_code"`
-		IncludeHostname   bool   `yaml:"include_hostname"`
-		Pattern           string `yaml:"pattern"`
-	} `yaml:"naming"`
-	Structure struct {
+	NamePattern   string `yaml:"name_pattern"`
+	Structure     struct {
 		CreateSubdirs bool   `yaml:"create_subdirs"`
 		Pattern       string `yaml:"pattern"`
 	} `yaml:"structure"`

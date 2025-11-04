@@ -16,13 +16,13 @@ var Deps *Dependencies
 
 // CompressionOptions menyimpan opsi kompresi untuk backup.
 type CompressionOptions struct {
-	CompressOutput bool
-	CompressType   string
-	CompressLevel  int
+	Enabled bool
+	Type    string
+	Level   int
 }
 
 // EncryptionOptions menyimpan opsi enkripsi untuk backup.
 type EncryptionOptions struct {
-	EncryptOutput bool
-	EncryptKey    string
+	Enabled bool
+	Key     string
 }

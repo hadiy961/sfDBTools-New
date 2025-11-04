@@ -50,12 +50,12 @@ func ParsingScanFilterOptions(cmd *cobra.Command, cfg *appconfig.Config) (types.
 	// Exclude sources
 	excludeCSV := helper.GetStringFlagOrEnv(cmd, "exclude-db", "")
 	excludeFromFlags := helper.CSVToCleanList(excludeCSV)
-	excludeFile := helper.GetStringFlagOrEnv(cmd, "exclude-db-file", "")
+	excludeFile := helper.GetStringFlagOrEnv(cmd, "exclude-file", "")
 	excludeFromFile := []string{}
 	if excludeFile != "" {
 		lines, err := fsops.ReadLinesFromFile(excludeFile)
 		if err != nil {
-			return opts, fmt.Errorf("gagal membaca exclude-db-file %s: %w", excludeFile, err)
+			return opts, fmt.Errorf("gagal membaca exclude-file %s: %w", excludeFile, err)
 		}
 		excludeFromFile = helper.ListTrimNonEmpty(lines)
 	} else {
@@ -70,7 +70,7 @@ func ParsingScanFilterOptions(cmd *cobra.Command, cfg *appconfig.Config) (types.
 	excludeUnion := helper.ListUnique(append(excludeFromFlags, excludeFromFile...))
 
 	if len(includeUnion) == 0 && len(excludeUnion) == 0 {
-		return opts, fmt.Errorf("minimal salah satu flag harus digunakan: gunakan --db/--db-file untuk include atau --exclude-db/--exclude-db-file untuk exclude")
+		return opts, fmt.Errorf("minimal salah satu flag harus digunakan: gunakan --db/--db-file untuk include atau --exclude-db/--exclude-file untuk exclude")
 	}
 
 	if len(includeUnion) > 0 && len(excludeUnion) > 0 {

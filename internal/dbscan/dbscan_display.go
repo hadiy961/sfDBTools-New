@@ -3,7 +3,6 @@ package dbscan
 import (
 	"fmt"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 )
@@ -52,20 +51,11 @@ func (s *Service) DisplayScanOptions() (proceed bool, err error) {
 
 // DisplayFilterStats menampilkan statistik hasil pemfilteran database.
 func (s *Service) DisplayFilterStats(stats *types.DatabaseFilterStats) {
-	ui.PrintSubHeader("Statistik Filtering Database")
-	data := [][]string{
-		{"Total Ditemukan", fmt.Sprintf("%d", stats.TotalFound)},
-		{"Akan di-scan", ui.ColorText(fmt.Sprintf("%d", stats.ToScan), ui.ColorGreen)},
-		{"Dikecualikan (Sistem)", fmt.Sprintf("%d", stats.ExcludedSystem)},
-		{"Dikecualikan (Exclude List)", fmt.Sprintf("%d", stats.ExcludedByList)},
-		{"Dikecualikan (Bukan di Include List)", fmt.Sprintf("%d", stats.ExcludedByFile)},
-		{"Dikecualikan (Nama Kosong)", fmt.Sprintf("%d", stats.ExcludedEmpty)},
-	}
-	ui.FormatTable([]string{"Kategori", "Jumlah"}, data)
+	ui.DisplayFilterStats(stats, "scan", s.Logger)
 }
 
 // DisplayDetailResults menampilkan detail hasil scanning
-func (s *Service) DisplayDetailResults(detailsMap map[string]database.DatabaseDetailInfo) {
+func (s *Service) DisplayDetailResults(detailsMap map[string]types.DatabaseDetailInfo) {
 	ui.PrintHeader("DETAIL HASIL SCANNING")
 
 	headers := []string{"Database", "Size", "Tables", "Procedures", "Functions", "Views", "Grants", "Status"}
@@ -115,7 +105,7 @@ func (s *Service) DisplayScanResult(result *types.ScanResult) {
 }
 
 // LogDetailResults menulis detail hasil scanning ke logger (untuk background mode)
-func (s *Service) LogDetailResults(detailsMap map[string]database.DatabaseDetailInfo) {
+func (s *Service) LogDetailResults(detailsMap map[string]types.DatabaseDetailInfo) {
 	s.Logger.Info("=== Detail Hasil Scanning ===")
 
 	for dbName, detail := range detailsMap {

@@ -20,14 +20,16 @@ var CmdDBScanFilter = &cobra.Command{
 
 Contoh penggunaan:
   sfdbtools dbscan filter --exclude-system --exclude-db db1,db2,db3
-  sfdbtools dbscan filter --exclude-system --exclude-db-file path/to/file.txt
-  sfdbtools dbscan filter --exclude-system --exclude-db db1,db2,db3 --exclude-db-file path/to/file.txt
+  sfdbtools dbscan filter --exclude-system --exclude-file path/to/file.txt
+  sfdbtools dbscan filter --exclude-system --exclude-db db1,db2 --exclude-file path/to/file.txt
   sfdbtools dbscan filter --db db1,db2,db3
   sfdbtools dbscan filter --db-file path/to/file.txt
+  sfdbtools dbscan filter --db db1,db2 --db-file path/to/file.txt
 
 Catatan:
-  - Jika kedua flag exclude-db/exclude-db-file dan db/db-file digunakan bersamaan, maka proses scan akan dilakukan pada database yang ada di flag db namun tidak ada di flag exclude-db.
-  - Jika tidak ada flag exclude-db/exclude-db-file dan db/db-file yang digunakan (dan tidak ada fallback di konfigurasi), tampilkan error yang menjelaskan bahwa minimal salah satu flag harus digunakan.`,
+  - Flag --exclude-db dan --exclude-file dapat dikombinasikan (hasil akan di-merge).
+  - Flag --db dan --db-file dapat dikombinasikan (hasil akan di-merge).
+  - Jika kedua include dan exclude digunakan, proses scan akan dilakukan pada database yang ada di include namun tidak ada di exclude.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if types.Deps == nil {
 			return fmt.Errorf("dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar")

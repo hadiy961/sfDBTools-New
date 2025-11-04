@@ -1,4 +1,4 @@
-package dbscan
+package backup
 
 import (
 	"context"
@@ -12,22 +12,11 @@ func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Cli
 
 	// Setup filter options from ScanOptions. If a whitelist file is enabled, include it.
 	filterOpts := types.FilterOptions{
-		ExcludeSystem:    s.ScanOptions.ExcludeSystem,
-		ExcludeDatabases: s.ScanOptions.ExcludeList,
-		ExcludeDBFile:    s.ScanOptions.ExcludeFile,
-		IncludeDatabases: s.ScanOptions.IncludeList,
-	}
-
-	// Untuk mode single, gunakan SourceDatabase yang telah ditentukan
-	if s.ScanOptions.Mode == "single" && s.ScanOptions.SourceDatabase != "" {
-		filterOpts.IncludeDatabases = []string{s.ScanOptions.SourceDatabase}
-		// Untuk single database, tidak perlu exclude system databases
-		filterOpts.ExcludeSystem = false
-	}
-
-	// Untuk mode database, gunakan file list jika tersedia
-	if s.ScanOptions.Mode == "database" && s.ScanOptions.DatabaseList.File != "" {
-		filterOpts.IncludeFile = s.ScanOptions.DatabaseList.File
+		ExcludeSystem:    s.BackupDBOptions.Filter.ExcludeSystem,
+		ExcludeDatabases: s.BackupDBOptions.Filter.ExcludeDatabases,
+		ExcludeDBFile:    s.BackupDBOptions.Filter.ExcludeDBFile,
+		IncludeDatabases: s.BackupDBOptions.Filter.IncludeDatabases,
+		IncludeFile:      s.BackupDBOptions.Filter.IncludeFile,
 	}
 
 	// Execute filtering
