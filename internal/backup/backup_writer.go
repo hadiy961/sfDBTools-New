@@ -21,7 +21,6 @@ import (
 func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []string, outputPath string, compressionRequired bool, compressionType string) (string, error) {
 	// Mask password untuk logging
 	// maskedArgs := s.maskPasswordInArgs(mysqldumpArgs)
-	// s.Log.Debugf("Menjalankan mysqldump dengan args: %v", maskedArgs)
 
 	// Start spinner
 	spin := spinner.New(spinner.CharSets[14], 100*time.Millisecond)

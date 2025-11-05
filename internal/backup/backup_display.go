@@ -30,9 +30,15 @@ func (s *Service) DisplayBackupDBOptions() (proceed bool, err error) {
 	}
 
 	// Generate filename berdasarkan pattern dari config
+	// Untuk mode separated, gunakan nama database contoh "database_name" agar lebih jelas
+	exampleDBName := ""
+	if s.BackupDBOptions.Mode == "separated" || s.BackupDBOptions.Mode == "separate" {
+		exampleDBName = "database_name"
+	}
+
 	s.BackupDBOptions.File.Path, err = helper.GenerateBackupFilename(
 		s.Config.Backup.Output.NamePattern,
-		"", // database kosong untuk preview, akan diisi saat backup actual
+		exampleDBName, // untuk preview: kosong untuk combined, "database_name" untuk separated
 		s.BackupDBOptions.Mode,
 		dbHostname,
 		compressionType,
@@ -58,12 +64,18 @@ func (s *Service) DisplayBackupDBOptions() (proceed bool, err error) {
 	s.BackupDBOptions.OutputDir = outputDir
 	s.BackupDBOptions.NamePattern = s.Config.Backup.Output.NamePattern
 
+	// Label untuk filename example tergantung mode
+	filenameLabel := "Filename Example"
+	if s.BackupDBOptions.Mode == "separated" || s.BackupDBOptions.Mode == "separate" {
+		filenameLabel = "Filename Example (per DB)"
+	}
+
 	// Informasi Umum
 	data := [][]string{
 		{"Mode Backup", ui.ColorText(s.BackupDBOptions.Mode, ui.ColorCyan)},
 		{"Output Directory", outputDir},
 		{"Filename Pattern", s.Config.Backup.Output.NamePattern},
-		{"Filename Example", ui.ColorText(s.BackupDBOptions.File.Path, ui.ColorCyan)},
+		{filenameLabel, ui.ColorText(s.BackupDBOptions.File.Path, ui.ColorCyan)},
 		{"Background Mode", fmt.Sprintf("%v", s.BackupDBOptions.Background)},
 		{"Dry Run", fmt.Sprintf("%v", s.BackupDBOptions.DryRun)},
 		{"Capture GTID", fmt.Sprintf("%v", s.BackupDBOptions.CaptureGTID)},

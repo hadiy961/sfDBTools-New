@@ -1,6 +1,6 @@
 backup:
     compression:
-        type: pgzip # Tipe kompresi: gzip, zstd, xz, zlib, pgzip
+        type: gzip # Tipe kompresi: gzip, zstd, xz, zlib, pgzip
         level: 6 # Compression level dari 1 (tercepat, kompresi paling rendah) hingga 9 (paling lambat, kompresi paling tinggi)
         enabled: true
     mysqldump_args: -CfQq --max-allowed-packet=1G --hex-blob --order-by-primary --single-transaction --routines=true --triggers=true --opt
