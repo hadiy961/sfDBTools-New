@@ -48,7 +48,7 @@ backup:
             pattern: '{year}/{month}/{day}/'
         temp_directory: /tmp/sfDBTools_backup
         capture_gtid: true
-        create_backup_info: true
+        save_backup_info: true
     verification:
         compare_checksums: true
         disk_space_check: true

@@ -78,6 +78,8 @@ func (r *PathPatternReplacer) ReplacePattern(pattern string) string {
 	}
 
 	// Replace semua pattern
+	// PENTING: Jika database kosong, {database} akan di-replace dengan empty string
+	// yang akan menghasilkan filename tidak valid (misal: _.gz.enc)
 	for pattern, value := range replacements {
 		result = strings.ReplaceAll(result, pattern, value)
 	}
@@ -100,6 +102,18 @@ func (r *PathPatternReplacer) ReplacePattern(pattern string) string {
 // GenerateBackupFilename menghasilkan nama file backup berdasarkan pattern
 // Untuk mode combined, database akan diganti dengan "all_databases"
 func GenerateBackupFilename(pattern string, database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool) (string, error) {
+	// Validasi pattern tidak boleh kosong
+	if pattern == "" {
+		return "", fmt.Errorf("pattern filename tidak boleh kosong")
+	}
+
+	// Untuk mode separated, validasi bahwa pattern mengandung {database}
+	if (mode == "separated" || mode == "separate") && database != "" {
+		if !strings.Contains(pattern, "{database}") {
+			return "", fmt.Errorf("pattern filename untuk mode separated harus mengandung {database} placeholder")
+		}
+	}
+
 	// Untuk mode combined, gunakan nama khusus
 	if mode == "combined" && database == "" {
 		database = "all_databases"
@@ -111,6 +125,12 @@ func GenerateBackupFilename(pattern string, database string, mode string, hostna
 	}
 
 	filename := replacer.ReplacePattern(pattern)
+
+	// Validasi hasil tidak boleh kosong atau hanya ekstensi
+	if filename == "" || filename == ".sql" || strings.HasPrefix(filename, ".") {
+		return "", fmt.Errorf("hasil generate filename tidak valid: %s (pattern: %s, database: %s)", filename, pattern, database)
+	}
+
 	return filename, nil
 }
 

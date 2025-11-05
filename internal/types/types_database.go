@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 // DBInfo - Struct to hold database connection details
 type DBInfo struct {
 	Host     string
@@ -74,4 +76,20 @@ type DatabaseBackupInfo struct {
 	Status              string `json:"status"`                   // "success", "success_with_warnings", "failed"
 	Warnings            string `json:"warnings,omitempty"`       // Warning/error messages dari mysqldump
 	ErrorLogFile        string `json:"error_log_file,omitempty"` // Path ke file log error
+}
+
+// DatabaseDetail menyimpan informasi detail database dari tabel database_details
+type DatabaseDetail struct {
+	DatabaseName   string    `db:"database_name"`
+	SizeBytes      int64     `db:"size_bytes"`
+	SizeHuman      string    `db:"size_human"`
+	TableCount     int       `db:"table_count"`
+	ProcedureCount int       `db:"procedure_count"`
+	FunctionCount  int       `db:"function_count"`
+	ViewCount      int       `db:"view_count"`
+	UserGrantCount int       `db:"user_grant_count"`
+	CollectionTime time.Time `db:"collection_time"`
+	ErrorMessage   *string   `db:"error_message"`
+	CreatedAt      time.Time `db:"created_at"`
+	UpdatedAt      time.Time `db:"updated_at"`
 }

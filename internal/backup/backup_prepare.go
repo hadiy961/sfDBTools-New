@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/database"
+	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
 )
 
@@ -103,6 +105,48 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 	}
 
 	s.DisplayFilterStats(stats)
+
+	// Dapatkan hostname dari database server (bukan hostname lokal)
+	dbHostname := s.BackupDBOptions.Profile.DBInfo.Host
+
+	// Convert compression type dari string ke compress.CompressionType
+	// Jika compression disabled, gunakan CompressionNone
+	compressionType := compress.CompressionNone
+	if s.BackupDBOptions.Compression.Enabled {
+		compressionType = compress.CompressionType(s.BackupDBOptions.Compression.Type)
+	}
+
+	// Generate filename berdasarkan pattern dari config
+	// Untuk mode separated, gunakan nama database contoh "database_name" agar lebih jelas
+	exampleDBName := ""
+	if s.BackupDBOptions.Mode == "separated" || s.BackupDBOptions.Mode == "separate" {
+		exampleDBName = "database_name"
+	}
+
+	// Generate output directory berdasarkan config
+	s.BackupDBOptions.OutputDir, err = helper.GenerateBackupDirectory(
+		s.Config.Backup.Output.BaseDirectory,
+		s.Config.Backup.Output.Structure.Pattern,
+		dbHostname,
+	)
+
+	if err != nil {
+		s.Log.Warn("gagal generate output directory: " + err.Error())
+	}
+
+	s.BackupDBOptions.File.Path, err = helper.GenerateBackupFilename(
+		s.Config.Backup.Output.NamePattern,
+		exampleDBName, // untuk preview: kosong untuk combined, "database_name" untuk separated
+		s.BackupDBOptions.Mode,
+		dbHostname,
+		compressionType,
+		s.BackupDBOptions.Encryption.Enabled,
+	)
+
+	if err != nil {
+		s.Log.Warn("gagal generate filename preview: " + err.Error())
+		s.BackupDBOptions.File.Path = "error_generating_filename"
+	}
 
 	if showOptions {
 		if proceed, askErr := s.DisplayBackupDBOptions(); askErr != nil {

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sfDBTools/internal/types"
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
@@ -17,8 +18,8 @@ import (
 )
 
 // executeMysqldumpWithPipe menjalankan mysqldump dengan pipe untuk kompresi dan enkripsi.
-// Mengembalikan error untuk fatal errors dan stderr output untuk warnings/non-fatal errors
-func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []string, outputPath string, compressionRequired bool, compressionType string) (string, error) {
+// Mengembalikan BackupWriteResult yang berisi stderr output dan checksums
+func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []string, outputPath string, compressionRequired bool, compressionType string) (*types.BackupWriteResult, error) {
 	// Mask password untuk logging
 	// maskedArgs := s.maskPasswordInArgs(mysqldumpArgs)
 
@@ -30,20 +31,23 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 
 	outputFile, err := os.Create(outputPath)
 	if err != nil {
-		return "", fmt.Errorf("gagal membuat file output: %w", err)
+		return nil, fmt.Errorf("gagal membuat file output: %w", err)
 	}
 	defer outputFile.Close()
 
+	// Setup writer chain: mysqldump → Compression → Encryption → File
+	// HashWriter akan di-setup sebagai parallel writer untuk hash dari raw data
 	var writer io.Writer = outputFile
+	var hashWriter *MultiHashWriter
 	var closers []io.Closer
 
-	// Urutan layer: mysqldump -> Compression -> Encryption -> File
+	// Layer 1: Encryption (paling dekat dengan file)
 	if s.BackupDBOptions.Encryption.Enabled {
 		encryptionKey := s.BackupDBOptions.Encryption.Key
 		if encryptionKey == "" {
 			resolvedKey, source, err := helper.ResolveEncryptionKey(s.BackupDBOptions.Encryption.Key, consts.ENV_BACKUP_ENCRYPTION_KEY)
 			if err != nil {
-				return "", fmt.Errorf("gagal mendapatkan kunci enkripsi: %w", err)
+				return nil, fmt.Errorf("gagal mendapatkan kunci enkripsi: %w", err)
 			}
 			encryptionKey = resolvedKey
 			s.Log.Infof("Kunci enkripsi diperoleh dari: %s", source)
@@ -51,12 +55,13 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 
 		encryptingWriter, err := encrypt.NewEncryptingWriter(writer, []byte(encryptionKey))
 		if err != nil {
-			return "", fmt.Errorf("gagal membuat encrypting writer: %w", err)
+			return nil, fmt.Errorf("gagal membuat encrypting writer: %w", err)
 		}
 		closers = append(closers, encryptingWriter)
 		writer = encryptingWriter
 	}
 
+	// Layer 2: Compression
 	if compressionRequired {
 		compressionConfig := compress.CompressionConfig{
 			Type:  compress.CompressionType(compressionType),
@@ -64,11 +69,26 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 		}
 		compressingWriter, err := compress.NewCompressingWriter(writer, compressionConfig)
 		if err != nil {
-			return "", fmt.Errorf("gagal membuat compressing writer: %w", err)
+			return nil, fmt.Errorf("gagal membuat compressing writer: %w", err)
 		}
 		closers = append(closers, compressingWriter)
 		writer = compressingWriter
 	}
+
+	// Layer 3: Setup HashWriter sebagai TeeWriter
+	// Data dari mysqldump akan ditulis ke DUA tempat secara parallel:
+	// 1. Ke writer chain (compression → encryption → file)
+	// 2. Ke hashWriter untuk kalkulasi checksum
+	// Dengan cara ini, hash dihitung dari data SQL mentah SEBELUM compression/encryption
+	if s.Config.Backup.Verification.CompareChecksums {
+		hashWriter = NewMultiHashWriter(io.Discard) // Hash saja, tidak tulis ke file
+		// Gunakan TeeWriter untuk split data ke 2 destination
+		writer = io.MultiWriter(writer, hashWriter)
+	}
+
+	// cmd.Stdout akan write ke writer:
+	// mysqldump → MultiWriter → [compressingWriter → encryptingWriter → file] + [hashWriter]
+	// Data flow: mysqldump → hashWriter → compressingWriter → encryptingWriter → file
 
 	defer func() {
 		for i := len(closers) - 1; i >= 0; i-- {
@@ -97,14 +117,24 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 
 		// Cek apakah ini error fatal atau hanya warning
 		if s.isFatalMysqldumpError(err, stderrOutput) {
-			return stderrOutput, fmt.Errorf("mysqldump gagal: %w", err)
+			return nil, fmt.Errorf("mysqldump gagal: %w", err)
 		}
 		// Jika bukan fatal error, kembalikan stderr sebagai warning
 		s.Log.Warn("mysqldump exit with non-fatal error, treated as warning")
-		return stderrOutput, nil
 	}
 
-	return stderrBuf.String(), nil
+	// Buat result dengan checksums jika enabled
+	result := &types.BackupWriteResult{
+		StderrOutput: stderrBuf.String(),
+	}
+
+	if hashWriter != nil {
+		result.SHA256Hash = hashWriter.GetSHA256()
+		result.MD5Hash = hashWriter.GetMD5()
+		result.BytesWritten = hashWriter.GetBytesWritten()
+	}
+
+	return result, nil
 }
 
 // isFatalMysqldumpError menentukan apakah error dari mysqldump adalah fatal atau hanya warning
