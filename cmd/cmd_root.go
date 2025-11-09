@@ -13,6 +13,7 @@ import (
 	cmdcrypto "sfDBTools/cmd/cmd_crypto"
 	cmddbscan "sfDBTools/cmd/cmd_db_scan"
 	cmdprofile "sfDBTools/cmd/cmd_profile"
+	cmdrestore "sfDBTools/cmd/cmd_restore"
 	"sfDBTools/internal/types"
 
 	"github.com/spf13/cobra"
@@ -68,4 +69,5 @@ func init() {
 	rootCmd.AddCommand(cmdcrypto.CmdCryptoMain)
 	rootCmd.AddCommand(cmdcleanup.CmdCleanupMain)
 	rootCmd.AddCommand(cmdbackup.CmdDBBackupMain)
+	rootCmd.AddCommand(cmdrestore.CmdRestore)
 }

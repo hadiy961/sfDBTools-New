@@ -12,32 +12,35 @@ import "time"
 type RestoreOptions struct {
 	// Source backup file
 	SourceFile string
-	
+
 	// Target profile and authentication
 	TargetProfile    string
 	TargetProfileKey string
-	
+
 	// Encryption key untuk decrypt backup file
 	EncryptionKey string
-	
+
 	// Target database name (untuk single restore)
 	// Jika kosong, gunakan nama database dari backup file
 	TargetDB string
-	
+
 	// Mode restore: "single", "all", "multi"
 	Mode string
-	
+
 	// Verify checksum sebelum restore
 	VerifyChecksum bool
-	
+
 	// Force restore (skip confirmation)
 	Force bool
-	
+
 	// Dry run (simulate without actual restore)
 	DryRun bool
-	
+
 	// Show options before execution
 	ShowOptions bool
+
+	// Backup before restore (create safety backup)
+	BackupBeforeRestore bool
 }
 
 // RestoreResult menyimpan hasil dari proses restore database
@@ -50,20 +53,21 @@ type RestoreResult struct {
 	Errors            []string
 	TotalTimeTaken    time.Duration
 	VerificationInfo  *RestoreVerificationInfo
+	PreBackupFile     string // Path to safety backup file (if backup-before-restore enabled)
 }
 
 // DatabaseRestoreInfo menyimpan informasi detail tentang restore satu database
 type DatabaseRestoreInfo struct {
-	DatabaseName   string        `json:"database_name"`
-	SourceFile     string        `json:"source_file"`
-	TargetDatabase string        `json:"target_database"`
-	FileSize       int64         `json:"file_size_bytes"`
-	FileSizeHuman  string        `json:"file_size_human"`
-	Duration       string        `json:"duration"`
-	Status         string        `json:"status"` // "success", "failed", "skipped"
-	Warnings       string        `json:"warnings,omitempty"`
-	ErrorMessage   string        `json:"error_message,omitempty"`
-	Verified       bool          `json:"verified"`
+	DatabaseName   string `json:"database_name"`
+	SourceFile     string `json:"source_file"`
+	TargetDatabase string `json:"target_database"`
+	FileSize       int64  `json:"file_size_bytes"`
+	FileSizeHuman  string `json:"file_size_human"`
+	Duration       string `json:"duration"`
+	Status         string `json:"status"` // "success", "failed", "skipped"
+	Warnings       string `json:"warnings,omitempty"`
+	ErrorMessage   string `json:"error_message,omitempty"`
+	Verified       bool   `json:"verified"`
 }
 
 // RestoreVerificationInfo menyimpan informasi verifikasi backup sebelum restore
