@@ -148,7 +148,7 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 		s.BackupDBOptions.File.Path = "error_generating_filename"
 	}
 
-	if showOptions {
+	if !showOptions {
 		if proceed, askErr := s.DisplayBackupDBOptions(); askErr != nil {
 			return nil, nil, askErr
 		} else if !proceed {

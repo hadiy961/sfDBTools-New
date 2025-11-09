@@ -14,11 +14,19 @@ import (
 
 // ExecuteBackupCommand adalah unified entry point untuk semua jenis backup
 func (s *Service) ExecuteBackupCommand(ctx context.Context, config types.BackupEntryConfig) error {
-	// Setup connections
-	sourceClient, dbFiltered, cleanup, err := s.setupBackupConnections(ctx, config.HeaderTitle, config.ShowOptions)
+	// Setup session (koneksi database source)
+	sourceClient, dbFiltered, err := s.PrepareBackupSession(ctx, config.HeaderTitle, config.Force)
 	if err != nil {
 		return err
 	}
+
+	// Cleanup function untuk close semua connections
+	cleanup := func() {
+		if sourceClient != nil {
+			sourceClient.Close()
+		}
+	}
+
 	defer cleanup()
 
 	// Lakukan backup
@@ -43,7 +51,7 @@ func (s *Service) ExecuteBackupCommand(ctx context.Context, config types.BackupE
 func (s *Service) BackupSeparate(ctx context.Context) error {
 	config := types.BackupEntryConfig{
 		HeaderTitle: "Backup Database (Hasil Backup Database Terpisah)",
-		ShowOptions: s.BackupDBOptions.ShowOptions,
+		Force:       s.BackupDBOptions.Force,
 		BackupMode:  "separate",
 		SuccessMsg:  "",
 		LogPrefix:   "[Separate Backup] ",
@@ -55,7 +63,7 @@ func (s *Service) BackupSeparate(ctx context.Context) error {
 func (s *Service) BackupCombined(ctx context.Context) error {
 	config := types.BackupEntryConfig{
 		HeaderTitle: "Backup Database (Hasil Backup Database Digabung)",
-		ShowOptions: s.BackupDBOptions.ShowOptions,
+		Force:       s.BackupDBOptions.Force,
 		BackupMode:  "combined",
 		SuccessMsg:  "backup semua database selesai.",
 		LogPrefix:   "[Combined Backup] ",

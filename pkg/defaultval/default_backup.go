@@ -48,7 +48,7 @@ func DefaultBackupOptions(mode string) types.BackupDBOptions {
 	// Include Filters
 	opts.Filter.IncludeFile = cfg.Backup.Include.File
 	opts.Filter.IncludeDatabases = cfg.Backup.Include.Databases
-	opts.ShowOptions = true
+	opts.Force = false
 
 	return opts
 }

@@ -42,9 +42,9 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 	ui.PrintSubHeader("Memulai Proses Backup")
 
 	if backupMode == "separate" || backupMode == "separated" {
-		result = s.executeBackupSeparated(ctx, dbFiltered)
+		result = s.ExecuteBackupSeparated(ctx, dbFiltered)
 	} else {
-		result = s.executeBackupCombined(ctx, dbFiltered)
+		result = s.ExecuteBackupCombined(ctx, dbFiltered)
 	}
 
 	result.TotalTimeTaken = time.Since(startTime)

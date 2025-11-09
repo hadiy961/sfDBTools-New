@@ -1,34 +1,13 @@
 package backup
 
 import (
-	"context"
 	"fmt"
 	"sfDBTools/internal/profileselect"
-	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
 	"strings"
 )
-
-// setupBackupConnections melakukan setup koneksi source
-func (s *Service) setupBackupConnections(ctx context.Context, headerTitle string, showOptions bool) (*database.Client, []string, func(), error) {
-
-	// Setup session (koneksi database source) untuk mode normal
-	sourceClient, dbFiltered, err := s.PrepareBackupSession(ctx, headerTitle, showOptions)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	// Cleanup function untuk close semua connections
-	cleanup := func() {
-		if sourceClient != nil {
-			sourceClient.Close()
-		}
-	}
-
-	return sourceClient, dbFiltered, cleanup, nil
-}
 
 // CheckAndSelectConfigFile memeriksa file konfigurasi yang ada atau memandu pengguna untuk memilihnya.
 // Fungsi ini sekarang menggunakan fungsi generic dari pkg/dbconfig untuk menghindari duplikasi kode.

@@ -107,13 +107,40 @@ func (c *Client) GetVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-// DatabaseExists mengecek apakah database dengan nama tertentu sudah ada
+// DatabaseExists memeriksa apakah database dengan nama tertentu ada
 func (c *Client) DatabaseExists(ctx context.Context, dbName string) (bool, error) {
-	var count int
-	query := "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?"
-	err := c.db.QueryRowContext(ctx, query, dbName).Scan(&count)
-	if err != nil {
-		return false, fmt.Errorf("gagal mengecek keberadaan database: %w", err)
+	query := "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?"
+	var name string
+	err := c.db.QueryRowContext(ctx, query, dbName).Scan(&name)
+	if err != nil && err != sql.ErrNoRows {
+		return false, err
 	}
-	return count > 0, nil
+	return name != "", nil
+}
+
+// CreateDatabase membuat database baru
+func (c *Client) CreateDatabase(ctx context.Context, dbName string) error {
+	// Sanitize database name (hanya alphanumeric dan underscore)
+	// Untuk keamanan, gunakan parameterized query tidak bisa untuk CREATE DATABASE
+	// Kita validasi nama database terlebih dahulu
+	if !isValidDatabaseName(dbName) {
+		return fmt.Errorf("invalid database name: %s", dbName)
+	}
+
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", dbName)
+	_, err := c.db.ExecContext(ctx, query)
+	return err
+}
+
+// isValidDatabaseName memvalidasi nama database (alphanumeric dan underscore only)
+func isValidDatabaseName(name string) bool {
+	if name == "" || len(name) > 64 {
+		return false
+	}
+	for _, c := range name {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
+			return false
+		}
+	}
+	return true
 }

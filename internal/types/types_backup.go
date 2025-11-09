@@ -15,7 +15,7 @@ type BackupDBOptions struct {
 	DryRun      bool
 	OutputDir   string
 	Mode        string         // "separate" atau "combined"
-	ShowOptions bool           // Tampilkan opsi backup sebelum eksekusi
+	Force       bool           // Tampilkan opsi backup sebelum eksekusi
 	NamePattern string         // Pola penamaan file backup
 	File        BackupFileInfo // Nama file backup lengkap dengan ekstensi
 	Entry       BackupEntryConfig
@@ -25,7 +25,7 @@ type BackupDBOptions struct {
 // BackupConfig untuk konfigurasi backup entry point
 type BackupEntryConfig struct {
 	HeaderTitle string
-	ShowOptions bool
+	Force       bool
 	BackupMode  string // "separate" atau "combined"
 	SuccessMsg  string
 	LogPrefix   string

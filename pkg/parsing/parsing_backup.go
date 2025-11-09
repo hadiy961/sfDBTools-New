@@ -54,7 +54,7 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types.BackupDBOption
 		opts.OutputDir = v
 	}
 	opts.Background = helper.GetBoolFlagOrEnv(cmd, "background", consts.ENV_DAEMON_MODE)
-	opts.ShowOptions = helper.GetBoolFlagOrEnv(cmd, "show-options", "")
+	opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
 
 	// Mode
 	opts.Mode = "combined"

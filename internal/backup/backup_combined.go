@@ -13,7 +13,7 @@ import (
 )
 
 // executeBackupCombined melakukan backup semua database dalam satu file
-func (s *Service) executeBackupCombined(ctx context.Context, dbFiltered []string) types.BackupResult {
+func (s *Service) ExecuteBackupCombined(ctx context.Context, dbFiltered []string) types.BackupResult {
 	backupStartTime := time.Now()
 	var res types.BackupResult
 	s.Log.Info("Melakukan backup database dalam mode combined")

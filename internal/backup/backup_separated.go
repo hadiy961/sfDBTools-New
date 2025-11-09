@@ -14,7 +14,7 @@ import (
 )
 
 // executeBackupSeparated melakukan backup setiap database dalam file terpisah
-func (s *Service) executeBackupSeparated(ctx context.Context, dbFiltered []string) types.BackupResult {
+func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []string) types.BackupResult {
 	var res types.BackupResult
 	s.Log.Info("Melakukan backup database dalam mode separated")
 

@@ -63,7 +63,7 @@ var CmdDBBackupSeparated = &cobra.Command{
 		// BackupEntryConfig menyimpan konfigurasi untuk proses backup
 		backupConfig := types.BackupEntryConfig{
 			HeaderTitle: "Database Backup - Separated",
-			ShowOptions: parsedOpts.ShowOptions,
+			Force:       parsedOpts.Force,
 			SuccessMsg:  "Proses backup database secara separated selesai.",
 			LogPrefix:   "[Backup Separated]",
 			BackupMode:  "separated",

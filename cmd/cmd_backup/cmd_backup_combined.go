@@ -63,7 +63,7 @@ var CmdDBBackupCombined = &cobra.Command{
 		// BackupEntryConfig menyimpan konfigurasi untuk proses backup
 		backupConfig := types.BackupEntryConfig{
 			HeaderTitle: "Database Backup - Combined",
-			ShowOptions: parsedOpts.ShowOptions,
+			Force:       parsedOpts.Force,
 			SuccessMsg:  "Proses backup database secara combined selesai.",
 			LogPrefix:   "[Backup Combined]",
 			BackupMode:  "combined",
