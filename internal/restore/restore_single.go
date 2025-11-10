@@ -287,19 +287,31 @@ func (s *Service) restoreSingleDatabase(ctx context.Context, sourceFile, targetD
 		}()
 	}
 
-	// Execute mysql restore menggunakan pipe
-	mysqlErr := s.executeMysqlRestore(ctx, reader, targetDB, sourceFile, sourceDatabaseName)
+	// Check max_allowed_packet sebelum restore
+	maxPacket, err := s.Client.GetMaxAllowedPacket(ctx)
+	if err != nil {
+		s.Log.Warnf("Gagal mendapatkan max_allowed_packet: %v", err)
+	} else {
+		s.Log.Infof("max_allowed_packet: %d bytes (%.2f MB)", maxPacket, float64(maxPacket)/1024/1024)
+		if maxPacket < 16*1024*1024 { // Less than 16MB
+			s.Log.Warnf("⚠ max_allowed_packet kecil (< 16MB), kemungkinan ada packet size issue saat restore")
+		}
+	}
 
-	// Handle error based on force flag
-	if mysqlErr != nil {
+	// Execute mysql restore menggunakan pipe
+	if err := s.executeMysqlRestore(ctx, reader, targetDB, sourceFile, sourceDatabaseName); err != nil {
+		s.Log.Debugf("[DEBUG] MySQL restore error detected: %v, Force=%v", err, s.RestoreOptions.Force)
 		// Jika force=true, log warning tapi tetap success (dengan warning)
 		// Jika force=false, return error (restore gagal)
 		if s.RestoreOptions.Force {
-			s.Log.Warnf("MySQL restore memiliki error tapi tetap berjalan (--force mode): %v", mysqlErr)
-			info.Warnings = fmt.Sprintf("MySQL restore memiliki error tapi tetap berjalan: %v", mysqlErr)
+			s.Log.Warnf("MySQL restore memiliki error tapi tetap berjalan (--force mode): %v", err)
+			info.Warnings = fmt.Sprintf("MySQL restore memiliki error tapi tetap berjalan: %v", err)
 		} else {
-			return info, fmt.Errorf("gagal restore database: %w", mysqlErr)
+			s.Log.Errorf("[ERROR] Restore gagal dengan force=false, returning error: %v", err)
+			return info, fmt.Errorf("gagal restore database: %w", err)
 		}
+	} else {
+		s.Log.Debugf("[DEBUG] MySQL restore completed without error")
 	}
 
 	info.Verified = s.RestoreOptions.VerifyChecksum
@@ -364,12 +376,13 @@ func (s *Service) executeMysqlRestore(ctx context.Context, reader io.Reader, tar
 			"database": sourceDatabaseName,
 			"source":   sourceFile,
 			"target":   targetDB,
+			"force":    s.RestoreOptions.Force,
 		}, string(output), err)
 		if logFile != "" {
-			s.Log.Errorf("Error details tersimpan di: %s", logFile)
+			s.Log.Infof("Error details tersimpan di: %s", logFile)
 		}
-		// Return simple error message saja
-		return fmt.Errorf("mysql restore failed")
+		// Return error, logic force handling di level caller
+		return fmt.Errorf("mysql restore failed: %w", err)
 	}
 
 	if len(output) > 0 {

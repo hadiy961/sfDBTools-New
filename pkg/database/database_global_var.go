@@ -87,3 +87,12 @@ func (c *Client) GetServerInfo(ctx context.Context) (hostname string, port int, 
 	}
 	return hostname, port, nil
 }
+
+// GetMaxAllowedPacket mendapatkan nilai max_allowed_packet dalam bytes
+func (c *Client) GetMaxAllowedPacket(ctx context.Context) (int64, error) {
+	var value int64
+	if err := c.db.QueryRowContext(ctx, "SELECT @@max_allowed_packet").Scan(&value); err != nil {
+		return 0, fmt.Errorf("gagal mendapatkan max_allowed_packet: %w", err)
+	}
+	return value, nil
+}

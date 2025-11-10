@@ -16,13 +16,10 @@ import (
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
-	"time"
 )
 
 // ExecuteRestoreCommand adalah entry point untuk menjalankan restore command
 func (s *Service) ExecuteRestoreCommand(ctx context.Context, restoreConfig types.RestoreEntryConfig) error {
-	startTime := time.Now()
-
 	// Set restore entry config
 	s.RestoreEntry = &restoreConfig
 
@@ -86,7 +83,7 @@ func (s *Service) ExecuteRestoreCommand(ctx context.Context, restoreConfig types
 	}
 
 	// Display results
-	s.displayRestoreResults(result, time.Since(startTime))
+	s.DisplayRestoreResult(result)
 
 	s.Log.Info(restoreConfig.SuccessMsg)
 	return nil
@@ -170,54 +167,4 @@ func (s *Service) connectToTargetDatabase() error {
 	s.Log.Info("✓ Connected to target database")
 
 	return nil
-}
-
-// displayRestoreResults menampilkan hasil restore
-func (s *Service) displayRestoreResults(result types.RestoreResult, duration time.Duration) {
-	ui.PrintSubHeader("Restore Summary")
-
-	// Show pre-backup info if available
-	if result.PreBackupFile != "" {
-		fmt.Printf("  Safety Backup       : %s\n", result.PreBackupFile)
-	}
-
-	fmt.Printf("  Total Databases     : %d\n", result.TotalDatabases)
-
-	// Hitung skipped databases untuk dry-run
-	skippedCount := 0
-	for _, info := range result.RestoreInfo {
-		if info.Status == "skipped" {
-			skippedCount++
-		}
-	}
-
-	if skippedCount > 0 {
-		fmt.Printf("  Skipped (Dry-Run)   : %d\n", skippedCount)
-	} else {
-		fmt.Printf("  Successful Restore  : %d\n", result.SuccessfulRestore)
-		fmt.Printf("  Failed Restore      : %d\n", result.FailedRestore)
-	}
-
-	fmt.Printf("  Total Time          : %s\n", duration.String())
-	fmt.Println()
-
-	// Show restore details
-	if len(result.RestoreInfo) > 0 {
-		ui.PrintSubHeader("Restore Details")
-		for _, info := range result.RestoreInfo {
-			status := "✓"
-			if info.Status == "failed" {
-				status = "✗"
-			} else if info.Status == "skipped" {
-				status = "⊙"
-			}
-			fmt.Printf("  %s %s -> %s (%s)\n",
-				status, info.DatabaseName, info.TargetDatabase, info.Duration)
-
-			if info.ErrorMessage != "" {
-				fmt.Printf("     Error: %s\n", info.ErrorMessage)
-			}
-		}
-		fmt.Println()
-	}
 }

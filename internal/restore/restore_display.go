@@ -149,7 +149,8 @@ func (s *Service) DisplayRestoreResult(result types.RestoreResult) {
 					ui.PrintSubHeader("Warnings")
 					hasWarnings = true
 				}
-				fmt.Printf("• %s: %s\n", info.DatabaseName, ui.ColorText(info.Warnings, ui.ColorYellow))
+				fmt.Printf("• %s:\n", info.DatabaseName)
+				fmt.Printf("  %s\n", ui.ColorText(info.Warnings, ui.ColorYellow))
 			}
 		}
 		if hasWarnings {
@@ -161,7 +162,8 @@ func (s *Service) DisplayRestoreResult(result types.RestoreResult) {
 	if len(result.Errors) > 0 {
 		ui.PrintSubHeader("Errors & Warnings")
 		for i, errMsg := range result.Errors {
-			if errMsg[:8] == "WARNING:" {
+			isWarning := len(errMsg) > 7 && errMsg[:8] == "WARNING:"
+			if isWarning {
 				fmt.Printf("%d. %s\n", i+1, ui.ColorText(errMsg, ui.ColorYellow))
 			} else {
 				fmt.Printf("%d. %s\n", i+1, ui.ColorText(errMsg, ui.ColorRed))

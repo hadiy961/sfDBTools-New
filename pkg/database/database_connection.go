@@ -58,7 +58,7 @@ func ConnectToSourceDatabase(creds types.SourceDBConnection) (*Client, error) {
 	}
 
 	ctx := context.Background()
-	client, err := NewClient(ctx, cfg, 10*time.Second, 10, 5, time.Minute*5) // Timeout lebih lama
+	client, err := NewClient(ctx, cfg, 10*time.Second, 10, 5, 0) // Timeout lebih lama
 	spin.Stop()
 
 	if err != nil {
@@ -84,7 +84,9 @@ func ConnectToDestinationDatabase(creds types.DestinationDBConnection) (*Client,
 	}
 
 	ctx := context.Background()
-	client, err := NewClient(ctx, cfg, 5*time.Second, 10, 5, time.Minute*5)
+	// Untuk destination database (backup/restore), gunakan ConnMaxLifetime 0 (unlimited)
+	// karena operasi bisa memakan waktu lama
+	client, err := NewClient(ctx, cfg, 5*time.Second, 10, 5, 0)
 	spin.Stop()
 
 	if err != nil {
