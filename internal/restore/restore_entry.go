@@ -41,11 +41,6 @@ func (s *Service) ExecuteRestoreCommand(ctx context.Context, restoreConfig types
 		return fmt.Errorf("resolve target profile gagal: %w", err)
 	}
 
-	// Show options jika diminta
-	if restoreConfig.ShowOptions {
-		s.displayRestoreOptions()
-	}
-
 	// Verify backup file (decrypt, decompress, checksum)
 	if s.RestoreOptions.VerifyChecksum {
 		s.Log.Info("Memverifikasi backup file...")
@@ -54,8 +49,19 @@ func (s *Service) ExecuteRestoreCommand(ctx context.Context, restoreConfig types
 		}
 	}
 
+	// Show options dan minta konfirmasi jika ShowOptions=true dan Force=false
+	if s.RestoreEntry.ShowOptions && !s.RestoreOptions.Force {
+		proceed, err := s.DisplayRestoreOptions()
+		if err != nil {
+			return fmt.Errorf("gagal menampilkan opsi restore: %w", err)
+		}
+		if !proceed {
+			return types.ErrUserCancelled
+		}
+	}
+
 	// Connect to target database
-	if err := s.connectToTargetDatabase(ctx); err != nil {
+	if err := s.connectToTargetDatabase(); err != nil {
 		return fmt.Errorf("koneksi ke target database gagal: %w", err)
 	}
 	defer s.Client.Close()
@@ -147,7 +153,7 @@ func (s *Service) resolveTargetProfile(ctx context.Context) error {
 }
 
 // connectToTargetDatabase membuat koneksi ke database target
-func (s *Service) connectToTargetDatabase(ctx context.Context) error {
+func (s *Service) connectToTargetDatabase() error {
 	s.Log.Info("Connecting to target database...")
 
 	creds := types.DestinationDBConnection{
@@ -164,30 +170,6 @@ func (s *Service) connectToTargetDatabase(ctx context.Context) error {
 	s.Log.Info("✓ Connected to target database")
 
 	return nil
-}
-
-// displayRestoreOptions menampilkan opsi restore sebelum eksekusi
-func (s *Service) displayRestoreOptions() {
-	ui.PrintSubHeader("Restore Options")
-	fmt.Printf("  Source File         : %s\n", s.RestoreOptions.SourceFile)
-	fmt.Printf("  Target Profile      : %s\n", s.RestoreOptions.TargetProfile)
-	fmt.Printf("  Target Database     : %s\n", s.RestoreOptions.TargetDB)
-	fmt.Printf("  Verify Checksum     : %v\n", s.RestoreOptions.VerifyChecksum)
-	fmt.Printf("  Backup Before       : %v\n", s.RestoreOptions.BackupBeforeRestore)
-	fmt.Printf("  Mode                : %s\n", s.RestoreOptions.Mode)
-	fmt.Printf("  Dry Run             : %v\n", s.RestoreOptions.DryRun)
-	fmt.Println()
-
-	if !s.RestoreOptions.Force {
-		// Simple confirmation prompt
-		fmt.Print("Lanjutkan restore? (y/n): ")
-		var response string
-		fmt.Scanln(&response)
-		if response != "y" && response != "Y" {
-			s.Log.Warn("Restore dibatalkan oleh user")
-			os.Exit(0)
-		}
-	}
 }
 
 // displayRestoreResults menampilkan hasil restore

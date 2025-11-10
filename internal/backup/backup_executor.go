@@ -27,7 +27,25 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 		return nil, fmt.Errorf("gagal setup backup execution: %w", err)
 	}
 
-	// 2. Cleanup old backups sebelum backup baru (jika enabled)
+	// 2. Setup max_statement_time untuk GLOBAL (set ke unlimited untuk backup jangka panjang)
+	// GLOBAL scope agar mysqldump juga affected (mysqldump membuat koneksi terpisah)
+	s.Log.Info("Mengatur GLOBAL max_statement_time untuk mencegah query timeout...")
+	restore, originalMaxStatementTime, err := database.WithGlobalMaxStatementTime(ctx, sourceClient, 0)
+	if err != nil {
+		s.Log.Warnf("Setup GLOBAL max_statement_time gagal: %v", err)
+	} else {
+		s.Log.Infof("Original GLOBAL max_statement_time: %f detik", originalMaxStatementTime)
+		defer func() {
+			// Kembalikan max_statement_time ke nilai original
+			if rerr := restore(context.Background()); rerr != nil {
+				s.Log.Warnf("Gagal mengembalikan GLOBAL max_statement_time: %v", rerr)
+			} else {
+				s.Log.Info("GLOBAL max_statement_time berhasil dikembalikan.")
+			}
+		}()
+	}
+
+	// 3. Cleanup old backups sebelum backup baru (jika enabled)
 	if s.Config.Backup.Cleanup.Enabled {
 		s.Log.Info("Cleanup old backups enabled, menjalankan cleanup sebelum backup...")
 		if err := s.cleanupOldBackups(); err != nil {
@@ -35,7 +53,7 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 		}
 	}
 
-	// 3. Eksekusi backup sesuai mode
+	// 4. Eksekusi backup sesuai mode
 	startTime := time.Now()
 	var result types.BackupResult
 
@@ -49,9 +67,13 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 
 	result.TotalTimeTaken = time.Since(startTime)
 
-	// 3. Cek apakah ada error dalam result
+	// 5. Cek apakah ada error dalam result
 	if len(result.Errors) > 0 || len(result.FailedDatabaseInfos) > 0 {
 		// Jika ada error, kembalikan sebagai error
+		errorMsg := "backup gagal"
+		if len(result.Errors) > 0 {
+			errorMsg = fmt.Sprintf("backup gagal: %s", result.Errors[0])
+		}
 		return &types.BackupResult{
 			TotalDatabases:      len(dbFiltered),
 			SuccessfulBackups:   0,
@@ -61,10 +83,10 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 			FailedDatabaseInfos: result.FailedDatabaseInfos,
 			Errors:              result.Errors,
 			TotalTimeTaken:      result.TotalTimeTaken,
-		}, fmt.Errorf("backup gagal: %s", result.Errors[0])
+		}, fmt.Errorf(errorMsg)
 	}
 
-	// 4. Kembalikan hasil backup sukses
+	// 6. Kembalikan hasil backup sukses
 	return &types.BackupResult{
 		TotalDatabases:    len(dbFiltered),
 		SuccessfulBackups: len(dbFiltered),

@@ -30,7 +30,7 @@ type RestoreOptions struct {
 	// Verify checksum sebelum restore
 	VerifyChecksum bool
 
-	// Force restore (skip confirmation)
+	// Force restore (skip error dan lanjutkan)
 	Force bool
 
 	// Dry run (simulate without actual restore)
@@ -39,8 +39,11 @@ type RestoreOptions struct {
 	// Show options before execution
 	ShowOptions bool
 
-	// Backup before restore (create safety backup)
-	BackupBeforeRestore bool
+	// Skip backup before restore (default false = create safety backup)
+	SkipBackup bool
+
+	// Drop target database sebelum restore
+	DropTarget bool
 }
 
 // RestoreResult menyimpan hasil dari proses restore database

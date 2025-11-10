@@ -12,6 +12,7 @@ import (
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
+	"sfDBTools/pkg/errorlog"
 	"sync"
 )
 
@@ -23,6 +24,7 @@ type Service struct {
 	RestoreOptions *types.RestoreOptions
 	RestoreEntry   *types.RestoreEntryConfig
 	Client         *database.Client // Client ke database target
+	ErrorLog       *errorlog.ErrorLogger
 
 	// Untuk graceful shutdown
 	cancelFunc        context.CancelFunc
@@ -32,9 +34,15 @@ type Service struct {
 
 // NewRestoreService membuat instance Service baru untuk restore operations
 func NewRestoreService(logs applog.Logger, cfg *appconfig.Config, restoreOpts interface{}) *Service {
+	logDir := cfg.Log.Output.File.Dir
+	if logDir == "" {
+		logDir = "/var/log/sfDBTools"
+	}
+
 	svc := &Service{
-		Log:    logs,
-		Config: cfg,
+		Log:      logs,
+		Config:   cfg,
+		ErrorLog: errorlog.NewErrorLogger(logs, logDir, "restore"),
 	}
 
 	if restoreOpts != nil {

@@ -113,6 +113,16 @@ func (s *Service) ExecuteScanInBackground(ctx context.Context, config types.Scan
 	result, err := s.ExecuteScan(runCtx, sourceClient, targetClient, dbFiltered, true)
 	if err != nil {
 		s.Logger.Errorf("[%s] Scanning gagal: %v", scanID, err)
+
+		// Log ke error log file terpisah
+		logFile := s.ErrorLog.Log(map[string]interface{}{
+			"scanid": scanID,
+			"type":   "background_scan",
+		}, err)
+		if logFile != "" {
+			s.Logger.Infof("[%s] ℹ Error details tersimpan di: %s", scanID, logFile)
+		}
+
 		return err
 	}
 
@@ -265,6 +275,16 @@ func (s *Service) ExecuteScan(ctx context.Context, sourceClient *database.Client
 			errors = append(errors, fmt.Sprintf("%s: %v", detail.DatabaseName, err))
 			// Log dan hentikan proses dengan mengembalikan error
 			s.Logger.Errorf("Gagal menyimpan database %s: %v", detail.DatabaseName, err)
+
+			// Log ke error log file terpisah
+			logFile := s.ErrorLog.Log(map[string]interface{}{
+				"database": detail.DatabaseName,
+				"type":     "save_detail",
+			}, err)
+			if logFile != "" {
+				s.Logger.Infof("ℹ Error details tersimpan di: %s", logFile)
+			}
+
 			return err
 		}
 		successCount++
@@ -273,6 +293,14 @@ func (s *Service) ExecuteScan(ctx context.Context, sourceClient *database.Client
 
 	if collectErr != nil {
 		s.Logger.Errorf("Proses scanning dihentikan: %v", collectErr)
+
+		// Log ke error log file terpisah
+		logFile := s.ErrorLog.Log(map[string]interface{}{
+			"type": "collect_error",
+		}, collectErr)
+		if logFile != "" {
+			s.Logger.Infof("ℹ Error details tersimpan di: %s", logFile)
+		}
 
 		duration := time.Since(startTime)
 		return &types.ScanResult{

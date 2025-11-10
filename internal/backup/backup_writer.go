@@ -10,6 +10,7 @@ import (
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
+	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
 	"strings"
 	"time"
@@ -23,11 +24,31 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 	// Mask password untuk logging
 	// maskedArgs := s.maskPasswordInArgs(mysqldumpArgs)
 
-	// Start spinner
+	// Start spinner dengan elapsed time
 	spin := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 	spin.Suffix = " Memproses backup database..."
 	spin.Start()
-	defer spin.Stop()
+
+	// Goroutine untuk update spinner dengan elapsed time
+	startTime := time.Now()
+	done := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			default:
+				elapsed := time.Since(startTime)
+				spin.Suffix = fmt.Sprintf(" Memproses backup database... (%s)", global.FormatDuration(elapsed))
+				time.Sleep(500 * time.Millisecond)
+			}
+		}
+	}()
+
+	defer func() {
+		done <- true // Stop elapsed time updater
+		spin.Stop()
+	}()
 
 	outputFile, err := os.Create(outputPath)
 	if err != nil {
@@ -45,12 +66,11 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 	if s.BackupDBOptions.Encryption.Enabled {
 		encryptionKey := s.BackupDBOptions.Encryption.Key
 		if encryptionKey == "" {
-			resolvedKey, source, err := helper.ResolveEncryptionKey(s.BackupDBOptions.Encryption.Key, consts.ENV_BACKUP_ENCRYPTION_KEY)
+			resolvedKey, _, err := helper.ResolveEncryptionKey(s.BackupDBOptions.Encryption.Key, consts.ENV_BACKUP_ENCRYPTION_KEY)
 			if err != nil {
 				return nil, fmt.Errorf("gagal mendapatkan kunci enkripsi: %w", err)
 			}
 			encryptionKey = resolvedKey
-			s.Log.Infof("Kunci enkripsi diperoleh dari: %s", source)
 		}
 
 		encryptingWriter, err := encrypt.NewEncryptingWriter(writer, []byte(encryptionKey))
@@ -111,9 +131,12 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 	if err := cmd.Run(); err != nil {
 		stderrOutput := stderrBuf.String()
 
-		// Log error untuk debugging
-		s.Log.Errorf("mysqldump exit with error: %v", err)
-		s.Log.Errorf("mysqldump stderr: %s", stderrOutput)
+		// Log ke error log file terpisah
+		logFile := s.ErrorLog.LogWithOutput(map[string]interface{}{
+			"type": "mysqldump_backup",
+			"file": outputPath,
+		}, stderrOutput, err)
+		_ = logFile
 
 		// Cek apakah ini error fatal atau hanya warning
 		if s.isFatalMysqldumpError(err, stderrOutput) {

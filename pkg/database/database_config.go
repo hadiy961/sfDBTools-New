@@ -132,6 +132,20 @@ func (c *Client) CreateDatabase(ctx context.Context, dbName string) error {
 	return err
 }
 
+// DropDatabase menghapus database
+func (c *Client) DropDatabase(ctx context.Context, dbName string) error {
+	// Sanitize database name (hanya alphanumeric dan underscore)
+	// Untuk keamanan, gunakan parameterized query tidak bisa untuk DROP DATABASE
+	// Kita validasi nama database terlebih dahulu
+	if !isValidDatabaseName(dbName) {
+		return fmt.Errorf("invalid database name: %s", dbName)
+	}
+
+	query := fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", dbName)
+	_, err := c.db.ExecContext(ctx, query)
+	return err
+}
+
 // isValidDatabaseName memvalidasi nama database (alphanumeric dan underscore only)
 func isValidDatabaseName(name string) bool {
 	if name == "" || len(name) > 64 {

@@ -29,17 +29,20 @@ func AddRestoreSingleFlags(cmd *cobra.Command, opts *types.RestoreOptions) {
 	cmd.Flags().StringVarP(&opts.TargetDB, "target-db", "d", "", "Nama database target untuk restore (jika kosong, gunakan nama dari backup file)")
 
 	// Verification
-	cmd.Flags().BoolVar(&opts.VerifyChecksum, "verify-checksum", true, "Verifikasi checksum sebelum restore")
+	cmd.Flags().BoolVar(&opts.VerifyChecksum, "verify-checksum", opts.VerifyChecksum, "Verifikasi checksum sebelum restore")
 
 	// Force dan dry-run
-	cmd.Flags().BoolVar(&opts.Force, "force", false, "Skip confirmation prompt")
-	cmd.Flags().BoolVar(&opts.DryRun, "dry-run", false, "Simulasi restore tanpa eksekusi (untuk testing)")
+	cmd.Flags().BoolVar(&opts.Force, "force", opts.Force, "Force restore - Mengabaikan error dan prompt konfirmasi")
+	cmd.Flags().BoolVar(&opts.DryRun, "dry-run", opts.DryRun, "Simulasi restore tanpa eksekusi (untuk testing)")
 
 	// Show options
-	cmd.Flags().BoolVar(&opts.ShowOptions, "show-options", false, "Tampilkan opsi restore sebelum eksekusi")
+	cmd.Flags().BoolVar(&opts.ShowOptions, "show-options", opts.ShowOptions, "Tampilkan opsi restore sebelum eksekusi")
 
-	// Safety backup
-	cmd.Flags().BoolVar(&opts.BackupBeforeRestore, "backup-before-restore", false, "Backup database terlebih dahulu sebelum restore (safety backup)")
+	// Skip backup
+	cmd.Flags().BoolVar(&opts.SkipBackup, "skip-backup", false, "Skip safety backup sebelum restore")
+
+	// Drop target
+	cmd.Flags().BoolVar(&opts.DropTarget, "drop-target", false, "Drop target database sebelum restore")
 }
 
 // AddRestoreAllFlags menambahkan flags untuk restore all command
@@ -65,8 +68,11 @@ func AddRestoreAllFlags(cmd *cobra.Command, opts *types.RestoreOptions) {
 	// Show options
 	cmd.Flags().BoolVar(&opts.ShowOptions, "show-options", false, "Tampilkan opsi restore sebelum eksekusi")
 
-	// Safety backup
-	cmd.Flags().BoolVar(&opts.BackupBeforeRestore, "backup-before-restore", false, "Backup database terlebih dahulu sebelum restore (safety backup)")
+	// Skip backup
+	cmd.Flags().BoolVar(&opts.SkipBackup, "skip-backup", false, "Skip safety backup sebelum restore")
+
+	// Drop target
+	cmd.Flags().BoolVar(&opts.DropTarget, "drop-target", false, "Drop target database sebelum restore")
 }
 
 // AddRestoreMultiFlags menambahkan flags untuk restore multi command (placeholder)
@@ -80,4 +86,6 @@ func AddRestoreMultiFlags(cmd *cobra.Command, opts *types.RestoreOptions) {
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "Skip confirmation prompt")
 	cmd.Flags().BoolVar(&opts.DryRun, "dry-run", false, "Simulasi restore tanpa eksekusi")
 	cmd.Flags().BoolVar(&opts.ShowOptions, "show-options", false, "Tampilkan opsi restore sebelum eksekusi")
+	cmd.Flags().BoolVar(&opts.SkipBackup, "skip-backup", false, "Skip safety backup sebelum restore")
+	cmd.Flags().BoolVar(&opts.DropTarget, "drop-target", false, "Drop target database sebelum restore")
 }

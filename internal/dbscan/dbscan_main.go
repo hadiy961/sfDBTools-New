@@ -10,20 +10,28 @@ import (
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/errorlog"
 )
 
 // Service adalah service untuk database scanning
 type Service struct {
 	Logger      applog.Logger
 	Config      *appconfig.Config
+	ErrorLog    *errorlog.ErrorLogger
 	ScanOptions types.ScanOptions
 }
 
 // NewService membuat instance baru dari Service
 func NewDBScanService(logger applog.Logger, config *appconfig.Config) *Service {
+	logDir := config.Log.Output.File.Dir
+	if logDir == "" {
+		logDir = "/var/log/sfDBTools"
+	}
+
 	return &Service{
-		Logger: logger,
-		Config: config,
+		Logger:   logger,
+		Config:   config,
+		ErrorLog: errorlog.NewErrorLogger(logger, logDir, "dbscan"),
 	}
 }
 

@@ -67,8 +67,8 @@ func (s *Service) executeRestoreAll(ctx context.Context) (types.RestoreResult, e
 	}
 
 	// Pre-backup before restore (safety backup) - untuk combined backup
-	// Backup semua databases yang akan di-restore
-	if s.RestoreOptions.BackupBeforeRestore && len(databases) > 0 {
+	// Backup semua databases yang akan di-restore - skip jika flag --skip-backup aktif
+	if !s.RestoreOptions.SkipBackup && len(databases) > 0 {
 		s.Log.Info("Creating safety backups before restore...")
 		var preBackupFiles []string
 		for _, dbName := range databases {

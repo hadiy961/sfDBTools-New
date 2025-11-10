@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/compress"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
@@ -91,13 +92,28 @@ func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []strin
 			}
 
 			errorMsg := fmt.Sprintf("gagal backup database %s: %v", dbName, err)
+			stderrDetail := ""
 			if writeResult != nil && writeResult.StderrOutput != "" {
 				errorMsg = fmt.Sprintf("%s\nDetail: %s", errorMsg, writeResult.StderrOutput)
+				stderrDetail = writeResult.StderrOutput
 			}
 
 			s.Log.Error(errorMsg)
-			ui.PrintError(fmt.Sprintf("✗ Database %s gagal di-backup", dbName))
 
+			// Log ke error log file terpisah (tidak tampilkan message berulang)
+			if stderrDetail != "" {
+				logFile := s.ErrorLog.LogWithOutput(map[string]interface{}{
+					"database": dbName,
+					"type":     "separated_backup",
+					"file":     fullOutputPath,
+				}, stderrDetail, err)
+				if logFile != "" {
+					// Log hanya sekali di awal, tidak di setiap database
+					_ = logFile
+				}
+			}
+
+			ui.PrintError(fmt.Sprintf("✗ Database %s gagal di-backup", dbName))
 			res.FailedDatabaseInfos = append(res.FailedDatabaseInfos, types.FailedDatabaseInfo{
 				DatabaseName: dbName,
 				Error:        errorMsg,
@@ -141,7 +157,13 @@ func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []strin
 			if s.Config.Backup.Verification.VerifyAfterWrite {
 				encryptionKey := ""
 				if s.BackupDBOptions.Encryption.Enabled {
-					encryptionKey = s.BackupDBOptions.Encryption.Key
+					// Resolve encryption key dengan strategi: flag/state → env → prompt
+					resolvedKey, _, err := helper.ResolveEncryptionKey(s.BackupDBOptions.Encryption.Key, consts.ENV_BACKUP_ENCRYPTION_KEY)
+					if err != nil {
+						s.Log.Errorf("✗ Gagal mendapatkan kunci enkripsi untuk verifikasi: %v", err)
+					} else {
+						encryptionKey = resolvedKey
+					}
 				}
 
 				compressionType := ""
@@ -199,6 +221,7 @@ func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []strin
 	if failedCount > 0 {
 		ui.PrintError(fmt.Sprintf("Gagal: %d", failedCount))
 	}
+	ui.PrintDashedSeparator()
 
 	return res
 }

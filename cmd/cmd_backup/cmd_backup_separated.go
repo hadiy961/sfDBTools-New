@@ -55,6 +55,7 @@ var CmdDBBackupSeparated = &cobra.Command{
 		// Goroutine untuk menangani signal
 		go func() {
 			sig := <-sigChan
+			fmt.Println()
 			logger.Warnf("Menerima signal %v, menghentikan backup...", sig)
 			svc.HandleShutdown()
 			cancel()

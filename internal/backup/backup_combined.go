@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/global"
+	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
 	"strings"
 	"time"
@@ -49,12 +51,22 @@ func (s *Service) ExecuteBackupCombined(ctx context.Context, dbFiltered []string
 		// Tampilkan error detail dari mysqldump
 		ui.PrintHeader("ERROR : Mysqldump Gagal dijalankan")
 
+		stderrDetail := ""
 		if writeResult != nil && writeResult.StderrOutput != "" {
 			ui.PrintSubHeader("Detail Error dari mysqldump:")
 			ui.PrintError(writeResult.StderrOutput)
+			stderrDetail = writeResult.StderrOutput
 		}
 
 		errorMsg := fmt.Errorf("gagal menjalankan mysqldump: %w", err)
+
+		// Log ke error log file terpisah
+		logFile := s.ErrorLog.LogWithOutput(map[string]interface{}{
+			"type": "combined_backup",
+			"file": fullOutputPath,
+		}, stderrDetail, err)
+		_ = logFile
+
 		res.Errors = append(res.Errors, errorMsg.Error())
 		for _, dbName := range dbFiltered {
 			res.FailedDatabaseInfos = append(res.FailedDatabaseInfos, types.FailedDatabaseInfo{DatabaseName: dbName, Error: errorMsg.Error()})
@@ -107,7 +119,13 @@ func (s *Service) ExecuteBackupCombined(ctx context.Context, dbFiltered []string
 
 			encryptionKey := ""
 			if s.BackupDBOptions.Encryption.Enabled {
-				encryptionKey = s.BackupDBOptions.Encryption.Key
+				// Resolve encryption key dengan strategi: flag/state → env → prompt
+				resolvedKey, _, err := helper.ResolveEncryptionKey(s.BackupDBOptions.Encryption.Key, consts.ENV_BACKUP_ENCRYPTION_KEY)
+				if err != nil {
+					s.Log.Errorf("✗ Gagal mendapatkan kunci enkripsi untuk verifikasi: %v", err)
+				} else {
+					encryptionKey = resolvedKey
+				}
 			}
 
 			compressionType := ""

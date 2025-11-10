@@ -16,11 +16,15 @@ import (
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/ui"
 	"strings"
 	"time"
+
+	"github.com/briandowns/spinner"
 )
 
 // executeRestoreSingle melakukan restore database dari satu file backup terpisah
@@ -63,7 +67,7 @@ func (s *Service) executeRestoreSingle(ctx context.Context) (types.RestoreResult
 				sourceDatabaseName = targetDB
 				// Log berbeda tergantung apakah pakai pattern atau legacy
 				if namePattern != "" {
-					s.Log.Infof("✓ Target database dari filename (pattern: %s): %s", namePattern, targetDB)
+					s.Log.Infof("✓ Target database dari filename : %s", targetDB)
 				} else {
 					s.Log.Infof("✓ Target database dari filename: %s (FALLBACK - pattern tidak tersedia)", targetDB)
 				}
@@ -127,18 +131,58 @@ func (s *Service) executeRestoreSingle(ctx context.Context) (types.RestoreResult
 		return result, nil
 	}
 
-	// Pre-backup before restore (safety backup)
-	if s.RestoreOptions.BackupBeforeRestore {
+	// Pre-backup before restore (safety backup) - skip jika flag --skip-backup aktif
+	if !s.RestoreOptions.SkipBackup {
 		s.Log.Info("Creating safety backup before restore...")
-		preBackupFile, err := s.executePreBackup(ctx, targetDB)
-		if err != nil {
-			return result, fmt.Errorf("gagal create pre-backup: %w", err)
+		// Validasi database target
+		if exists, err := s.isTargetDatabaseExists(ctx, targetDB); err != nil {
+			return result, fmt.Errorf("validasi database target gagal: %w", err)
+		} else if !exists {
+			s.Log.Infof("Database target tidak ada, membuat database baru: %s", targetDB)
+			if err := s.Client.CreateDatabase(ctx, targetDB); err != nil {
+				return result, fmt.Errorf("gagal create target database: %w", err)
+			}
+			s.Log.Infof("✓ Database %s berhasil dibuat, skip pre-backup", targetDB)
+		} else {
+			preBackupFile, err := s.executePreBackup(ctx, targetDB)
+			if err != nil {
+				return result, fmt.Errorf("gagal create pre-backup: %w", err)
+			}
+			result.PreBackupFile = preBackupFile
+			s.Log.Infof("✓ Safety backup created: %s", preBackupFile)
 		}
-		result.PreBackupFile = preBackupFile
-		s.Log.Infof("✓ Safety backup created: %s", preBackupFile)
+	}
+
+	// Drop target database jika flag --drop-target aktif
+	if s.RestoreOptions.DropTarget {
+		// Check if target database exists
+		if exists, err := s.isTargetDatabaseExists(ctx, targetDB); err != nil {
+			return result, fmt.Errorf("gagal check keberadaan database target: %w", err)
+		} else if exists {
+			s.Log.Infof("Dropping target database: %s", targetDB)
+			if err := s.Client.DropDatabase(ctx, targetDB); err != nil {
+				return result, fmt.Errorf("gagal drop target database %s: %w", targetDB, err)
+			}
+			s.Log.Infof("✓ Database %s berhasil di-drop", targetDB)
+		} else {
+			s.Log.Infof("Database target %s tidak ada, skip drop", targetDB)
+		}
 	}
 
 	// Execute restore
+	ui.PrintSubHeader("Restore Database ")
+	s.Log.Info("Starting database restore...")
+	// Create database if not exists
+	if exists, err := s.isTargetDatabaseExists(ctx, targetDB); err != nil {
+		return result, fmt.Errorf("gagal check keberadaan database target: %w", err)
+	} else if !exists {
+		s.Log.Infof("Database target tidak ada, membuat database baru: %s", targetDB)
+		if err := s.Client.CreateDatabase(ctx, targetDB); err != nil {
+			return result, fmt.Errorf("gagal create target database: %w", err)
+		}
+		s.Log.Infof("✓ Database %s berhasil dibuat", targetDB)
+	}
+
 	restoreInfo, err := s.restoreSingleDatabase(ctx, sourceFile, targetDB, sourceDatabaseName)
 	if err != nil {
 		result.TotalDatabases = 1
@@ -150,10 +194,18 @@ func (s *Service) executeRestoreSingle(ctx context.Context) (types.RestoreResult
 
 		restoreInfo.Status = "failed"
 		restoreInfo.ErrorMessage = err.Error()
+
+		// Error sudah di-log dengan output di executeMysqlRestore(), jangan duplikasi
 	} else {
 		result.TotalDatabases = 1
 		result.SuccessfulRestore = 1
 		restoreInfo.Status = "success"
+
+		// Jika ada warning (dari force mode), log ke result juga
+		if restoreInfo.Warnings != "" {
+			result.Errors = append(result.Errors, "WARNING: "+restoreInfo.Warnings)
+			s.Log.Warnf("Restore success dengan warning: %s", restoreInfo.Warnings)
+		}
 	}
 
 	restoreInfo.Duration = global.FormatDuration(time.Since(startTime))
@@ -166,11 +218,6 @@ func (s *Service) executeRestoreSingle(ctx context.Context) (types.RestoreResult
 // restoreSingleDatabase melakukan restore satu database dari backup file
 func (s *Service) restoreSingleDatabase(ctx context.Context, sourceFile, targetDB, sourceDatabaseName string) (types.DatabaseRestoreInfo, error) {
 	dbName := sourceDatabaseName
-	if dbName == "" {
-		namePattern := s.Config.Backup.Output.NamePattern
-		dbName = extractDatabaseNameFromPattern(sourceFile, namePattern)
-	}
-
 	info := types.DatabaseRestoreInfo{
 		DatabaseName:   dbName,
 		SourceFile:     sourceFile,
@@ -183,19 +230,6 @@ func (s *Service) restoreSingleDatabase(ctx context.Context, sourceFile, targetD
 	}
 	info.FileSize = fileInfo.Size()
 	info.FileSizeHuman = global.FormatFileSize(fileInfo.Size())
-
-	// Check if target database exists, create if not
-	exists, err := s.Client.DatabaseExists(ctx, targetDB)
-	if err != nil {
-		return info, fmt.Errorf("gagal check database existence: %w", err)
-	}
-
-	if !exists {
-		s.Log.Infof("Creating target database: %s", targetDB)
-		if err := s.Client.CreateDatabase(ctx, targetDB); err != nil {
-			return info, fmt.Errorf("gagal create target database: %w", err)
-		}
-	}
 
 	// Prepare reader pipeline: file → decrypt → decompress
 	file, err := os.Open(sourceFile)
@@ -237,9 +271,35 @@ func (s *Service) restoreSingleDatabase(ctx context.Context, sourceFile, targetD
 		s.Log.Debugf("Decompressing backup file (%s)...", compressionType)
 	}
 
+	// Setup max_statement_time untuk GLOBAL restore (set ke unlimited untuk restore jangka panjang)
+	// GLOBAL scope agar mysql CLI juga affected (mysql CLI membuat koneksi terpisah)
+	restore, originalMaxStatementTime, err := database.WithGlobalMaxStatementTime(ctx, s.Client, 0)
+	if err != nil {
+		s.Log.Warnf("Setup GLOBAL max_statement_time gagal: %v", err)
+	} else {
+		s.Log.Infof("Original GLOBAL max_statement_time: %f detik", originalMaxStatementTime)
+		defer func() {
+			if rerr := restore(context.Background()); rerr != nil {
+				s.Log.Warnf("Gagal mengembalikan GLOBAL max_statement_time: %v", rerr)
+			} else {
+				s.Log.Info("GLOBAL max_statement_time berhasil dikembalikan.")
+			}
+		}()
+	}
+
 	// Execute mysql restore menggunakan pipe
-	if err := s.executeMysqlRestore(ctx, reader, targetDB); err != nil {
-		return info, fmt.Errorf("gagal restore database: %w", err)
+	mysqlErr := s.executeMysqlRestore(ctx, reader, targetDB, sourceFile, sourceDatabaseName)
+
+	// Handle error based on force flag
+	if mysqlErr != nil {
+		// Jika force=true, log warning tapi tetap success (dengan warning)
+		// Jika force=false, return error (restore gagal)
+		if s.RestoreOptions.Force {
+			s.Log.Warnf("MySQL restore memiliki error tapi tetap berjalan (--force mode): %v", mysqlErr)
+			info.Warnings = fmt.Sprintf("MySQL restore memiliki error tapi tetap berjalan: %v", mysqlErr)
+		} else {
+			return info, fmt.Errorf("gagal restore database: %w", mysqlErr)
+		}
 	}
 
 	info.Verified = s.RestoreOptions.VerifyChecksum
@@ -249,23 +309,67 @@ func (s *Service) restoreSingleDatabase(ctx context.Context, sourceFile, targetD
 }
 
 // executeMysqlRestore menjalankan mysql command untuk restore dari reader
-func (s *Service) executeMysqlRestore(ctx context.Context, reader io.Reader, targetDB string) error {
-	// Build mysql command
+func (s *Service) executeMysqlRestore(ctx context.Context, reader io.Reader, targetDB, sourceFile, sourceDatabaseName string) error {
+	// Build mysql command args - hanya tambahkan force jika true
 	args := []string{
 		fmt.Sprintf("--host=%s", s.TargetProfile.DBInfo.Host),
 		fmt.Sprintf("--port=%d", s.TargetProfile.DBInfo.Port),
 		fmt.Sprintf("--user=%s", s.TargetProfile.DBInfo.User),
 		fmt.Sprintf("--password=%s", s.TargetProfile.DBInfo.Password),
-		targetDB,
 	}
+
+	// Tambahkan force flag hanya jika true (untuk continue on errors)
+	if s.RestoreOptions.Force {
+		args = append(args, "--force")
+	}
+
+	// Tambahkan target database
+	args = append(args, targetDB)
+
+	// Start spinner dengan elapsed time
+	spin := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+	spin.Suffix = " Melakukan restore database..."
+	spin.Start()
+	defer spin.Stop()
+
+	// Goroutine untuk update spinner dengan elapsed time
+	startTime := time.Now()
+	done := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			default:
+				elapsed := time.Since(startTime)
+				spin.Suffix = fmt.Sprintf(" Melakukan restore database... (%s)", global.FormatDuration(elapsed))
+				time.Sleep(500 * time.Millisecond)
+			}
+		}
+	}()
 
 	cmd := exec.CommandContext(ctx, "mysql", args...)
 	cmd.Stdin = reader
 
 	// Capture output
 	output, err := cmd.CombinedOutput()
+	done <- true // Stop elapsed time updater
+
 	if err != nil {
-		return fmt.Errorf("mysql restore failed: %w\nOutput: %s", err, string(output))
+		spin.Stop()
+		fmt.Println()
+		s.Log.Error("MySQL restore gagal, lihat log untuk detail")
+		// Log error detail ke file terpisah (jangan di output) dan tampilkan di mana logsnya
+		logFile := s.ErrorLog.LogWithOutput(map[string]interface{}{
+			"database": sourceDatabaseName,
+			"source":   sourceFile,
+			"target":   targetDB,
+		}, string(output), err)
+		if logFile != "" {
+			s.Log.Errorf("Error details tersimpan di: %s", logFile)
+		}
+		// Return simple error message saja
+		return fmt.Errorf("mysql restore failed")
 	}
 
 	if len(output) > 0 {

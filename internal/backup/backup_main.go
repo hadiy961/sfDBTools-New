@@ -7,12 +7,14 @@ import (
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
+	"sfDBTools/pkg/errorlog"
 	"sync"
 )
 
 type Service struct {
 	Config          *appconfig.Config
 	Log             applog.Logger
+	ErrorLog        *errorlog.ErrorLogger
 	DBInfo          *types.DBInfo
 	Profile         *types.ProfileInfo
 	BackupDBOptions *types.BackupDBOptions
@@ -27,9 +29,15 @@ type Service struct {
 }
 
 func NewBackupService(logs applog.Logger, cfg *appconfig.Config, backup interface{}) *Service {
+	logDir := cfg.Log.Output.File.Dir
+	if logDir == "" {
+		logDir = "/var/log/sfDBTools"
+	}
+
 	svc := &Service{
-		Log:    logs,
-		Config: cfg, // Perbaikan: set field Config agar tidak nil
+		Log:      logs,
+		Config:   cfg, // Perbaikan: set field Config agar tidak nil
+		ErrorLog: errorlog.NewErrorLogger(logs, logDir, "backup"),
 	}
 
 	if backup != nil {

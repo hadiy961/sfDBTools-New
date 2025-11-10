@@ -133,3 +133,11 @@ All Go files include standard headers in Indonesian:
 - Helper functions for env vars in `pkg/helper/` (e.g., `GetEnvOrDefault`)
 - Date/time formatting respects config locale settings
 - Compression type detection via file extension helpers in `pkg/helper/`
+
+## Additional note
+- All log messages and user-facing text are in Indonesian to maintain consistency across the application.
+- Follow existing code style and conventions for new features or modifications.
+- Ensure proper error handling and logging in all new code paths.
+- No need to create documentation files for minor changes unless they affect user-facing features.
+- No need to create documentation if the change is purely internal and does not impact usage or configuration.
+- No need to create documentation if not requested by the user.

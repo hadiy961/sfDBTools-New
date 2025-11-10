@@ -58,6 +58,8 @@ Contoh penggunaan:
 		restoreOpts.Force, _ = cmd.Flags().GetBool("force")
 		restoreOpts.DryRun, _ = cmd.Flags().GetBool("dry-run")
 		restoreOpts.ShowOptions, _ = cmd.Flags().GetBool("show-options")
+		restoreOpts.SkipBackup, _ = cmd.Flags().GetBool("skip-backup")
+		restoreOpts.DropTarget, _ = cmd.Flags().GetBool("drop-target")
 
 		// Inisialisasi restore service
 		svc := restore.NewRestoreService(logger, types.Deps.Config, &restoreOpts)
@@ -89,7 +91,8 @@ Contoh penggunaan:
 			SuccessMsg:  "Proses restore single database selesai.",
 			LogPrefix:   "[Restore Single]",
 		}
-
+		// logger.Debugf("Show Options Value : %v", restoreOpts.ShowOptions)
+		// return
 		if err := svc.ExecuteRestoreCommand(ctx, restoreConfig); err != nil {
 			if errors.Is(err, types.ErrUserCancelled) {
 				logger.Warn("Proses dibatalkan oleh pengguna.")
@@ -112,7 +115,8 @@ func init() {
 		VerifyChecksum: true,
 		Force:          false,
 		DryRun:         false,
-		ShowOptions:    false,
+		ShowOptions:    true,
+		SkipBackup:     false,
 	}
 	flags.AddRestoreSingleFlags(CmdRestoreSingle, &defaultOpts)
 }

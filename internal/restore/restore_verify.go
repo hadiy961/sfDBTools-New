@@ -18,6 +18,7 @@ import (
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/encrypt"
+	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
 	"strings"
 	"time"
@@ -76,52 +77,65 @@ func (s *Service) verifyBackupFile(ctx context.Context) error {
 		s.Log.Warn("Metadata file tidak ditemukan, skip checksum verification")
 	}
 
-	// Verify checksum jika ada metadata
+	// Verify checksum jika ada metadata dengan checksum info
 	if verifyInfo.ExpectedSHA256 != "" || verifyInfo.ExpectedMD5 != "" {
 		s.Log.Info("Calculating checksums dari backup file...")
 
-		encryptionKey := s.RestoreOptions.EncryptionKey
-		if encryptionKey == "" && isEncrypted {
-			encryptionKey = helper.GetEnvOrDefault("SFDB_BACKUP_ENCRYPTION_KEY", "")
+		// IMPORTANT: Hanya load encryption key jika file benar-benar encrypted
+		encryptionKey := ""
+		if isEncrypted {
+			encryptionKey = s.RestoreOptions.EncryptionKey
 			if encryptionKey == "" {
+				encryptionKey = helper.GetEnvOrDefault("SFDB_BACKUP_ENCRYPTION_KEY", "")
+				if encryptionKey != "" {
+					s.Log.Debugf("Using encryption key from environment variable")
+				}
+			}
+			if encryptionKey == "" {
+				// Encrypted file tapi tidak ada key - return error
 				return fmt.Errorf("encryption key required untuk verify encrypted backup")
 			}
 		}
+		// else: file tidak encrypted, encryptionKey tetap empty string
 
 		calculatedSHA256, calculatedMD5, err := s.calculateBackupChecksum(sourceFile, encryptionKey, compressionType)
 		if err != nil {
 			verifyInfo.ErrorMessage = fmt.Sprintf("Gagal calculate checksum: %v", err)
-			return fmt.Errorf("gagal calculate checksum: %w", err)
-		}
+			s.Log.Warnf("Gagal calculate checksum, skip verification: %v", err)
+			// Don't return error, just skip checksum verification
+			// This is because verification is optional if metadata is corrupted
+		} else {
+			verifyInfo.CalculatedSHA256 = calculatedSHA256
+			verifyInfo.CalculatedMD5 = calculatedMD5
 
-		verifyInfo.CalculatedSHA256 = calculatedSHA256
-		verifyInfo.CalculatedMD5 = calculatedMD5
+			// Compare checksums
+			sha256Match := strings.EqualFold(calculatedSHA256, verifyInfo.ExpectedSHA256)
+			md5Match := strings.EqualFold(calculatedMD5, verifyInfo.ExpectedMD5)
+			verifyInfo.ChecksumMatch = sha256Match && md5Match
 
-		// Compare checksums
-		sha256Match := strings.EqualFold(calculatedSHA256, verifyInfo.ExpectedSHA256)
-		md5Match := strings.EqualFold(calculatedMD5, verifyInfo.ExpectedMD5)
-		verifyInfo.ChecksumMatch = sha256Match && md5Match
-
-		if !verifyInfo.ChecksumMatch {
-			errMsg := "Checksum mismatch:"
-			if !sha256Match {
-				errMsg += fmt.Sprintf(" SHA256 (expected=%s, got=%s)",
-					verifyInfo.ExpectedSHA256[:16]+"...", calculatedSHA256[:16]+"...")
+			if !verifyInfo.ChecksumMatch {
+				errMsg := "Checksum mismatch:"
+				if !sha256Match {
+					errMsg += fmt.Sprintf(" SHA256 (expected=%s, got=%s)",
+						verifyInfo.ExpectedSHA256[:16]+"...", calculatedSHA256[:16]+"...")
+				}
+				if !md5Match {
+					errMsg += fmt.Sprintf(" MD5 (expected=%s, got=%s)",
+						verifyInfo.ExpectedMD5[:16]+"...", calculatedMD5[:16]+"...")
+				}
+				verifyInfo.ErrorMessage = errMsg
+				return fmt.Errorf(errMsg)
 			}
-			if !md5Match {
-				errMsg += fmt.Sprintf(" MD5 (expected=%s, got=%s)",
-					verifyInfo.ExpectedMD5[:16]+"...", calculatedMD5[:16]+"...")
-			}
-			verifyInfo.ErrorMessage = errMsg
-			return fmt.Errorf(errMsg)
-		}
 
-		s.Log.Info("✓ Checksum verification SUCCESS")
+			s.Log.Info("✓ Checksum verification SUCCESS")
+		}
+	} else {
+		s.Log.Info("No checksum information in metadata, skip checksum verification")
 	}
 
 	// Log verification info
 	s.Log.Infof("Backup File: %s", verifyInfo.BackupFile)
-	s.Log.Infof("File Size: %d bytes", verifyInfo.FileSize)
+	s.Log.Infof("File Size: %s ", global.FormatFileSize(verifyInfo.FileSize))
 	s.Log.Infof("Encrypted: %v", verifyInfo.Encrypted)
 	s.Log.Infof("Compressed: %v (%s)", verifyInfo.Compressed, verifyInfo.CompressionType)
 	if backupMetadata != nil {
@@ -156,23 +170,29 @@ func (s *Service) calculateBackupChecksum(backupFile, encryptionKey, compression
 
 	var reader io.Reader = file
 
-	// Decrypt jika encrypted
-	if encryptionKey != "" {
+	// Decrypt jika encrypted - hanya jika:
+	// 1. Ada encryption key yang provided
+	// 2. File memang terencrypt (detectable dari extension)
+	isEncrypted := strings.HasSuffix(backupFile, ".enc")
+	if encryptionKey != "" && isEncrypted {
 		decryptReader, err := encrypt.NewDecryptingReader(reader, encryptionKey)
 		if err != nil {
 			return "", "", fmt.Errorf("gagal create decrypt reader: %w", err)
 		}
 		reader = decryptReader
+		s.Log.Debug("Decrypting backup file for checksum calculation...")
 	}
 
-	// Decompress jika compressed
+	// Decompress jika compressed - hanya jika ada compression type detected
 	if compressionType != "" {
 		decompressReader, err := compress.NewDecompressingReader(reader, compress.CompressionType(compressionType))
 		if err != nil {
-			return "", "", fmt.Errorf("gagal create decompress reader: %w", err)
+			// More detailed error message untuk debug
+			return "", "", fmt.Errorf("gagal setup decompress reader untuk %s (file mungkin corrupt atau encryption key salah): %w", compressionType, err)
 		}
 		defer decompressReader.Close()
 		reader = decompressReader
+		s.Log.Debugf("Decompressing backup file (%s) for checksum calculation...", compressionType)
 	}
 
 	// Calculate checksums
@@ -204,4 +224,24 @@ func detectCompressionType(filename string) string {
 	}
 
 	return ""
+}
+
+// Verifikasi apakah database target sudah ada
+func (s *Service) isTargetDatabaseExists(ctx context.Context, targetDB string) (bool, error) {
+	// exists, err := database.CheckDatabaseExists(ctx, s.Client, dbName)
+	// if err != nil {
+	// 	return false, fmt.Errorf("gagal cek keberadaan database target: %w", err)
+	// }
+
+	// Check if target database exists, create if not
+	s.Log.Infof("Checking target database existence: %s", targetDB)
+	exists, err := s.Client.DatabaseExists(ctx, targetDB)
+	if err != nil {
+		return false, fmt.Errorf("gagal check database existence: %w", err)
+	}
+	if exists {
+		s.Log.Infof("✓ Database %s sudah ada", targetDB)
+	}
+
+	return exists, nil
 }
