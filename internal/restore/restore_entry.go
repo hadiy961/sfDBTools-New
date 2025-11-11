@@ -73,7 +73,7 @@ func (s *Service) ExecuteRestoreCommand(ctx context.Context, restoreConfig types
 	case "all":
 		result, err = s.executeRestoreAll(ctx)
 	case "multi":
-		return fmt.Errorf("restore multi belum diimplementasikan")
+		result, err = s.executeRestoreMulti(ctx)
 	default:
 		return fmt.Errorf("mode restore tidak valid: %s", restoreConfig.RestoreMode)
 	}
@@ -105,6 +105,16 @@ func (s *Service) validateSourceFile() error {
 		return fmt.Errorf("gagal mengakses file backup: %w", err)
 	}
 
+	// Untuk mode multi, source harus direktori
+	if s.RestoreEntry.RestoreMode == "multi" {
+		if !fileInfo.IsDir() {
+			return fmt.Errorf("source harus directory untuk restore multi: %s", sourceFile)
+		}
+		s.Log.Infof("✓ Source directory validated: %s", sourceFile)
+		return nil
+	}
+
+	// Untuk mode single dan all, source harus file
 	if fileInfo.IsDir() {
 		return fmt.Errorf("source harus file, bukan directory: %s", sourceFile)
 	}

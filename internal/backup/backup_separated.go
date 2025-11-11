@@ -48,11 +48,8 @@ func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []strin
 		backupStartTime := time.Now()
 		s.Log.Infof(fmt.Sprintf("[%d/%d] Backup database: %s", i+1, totalDatabases, dbName))
 
-		s.BackupDBOptions.NamePattern = s.Config.Backup.Output.NamePattern
-
-		// Generate filename untuk database ini
+		// Generate filename untuk database ini menggunakan fixed pattern
 		filename, err := helper.GenerateBackupFilename(
-			s.BackupDBOptions.NamePattern,
 			dbName,
 			s.BackupDBOptions.Mode,
 			dbHostname,

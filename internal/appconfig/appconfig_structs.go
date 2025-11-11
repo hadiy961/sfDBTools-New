@@ -62,7 +62,6 @@ type EncryptionConfig struct {
 type OutputConfig struct {
 	BaseDirectory string `yaml:"base_directory"`
 	CleanupTemp   bool   `yaml:"cleanup_temp"`
-	NamePattern   string `yaml:"name_pattern"`
 	Structure     struct {
 		CreateSubdirs bool   `yaml:"create_subdirs"`
 		Pattern       string `yaml:"pattern"`

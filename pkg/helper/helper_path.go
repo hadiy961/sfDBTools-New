@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+// Fixed pattern yang digunakan untuk filename backup
+const FixedBackupPattern = "{database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}"
+
 // PathPatternReplacer menyimpan nilai-nilai untuk menggantikan pattern dalam path/filename
 type PathPatternReplacer struct {
 	Database       string
@@ -99,19 +102,13 @@ func (r *PathPatternReplacer) ReplacePattern(pattern string) string {
 	return result
 }
 
-// GenerateBackupFilename menghasilkan nama file backup berdasarkan pattern
+// GenerateBackupFilename menghasilkan nama file backup menggunakan fixed pattern
+// Fixed pattern: {database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}
 // Untuk mode combined, database akan diganti dengan "all_databases"
-func GenerateBackupFilename(pattern string, database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool) (string, error) {
-	// Validasi pattern tidak boleh kosong
-	if pattern == "" {
-		return "", fmt.Errorf("pattern filename tidak boleh kosong")
-	}
-
-	// Untuk mode separated, validasi bahwa pattern mengandung {database}
-	if (mode == "separated" || mode == "separate") && database != "" {
-		if !strings.Contains(pattern, "{database}") {
-			return "", fmt.Errorf("pattern filename untuk mode separated harus mengandung {database} placeholder")
-		}
+func GenerateBackupFilename(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool) (string, error) {
+	// Untuk mode separated, validasi bahwa database tidak kosong
+	if (mode == "separated" || mode == "separate") && database == "" {
+		return "", fmt.Errorf("database name tidak boleh kosong untuk mode separated")
 	}
 
 	// Untuk mode combined, gunakan nama khusus
@@ -124,11 +121,12 @@ func GenerateBackupFilename(pattern string, database string, mode string, hostna
 		return "", fmt.Errorf("gagal membuat pattern replacer: %w", err)
 	}
 
-	filename := replacer.ReplacePattern(pattern)
+	// Gunakan fixed pattern
+	filename := replacer.ReplacePattern(FixedBackupPattern)
 
 	// Validasi hasil tidak boleh kosong atau hanya ekstensi
 	if filename == "" || filename == ".sql" || strings.HasPrefix(filename, ".") {
-		return "", fmt.Errorf("hasil generate filename tidak valid: %s (pattern: %s, database: %s)", filename, pattern, database)
+		return "", fmt.Errorf("hasil generate filename tidak valid: %s (database: %s)", filename, database)
 	}
 
 	return filename, nil
@@ -153,6 +151,7 @@ func GenerateBackupDirectory(baseDir string, structurePattern string, hostname s
 }
 
 // GenerateFullBackupPath menghasilkan full path untuk file backup (directory + filename)
+// Note: filenamePattern parameter diabaikan karena menggunakan fixed pattern
 func GenerateFullBackupPath(baseDir string, structurePattern string, filenamePattern string, database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool) (string, error) {
 	// Generate directory
 	dir, err := GenerateBackupDirectory(baseDir, structurePattern, hostname)
@@ -160,8 +159,8 @@ func GenerateFullBackupPath(baseDir string, structurePattern string, filenamePat
 		return "", err
 	}
 
-	// Generate filename
-	filename, err := GenerateBackupFilename(filenamePattern, database, mode, hostname, compressionType, encrypted)
+	// Generate filename - filenamePattern diabaikan, gunakan fixed pattern
+	filename, err := GenerateBackupFilename(database, mode, hostname, compressionType, encrypted)
 	if err != nil {
 		return "", err
 	}

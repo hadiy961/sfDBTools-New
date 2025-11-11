@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/backuphelper"
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
@@ -139,9 +140,9 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 		_ = logFile
 
 		// Cek apakah ini error fatal atau hanya warning
-		if s.isFatalMysqldumpError(err, stderrOutput) {
-			return nil, fmt.Errorf("mysqldump gagal: %w", err)
-		}
+			if s.isFatalMysqldumpError(err, stderrOutput) {
+				return nil, fmt.Errorf("mysqldump gagal: %w", err)
+			}
 		// Jika bukan fatal error, kembalikan stderr sebagai warning
 		s.Log.Warn("mysqldump exit with non-fatal error, treated as warning")
 	}
@@ -164,90 +165,27 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 // Fatal errors: koneksi gagal, permission denied, database tidak ada, dll
 // Non-fatal: view errors, trigger errors (data masih bisa di-backup)
 func (s *Service) isFatalMysqldumpError(err error, stderrOutput string) bool {
+	// Delegate to package helper for centralized heuristics
 	if err == nil {
 		return false
 	}
 
-	// Jika stderr kosong tapi ada error, anggap fatal
+	// If stderr empty treat as fatal (keep the same logging behaviour)
 	if stderrOutput == "" {
 		s.Log.Debug("mysqldump error with empty stderr, treating as fatal")
 		return true
 	}
 
-	stderrLower := strings.ToLower(stderrOutput)
+	fatal := backuphelper.IsFatalMysqldumpError(err, stderrOutput)
 
-	// Cek pattern error yang FATAL terlebih dahulu
-	fatalPatterns := []string{
-		"access denied",
-		"unknown database",
-		"unknown server",
-		"can't connect",
-		"connection refused",
-		"got error:",
-		"error:",
-		"failed",
+	if !fatal {
+		s.Log.Debugf("mysqldump treated as non-fatal by helper: %s", stderrOutput)
 	}
 
-	for _, pattern := range fatalPatterns {
-		if strings.Contains(stderrLower, pattern) {
-			// s.Log.Debugf("mysqldump stderr contains fatal pattern: %s", pattern)
-			return true
-		}
-	}
-
-	// Cek exit code jika tersedia
-	// Exit code 2 BISA jadi warning atau error, tergantung stderr
-	if exitErr, ok := err.(*exec.ExitError); ok {
-		exitCode := exitErr.ExitCode()
-		// mysqldump exit code 0 = success, 2 = bisa warning atau error
-		if exitCode == 2 {
-			// Jika exit code 2 dan tidak ada fatal pattern di atas, anggap warning
-			s.Log.Debugf("mysqldump exit code 2, no fatal pattern found, treating as non-fatal")
-		}
-	}
-
-	// Cek pattern error yang non-fatal (warnings yang tidak menghentikan dump)
-	nonFatalPatterns := []string{
-		"couldn't read keys from table",
-		"references invalid table(s) or column(s) or function(s)",
-		"definer/invoker of view lack rights",
-		"warning:",
-	}
-
-	for _, pattern := range nonFatalPatterns {
-		if strings.Contains(stderrLower, pattern) {
-			s.Log.Debugf("mysqldump stderr contains non-fatal pattern: %s", pattern)
-			return false
-		}
-	}
-
-	// Default: jika ada error dan tidak match pattern apapun, anggap fatal
-	s.Log.Debug("mysqldump error doesn't match any pattern, treating as fatal")
-	return true
+	return fatal
 }
 
 // maskPasswordInArgs mem-mask password di mysqldump arguments untuk logging
 func (s *Service) maskPasswordInArgs(args []string) []string {
-	masked := make([]string, len(args))
-	copy(masked, args)
-
-	for i := 0; i < len(masked); i++ {
-		arg := masked[i]
-
-		// Cek format -pPASSWORD atau --password=PASSWORD
-		if strings.HasPrefix(arg, "-p") && len(arg) > 2 {
-			// Format: -pPASSWORD
-			masked[i] = "-p********"
-		} else if strings.HasPrefix(arg, "--password=") {
-			// Format: --password=PASSWORD
-			masked[i] = "--password=********"
-		} else if arg == "-p" || arg == "--password" {
-			// Format: -p PASSWORD atau --password PASSWORD (password di arg berikutnya)
-			if i+1 < len(masked) {
-				masked[i+1] = "********"
-			}
-		}
-	}
-
-	return masked
+	return backuphelper.MaskPasswordInArgs(args)
 }

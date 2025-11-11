@@ -3,6 +3,7 @@ package backup
 import (
 	"fmt"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 )
@@ -27,7 +28,7 @@ func (s *Service) DisplayBackupDBOptions() (proceed bool, err error) {
 	data := [][]string{
 		{"Mode Backup", ui.ColorText(s.BackupDBOptions.Mode, ui.ColorCyan)},
 		{"Output Directory", s.BackupDBOptions.OutputDir},
-		{"Filename Pattern", s.Config.Backup.Output.NamePattern},
+		{"Filename Pattern", helper.FixedBackupPattern},
 		{filenameLabel, ui.ColorText(s.BackupDBOptions.File.Path, ui.ColorCyan)},
 		{"Background Mode", fmt.Sprintf("%v", s.BackupDBOptions.Background)},
 		{"Dry Run", fmt.Sprintf("%v", s.BackupDBOptions.DryRun)},

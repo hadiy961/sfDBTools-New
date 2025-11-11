@@ -135,7 +135,6 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 	}
 
 	s.BackupDBOptions.File.Path, err = helper.GenerateBackupFilename(
-		s.Config.Backup.Output.NamePattern,
 		exampleDBName, // untuk preview: kosong untuk combined, "database_name" untuk separated
 		s.BackupDBOptions.Mode,
 		dbHostname,

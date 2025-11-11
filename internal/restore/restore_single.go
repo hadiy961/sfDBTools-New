@@ -58,28 +58,26 @@ func (s *Service) executeRestoreSingle(ctx context.Context) (types.RestoreResult
 			}
 		}
 
-		// Priority 2: Extract dari filename menggunakan pattern dari config
+		// Priority 2: Extract dari filename menggunakan fixed pattern
 		if targetDB == "" {
-			namePattern := s.Config.Backup.Output.NamePattern
-			targetDB = extractDatabaseNameFromPattern(sourceFile, namePattern)
+			targetDB = extractDatabaseNameFromPattern(sourceFile)
 
 			if targetDB != "" {
 				sourceDatabaseName = targetDB
-				// Log berbeda tergantung apakah pakai pattern atau legacy
-				if namePattern != "" {
-					s.Log.Infof("✓ Target database dari filename : %s", targetDB)
-				} else {
-					s.Log.Infof("✓ Target database dari filename: %s (FALLBACK - pattern tidak tersedia)", targetDB)
-				}
+				s.Log.Infof("✓ Target database dari filename: %s", targetDB)
+			} else {
+				// Pattern tidak match, log warning
+				s.Log.Warnf("⚠ Filename tidak sesuai dengan pattern: %s", FixedBackupPattern)
+				s.Log.Warnf("  Backup file: %s", filepath.Base(sourceFile))
 			}
 		}
 
-		// Priority 3: Interactive prompt sebagai last resort
+		// Priority 3: Interactive prompt jika pattern tidak match atau metadata tidak ada
 		if targetDB == "" {
 			// Check if running in interactive mode (not quiet, has TTY)
 			quietMode := helper.GetEnvOrDefault(consts.ENV_QUIET, "false") == "true"
 			if !quietMode {
-				s.Log.Info("Menggunakan interactive mode untuk input database name...")
+				s.Log.Info("Filename tidak sesuai pattern, gunakan interactive mode untuk input database name...")
 				promptedDB, err := s.promptDatabaseName(sourceFile)
 				if err != nil {
 					return result, fmt.Errorf("gagal mendapatkan database name: %w", err)
@@ -89,7 +87,7 @@ func (s *Service) executeRestoreSingle(ctx context.Context) (types.RestoreResult
 				s.Log.Infof("✓ Target database dari user input: %s", targetDB)
 			} else {
 				// Quiet mode atau no TTY - tidak bisa interactive
-				return result, fmt.Errorf("gagal extract database name dari filename, gunakan flag --target-db (backup file: %s)", sourceFile)
+				return result, fmt.Errorf("filename tidak sesuai pattern %s, gunakan flag --target-db (backup file: %s)", FixedBackupPattern, filepath.Base(sourceFile))
 			}
 		}
 	} else {
@@ -102,8 +100,7 @@ func (s *Service) executeRestoreSingle(ctx context.Context) (types.RestoreResult
 			}
 		}
 		if sourceDatabaseName == "" {
-			namePattern := s.Config.Backup.Output.NamePattern
-			sourceDatabaseName = extractDatabaseNameFromPattern(sourceFile, namePattern)
+			sourceDatabaseName = extractDatabaseNameFromPattern(sourceFile)
 		}
 	}
 

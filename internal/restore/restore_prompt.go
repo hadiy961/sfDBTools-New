@@ -117,3 +117,12 @@ func isSystemDatabase(dbName string) bool {
 
 	return false
 }
+
+// promptConfirmation meminta konfirmasi user dengan pesan custom
+func (s *Service) promptConfirmation(message string) (bool, error) {
+	confirmed, err := input.AskYesNo(message, true)
+	if err != nil {
+		return false, validation.HandleInputError(err)
+	}
+	return confirmed, nil
+}
