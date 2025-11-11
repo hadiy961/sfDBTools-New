@@ -37,4 +37,6 @@ const (
 	ENV_TARGET_PROFILE = "SFDB_TARGET_PROFILE"
 
 	ENV_DAEMON_MODE = "SFDB_DAEMON_MODE"
+
+	ENV_PASSWORD_APP = "sfDBToolsv1" // hardcoded password for app database
 )

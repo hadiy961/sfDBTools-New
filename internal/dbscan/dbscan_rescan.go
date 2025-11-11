@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
+	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
 )
 
@@ -60,12 +61,8 @@ func (s *Service) PrepareRescanSession(ctx context.Context, headerTitle string, 
 
 	ui.PrintInfo(fmt.Sprintf("Ditemukan %d database yang gagal di-scan sebelumnya", len(failedDBNames)))
 
-	// Koneksi ke source database untuk scanning menggunakan helper yang sudah ada
-	creds := types.SourceDBConnection{
-		DBInfo:   s.ScanOptions.ProfileInfo.DBInfo,
-		Database: "mysql",
-	}
-	sourceClient, err = database.ConnectToSourceDatabase(creds)
+	// Koneksi ke source database untuk scanning menggunakan profilehelper
+	sourceClient, err = profilehelper.ConnectWithProfile(&s.ScanOptions.ProfileInfo, "mysql")
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("gagal koneksi ke source database: %w", err)
 	}

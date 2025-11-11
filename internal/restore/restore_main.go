@@ -7,17 +7,18 @@ package restore
 // Last Modified : 2025-11-05
 
 import (
-	"context"
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
-	"sync"
+	"sfDBTools/pkg/servicehelper"
 )
 
 // Service menyediakan operasi restore untuk database
 type Service struct {
+	servicehelper.BaseService // Embed base service untuk graceful shutdown functionality
+
 	Config         *appconfig.Config
 	Log            applog.Logger
 	TargetProfile  *types.ProfileInfo
@@ -26,10 +27,8 @@ type Service struct {
 	Client         *database.Client // Client ke database target
 	ErrorLog       *errorlog.ErrorLogger
 
-	// Untuk graceful shutdown
-	cancelFunc        context.CancelFunc
+	// Restore-specific state
 	restoreInProgress bool
-	mu                sync.Mutex
 }
 
 // NewRestoreService membuat instance Service baru untuk restore operations
@@ -59,29 +58,20 @@ func NewRestoreService(logs applog.Logger, cfg *appconfig.Config, restoreOpts in
 	return svc
 }
 
-// SetCancelFunc mengatur context cancel function untuk graceful shutdown
-func (s *Service) SetCancelFunc(cancel context.CancelFunc) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.cancelFunc = cancel
-}
-
 // HandleShutdown menangani graceful shutdown saat restore
 func (s *Service) HandleShutdown() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.restoreInProgress {
-		s.Log.Warn("⚠ Restore sedang berlangsung, menghentikan...")
-		if s.cancelFunc != nil {
-			s.cancelFunc()
+	s.WithLock(func() {
+		if s.restoreInProgress {
+			s.Log.Warn("⚠ Restore sedang berlangsung, menghentikan...")
+			// Cancel akan dipanggil via BaseService.Cancel()
 		}
-	}
+	})
+	s.Cancel() // Panggil cancel dari BaseService
 }
 
 // SetRestoreInProgress menandai status restore sedang berlangsung
 func (s *Service) SetRestoreInProgress(inProgress bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.restoreInProgress = inProgress
+	s.WithLock(func() {
+		s.restoreInProgress = inProgress
+	})
 }

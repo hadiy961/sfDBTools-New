@@ -7,6 +7,7 @@ import (
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
 )
 
@@ -21,15 +22,10 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 		return nil, nil, err
 	}
 
-	// Gunakan helper ConnectToSourceDatabase agar konsisten dan teruji
-	creds := types.SourceDBConnection{
-		DBInfo:   s.BackupDBOptions.Profile.DBInfo,
-		Database: "mysql", // gunakan schema sistem untuk koneksi awal
-	}
-
-	client, err = database.ConnectToSourceDatabase(creds)
+	// Gunakan profilehelper untuk koneksi yang konsisten
+	client, err = profilehelper.ConnectWithProfile(&s.BackupDBOptions.Profile, "mysql")
 	if err != nil {
-		return nil, nil, fmt.Errorf("gagal koneksi ke database: %w", err)
+		return nil, nil, err
 	}
 
 	// Gunakan pola `defer` dengan flag untuk memastikan `client.Close()` hanya dipanggil saat terjadi error.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
+	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
 )
 
@@ -21,19 +22,15 @@ func (s *Service) PrepareScanSession(ctx context.Context, headerTitle string, sh
 		return nil, nil, err
 	}
 
-	// Gunakan helper ConnectToSourceDatabase agar konsisten dan teruji
-	creds := types.SourceDBConnection{
-		DBInfo:   s.ScanOptions.ProfileInfo.DBInfo,
-		Database: "mysql", // gunakan schema sistem untuk koneksi awal
-	}
-
-	if s.ScanOptions.LocalScan && creds.DBInfo.Host != "localhost" {
+	// Check local scan restriction
+	if s.ScanOptions.LocalScan && s.ScanOptions.ProfileInfo.DBInfo.Host != "localhost" {
 		return nil, nil, fmt.Errorf("local scan hanya didukung untuk host 'localhost'")
 	}
 
-	client, err = database.ConnectToSourceDatabase(creds)
+	// Gunakan profilehelper untuk koneksi yang konsisten
+	client, err = profilehelper.ConnectWithProfile(&s.ScanOptions.ProfileInfo, "mysql")
 	if err != nil {
-		return nil, nil, fmt.Errorf("gagal koneksi ke database: %w", err)
+		return nil, nil, err
 	}
 
 	// Gunakan pola `defer` dengan flag untuk memastikan `client.Close()` hanya dipanggil saat terjadi error.

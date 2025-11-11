@@ -72,9 +72,7 @@ type OutputConfig struct {
 }
 
 type VerificationConfig struct {
-	CompareChecksums bool `yaml:"compare_checksums"`
-	DiskSpaceCheck   bool `yaml:"disk_space_check"`
-	VerifyAfterWrite bool `yaml:"verify_after_write"`
+	DiskSpaceCheck bool `yaml:"disk_space_check"`
 }
 
 // Struct untuk bagian 'config_dir'

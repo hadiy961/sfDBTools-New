@@ -4,10 +4,113 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/fsops"
+	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
 	"sort"
 	"strings"
 )
+
+// DatabaseNameResolution berisi hasil resolusi database name
+type DatabaseNameResolution struct {
+	TargetDB     string // Database name yang akan digunakan sebagai target
+	SourceDB     string // Database name dari source (untuk display/logging)
+	ResolvedFrom string // "metadata", "filename", "user_input", "flag"
+}
+
+// resolveDatabaseName mendapatkan database name dengan priority:
+// 1. User-specified target DB (dari flag --target-db)
+// 2. Metadata file
+// 3. Extract dari filename pattern
+// 4. Interactive prompt (jika tidak quiet mode)
+func (s *Service) resolveDatabaseName(sourceFile string, userSpecifiedTargetDB string) (*DatabaseNameResolution, error) {
+	result := &DatabaseNameResolution{
+		TargetDB: userSpecifiedTargetDB,
+	}
+
+	// Priority 1: User specified target DB via flag
+	if userSpecifiedTargetDB != "" {
+		result.ResolvedFrom = "flag"
+		// Masih perlu resolve source DB untuk display
+		result.SourceDB = s.tryGetSourceDatabaseName(sourceFile)
+		if result.SourceDB == "" {
+			result.SourceDB = userSpecifiedTargetDB // Fallback
+		}
+		s.Log.Debugf("Target DB from flag: %s", result.TargetDB)
+		return result, nil
+	}
+
+	// Priority 2: Load dari metadata file
+	metadataFile := sourceFile + consts.MetadataFileSuffix
+	if fsops.FileExists(metadataFile) {
+		metadata, err := s.loadBackupMetadata(metadataFile)
+		if err == nil && len(metadata.DatabaseNames) > 0 {
+			result.TargetDB = metadata.DatabaseNames[0]
+			result.SourceDB = metadata.DatabaseNames[0]
+			result.ResolvedFrom = "metadata"
+			s.Log.Infof("✓ Target database dari metadata: %s", result.TargetDB)
+			return result, nil
+		}
+	}
+
+	// Priority 3: Extract dari filename pattern
+	dbName := extractDatabaseNameFromPattern(sourceFile)
+	if dbName != "" {
+		result.TargetDB = dbName
+		result.SourceDB = dbName
+		result.ResolvedFrom = "filename"
+		s.Log.Infof("✓ Target database dari filename: %s", result.TargetDB)
+		return result, nil
+	}
+
+	// Pattern tidak match
+	s.Log.Warnf("⚠ Filename tidak sesuai dengan pattern: %s", FixedBackupPattern)
+	s.Log.Warnf("  Backup file: %s", filepath.Base(sourceFile))
+
+	// Priority 4: Interactive prompt jika tidak quiet mode
+	quietMode := helper.GetEnvOrDefault(consts.ENV_QUIET, "false") == "true"
+	if !quietMode {
+		s.Log.Info("Filename tidak sesuai pattern, gunakan interactive mode untuk input database name...")
+		promptedDB, err := s.promptDatabaseName(sourceFile)
+		if err != nil {
+			return nil, fmt.Errorf("gagal mendapatkan database name: %w", err)
+		}
+		result.TargetDB = promptedDB
+		result.SourceDB = promptedDB
+		result.ResolvedFrom = "user_input"
+		s.Log.Infof("✓ Target database dari user input: %s", result.TargetDB)
+		return result, nil
+	}
+
+	// Quiet mode atau no TTY - tidak bisa interactive
+	return nil, fmt.Errorf("filename tidak sesuai pattern %s, gunakan flag --target-db (backup file: %s)",
+		FixedBackupPattern, filepath.Base(sourceFile))
+}
+
+// tryGetSourceDatabaseName mencoba mendapatkan source database name untuk display/logging
+// Tidak error jika gagal, return empty string
+func (s *Service) tryGetSourceDatabaseName(sourceFile string) string {
+	// Try metadata first
+	metadataFile := sourceFile + consts.MetadataFileSuffix
+	if fsops.FileExists(metadataFile) {
+		if metadata, err := s.loadBackupMetadata(metadataFile); err == nil && len(metadata.DatabaseNames) > 0 {
+			return metadata.DatabaseNames[0]
+		}
+	}
+
+	// Try filename pattern
+	return extractDatabaseNameFromPattern(sourceFile)
+}
+
+// getFileInfo mendapatkan informasi file untuk DatabaseRestoreInfo
+func getFileInfo(sourceFile string) (fileSize int64, fileSizeHuman string) {
+	if fileInfo, ok := fsops.FileExistsWithInfo(sourceFile); ok {
+		fileSize = fileInfo.Size()
+		fileSizeHuman = global.FormatFileSize(fileSize)
+	}
+	return
+}
 
 // selectLatestBackupFiles memilih file backup terbaru untuk setiap database
 // Jika ada multiple files untuk satu database, pilih yang terbaru berdasarkan ModTime

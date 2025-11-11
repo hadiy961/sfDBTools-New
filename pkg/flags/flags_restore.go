@@ -28,9 +28,6 @@ func AddRestoreSingleFlags(cmd *cobra.Command, opts *types.RestoreOptions) {
 	// Target database name
 	cmd.Flags().StringVarP(&opts.TargetDB, "target-db", "d", "", "Nama database target untuk restore (jika kosong, gunakan nama dari backup file)")
 
-	// Verification
-	cmd.Flags().BoolVar(&opts.VerifyChecksum, "verify-checksum", opts.VerifyChecksum, "Verifikasi checksum sebelum restore")
-
 	// Force dan dry-run
 	cmd.Flags().BoolVar(&opts.Force, "force", opts.Force, "Force restore - Mengabaikan error dan prompt konfirmasi")
 	cmd.Flags().BoolVar(&opts.DryRun, "dry-run", opts.DryRun, "Simulasi restore tanpa eksekusi (untuk testing)")
@@ -58,9 +55,6 @@ func AddRestoreAllFlags(cmd *cobra.Command, opts *types.RestoreOptions) {
 	// Encryption key untuk decrypt backup
 	cmd.Flags().StringVarP(&opts.EncryptionKey, "encryption-key", "k", "", "Kunci enkripsi untuk decrypt file backup (ENV: SFDB_BACKUP_ENCRYPTION_KEY)")
 
-	// Verification
-	cmd.Flags().BoolVar(&opts.VerifyChecksum, "verify-checksum", true, "Verifikasi checksum sebelum restore")
-
 	// Force dan dry-run
 	cmd.Flags().BoolVar(&opts.Force, "force", false, "Skip confirmation prompt")
 	cmd.Flags().BoolVar(&opts.DryRun, "dry-run", false, "Simulasi restore tanpa eksekusi (untuk testing)")
@@ -87,9 +81,6 @@ func AddRestoreMultiFlags(cmd *cobra.Command, opts *types.RestoreOptions) {
 
 	// Encryption key untuk decrypt backup
 	cmd.Flags().StringVarP(&opts.EncryptionKey, "encryption-key", "k", "", "Kunci enkripsi untuk decrypt file backup (ENV: SFDB_BACKUP_ENCRYPTION_KEY)")
-
-	// Verification
-	cmd.Flags().BoolVar(&opts.VerifyChecksum, "verify-checksum", opts.VerifyChecksum, "Verifikasi checksum sebelum restore")
 
 	// Force dan dry-run
 	cmd.Flags().BoolVar(&opts.Force, "force", opts.Force, "Force restore - Mengabaikan error dan prompt konfirmasi")

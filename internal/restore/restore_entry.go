@@ -10,11 +10,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sfDBTools/internal/profileselect"
+
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/database"
-	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
 )
 
@@ -38,12 +36,10 @@ func (s *Service) ExecuteRestoreCommand(ctx context.Context, restoreConfig types
 		return fmt.Errorf("resolve target profile gagal: %w", err)
 	}
 
-	// Verify backup file (decrypt, decompress, checksum)
-	if s.RestoreOptions.VerifyChecksum {
-		s.Log.Info("Memverifikasi backup file...")
-		if err := s.verifyBackupFile(ctx); err != nil {
-			return fmt.Errorf("verifikasi backup file gagal: %w", err)
-		}
+	// Verify backup file (basic validation)
+	s.Log.Info("Memverifikasi backup file...")
+	if err := s.verifyBackupFile(ctx); err != nil {
+		return fmt.Errorf("verifikasi backup file gagal: %w", err)
 	}
 
 	// Show options dan minta konfirmasi jika ShowOptions=true dan Force=false
@@ -57,8 +53,8 @@ func (s *Service) ExecuteRestoreCommand(ctx context.Context, restoreConfig types
 		}
 	}
 
-	// Connect to target database
-	if err := s.connectToTargetDatabase(); err != nil {
+	// Koneksi ke target database
+	if err := s.connectToTargetDatabase(ctx); err != nil {
 		return fmt.Errorf("koneksi ke target database gagal: %w", err)
 	}
 	defer s.Client.Close()
@@ -129,25 +125,13 @@ func (s *Service) validateSourceFile() error {
 
 // resolveTargetProfile me-resolve target profile untuk restore
 func (s *Service) resolveTargetProfile(ctx context.Context) error {
-	profilePath := s.RestoreOptions.TargetProfile
-	profileKey := s.RestoreOptions.TargetProfileKey
+	s.Log.Infof("Loading target profile...")
 
-	// Resolve dari environment variable jika tidak ada
-	if profilePath == "" {
-		profilePath = helper.GetEnvOrDefault(consts.ENV_TARGET_PROFILE, "")
-		if profilePath == "" {
-			return fmt.Errorf("target profile tidak tersedia, gunakan flag --profile atau env %s", consts.ENV_TARGET_PROFILE)
-		}
-	}
-
-	if profileKey == "" {
-		profileKey = helper.GetEnvOrDefault(consts.ENV_TARGET_PROFILE_KEY, "")
-	}
-
-	s.Log.Infof("Loading target profile: %s", profilePath)
-
-	// Load profile menggunakan profileselect
-	profile, err := profileselect.LoadAndParseProfile(profilePath, profileKey)
+	// Gunakan profilehelper untuk load profile dengan fallback ke env vars
+	profile, err := profilehelper.LoadTargetProfile(
+		s.RestoreOptions.TargetProfile,
+		s.RestoreOptions.TargetProfileKey,
+	)
 	if err != nil {
 		return fmt.Errorf("gagal load target profile: %w", err)
 	}
@@ -160,15 +144,11 @@ func (s *Service) resolveTargetProfile(ctx context.Context) error {
 }
 
 // connectToTargetDatabase membuat koneksi ke database target
-func (s *Service) connectToTargetDatabase() error {
-	s.Log.Info("Connecting to target database...")
+func (s *Service) connectToTargetDatabase(ctx context.Context) error {
+	s.Log.Infof("Connecting to target database...")
 
-	creds := types.DestinationDBConnection{
-		DBInfo: s.TargetProfile.DBInfo,
-	}
-
-	client, err := database.ConnectToDestinationDatabase(creds)
-
+	// Gunakan profilehelper untuk koneksi yang konsisten
+	client, err := profilehelper.ConnectWithTargetProfile(s.TargetProfile, "mysql")
 	if err != nil {
 		return fmt.Errorf("gagal connect ke target database: %w", err)
 	}

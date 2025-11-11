@@ -6,17 +6,16 @@ import (
 	"os"
 	"path/filepath"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
 	"strings"
-	"time"
 )
 
 // executeBackupCombined melakukan backup semua database dalam satu file
 func (s *Service) ExecuteBackupCombined(ctx context.Context, dbFiltered []string) types.BackupResult {
-	backupStartTime := time.Now()
+	timer := helper.NewTimer()
 	var res types.BackupResult
 	s.Log.Info("Melakukan backup database dalam mode combined")
 
@@ -43,7 +42,7 @@ func (s *Service) ExecuteBackupCombined(ctx context.Context, dbFiltered []string
 	writeResult, err := s.executeMysqldumpWithPipe(ctx, mysqldumpArgs, fullOutputPath, Compression, CompressionType)
 	if err != nil {
 		// Hapus file backup yang gagal/kosong
-		if _, statErr := os.Stat(fullOutputPath); statErr == nil {
+		if fsops.FileExists(fullOutputPath) {
 			s.Log.Infof("Menghapus file backup yang gagal: %s", fullOutputPath)
 			os.Remove(fullOutputPath)
 		}
@@ -85,70 +84,11 @@ func (s *Service) ExecuteBackupCombined(ctx context.Context, dbFiltered []string
 		ui.PrintWarning(stderrOutput)
 	}
 
-	backupDuration := time.Since(backupStartTime)
+	backupDuration := timer.Elapsed()
 	fileInfo, err := os.Stat(fullOutputPath)
 	var fileSize int64
 	if err == nil {
 		fileSize = fileInfo.Size()
-	}
-
-	// Generate metadata manifest dengan checksums jika enabled
-	if s.Config.Backup.Verification.CompareChecksums && writeResult != nil {
-		// Write metadata manifest (checksums sudah included di dalam JSON)
-		metadata := s.CreateBackupMetadata(
-			fullOutputPath,
-			"combined",
-			dbFiltered,
-			backupStartTime,
-			time.Now(),
-			writeResult.SHA256Hash,
-			writeResult.MD5Hash,
-			fileSize,
-		)
-		if err := s.WriteBackupMetadata(metadata); err != nil {
-			s.Log.Warnf("Gagal menulis metadata file: %v", err)
-		}
-
-		// Log checksums
-		s.Log.Infof("✓ Checksums: SHA256=%s", writeResult.SHA256Hash[:16]+"...")
-		s.Log.Infof("✓ Checksums: MD5=%s", writeResult.MD5Hash[:16]+"...")
-
-		// Verify checksum jika enabled
-		if s.Config.Backup.Verification.VerifyAfterWrite {
-			s.Log.Info("Memverifikasi checksum backup file...")
-
-			encryptionKey := ""
-			if s.BackupDBOptions.Encryption.Enabled {
-				// Resolve encryption key dengan strategi: flag/state → env → prompt
-				resolvedKey, _, err := helper.ResolveEncryptionKey(s.BackupDBOptions.Encryption.Key, consts.ENV_BACKUP_ENCRYPTION_KEY)
-				if err != nil {
-					s.Log.Errorf("✗ Gagal mendapatkan kunci enkripsi untuk verifikasi: %v", err)
-				} else {
-					encryptionKey = resolvedKey
-				}
-			}
-
-			compressionType := ""
-			if s.BackupDBOptions.Compression.Enabled {
-				compressionType = s.BackupDBOptions.Compression.Type
-			}
-
-			verifyResult, err := s.VerifyBackupChecksum(
-				fullOutputPath,
-				writeResult.SHA256Hash,
-				writeResult.MD5Hash,
-				encryptionKey,
-				compressionType,
-			)
-
-			if err != nil {
-				s.Log.Errorf("✗ Gagal verifikasi checksum: %v", err)
-			} else if verifyResult.Success {
-				s.Log.Info("✓ Verifikasi checksum BERHASIL - file backup valid!")
-			} else {
-				s.Log.Errorf("✗ Verifikasi checksum GAGAL: %s", verifyResult.Error)
-			}
-		}
 	}
 
 	// Untuk combined mode, buat satu entry dengan info semua database

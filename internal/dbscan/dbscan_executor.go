@@ -17,6 +17,7 @@ import (
 
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
+	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
 
 	"github.com/dustin/go-humanize"
@@ -151,7 +152,7 @@ func (s *Service) ExecuteScanInBackground(ctx context.Context, config types.Scan
 // ExecuteScan melakukan scanning database dan menyimpan hasilnya
 // Parameter isBackground menentukan apakah output menggunakan logger (true) atau UI (false)
 func (s *Service) ExecuteScan(ctx context.Context, sourceClient *database.Client, targetClient *database.Client, dbNames []string, isBackground bool) (*types.ScanResult, error) {
-	startTime := time.Now()
+	timer := helper.NewTimer()
 
 	if isBackground {
 		s.Logger.Info("Memulai proses scanning database...")
@@ -302,7 +303,7 @@ func (s *Service) ExecuteScan(ctx context.Context, sourceClient *database.Client
 			s.Logger.Infof("ℹ Error details tersimpan di: %s", logFile)
 		}
 
-		duration := time.Since(startTime)
+		duration := timer.Elapsed()
 		return &types.ScanResult{
 			TotalDatabases: len(dbNames),
 			SuccessCount:   successCount,
@@ -322,7 +323,7 @@ func (s *Service) ExecuteScan(ctx context.Context, sourceClient *database.Client
 		s.LogDetailResults(detailsMap)
 	}
 
-	duration := time.Since(startTime)
+	duration := timer.Elapsed()
 
 	return &types.ScanResult{
 		TotalDatabases: len(dbNames),

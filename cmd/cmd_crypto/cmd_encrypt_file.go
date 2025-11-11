@@ -1,15 +1,15 @@
 package cmdcrypto
 
 import (
-	"fmt"
 	"io"
 	"os"
+	"sfDBTools/internal/cryptoauth"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/cryptohelper"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -24,30 +24,38 @@ var (
 var CmdEncryptFile = &cobra.Command{
 	Use:   "encrypt-file",
 	Short: "Enkripsi file menggunakan AES (OpenSSL compatible)",
-	Long:  "Mengenkripsi file input dan menyimpan hasilnya ke file output. Kompatibel dengan 'openssl enc -pbkdf2'",
+	Long:  "Mengenkripsi file input dan menyimpan hasilnya ke file output. Kompatibel dengan 'openssl enc -pbkdf2'. Mendukung mode interaktif.",
 	Example: `
 	# Enkripsi file dengan key dari env SFDB_ENCRYPTION_KEY (atau prompt jika kosong)
 	sfdbtools crypto encrypt-file --in backup.sql --out backup.sql.enc
 
 	# Enkripsi file dengan key eksplisit
 	sfdbtools crypto encrypt-file -i data.txt -o data.txt.enc --key "mypassword"
+	
+	# Mode interaktif (tanpa flags)
+	sfdbtools crypto encrypt-file
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		lg := types.Deps.Logger
-		// Quiet mode: don't print banners, route logs to stderr for clean stdout
-		quiet := false
-		if v := os.Getenv(consts.ENV_QUIET); v != "" && v != "0" && strings.ToLower(v) != "false" {
-			quiet = true
-			if lg != nil {
-				lg.SetOutput(os.Stderr)
-			}
-		}
+		quiet := cryptohelper.SetupQuietMode(lg)
+
+		// Password authentication
+		cryptoauth.MustValidatePassword()
+
 		if !quiet {
 			ui.Headers("Encrypt File")
 		}
-		if encFileInPath == "" || encFileOutPath == "" {
-			fmt.Println("✗ Wajib menyertakan --in dan --out")
-			_ = cmd.Help()
+
+		// Interactive mode untuk file paths jika tidak ada flag
+		inputPath, err := cryptohelper.GetFilePathOrInteractive(encFileInPath, "📂 Masukkan path file yang akan dienkripsi:", true)
+		if err != nil {
+			lg.Errorf("Gagal mendapatkan input file: %v", err)
+			return
+		}
+
+		outputPath, err := cryptohelper.GetFilePathOrInteractive(encFileOutPath, "💾 Masukkan path file output terenkripsi:", false)
+		if err != nil {
+			lg.Errorf("Gagal mendapatkan output file: %v", err)
 			return
 		}
 
@@ -59,14 +67,14 @@ var CmdEncryptFile = &cobra.Command{
 		}
 
 		// Support pipeline via '-' for stdin/stdout
-		if encFileInPath == "-" || encFileOutPath == "-" {
+		if inputPath == "-" || outputPath == "-" {
 			var reader io.Reader
 			var writer io.Writer
 			// Reader
-			if encFileInPath == "-" {
+			if inputPath == "-" {
 				reader = os.Stdin
 			} else {
-				f, err := os.Open(encFileInPath)
+				f, err := os.Open(inputPath)
 				if err != nil {
 					lg.Errorf("Gagal membuka file input: %v", err)
 					return
@@ -75,10 +83,10 @@ var CmdEncryptFile = &cobra.Command{
 				reader = f
 			}
 			// Writer
-			if encFileOutPath == "-" {
+			if outputPath == "-" {
 				writer = os.Stdout
 			} else {
-				f, err := os.Create(encFileOutPath)
+				f, err := os.Create(outputPath)
 				if err != nil {
 					lg.Errorf("Gagal membuat file output: %v", err)
 					return
@@ -101,11 +109,11 @@ var CmdEncryptFile = &cobra.Command{
 				return
 			}
 		} else {
-			if err := encrypt.EncryptFile(encFileInPath, encFileOutPath, []byte(key)); err != nil {
+			if err := encrypt.EncryptFile(inputPath, outputPath, []byte(key)); err != nil {
 				lg.Errorf("Gagal mengenkripsi file: %v", err)
 				return
 			}
-			lg.Infof("✓ File terenkripsi: %s → %s", encFileInPath, encFileOutPath)
+			lg.Infof("✓ File terenkripsi: %s → %s", inputPath, outputPath)
 		}
 	},
 }

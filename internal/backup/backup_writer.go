@@ -11,12 +11,9 @@ import (
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
-	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/ui"
 	"strings"
-	"time"
-
-	"github.com/briandowns/spinner"
 )
 
 // executeMysqldumpWithPipe menjalankan mysqldump dengan pipe untuk kompresi dan enkripsi.
@@ -26,30 +23,9 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 	// maskedArgs := s.maskPasswordInArgs(mysqldumpArgs)
 
 	// Start spinner dengan elapsed time
-	spin := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-	spin.Suffix = " Memproses backup database..."
+	spin := ui.NewSpinnerWithElapsed("Memproses backup database")
 	spin.Start()
-
-	// Goroutine untuk update spinner dengan elapsed time
-	startTime := time.Now()
-	done := make(chan bool, 1)
-	go func() {
-		for {
-			select {
-			case <-done:
-				return
-			default:
-				elapsed := time.Since(startTime)
-				spin.Suffix = fmt.Sprintf(" Memproses backup database... (%s)", global.FormatDuration(elapsed))
-				time.Sleep(500 * time.Millisecond)
-			}
-		}
-	}()
-
-	defer func() {
-		done <- true // Stop elapsed time updater
-		spin.Stop()
-	}()
+	defer spin.Stop()
 
 	outputFile, err := os.Create(outputPath)
 	if err != nil {
@@ -58,9 +34,7 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 	defer outputFile.Close()
 
 	// Setup writer chain: mysqldump → Compression → Encryption → File
-	// HashWriter akan di-setup sebagai parallel writer untuk hash dari raw data
 	var writer io.Writer = outputFile
-	var hashWriter *MultiHashWriter
 	var closers []io.Closer
 
 	// Layer 1: Encryption (paling dekat dengan file)
@@ -96,20 +70,8 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 		writer = compressingWriter
 	}
 
-	// Layer 3: Setup HashWriter sebagai TeeWriter
-	// Data dari mysqldump akan ditulis ke DUA tempat secara parallel:
-	// 1. Ke writer chain (compression → encryption → file)
-	// 2. Ke hashWriter untuk kalkulasi checksum
-	// Dengan cara ini, hash dihitung dari data SQL mentah SEBELUM compression/encryption
-	if s.Config.Backup.Verification.CompareChecksums {
-		hashWriter = NewMultiHashWriter(io.Discard) // Hash saja, tidak tulis ke file
-		// Gunakan TeeWriter untuk split data ke 2 destination
-		writer = io.MultiWriter(writer, hashWriter)
-	}
-
 	// cmd.Stdout akan write ke writer:
-	// mysqldump → MultiWriter → [compressingWriter → encryptingWriter → file] + [hashWriter]
-	// Data flow: mysqldump → hashWriter → compressingWriter → encryptingWriter → file
+	// mysqldump → compressingWriter → encryptingWriter → file
 
 	defer func() {
 		for i := len(closers) - 1; i >= 0; i-- {
@@ -140,22 +102,16 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 		_ = logFile
 
 		// Cek apakah ini error fatal atau hanya warning
-			if s.isFatalMysqldumpError(err, stderrOutput) {
-				return nil, fmt.Errorf("mysqldump gagal: %w", err)
-			}
+		if s.isFatalMysqldumpError(err, stderrOutput) {
+			return nil, fmt.Errorf("mysqldump gagal: %w", err)
+		}
 		// Jika bukan fatal error, kembalikan stderr sebagai warning
 		s.Log.Warn("mysqldump exit with non-fatal error, treated as warning")
 	}
 
-	// Buat result dengan checksums jika enabled
+	// Buat result
 	result := &types.BackupWriteResult{
 		StderrOutput: stderrBuf.String(),
-	}
-
-	if hashWriter != nil {
-		result.SHA256Hash = hashWriter.GetSHA256()
-		result.MD5Hash = hashWriter.GetMD5()
-		result.BytesWritten = hashWriter.GetBytesWritten()
 	}
 
 	return result, nil

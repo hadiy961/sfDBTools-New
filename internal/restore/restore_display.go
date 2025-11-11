@@ -36,7 +36,6 @@ func (s *Service) DisplayRestoreOptions() (proceed bool, err error) {
 	// Build data rows untuk table
 	data := [][]string{
 		{"Source File", ui.ColorText(fileInfo, ui.ColorCyan)},
-		{"Verify Checksum", fmt.Sprintf("%v", s.RestoreOptions.VerifyChecksum)},
 		{"Dry Run", fmt.Sprintf("%v", s.RestoreOptions.DryRun)},
 		{"Skip Backup", fmt.Sprintf("%v", s.RestoreOptions.SkipBackup)},
 		{"Drop Target", fmt.Sprintf("%v", s.RestoreOptions.DropTarget)},

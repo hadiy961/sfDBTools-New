@@ -198,7 +198,7 @@ func shouldExcludeDatabase(dbName string, whitelist, blacklist []string, exclude
 	}
 
 	// 4. Check system databases
-	if excludeSystem && isSystemDatabase(dbName) {
+	if excludeSystem && IsSystemDatabase(dbName) {
 		stats.ExcludedSystem++
 		return true
 	}
@@ -207,8 +207,9 @@ func shouldExcludeDatabase(dbName string, whitelist, blacklist []string, exclude
 	return false
 }
 
-// isSystemDatabase memeriksa apakah database adalah system database
-func isSystemDatabase(dbName string) bool {
+// IsSystemDatabase memeriksa apakah database adalah system database
+// Function ini di-export agar bisa digunakan di package lain
+func IsSystemDatabase(dbName string) bool {
 	_, exists := types.SystemDatabases[strings.ToLower(dbName)]
 	return exists
 }

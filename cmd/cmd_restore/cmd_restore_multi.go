@@ -76,7 +76,6 @@ Contoh penggunaan:
 		restoreOpts.TargetProfile, _ = cmd.Flags().GetString("profile")
 		restoreOpts.TargetProfileKey, _ = cmd.Flags().GetString("profile-key")
 		restoreOpts.EncryptionKey, _ = cmd.Flags().GetString("encryption-key")
-		restoreOpts.VerifyChecksum, _ = cmd.Flags().GetBool("verify-checksum")
 		restoreOpts.Force, _ = cmd.Flags().GetBool("force")
 		restoreOpts.DryRun, _ = cmd.Flags().GetBool("dry-run")
 		restoreOpts.ShowOptions, _ = cmd.Flags().GetBool("show-options")
@@ -111,13 +110,12 @@ Contoh penggunaan:
 func init() {
 	// Default options untuk restore multi
 	defaultOpts := types.RestoreOptions{
-		Mode:           "multi",
-		VerifyChecksum: true,
-		Force:          false,
-		DryRun:         false,
-		ShowOptions:    false,
-		SkipBackup:     false,
-		DropTarget:     false,
+		Mode:        "multi",
+		Force:       false,
+		DryRun:      false,
+		ShowOptions: false,
+		SkipBackup:  false,
+		DropTarget:  false,
 	}
 	flags.AddRestoreMultiFlags(CmdRestoreMulti, &defaultOpts)
 }

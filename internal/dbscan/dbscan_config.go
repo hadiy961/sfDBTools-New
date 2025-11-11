@@ -8,41 +8,22 @@ package dbscan
 
 import (
 	"fmt"
-	"sfDBTools/internal/profileselect"
-	"sfDBTools/pkg/helper"
-	"strings"
+	"sfDBTools/pkg/profilehelper"
 )
 
 // CheckAndSelectConfigFile memeriksa file konfigurasi yang ada atau memandu pengguna untuk memilihnya.
-// Fungsi ini sekarang menggunakan fungsi generic dari pkg/dbconfig untuk menghindari duplikasi kode.
 func (s *Service) CheckAndSelectConfigFile() error {
-	// Jika user sudah memberikan path profile via flag/ENV, gunakan itu dan jangan prompt
-	if strings.TrimSpace(s.ScanOptions.ProfileInfo.Path) != "" {
-		absPath, name, err := helper.ResolveConfigPath(s.ScanOptions.ProfileInfo.Path)
-		if err != nil {
-			return fmt.Errorf("gagal memproses path konfigurasi: %w", err)
-		}
-
-		// Muat dan parse profil terenkripsi menggunakan key (jika ada)
-		loaded, err := profileselect.LoadAndParseProfile(absPath, s.ScanOptions.Encryption.Key)
-		if err != nil {
-			return err
-		}
-
-		// Simpan kembali ke ScanOptions (pertahankan metadata yang relevan)
-		s.ScanOptions.ProfileInfo.Path = absPath
-		s.ScanOptions.ProfileInfo.Name = name
-		s.ScanOptions.ProfileInfo.DBInfo = loaded.DBInfo
-		s.ScanOptions.ProfileInfo.EncryptionSource = loaded.EncryptionSource
-		return nil
-	}
-
-	// Jika tidak ada path diberikan, buka selector agar user memilih file profil
-	info, err := profileselect.SelectExistingDBConfig("Pilih file konfigurasi database sumber:")
+	// Gunakan profilehelper untuk load source profile dengan interactive mode
+	profile, err := profilehelper.LoadSourceProfile(
+		s.ScanOptions.ProfileInfo.Path,
+		s.ScanOptions.Encryption.Key,
+		true, // enableInteractive - tampilkan selector jika path kosong
+	)
 	if err != nil {
-		return fmt.Errorf("gagal memilih konfigurasi database: %w", err)
+		return fmt.Errorf("gagal load source profile: %w", err)
 	}
-	// Simpan ke ScanOptions
-	s.ScanOptions.ProfileInfo = info
+
+	// Simpan ke ScanOptions (dereference pointer)
+	s.ScanOptions.ProfileInfo = *profile
 	return nil
 }

@@ -22,9 +22,8 @@
 package restore
 
 import (
-	"path/filepath"
 	"regexp"
-	"strings"
+	"sfDBTools/pkg/helper"
 )
 
 // Fixed pattern yang digunakan untuk filename backup
@@ -33,15 +32,8 @@ const FixedBackupPattern = "{database}_{year}{month}{day}_{hour}{minute}{second}
 // extractDatabaseNameFromPattern extract nama database dari filename menggunakan fixed pattern
 // Return empty string jika filename tidak sesuai pattern (akan trigger interactive prompt)
 func extractDatabaseNameFromPattern(filename string) string {
-	base := filepath.Base(filename)
-
-	// Remove extensions
-	base = strings.TrimSuffix(base, ".enc")
-	base = strings.TrimSuffix(base, ".gz")
-	base = strings.TrimSuffix(base, ".zst")
-	base = strings.TrimSuffix(base, ".xz")
-	base = strings.TrimSuffix(base, ".zlib")
-	base = strings.TrimSuffix(base, ".sql")
+	// Remove all backup extensions menggunakan helper
+	base := helper.StripAllBackupExtensions(filename)
 
 	// Build regex untuk fixed pattern: {database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}
 	// Pattern: (.+?)_\d{8}_\d{6}_([^_]+)

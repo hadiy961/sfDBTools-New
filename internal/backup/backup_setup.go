@@ -2,44 +2,25 @@ package backup
 
 import (
 	"fmt"
-	"sfDBTools/internal/profileselect"
 	"sfDBTools/pkg/fsops"
-	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
-	"strings"
 )
 
 // CheckAndSelectConfigFile memeriksa file konfigurasi yang ada atau memandu pengguna untuk memilihnya.
-// Fungsi ini sekarang menggunakan fungsi generic dari pkg/dbconfig untuk menghindari duplikasi kode.
 func (s *Service) CheckAndSelectConfigFile() error {
-	// Jika user sudah memberikan path profile via flag/ENV, gunakan itu dan jangan prompt
-	if strings.TrimSpace(s.BackupDBOptions.Profile.Path) != "" {
-		absPath, name, err := helper.ResolveConfigPath(s.BackupDBOptions.Profile.Path)
-		if err != nil {
-			return fmt.Errorf("gagal memproses path konfigurasi: %w", err)
-		}
-
-		// Muat dan parse profil terenkripsi menggunakan key (jika ada)
-		loaded, err := profileselect.LoadAndParseProfile(absPath, s.BackupDBOptions.Encryption.Key)
-		if err != nil {
-			return err
-		}
-
-		// Simpan kembali ke BackupDBOptions (pertahankan metadata yang relevan)
-		s.BackupDBOptions.Profile.Path = absPath
-		s.BackupDBOptions.Profile.Name = name
-		s.BackupDBOptions.Profile.DBInfo = loaded.DBInfo
-		s.BackupDBOptions.Profile.EncryptionSource = loaded.EncryptionSource
-		return nil
-	}
-
-	// Jika tidak ada path diberikan, buka selector agar user memilih file profil
-	info, err := profileselect.SelectExistingDBConfig("Pilih file konfigurasi database sumber:")
+	// Gunakan profilehelper untuk load source profile dengan interactive mode
+	profile, err := profilehelper.LoadSourceProfile(
+		s.BackupDBOptions.Profile.Path,
+		s.BackupDBOptions.Encryption.Key,
+		true, // enableInteractive - tampilkan selector jika path kosong
+	)
 	if err != nil {
-		return fmt.Errorf("gagal memilih konfigurasi database: %w", err)
+		return fmt.Errorf("gagal load source profile: %w", err)
 	}
-	// Simpan ke BackupDBOptions
-	s.BackupDBOptions.Profile = info
+
+	// Simpan ke BackupDBOptions (dereference pointer)
+	s.BackupDBOptions.Profile = *profile
 	return nil
 }
 

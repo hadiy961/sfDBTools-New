@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
+	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
-	"time"
 )
 
 // ExecuteBackup melakukan proses backup database
@@ -54,7 +54,7 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 	}
 
 	// 4. Eksekusi backup sesuai mode
-	startTime := time.Now()
+	timer := helper.NewTimer()
 	var result types.BackupResult
 
 	ui.PrintSubHeader("Memulai Proses Backup")
@@ -65,7 +65,7 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 		result = s.ExecuteBackupCombined(ctx, dbFiltered)
 	}
 
-	result.TotalTimeTaken = time.Since(startTime)
+	result.TotalTimeTaken = timer.Elapsed()
 
 	// 5. Cek apakah ada error dalam result
 	if len(result.Errors) > 0 || len(result.FailedDatabaseInfos) > 0 {

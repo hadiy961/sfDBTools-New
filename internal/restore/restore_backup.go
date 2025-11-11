@@ -11,9 +11,8 @@ import (
 	"fmt"
 	"sfDBTools/internal/backup"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/helper"
-	"time"
+	"sfDBTools/pkg/profilehelper"
 )
 
 // executePreBackup melakukan backup database sebelum restore sebagai safety net
@@ -22,7 +21,7 @@ import (
 func (s *Service) executePreBackup(ctx context.Context, targetDB string) (string, error) {
 	s.Log.Infof("Membuat backup database '%s' sebelum restore...", targetDB)
 
-	startTime := time.Now()
+	timer := helper.NewTimer()
 
 	// Build BackupDBOptions untuk backup service
 	// Menggunakan struktur yang sama dengan backup command
@@ -85,9 +84,8 @@ func (s *Service) executePreBackup(ctx context.Context, targetDB string) (string
 	backupCancel := func() {}
 	backupSvc.SetCancelFunc(backupCancel)
 
-	// Direct connect ke database target tanpa meminta user memilih profile
-	// Karena kami sudah mempunyai target profile yang ter-load
-	sourceClient, err := setupBackupConnection(s)
+	// Setup connection untuk pre-backup menggunakan profilehelper
+	sourceClient, err := profilehelper.ConnectWithProfile(s.TargetProfile, "mysql")
 	if err != nil {
 		return "", fmt.Errorf("gagal setup backup connection: %w", err)
 	}
@@ -102,7 +100,7 @@ func (s *Service) executePreBackup(ctx context.Context, targetDB string) (string
 		return "", fmt.Errorf("pre-backup gagal: %w", err)
 	}
 
-	duration := time.Since(startTime)
+	duration := timer.Elapsed()
 	s.Log.Infof("✓ Pre-backup selesai dalam %s", duration)
 
 	// Ambil backup file path dari result
@@ -118,29 +116,4 @@ func (s *Service) executePreBackup(ctx context.Context, targetDB string) (string
 	}
 
 	return backupFilePath, nil
-}
-
-// setupBackupConnection membuat koneksi ke database target untuk pre-backup
-// Menggunakan target profile yang sudah ter-load dari restore service
-func setupBackupConnection(s *Service) (*database.Client, error) {
-	creds := types.SourceDBConnection{
-		DBInfo: types.DBInfo{
-			Host:     s.TargetProfile.DBInfo.Host,
-			Port:     s.TargetProfile.DBInfo.Port,
-			User:     s.TargetProfile.DBInfo.User,
-			Password: s.TargetProfile.DBInfo.Password,
-			HostName: s.TargetProfile.DBInfo.HostName,
-		},
-		Database: "mysql", // gunakan schema sistem untuk koneksi awal
-	}
-
-	client, err := database.ConnectToSourceDatabase(creds)
-	if err != nil {
-		return nil, fmt.Errorf("gagal koneksi ke target database untuk pre-backup: %w", err)
-	}
-
-	s.Log.Debugf("✓ Connected to target database for pre-backup: %s@%s:%d",
-		creds.DBInfo.User, creds.DBInfo.Host, creds.DBInfo.Port)
-
-	return client, nil
 }

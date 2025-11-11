@@ -9,6 +9,7 @@ package restore
 import (
 	"fmt"
 	"regexp"
+	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
@@ -46,7 +47,7 @@ func (s *Service) promptDatabaseName(sourceFile string) (string, error) {
 		}
 
 		// Additional validation: tidak boleh system database
-		if isSystemDatabase(dbName) {
+		if database.IsSystemDatabase(dbName) {
 			ui.PrintError(fmt.Sprintf("'%s' adalah system database, tidak bisa digunakan untuk restore", dbName))
 			continue
 		}
@@ -97,25 +98,6 @@ func validateDatabaseName(val interface{}) error {
 	}
 
 	return nil
-}
-
-// isSystemDatabase checks if database name is a system database
-func isSystemDatabase(dbName string) bool {
-	systemDBs := []string{
-		"information_schema",
-		"mysql",
-		"performance_schema",
-		"sys",
-		"test",
-	}
-
-	for _, sysDB := range systemDBs {
-		if dbName == sysDB {
-			return true
-		}
-	}
-
-	return false
 }
 
 // promptConfirmation meminta konfirmasi user dengan pesan custom

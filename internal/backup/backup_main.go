@@ -1,17 +1,18 @@
 package backup
 
 import (
-	"context"
 	"os"
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
-	"sync"
+	"sfDBTools/pkg/servicehelper"
 )
 
 type Service struct {
+	servicehelper.BaseService // Embed base service untuk graceful shutdown functionality
+
 	Config          *appconfig.Config
 	Log             applog.Logger
 	ErrorLog        *errorlog.ErrorLogger
@@ -21,11 +22,9 @@ type Service struct {
 	BackupEntry     *types.BackupEntryConfig
 	Client          *database.Client // Client database aktif selama backup
 
-	// Untuk graceful shutdown
-	cancelFunc        context.CancelFunc
+	// Backup-specific state
 	currentBackupFile string
 	backupInProgress  bool
-	mu                sync.Mutex // Melindungi akses ke currentBackupFile dan backupInProgress
 }
 
 func NewBackupService(logs applog.Logger, cfg *appconfig.Config, backup interface{}) *Service {
@@ -57,52 +56,47 @@ func NewBackupService(logs applog.Logger, cfg *appconfig.Config, backup interfac
 	return svc
 }
 
-// SetCancelFunc menyimpan cancel function untuk graceful shutdown
-func (s *Service) SetCancelFunc(cancel context.CancelFunc) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.cancelFunc = cancel
-}
-
 // SetCurrentBackupFile mencatat file backup yang sedang dibuat
 func (s *Service) SetCurrentBackupFile(filePath string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.currentBackupFile = filePath
-	s.backupInProgress = true
+	s.WithLock(func() {
+		s.currentBackupFile = filePath
+		s.backupInProgress = true
+	})
 }
 
 // ClearCurrentBackupFile menghapus catatan file backup setelah selesai
 func (s *Service) ClearCurrentBackupFile() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.currentBackupFile = ""
-	s.backupInProgress = false
+	s.WithLock(func() {
+		s.currentBackupFile = ""
+		s.backupInProgress = false
+	})
 }
 
 // HandleShutdown menangani graceful shutdown saat CTRL+C atau interrupt
 func (s *Service) HandleShutdown() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	var shouldRemoveFile bool
+	var fileToRemove string
 
-	if s.backupInProgress && s.currentBackupFile != "" {
-		s.Log.Warn("Proses backup dihentikan, melakukan rollback...")
+	s.WithLock(func() {
+		if s.backupInProgress && s.currentBackupFile != "" {
+			s.Log.Warn("Proses backup dihentikan, melakukan rollback...")
+			shouldRemoveFile = true
+			fileToRemove = s.currentBackupFile
+			s.currentBackupFile = ""
+			s.backupInProgress = false
+		}
+	})
 
-		// Hapus file backup yang belum selesai
-		if _, err := os.Stat(s.currentBackupFile); err == nil {
-			if removeErr := os.Remove(s.currentBackupFile); removeErr == nil {
-				s.Log.Infof("File backup yang belum selesai berhasil dihapus: %s", s.currentBackupFile)
+	// Remove file outside of lock to avoid holding lock during I/O
+	if shouldRemoveFile {
+		if _, err := os.Stat(fileToRemove); err == nil {
+			if removeErr := os.Remove(fileToRemove); removeErr == nil {
+				s.Log.Infof("File backup yang belum selesai berhasil dihapus: %s", fileToRemove)
 			} else {
 				s.Log.Errorf("Gagal menghapus file backup: %v", removeErr)
 			}
 		}
-
-		s.currentBackupFile = ""
-		s.backupInProgress = false
 	}
 
-	// Cancel context jika ada
-	if s.cancelFunc != nil {
-		s.cancelFunc()
-	}
+	s.Cancel() // Panggil cancel dari BaseService
 }

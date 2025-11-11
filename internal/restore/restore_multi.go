@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/global"
+	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/servicehelper"
 	"sfDBTools/pkg/ui"
 	"time"
 )
@@ -27,12 +29,8 @@ type BackupFileInfo struct {
 
 // executeRestoreMulti melakukan restore multiple databases dari direktori backup files
 func (s *Service) executeRestoreMulti(ctx context.Context) (types.RestoreResult, error) {
-	var result types.RestoreResult
+	defer servicehelper.TrackProgress(s)()
 
-	s.SetRestoreInProgress(true)
-	defer s.SetRestoreInProgress(false)
-
-	startTime := time.Now()
 	sourceDir := s.RestoreOptions.SourceFile
 
 	s.Log.Infof("Scanning direktori untuk backup files: %s", sourceDir)
@@ -40,11 +38,11 @@ func (s *Service) executeRestoreMulti(ctx context.Context) (types.RestoreResult,
 	// Scan direktori untuk mendapatkan semua backup files
 	backupFiles, err := s.scanBackupFiles(sourceDir)
 	if err != nil {
-		return result, fmt.Errorf("gagal scan backup files: %w", err)
+		return types.RestoreResult{}, fmt.Errorf("gagal scan backup files: %w", err)
 	}
 
 	if len(backupFiles) == 0 {
-		return result, fmt.Errorf("tidak ada backup file ditemukan di direktori: %s", sourceDir)
+		return types.RestoreResult{}, fmt.Errorf("tidak ada backup file ditemukan di direktori: %s", sourceDir)
 	}
 
 	s.Log.Infof("Ditemukan %d backup files", len(backupFiles))
@@ -57,28 +55,28 @@ func (s *Service) executeRestoreMulti(ctx context.Context) (types.RestoreResult,
 	// Check if dry run
 	if s.RestoreOptions.DryRun {
 		s.Log.Info("[DRY RUN] Restore tidak dijalankan (mode simulasi)")
-		result.TotalDatabases = len(latestFiles)
+		builder := NewRestoreResultBuilder()
+		builder.SetTotalDatabases(len(latestFiles))
 
 		for _, fileInfo := range latestFiles {
-			result.RestoreInfo = append(result.RestoreInfo, types.DatabaseRestoreInfo{
-				DatabaseName:   fileInfo.DatabaseName,
-				SourceFile:     fileInfo.FilePath,
-				TargetDatabase: fileInfo.DatabaseName,
-				Status:         "skipped",
-				Duration:       "0s",
-				FileSize:       fileInfo.FileSize,
-				FileSizeHuman:  global.FormatFileSize(fileInfo.FileSize),
-			})
+			info := buildSkippedRestoreInfo(
+				fileInfo.DatabaseName,
+				fileInfo.FilePath,
+				fileInfo.DatabaseName,
+				fileInfo.FileSize,
+				global.FormatFileSize(fileInfo.FileSize),
+			)
+			builder.AddSkipped(info)
 		}
-		return result, nil
+		return builder.Build(), nil
 	}
 
 	// Execute restore untuk setiap database
 	ui.PrintSubHeader("Restore Databases")
 	s.Log.Info("Starting database restore...")
 
-	result.TotalDatabases = len(latestFiles)
-	result.FailedDatabases = make(map[string]string)
+	builder := NewRestoreResultBuilder()
+	builder.SetTotalDatabases(len(latestFiles))
 
 	// Jika opsi SkipBackup == false maka buat pre-backup untuk semua database
 	// sebelum melakukan restore. Fungsi ExecuteMultiPreBackup sudah tersedia
@@ -88,7 +86,7 @@ func (s *Service) executeRestoreMulti(ctx context.Context) (types.RestoreResult,
 		if err != nil {
 			s.Log.Warnf("Gagal membuat pre-backup untuk multiple restore: %v", err)
 		} else if preBackupDir != "" {
-			result.PreBackupFile = preBackupDir
+			builder.SetPreBackupFile(preBackupDir)
 			s.Log.Infof("Pre-backup directory created: %s", preBackupDir)
 		}
 	}
@@ -97,87 +95,42 @@ func (s *Service) executeRestoreMulti(ctx context.Context) (types.RestoreResult,
 		s.Log.Infof("[%d/%d] Restoring database: %s from %s",
 			i+1, len(latestFiles), fileInfo.DatabaseName, filepath.Base(fileInfo.FilePath))
 
-		// Drop target database jika flag --drop-target aktif
-		if s.RestoreOptions.DropTarget {
-			if exists, err := s.isTargetDatabaseExists(ctx, fileInfo.DatabaseName); err != nil {
-				s.Log.Warnf("Gagal check keberadaan database %s: %v", fileInfo.DatabaseName, err)
-			} else if exists {
-				s.Log.Infof("Dropping target database: %s", fileInfo.DatabaseName)
-				if err := s.Client.DropDatabase(ctx, fileInfo.DatabaseName); err != nil {
-					s.Log.Errorf("Gagal drop target database %s: %v", fileInfo.DatabaseName, err)
-					result.FailedRestore++
-					result.FailedDatabases[fileInfo.DatabaseName] = fmt.Sprintf("gagal drop database: %v", err)
-					result.Errors = append(result.Errors, fmt.Sprintf("Database %s: gagal drop database: %v", fileInfo.DatabaseName, err))
+		// Prepare database: drop (jika flag aktif) → create (jika tidak ada)
+		prepResult, err := s.prepareDatabaseForRestore(ctx, fileInfo.DatabaseName, s.RestoreOptions.DropTarget)
+		if err != nil {
+			s.Log.Errorf("Gagal prepare database %s: %v", fileInfo.DatabaseName, err)
 
-					result.RestoreInfo = append(result.RestoreInfo, types.DatabaseRestoreInfo{
-						DatabaseName:   fileInfo.DatabaseName,
-						SourceFile:     fileInfo.FilePath,
-						TargetDatabase: fileInfo.DatabaseName,
-						Status:         "failed",
-						ErrorMessage:   fmt.Sprintf("gagal drop database: %v", err),
-						FileSize:       fileInfo.FileSize,
-						FileSizeHuman:  global.FormatFileSize(fileInfo.FileSize),
-					})
-					continue
-				}
-				s.Log.Infof("✓ Database %s berhasil di-drop", fileInfo.DatabaseName)
-			}
-		}
-
-		// Create database if not exists
-		if exists, err := s.isTargetDatabaseExists(ctx, fileInfo.DatabaseName); err != nil {
-			s.Log.Warnf("Gagal check keberadaan database %s: %v", fileInfo.DatabaseName, err)
-		} else if !exists {
-			s.Log.Infof("Database target tidak ada, membuat database baru: %s", fileInfo.DatabaseName)
-			if err := s.Client.CreateDatabase(ctx, fileInfo.DatabaseName); err != nil {
-				s.Log.Errorf("Gagal create target database %s: %v", fileInfo.DatabaseName, err)
-				result.FailedRestore++
-				result.FailedDatabases[fileInfo.DatabaseName] = fmt.Sprintf("gagal create database: %v", err)
-				result.Errors = append(result.Errors, fmt.Sprintf("Database %s: gagal create database: %v", fileInfo.DatabaseName, err))
-
-				result.RestoreInfo = append(result.RestoreInfo, types.DatabaseRestoreInfo{
-					DatabaseName:   fileInfo.DatabaseName,
-					SourceFile:     fileInfo.FilePath,
-					TargetDatabase: fileInfo.DatabaseName,
-					Status:         "failed",
-					ErrorMessage:   fmt.Sprintf("gagal create database: %v", err),
-					FileSize:       fileInfo.FileSize,
-					FileSizeHuman:  global.FormatFileSize(fileInfo.FileSize),
-				})
-				continue
-			}
-			s.Log.Infof("✓ Database %s berhasil dibuat", fileInfo.DatabaseName)
+			failedInfo := buildFailedRestoreInfo(
+				fileInfo.DatabaseName,
+				fileInfo.FilePath,
+				fileInfo.DatabaseName,
+				prepResult.ErrorMessage,
+				fileInfo.FileSize,
+				global.FormatFileSize(fileInfo.FileSize),
+			)
+			builder.AddFailureWithPrefix(fileInfo.DatabaseName, failedInfo, 0, err, fmt.Sprintf("Database %s", fileInfo.DatabaseName))
+			continue
 		}
 
 		// Restore database menggunakan fungsi restore single yang sudah ada
-		dbStartTime := time.Now()
+		dbTimer := helper.NewTimer()
 		restoreInfo, err := s.restoreSingleDatabase(ctx, fileInfo.FilePath, fileInfo.DatabaseName, fileInfo.DatabaseName)
+		dbDuration := dbTimer.Elapsed()
 
 		if err != nil {
-			result.FailedRestore++
-			result.FailedDatabases[fileInfo.DatabaseName] = err.Error()
-			result.Errors = append(result.Errors, fmt.Sprintf("Database %s: %v", fileInfo.DatabaseName, err))
-
-			restoreInfo.Status = "failed"
-			restoreInfo.ErrorMessage = err.Error()
+			builder.AddFailureWithPrefix(fileInfo.DatabaseName, restoreInfo, dbDuration, err, fmt.Sprintf("Database %s", fileInfo.DatabaseName))
 		} else {
-			result.SuccessfulRestore++
-			restoreInfo.Status = "success"
-
 			// Jika ada warning (dari force mode), log ke result juga
 			if restoreInfo.Warnings != "" {
-				result.Errors = append(result.Errors, fmt.Sprintf("WARNING for %s: %s", fileInfo.DatabaseName, restoreInfo.Warnings))
 				s.Log.Warnf("Restore success dengan warning untuk %s: %s", fileInfo.DatabaseName, restoreInfo.Warnings)
+				builder.AddSuccessWithWarning(restoreInfo, dbDuration, fmt.Sprintf("WARNING for %s: %s", fileInfo.DatabaseName, restoreInfo.Warnings))
+			} else {
+				builder.AddSuccess(restoreInfo, dbDuration)
 			}
 		}
-
-		restoreInfo.Duration = global.FormatDuration(time.Since(dbStartTime))
-		result.RestoreInfo = append(result.RestoreInfo, restoreInfo)
 	}
 
-	result.TotalTimeTaken = time.Since(startTime)
-
-	return result, nil
+	return builder.Build(), nil
 }
 
 // executeMultiPreBackup membuat safety backup untuk semua databases yang akan di-restore

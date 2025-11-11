@@ -7,11 +7,10 @@ import (
 	"path/filepath"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/compress"
-	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
-	"time"
 )
 
 // executeBackupSeparated melakukan backup setiap database dalam file terpisah
@@ -45,7 +44,7 @@ func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []strin
 		default:
 		}
 
-		backupStartTime := time.Now()
+		dbTimer := helper.NewTimer()
 		s.Log.Infof(fmt.Sprintf("[%d/%d] Backup database: %s", i+1, totalDatabases, dbName))
 
 		// Generate filename untuk database ini menggunakan fixed pattern
@@ -83,7 +82,7 @@ func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []strin
 
 		if err != nil {
 			// Hapus file backup yang gagal/kosong
-			if _, statErr := os.Stat(fullOutputPath); statErr == nil {
+			if fsops.FileExists(fullOutputPath) {
 				s.Log.Infof("Menghapus file backup yang gagal: %s", fullOutputPath)
 				os.Remove(fullOutputPath)
 			}
@@ -122,68 +121,11 @@ func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []strin
 		stderrOutput := writeResult.StderrOutput
 
 		// Backup berhasil
-		backupDuration := time.Since(backupStartTime)
+		backupDuration := dbTimer.Elapsed()
 		fileInfo, err := os.Stat(fullOutputPath)
 		var fileSize int64
 		if err == nil {
 			fileSize = fileInfo.Size()
-		}
-
-		// Generate metadata manifest dengan checksums jika enabled
-		if s.Config.Backup.Verification.CompareChecksums && writeResult != nil {
-			// Write metadata manifest (checksums sudah included di dalam JSON)
-			metadata := s.CreateBackupMetadata(
-				fullOutputPath,
-				"separated",
-				[]string{dbName},
-				backupStartTime,
-				time.Now(),
-				writeResult.SHA256Hash,
-				writeResult.MD5Hash,
-				fileSize,
-			)
-			if err := s.WriteBackupMetadata(metadata); err != nil {
-				s.Log.Warnf("Gagal menulis metadata file untuk %s: %v", dbName, err)
-			}
-
-			// Log checksum untuk reference
-			s.Log.Debugf("Checksums untuk %s: SHA256=%s..., MD5=%s...",
-				dbName, writeResult.SHA256Hash[:16], writeResult.MD5Hash[:16])
-
-			// Verify checksum jika enabled
-			if s.Config.Backup.Verification.VerifyAfterWrite {
-				encryptionKey := ""
-				if s.BackupDBOptions.Encryption.Enabled {
-					// Resolve encryption key dengan strategi: flag/state → env → prompt
-					resolvedKey, _, err := helper.ResolveEncryptionKey(s.BackupDBOptions.Encryption.Key, consts.ENV_BACKUP_ENCRYPTION_KEY)
-					if err != nil {
-						s.Log.Errorf("✗ Gagal mendapatkan kunci enkripsi untuk verifikasi: %v", err)
-					} else {
-						encryptionKey = resolvedKey
-					}
-				}
-
-				compressionType := ""
-				if s.BackupDBOptions.Compression.Enabled {
-					compressionType = s.BackupDBOptions.Compression.Type
-				}
-
-				verifyResult, err := s.VerifyBackupChecksum(
-					fullOutputPath,
-					writeResult.SHA256Hash,
-					writeResult.MD5Hash,
-					encryptionKey,
-					compressionType,
-				)
-
-				if err != nil {
-					s.Log.Errorf("✗ Verifikasi checksum %s gagal: %v", dbName, err)
-				} else if verifyResult.Success {
-					s.Log.Debugf("✓ Verifikasi checksum %s BERHASIL", dbName)
-				} else {
-					s.Log.Errorf("✗ Verifikasi checksum %s GAGAL: %s", dbName, verifyResult.Error)
-				}
-			}
 		}
 
 		// Tentukan status berdasarkan stderr output
@@ -210,15 +152,6 @@ func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []strin
 
 	// Clear current backup file setelah selesai
 	s.ClearCurrentBackupFile()
-
-	// Summary
-	ui.PrintSubHeader("Ringkasan Backup Separated")
-	ui.PrintInfo(fmt.Sprintf("Total database: %d", totalDatabases))
-	ui.PrintSuccess(fmt.Sprintf("Berhasil: %d", successCount))
-	if failedCount > 0 {
-		ui.PrintError(fmt.Sprintf("Gagal: %d", failedCount))
-	}
-	ui.PrintDashedSeparator()
 
 	return res
 }

@@ -1,15 +1,15 @@
 package cmdcrypto
 
 import (
-	"bufio"
 	"encoding/base64"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
+	"sfDBTools/internal/cryptoauth"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/cryptohelper"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
@@ -37,15 +37,13 @@ var CmdEncryptText = &cobra.Command{
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		lg := types.Deps.Logger
-		// Quiet mode: route logs to stderr
-		if v := os.Getenv(consts.ENV_QUIET); v != "" && v != "0" && strings.ToLower(v) != "false" {
-			if lg != nil {
-				lg.SetOutput(os.Stderr)
-			}
-		}
+		quiet := cryptohelper.SetupQuietMode(lg)
+
+		// Password authentication
+		cryptoauth.MustValidatePassword()
 
 		// Ambil input
-		data, err := getInputBytes(encTextInput)
+		data, err := cryptohelper.GetInputBytesOrInteractive(encTextInput, "Masukkan teks yang akan dienkripsi:")
 		if err != nil {
 			lg.Errorf("Gagal membaca input: %v", err)
 			return
@@ -63,11 +61,7 @@ var CmdEncryptText = &cobra.Command{
 			lg.Errorf("Gagal mengenkripsi teks: %v", err)
 			return
 		}
-		// Only show banners when not in quiet mode
-		quiet := false
-		if v := os.Getenv(consts.ENV_QUIET); v != "" && v != "0" && strings.ToLower(v) != "false" {
-			quiet = true
-		}
+
 		if strings.TrimSpace(encTextOut) == "" {
 			// Cetak base64 ke stdout
 			if !quiet {
@@ -95,18 +89,4 @@ func init() {
 	CmdEncryptText.Flags().StringVar(&encTextInput, "text", "", "Teks input (kosongkan untuk baca dari stdin)")
 	CmdEncryptText.Flags().StringVarP(&encTextOut, "out", "o", "", "File output biner (opsional)")
 	CmdEncryptText.Flags().StringVarP(&encTextKey, "key", "k", "", "Encryption key (opsional, jika kosong pakai env atau prompt)")
-}
-
-// getInputBytes membaca dari flag string atau STDIN jika tersedia
-func getInputBytes(flagVal string) ([]byte, error) {
-	if s := strings.TrimSpace(flagVal); s != "" {
-		return []byte(s), nil
-	}
-	// Cek apakah ada data dari stdin (pipe)
-	stat, _ := os.Stdin.Stat()
-	if (stat.Mode() & os.ModeCharDevice) == 0 { // piped
-		reader := bufio.NewReader(os.Stdin)
-		return io.ReadAll(reader)
-	}
-	return nil, fmt.Errorf("tidak ada input: berikan --text atau pipe melalui stdin")
 }

@@ -27,9 +27,6 @@ type RestoreOptions struct {
 	// Mode restore: "single", "all", "multi"
 	Mode string
 
-	// Verify checksum sebelum restore
-	VerifyChecksum bool
-
 	// Force restore (skip error dan lanjutkan)
 	Force bool
 
@@ -80,11 +77,6 @@ type RestoreVerificationInfo struct {
 	Encrypted        bool      `json:"encrypted"`
 	Compressed       bool      `json:"compressed"`
 	CompressionType  string    `json:"compression_type,omitempty"`
-	ExpectedSHA256   string    `json:"expected_sha256,omitempty"`
-	ExpectedMD5      string    `json:"expected_md5,omitempty"`
-	CalculatedSHA256 string    `json:"calculated_sha256,omitempty"`
-	CalculatedMD5    string    `json:"calculated_md5,omitempty"`
-	ChecksumMatch    bool      `json:"checksum_match"`
 	VerificationTime time.Time `json:"verification_time"`
 	ErrorMessage     string    `json:"error_message,omitempty"`
 }

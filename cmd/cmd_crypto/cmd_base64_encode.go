@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/cryptohelper"
 	"sfDBTools/pkg/ui"
 
 	"github.com/spf13/cobra"
@@ -21,14 +22,21 @@ var (
 var CmdBase64Encode = &cobra.Command{
 	Use:     "base64encode",
 	Aliases: []string{"b64e", "b64-enc"},
-	Short:   "Base64-encode data dari --text atau stdin",
+	Short:   "Base64-encode data dari --text, stdin, atau mode interaktif",
+	Long:    "Encode data ke format base64. Bisa dari flag --text, pipe stdin, atau mode interaktif (paste & Ctrl+D).",
 	Run: func(cmd *cobra.Command, args []string) {
 		lg := types.Deps.Logger
-		b, err := getInputBytes(b64eInput)
+
+		// Password authentication
+		// cryptoauth.MustValidatePassword()
+
+		// Coba baca input dari flag atau pipe, fallback ke interactive
+		b, err := cryptohelper.GetInputBytesOrInteractive(b64eInput, "📝 Masukkan teks yang akan di-encode:")
 		if err != nil {
 			lg.Errorf("Gagal membaca input: %v", err)
 			return
 		}
+
 		enc := base64.StdEncoding.EncodeToString(b)
 		ui.Headers("Base64 Encode")
 		if strings.TrimSpace(b64eOut) == "" {

@@ -54,7 +54,6 @@ Contoh penggunaan:
 		restoreOpts.TargetProfile, _ = cmd.Flags().GetString("profile")
 		restoreOpts.TargetProfileKey, _ = cmd.Flags().GetString("profile-key")
 		restoreOpts.EncryptionKey, _ = cmd.Flags().GetString("encryption-key")
-		restoreOpts.VerifyChecksum, _ = cmd.Flags().GetBool("verify-checksum")
 		restoreOpts.Force, _ = cmd.Flags().GetBool("force")
 		restoreOpts.DryRun, _ = cmd.Flags().GetBool("dry-run")
 		restoreOpts.ShowOptions, _ = cmd.Flags().GetBool("show-options")
@@ -108,11 +107,10 @@ Contoh penggunaan:
 func init() {
 	// Default options untuk restore all
 	defaultOpts := types.RestoreOptions{
-		Mode:           "all",
-		VerifyChecksum: true,
-		Force:          false,
-		DryRun:         false,
-		ShowOptions:    false,
+		Mode:        "all",
+		Force:       false,
+		DryRun:      false,
+		ShowOptions: false,
 	}
 	flags.AddRestoreAllFlags(CmdRestoreAll, &defaultOpts)
 }

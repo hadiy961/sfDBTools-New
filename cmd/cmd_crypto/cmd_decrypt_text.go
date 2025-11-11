@@ -1,15 +1,15 @@
 package cmdcrypto
 
 import (
-	"bufio"
 	"encoding/base64"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
+	"sfDBTools/internal/cryptoauth"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/cryptohelper"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
@@ -37,9 +37,13 @@ var CmdDecryptText = &cobra.Command{
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		lg := types.Deps.Logger
+		quiet := cryptohelper.SetupQuietMode(lg)
+
+		// Password authentication
+		cryptoauth.MustValidatePassword()
 
 		// Ambil input base64
-		b64, err := getInputString(decTextInput)
+		b64, err := cryptohelper.GetInputStringOrInteractive(decTextInput, "Masukkan teks base64 terenkripsi:")
 		if err != nil {
 			lg.Errorf("Gagal membaca input: %v", err)
 			return
@@ -64,10 +68,6 @@ var CmdDecryptText = &cobra.Command{
 			return
 		}
 
-		quiet := false
-		if v := os.Getenv(consts.ENV_QUIET); v != "" && v != "0" && strings.ToLower(v) != "false" {
-			quiet = true
-		}
 		if strings.TrimSpace(decTextOut) == "" {
 			if !quiet {
 				ui.Headers("Decrypt Text")
@@ -93,18 +93,4 @@ func init() {
 	CmdDecryptText.Flags().StringVar(&decTextInput, "data", "", "Input terenkripsi base64 (kosongkan untuk baca dari stdin)")
 	CmdDecryptText.Flags().StringVarP(&decTextOut, "out", "o", "", "File output plaintext (opsional)")
 	CmdDecryptText.Flags().StringVarP(&decTextKey, "key", "k", "", "Encryption key (opsional, jika kosong pakai env atau prompt)")
-}
-
-// getInputString membaca string dari flag atau STDIN
-func getInputString(flagVal string) (string, error) {
-	if s := strings.TrimSpace(flagVal); s != "" {
-		return s, nil
-	}
-	stat, _ := os.Stdin.Stat()
-	if (stat.Mode() & os.ModeCharDevice) == 0 {
-		reader := bufio.NewReader(os.Stdin)
-		b, err := io.ReadAll(reader)
-		return string(b), err
-	}
-	return "", fmt.Errorf("tidak ada input: berikan --data atau pipe melalui stdin")
 }
