@@ -53,7 +53,6 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types.BackupDBOption
 	if v := helper.GetStringFlagOrEnv(cmd, "output-dir", ""); v != "" {
 		opts.OutputDir = v
 	}
-	opts.Background = helper.GetBoolFlagOrEnv(cmd, "background", consts.ENV_DAEMON_MODE)
 	opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
 
 	// Mode

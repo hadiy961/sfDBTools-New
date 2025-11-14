@@ -31,7 +31,6 @@ func AddBackupFlags(cmd *cobra.Command, opts *types.BackupDBOptions) {
 
 	// Output Directory
 	cmd.Flags().String("output-dir", opts.OutputDir, "Direktori output untuk menyimpan file backup")
-	cmd.Flags().Bool("background", opts.Background, "Jalankan backup di background (async mode)")
 	cmd.Flags().Bool("force", opts.Force, "Tampilkan opsi backup sebelum eksekusi")
 }
 

@@ -13,6 +13,7 @@ import (
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/servicehelper"
+	"sfDBTools/pkg/ui"
 )
 
 // executeRestoreSingle melakukan restore database dari satu file backup terpisah
@@ -50,6 +51,7 @@ func (s *Service) executeRestoreSingle(ctx context.Context) (types.RestoreResult
 		return types.RestoreResult{}, fmt.Errorf("gagal create pre-backup: %w", err)
 	}
 
+	ui.PrintSubHeader("Restore Database...")
 	// Prepare database: drop (jika flag aktif) → create (jika tidak ada)
 	if _, err := s.prepareDatabaseForRestore(ctx, targetDB, s.RestoreOptions.DropTarget); err != nil {
 		return types.RestoreResult{}, fmt.Errorf("gagal prepare database: %w", err)
@@ -114,9 +116,6 @@ func (s *Service) restoreSingleDatabase(ctx context.Context, sourceFile, targetD
 			}
 		}()
 	}
-
-	// Check max_allowed_packet sebelum restore
-	s.checkMaxAllowedPacket(ctx)
 
 	// Execute mysql restore menggunakan pipe
 	if err := s.executeMysqlRestore(ctx, pipeline.Reader, targetDB, sourceFile, sourceDatabaseName); err != nil {

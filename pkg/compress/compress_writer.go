@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"io"
+	"runtime"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
@@ -24,7 +25,7 @@ func createGzipWriter(w io.Writer, level CompressionLevel) (*gzip.Writer, error)
 	return gzip.NewWriterLevel(w, gzipLevel)
 }
 
-// createPgzipWriter creates a parallel gzip writer with specified level
+// createPgzipWriter creates a parallel gzip writer with specified level and optimized concurrency
 func createPgzipWriter(w io.Writer, level CompressionLevel) (*pgzip.Writer, error) {
 	// Konversi level (1-9) ke pgzip level
 	gzipLevel := int(level)
@@ -35,7 +36,21 @@ func createPgzipWriter(w io.Writer, level CompressionLevel) (*pgzip.Writer, erro
 		gzipLevel = 9
 	}
 
-	return pgzip.NewWriterLevel(w, gzipLevel)
+	// Buat writer dengan level yang ditentukan
+	pw, err := pgzip.NewWriterLevel(w, gzipLevel)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set concurrency untuk maksimalkan penggunaan CPU
+	// Block size 1MB, gunakan semua CPU cores
+	blockSize := 1 << 20 // 1MB blocks
+	numBlocks := runtime.NumCPU()
+	if err := pw.SetConcurrency(blockSize, numBlocks); err != nil {
+		return nil, err
+	}
+
+	return pw, nil
 }
 
 // createZlibWriter creates a zlib writer with specified level
@@ -52,7 +67,7 @@ func createZlibWriter(w io.Writer, level CompressionLevel) (*zlib.Writer, error)
 	return zlib.NewWriterLevel(w, zlibLevel)
 }
 
-// createZstdWriter creates a zstandard writer with specified level
+// createZstdWriter creates a zstandard writer with specified level, concurrency, and window size
 func createZstdWriter(w io.Writer, level CompressionLevel) (*zstd.Encoder, error) {
 	var zstdLevel zstd.EncoderLevel
 
@@ -68,5 +83,10 @@ func createZstdWriter(w io.Writer, level CompressionLevel) (*zstd.Encoder, error
 		zstdLevel = zstd.SpeedBestCompression
 	}
 
-	return zstd.NewWriter(w, zstd.WithEncoderLevel(zstdLevel))
+	// Buat writer dengan optimalisasi untuk throughput dan compression ratio
+	return zstd.NewWriter(w,
+		zstd.WithEncoderLevel(zstdLevel),
+		zstd.WithEncoderConcurrency(runtime.NumCPU()), // Parallel compression
+		zstd.WithWindowSize(8<<20),                    // 8MB window untuk better compression ratio
+	)
 }

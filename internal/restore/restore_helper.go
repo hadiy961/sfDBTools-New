@@ -1,6 +1,7 @@
 package restore
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/profilehelper"
 	"sort"
 	"strings"
 )
@@ -215,4 +217,36 @@ func (s *Service) scanBackupFiles(sourceDir string) ([]BackupFileInfo, error) {
 	}
 
 	return backupFiles, nil
+}
+
+// ensureValidConnection memastikan koneksi database valid, reconnect jika perlu
+func (s *Service) ensureValidConnection(ctx context.Context) error {
+	// Cek apakah client ada
+	if s.Client == nil {
+		s.Log.Warn("Database client tidak tersedia, membuat koneksi baru...")
+		client, err := profilehelper.ConnectWithProfile(s.TargetProfile, "mysql")
+		if err != nil {
+			return fmt.Errorf("gagal membuat koneksi database: %w", err)
+		}
+		s.Client = client
+		return nil
+	}
+
+	// Ping untuk validasi koneksi
+	if err := s.Client.Ping(ctx); err != nil {
+		s.Log.Warnf("Koneksi database tidak valid (%v), reconnecting...", err)
+
+		// Close koneksi lama (ignore error)
+		s.Client.Close()
+
+		// Buat koneksi baru
+		client, err := profilehelper.ConnectWithProfile(s.TargetProfile, "mysql")
+		if err != nil {
+			return fmt.Errorf("gagal reconnect database: %w", err)
+		}
+		s.Client = client
+		s.Log.Info("✓ Koneksi database berhasil di-restore")
+	}
+
+	return nil
 }

@@ -171,20 +171,6 @@ func (s *Service) setupMaxStatementTimeForRestore(ctx context.Context) (restoreF
 	}, nil
 }
 
-// checkMaxAllowedPacket checks dan log max_allowed_packet value dengan warning jika terlalu kecil
-func (s *Service) checkMaxAllowedPacket(ctx context.Context) {
-	maxPacket, err := s.Client.GetMaxAllowedPacket(ctx)
-	if err != nil {
-		s.Log.Warnf("Gagal mendapatkan max_allowed_packet: %v", err)
-		return
-	}
-
-	s.Log.Infof("max_allowed_packet: %d bytes (%.2f MB)", maxPacket, float64(maxPacket)/1024/1024)
-	if maxPacket < 16*1024*1024 { // Less than 16MB
-		s.Log.Warnf("⚠ max_allowed_packet kecil (< 16MB), kemungkinan ada packet size issue saat restore")
-	}
-}
-
 // logErrorWithDetail logs error detail ke file dan return log file path
 func (s *Service) logErrorWithDetail(metadata map[string]interface{}, errorMsg string, err error) string {
 	logFile := s.ErrorLog.LogWithOutput(metadata, errorMsg, err)

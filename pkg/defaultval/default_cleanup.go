@@ -6,17 +6,27 @@ import (
 )
 
 // DefaultCleanupOptions mengembalikan opsi default untuk pembersihan backup.
+// Aman dipanggil saat inisialisasi (init) karena tidak akan panic jika konfigurasi belum tersedia.
 func DefaultCleanupOptions() types.CleanupOptions {
-	// Muat konfigurasi aplikasi untuk mendapatkan direktori konfigurasi
-	cfg, _ := appconfig.LoadConfigFromEnv()
+	// Inisialisasi dengan nilai paling aman (disabled) agar tidak ada operasi berbahaya terjadi tanpa konfigurasi.
+	opts := types.CleanupOptions{
+		Enabled:         false,
+		Days:            0,
+		CleanupSchedule: "",
+		Pattern:         "",
+	}
 
-	opts := types.CleanupOptions{}
+	// Muat konfigurasi aplikasi (abaikan error; jika gagal kita pakai nilai aman di atas).
+	cfg, err := appconfig.LoadConfigFromEnv()
+	if err != nil || cfg == nil {
+		return opts
+	}
 
+	// Set nilai dari konfigurasi jika tersedia.
 	opts.Enabled = cfg.Backup.Cleanup.Enabled
 	opts.Days = cfg.Backup.Cleanup.Days
-	opts.CleanupSchedule = cfg.Backup.Cleanup.Schedule // Setiap hari pukul 02:00
-	opts.Pattern = ""
+	opts.CleanupSchedule = cfg.Backup.Cleanup.Schedule
+	// Pattern dibiarkan kosong (bisa diubah via flag saat runtime)
 
-	// Fallback ke nilai default jika tidak ada konfigurasi
 	return opts
 }

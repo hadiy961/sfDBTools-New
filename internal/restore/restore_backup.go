@@ -85,17 +85,26 @@ func (s *Service) executePreBackup(ctx context.Context, targetDB string) (string
 	backupSvc.SetCancelFunc(backupCancel)
 
 	// Setup connection untuk pre-backup menggunakan profilehelper
+	// PENTING: Koneksi ini terpisah dari koneksi restore service
 	sourceClient, err := profilehelper.ConnectWithProfile(s.TargetProfile, "mysql")
 	if err != nil {
 		return "", fmt.Errorf("gagal setup backup connection: %w", err)
 	}
-	defer sourceClient.Close()
+	// JANGAN close koneksi di sini karena backup service mungkin masih butuh koneksi lebih lama
+	// Close akan dipanggil otomatis saat backup service selesai
+	// defer sourceClient.Close() // REMOVED: menyebabkan invalid connection setelah backup
 
 	// Filter database hanya untuk target database
 	dbFiltered := []string{targetDB}
 
 	// Execute backup dan dapatkan result
 	result, err := backupSvc.ExecuteBackup(ctx, sourceClient, dbFiltered, "separated")
+
+	// Close backup connection setelah backup selesai
+	if closeErr := sourceClient.Close(); closeErr != nil {
+		s.Log.Warnf("Gagal close backup connection: %v", closeErr)
+	}
+
 	if err != nil {
 		return "", fmt.Errorf("pre-backup gagal: %w", err)
 	}

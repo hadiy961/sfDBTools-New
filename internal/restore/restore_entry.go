@@ -125,7 +125,8 @@ func (s *Service) validateSourceFile() error {
 
 // resolveTargetProfile me-resolve target profile untuk restore
 func (s *Service) resolveTargetProfile(ctx context.Context) error {
-	s.Log.Infof("Loading target profile...")
+	s.Log.Infof("Loading target profile : %s...", s.RestoreOptions.TargetProfile)
+	// defer s.Log.Info("✓ Target profile loaded.")
 
 	// Gunakan profilehelper untuk load profile dengan fallback ke env vars
 	profile, err := profilehelper.LoadTargetProfile(

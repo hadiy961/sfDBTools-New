@@ -15,11 +15,12 @@ import (
 // AddRestoreSingleFlags menambahkan flags untuk restore single command
 func AddRestoreSingleFlags(cmd *cobra.Command, opts *types.RestoreOptions) {
 	// Source backup file
-	cmd.Flags().StringVarP(&opts.SourceFile, "source", "s", "", "Lokasi file backup source (required)")
+	cmd.Flags().StringVarP(&opts.SourceFile, "source", "s", "", "Lokasi file backup source (WAJIB)")
 	cmd.MarkFlagRequired("source")
 
 	// Target profile dan authentication
-	cmd.Flags().StringVarP(&opts.TargetProfile, "profile", "p", "", "Profile database target untuk restore (ENV: SFDB_TARGET_PROFILE)")
+	cmd.Flags().StringVarP(&opts.TargetProfile, "profile", "p", "", "Profile database target untuk restore (WAJIB)")
+	cmd.MarkFlagRequired("profile")
 	cmd.Flags().String("profile-key", "", "Kunci enkripsi profile database target (ENV: SFDB_TARGET_PROFILE_KEY)")
 
 	// Encryption key untuk decrypt backup

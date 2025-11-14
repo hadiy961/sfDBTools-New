@@ -2,16 +2,22 @@
 // Deskripsi : MySQL restore executor - modular command execution
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-11-11
-// Last Modified : 2025-11-11
+// Last Modified : 2025-11-14
 
 package restore
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"os/exec"
 	"sfDBTools/pkg/ui"
+)
+
+const (
+	// pipeBufferSize untuk buffered pipe ke mysql stdin (256KB untuk smooth data flow)
+	pipeBufferSize = 256 * 1024
 )
 
 // MysqlRestoreOptions berisi opsi untuk eksekusi mysql restore command
@@ -55,21 +61,48 @@ func (s *Service) executeMysqlCommand(ctx context.Context, reader io.Reader, opt
 
 	// Execute command
 	cmd := exec.CommandContext(ctx, "mysql", args...)
-	cmd.Stdin = reader
 
-	// Capture output
-	output, err := cmd.CombinedOutput()
-
+	// Setup stdin pipe dengan buffer untuk smooth data flow
+	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
+		return fmt.Errorf("gagal setup stdin pipe: %w", err)
+	}
+
+	// Start command
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("gagal start mysql command: %w", err)
+	}
+
+	// Copy data dari reader ke stdin dengan buffer
+	bufWriter := bufio.NewWriterSize(stdinPipe, pipeBufferSize)
+	_, copyErr := io.Copy(bufWriter, reader)
+
+	// Flush buffer dan close stdin pipe
+	if flushErr := bufWriter.Flush(); flushErr != nil && copyErr == nil {
+		copyErr = flushErr
+	}
+	if closeErr := stdinPipe.Close(); closeErr != nil && copyErr == nil {
+		copyErr = closeErr
+	}
+
+	// Wait for command to finish
+	waitErr := cmd.Wait()
+
+	// Handle errors
+	if copyErr != nil {
 		if spin != nil {
 			spin.Stop()
 			fmt.Println()
 		}
-		return fmt.Errorf("mysql restore failed: %w\nOutput: %s", err, string(output))
+		return fmt.Errorf("gagal copy data ke mysql: %w", copyErr)
 	}
 
-	if len(output) > 0 {
-		s.Log.Debugf("MySQL output: %s", string(output))
+	if waitErr != nil {
+		if spin != nil {
+			spin.Stop()
+			fmt.Println()
+		}
+		return fmt.Errorf("mysql restore failed: %w", waitErr)
 	}
 
 	return nil

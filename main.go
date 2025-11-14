@@ -27,16 +27,24 @@ func main() {
 		quiet = true
 	}
 
+	// Deteksi jika yang dipanggil adalah perintah completion
+	isCompletion := len(os.Args) > 1 && os.Args[1] == "completion"
+	if isCompletion {
+		quiet = true // pastikan tidak ada header/spinner yang tampil
+	}
+
 	if !quiet {
 		ui.Headers("Main Menu")
 	}
 
-	// 1. Muat Konfigurasi
+	// 1. Muat Konfigurasi (skip saat completion agar output bersih)
 	var err error
-	cfg, err = config.LoadConfigFromEnv()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "FATAL: Gagal memuat konfigurasi: %v\n", err)
-		os.Exit(1)
+	if !isCompletion {
+		cfg, err = config.LoadConfigFromEnv()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "FATAL: Gagal memuat konfigurasi: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// 2. Inisialisasi Logger Kustom
@@ -47,8 +55,8 @@ func main() {
 	}
 
 	// 3. Inisialisasi koneksi database dari environment variables
-	// In quiet mode, skip DB connection entirely for faster, clean output
-	if !quiet {
+	// In quiet mode atau saat completion, skip DB connection entirely
+	if !quiet && !isCompletion {
 		dbSpinner := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 		dbSpinner.Suffix = " Menghubungkan ke database..."
 		dbSpinner.Start()
@@ -64,12 +72,12 @@ func main() {
 			defer dbClient.Close()
 		}
 	} else {
-		// no-op: skip DB connection in quiet mode
+		// no-op
 	}
 
 	// 4. Buat objek dependensi untuk di-inject
 	deps := &types.Dependencies{
-		Config: cfg,
+		Config: cfg, // bisa nil saat completion, akan di-skip oleh PersistentPreRunE
 		Logger: appLogger,
 	}
 

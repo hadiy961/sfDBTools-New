@@ -14,8 +14,8 @@ set -euo pipefail
 # Resolve project root (repo root = parent of this script's directory)
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-BIN_DIR="${ROOT_DIR}/bin"
-BIN_PATH="${BIN_DIR}/sfdbtools"
+BIN_DIR="/usr/bin"
+BIN_PATH="${BIN_DIR}/sfDBTools"
 
 # Defaults
 SKIP_RUN=false

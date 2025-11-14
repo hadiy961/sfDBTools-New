@@ -2,11 +2,12 @@
 // Deskripsi : Reader pipeline helper untuk decrypt dan decompress backup files
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-11-11
-// Last Modified : 2025-11-11
+// Last Modified : 2025-11-14
 
 package restore
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -14,7 +15,13 @@ import (
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/ui"
 	"strings"
+)
+
+const (
+	// readBufferSize untuk buffered reader (512KB untuk optimal read performance)
+	readBufferSize = 512 * 1024
 )
 
 // ReaderPipelineResult berisi hasil setup reader pipeline
@@ -26,7 +33,7 @@ type ReaderPipelineResult struct {
 	CompressionType string
 }
 
-// setupReaderPipeline membuat reader pipeline: file → decrypt → decompress
+// setupReaderPipeline membuat reader pipeline: file → buffer → decrypt → decompress
 // Caller bertanggung jawab untuk close file dan decompressor
 func (s *Service) setupReaderPipeline(sourceFile string) (*ReaderPipelineResult, error) {
 	result := &ReaderPipelineResult{}
@@ -38,7 +45,8 @@ func (s *Service) setupReaderPipeline(sourceFile string) (*ReaderPipelineResult,
 	}
 	result.File = file
 
-	var reader io.Reader = file
+	// Tambahkan buffered reader untuk mengurangi syscall overhead
+	var reader io.Reader = bufio.NewReaderSize(file, readBufferSize)
 
 	// Detect encryption dan compression
 	result.IsEncrypted = strings.HasSuffix(sourceFile, ".enc")
@@ -94,9 +102,20 @@ func (s *Service) resolveEncryptionKey() (string, error) {
 	// Priority 3: Interactive prompt (jika tidak quiet mode)
 	quietMode := helper.GetEnvOrDefault(consts.ENV_QUIET, "false") == "true"
 	if !quietMode {
-		// TODO: Implement interactive prompt untuk encryption key
-		// Untuk saat ini, return error
-		return "", fmt.Errorf("encryption key required untuk restore encrypted backup")
+		// Tampilkan prompt untuk memasukkan encryption key
+		ui.PrintSubHeader("Encryption Key Required")
+		ui.PrintInfo("File backup terenkripsi memerlukan kunci dekripsi.")
+
+		encKey, source, err := encrypt.EncryptionPrompt(
+			"Masukkan encryption key untuk decrypt backup",
+			consts.ENV_BACKUP_ENCRYPTION_KEY,
+		)
+		if err != nil {
+			return "", fmt.Errorf("gagal mendapatkan encryption key: %w", err)
+		}
+
+		s.Log.Debugf("Encryption key obtained from %s", source)
+		return encKey, nil
 	}
 
 	return "", fmt.Errorf("encryption key required untuk restore encrypted backup (use --encryption-key or SFDB_BACKUP_ENCRYPTION_KEY)")

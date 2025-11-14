@@ -11,7 +11,6 @@ type BackupDBOptions struct {
 	Compression CompressionOptions
 	Encryption  EncryptionOptions
 	Cleanup     CleanupOptions
-	Background  bool
 	DryRun      bool
 	OutputDir   string
 	Mode        string         // "separate" atau "combined"

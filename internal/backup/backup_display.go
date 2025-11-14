@@ -30,7 +30,6 @@ func (s *Service) DisplayBackupDBOptions() (proceed bool, err error) {
 		{"Output Directory", s.BackupDBOptions.OutputDir},
 		{"Filename Pattern", helper.FixedBackupPattern},
 		{filenameLabel, ui.ColorText(s.BackupDBOptions.File.Path, ui.ColorCyan)},
-		{"Background Mode", fmt.Sprintf("%v", s.BackupDBOptions.Background)},
 		{"Dry Run", fmt.Sprintf("%v", s.BackupDBOptions.DryRun)},
 		{"Capture GTID", fmt.Sprintf("%v", s.BackupDBOptions.CaptureGTID)},
 	}

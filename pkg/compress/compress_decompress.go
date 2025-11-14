@@ -5,12 +5,14 @@ import (
 	"compress/zlib"
 	"fmt"
 	"io"
+	"runtime"
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
 )
 
 // NewDecompressingReader returns a reader that decompresses data from r using the specified compression type.
+// For zstd, uses parallel decompression with all available CPU cores for optimal performance.
 func NewDecompressingReader(r io.Reader, ctype CompressionType) (io.ReadCloser, error) {
 	switch ctype {
 	case CompressionGzip, CompressionPgzip:
@@ -18,7 +20,11 @@ func NewDecompressingReader(r io.Reader, ctype CompressionType) (io.ReadCloser, 
 	case CompressionZlib:
 		return zlib.NewReader(r)
 	case CompressionZstd:
-		zr, err := zstd.NewReader(r)
+		// Buat zstd decoder dengan concurrency untuk parallel decompression
+		zr, err := zstd.NewReader(r,
+			zstd.WithDecoderConcurrency(runtime.NumCPU()), // Parallel decoding
+			zstd.WithDecoderLowmem(false),                 // Use more memory for speed
+		)
 		if err != nil {
 			return nil, err
 		}

@@ -29,6 +29,10 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 
 	// PersistentPreRunE akan dijalankan SEBELUM perintah apapun.
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Skip dependensi dan logging untuk perintah completion agar output bersih
+		if cmd.Name() == "completion" || cmd.HasParent() && cmd.Parent().Name() == "completion" {
+			return nil
+		}
 		if types.Deps == nil || types.Deps.Config == nil || types.Deps.Logger == nil {
 			return fmt.Errorf("dependensi belum di-inject. Pastikan untuk memanggil Execute(deps) dari main.go")
 		}
@@ -70,4 +74,5 @@ func init() {
 	rootCmd.AddCommand(cmdcleanup.CmdCleanupMain)
 	rootCmd.AddCommand(cmdbackup.CmdDBBackupMain)
 	rootCmd.AddCommand(cmdrestore.CmdRestore)
+	rootCmd.AddCommand(completionCmd)
 }

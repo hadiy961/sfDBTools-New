@@ -29,8 +29,6 @@ func DefaultBackupOptions(mode string) types.BackupDBOptions {
 	opts.OutputDir = cfg.Backup.Output.BaseDirectory
 	// Capture GTID
 	opts.CaptureGTID = cfg.Backup.Output.CaptureGtid
-	// Background
-	opts.Background = false
 	// Dry Run
 	opts.DryRun = false
 	// Mode

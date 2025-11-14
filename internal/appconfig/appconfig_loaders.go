@@ -6,7 +6,6 @@
 package appconfig
 
 import (
-	"errors"
 	"os"
 
 	"github.com/joho/godotenv" // Untuk memuat file .env
@@ -27,7 +26,8 @@ func LoadConfigFromEnv() (*Config, error) {
 	// 2. Membaca path file konfigurasi dari variabel lingkungan
 	configPath := os.Getenv(configEnvVar)
 	if configPath == "" {
-		return nil, errors.New("variabel lingkungan " + configEnvVar + " tidak diset. Mohon tentukan path ke file config.yaml")
+		// Jika variabel lingkungan tidak ada, gunakan path default
+		configPath = "/etc/sfDBTools/config.yaml"
 	}
 
 	// 3. Memuat dan mem-parsing file konfigurasi

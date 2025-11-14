@@ -9,11 +9,11 @@ import (
 
 // CheckAndSelectConfigFile memeriksa file konfigurasi yang ada atau memandu pengguna untuk memilihnya.
 func (s *Service) CheckAndSelectConfigFile() error {
-	// Gunakan profilehelper untuk load source profile dengan interactive mode
+	// Load profile langsung tanpa interactive mode (profile harus sudah diisi di flag)
 	profile, err := profilehelper.LoadSourceProfile(
 		s.BackupDBOptions.Profile.Path,
 		s.BackupDBOptions.Encryption.Key,
-		true, // enableInteractive - tampilkan selector jika path kosong
+		false, // enableInteractive - tidak ada interactive selection, profile wajib diisi
 	)
 	if err != nil {
 		return fmt.Errorf("gagal load source profile: %w", err)

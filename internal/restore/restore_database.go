@@ -32,6 +32,12 @@ func (s *Service) prepareDatabaseForRestore(ctx context.Context, targetDB string
 		DatabaseName: targetDB,
 	}
 
+	// Pastikan koneksi valid sebelum operasi database
+	if err := s.ensureValidConnection(ctx); err != nil {
+		result.ErrorMessage = fmt.Sprintf("gagal ensure valid connection: %v", err)
+		return result, fmt.Errorf("gagal ensure database connection: %w", err)
+	}
+
 	// Check apakah database target sudah ada
 	exists, err := s.isTargetDatabaseExists(ctx, targetDB)
 	if err != nil {
@@ -84,6 +90,11 @@ func (s *Service) executePreBackupIfNeeded(ctx context.Context, targetDB string)
 	if s.RestoreOptions.DryRun {
 		s.Log.Debug("Pre-backup skipped (dry run mode)")
 		return "", false, nil
+	}
+
+	// Pastikan koneksi valid sebelum check database
+	if err := s.ensureValidConnection(ctx); err != nil {
+		return "", false, fmt.Errorf("gagal ensure valid connection: %w", err)
 	}
 
 	// Check apakah database target ada
