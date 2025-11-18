@@ -12,8 +12,9 @@ import (
 
 // CmdRestore adalah root command untuk restore operations
 var CmdRestore = &cobra.Command{
-	Use:   "restore",
-	Short: "Restore database dari backup files",
+	Use:     "db-restore",
+	Short:   "Restore database dari backup files",
+	Aliases: []string{"restore", "db-restore", "import", "restore-db"},
 	Long: `Restore database dari backup files dengan dekripsi, dekompresi, dan verifikasi checksum otomatis.
 
 Available Commands:

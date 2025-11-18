@@ -200,6 +200,4 @@ When identifying duplicate patterns:
 - All log messages and user-facing text are in Indonesian to maintain consistency across the application.
 - Follow existing code style and conventions for new features or modifications.
 - Ensure proper error handling and logging in all new code paths.
-- No need to create documentation files for minor changes unless they affect user-facing features.
-- No need to create documentation if the change is purely internal and does not impact usage or configuration.
 - No need to create documentation if not requested by the user.
