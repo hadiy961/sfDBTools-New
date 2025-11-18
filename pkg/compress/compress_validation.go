@@ -9,10 +9,10 @@ import (
 func ValidateCompressionType(compressionType string) (CompressionType, error) {
 	ct := CompressionType(strings.ToLower(compressionType))
 	switch ct {
-	case CompressionNone, CompressionGzip, CompressionPgzip, CompressionZlib, CompressionZstd:
+	case CompressionNone, CompressionGzip, CompressionPgzip, CompressionZlib, CompressionZstd, CompressionXz:
 		return ct, nil
 	default:
-		return CompressionNone, fmt.Errorf("unsupported compression type: %s. Supported types: none, gzip, pgzip, zlib, zstd", compressionType)
+		return CompressionNone, fmt.Errorf("unsupported compression type: %s. Supported types: none, gzip, pgzip, zlib, zstd, xz", compressionType)
 	}
 }
 

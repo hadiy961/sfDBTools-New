@@ -9,14 +9,25 @@ import (
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/klauspost/pgzip"
+	"github.com/ulikunitz/xz"
 )
 
 // NewDecompressingReader returns a reader that decompresses data from r using the specified compression type.
-// For zstd, uses parallel decompression with all available CPU cores for optimal performance.
+// For zstd and pgzip, uses parallel decompression with all available CPU cores for optimal performance.
 func NewDecompressingReader(r io.Reader, ctype CompressionType) (io.ReadCloser, error) {
 	switch ctype {
-	case CompressionGzip, CompressionPgzip:
+	case CompressionGzip:
+		// Standard gzip decompression (single-threaded)
 		return gzip.NewReader(r)
+	case CompressionPgzip:
+		// Parallel gzip decompression untuk performa lebih baik
+		pr, err := pgzip.NewReader(r)
+		if err != nil {
+			return nil, fmt.Errorf("gagal create pgzip reader: %w", err)
+		}
+		// Pgzip reader sudah implement io.ReadCloser
+		return pr, nil
 	case CompressionZlib:
 		return zlib.NewReader(r)
 	case CompressionZstd:
@@ -29,6 +40,13 @@ func NewDecompressingReader(r io.Reader, ctype CompressionType) (io.ReadCloser, 
 			return nil, err
 		}
 		return io.NopCloser(zr), nil
+	case CompressionXz:
+		// XZ decompression support
+		xzReader, err := xz.NewReader(r)
+		if err != nil {
+			return nil, fmt.Errorf("gagal create xz reader: %w", err)
+		}
+		return io.NopCloser(xzReader), nil
 	case CompressionNone:
 		return io.NopCloser(r), nil
 	default:
@@ -37,14 +55,19 @@ func NewDecompressingReader(r io.Reader, ctype CompressionType) (io.ReadCloser, 
 }
 
 // DetectCompressionTypeFromFile detects compression type based on file extension.
+// Returns CompressionType for type safety.
 func DetectCompressionTypeFromFile(path string) CompressionType {
 	name := strings.ToLower(path)
+	// Remove .enc extension first if exists
 	name = strings.TrimSuffix(name, ".enc")
+
 	switch {
 	case strings.HasSuffix(name, ".gz"):
 		return CompressionGzip
 	case strings.HasSuffix(name, ".zst"):
 		return CompressionZstd
+	case strings.HasSuffix(name, ".xz"):
+		return CompressionXz
 	case strings.HasSuffix(name, ".zlib"):
 		return CompressionZlib
 	default:

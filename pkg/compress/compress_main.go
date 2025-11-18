@@ -29,6 +29,8 @@ func NewCompressingWriter(baseWriter io.Writer, config CompressionConfig) (*Comp
 		compressor, err = createZlibWriter(baseWriter, config.Level)
 	case CompressionZstd:
 		compressor, err = createZstdWriter(baseWriter, config.Level)
+	case CompressionXz:
+		compressor, err = createXzWriter(baseWriter, config.Level)
 	default:
 		return nil, fmt.Errorf("unsupported compression type: %s", config.Type)
 	}
@@ -69,6 +71,8 @@ func GetFileExtension(compressionType CompressionType) string {
 		return ".zlib"
 	case CompressionZstd:
 		return ".zst"
+	case CompressionXz:
+		return ".xz"
 	default:
 		return ""
 	}
@@ -118,5 +122,6 @@ func GetCompressionInfo() map[CompressionType]string {
 		CompressionPgzip: "Parallel gzip compression (faster for large files)",
 		CompressionZlib:  "Zlib compression (good compression ratio)",
 		CompressionZstd:  "Zstandard compression (fast and good ratio)",
+		CompressionXz:    "XZ compression (best ratio, slower)",
 	}
 }

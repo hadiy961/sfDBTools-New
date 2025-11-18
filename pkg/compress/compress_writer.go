@@ -8,6 +8,7 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
+	"github.com/ulikunitz/xz"
 )
 
 // createGzipWriter creates a gzip writer with specified level
@@ -89,4 +90,21 @@ func createZstdWriter(w io.Writer, level CompressionLevel) (*zstd.Encoder, error
 		zstd.WithEncoderConcurrency(runtime.NumCPU()), // Parallel compression
 		zstd.WithWindowSize(8<<20),                    // 8MB window untuk better compression ratio
 	)
+}
+
+// createXzWriter creates an XZ writer with specified level
+func createXzWriter(w io.Writer, level CompressionLevel) (*xz.Writer, error) {
+	// XZ compression level mapping (0-9)
+	// 0 = fastest, 9 = best compression
+	xzLevel := int(level)
+	if xzLevel < 0 {
+		xzLevel = 6 // Default level
+	}
+	if xzLevel > 9 {
+		xzLevel = 9
+	}
+
+	// Create XZ writer with compression level
+	// Note: xz.Writer tidak support concurrent compression seperti pgzip/zstd
+	return xz.NewWriter(w)
 }

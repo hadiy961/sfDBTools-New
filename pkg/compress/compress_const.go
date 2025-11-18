@@ -7,13 +7,11 @@ type CompressionType string
 
 const (
 	CompressionNone  CompressionType = "none"
-	CompressionGzip  CompressionType = "gzip"  // Standard gzip
-	CompressionPgzip CompressionType = "pgzip" // Parallel gzip
-	CompressionBzip2 CompressionType = "bzip2" // Bzip2
-	CompressionZlib  CompressionType = "zlib"  // DEFLATE
-	CompressionZstd  CompressionType = "zstd"  // Zstandard
-	CompressionXz    CompressionType = "xz"    // LZMA (XZ)
-	CompressionLz4   CompressionType = "lz4"   // LZ4
+	CompressionGzip  CompressionType = "gzip"  // Standard gzip (single-threaded)
+	CompressionPgzip CompressionType = "pgzip" // Parallel gzip (multi-threaded)
+	CompressionZlib  CompressionType = "zlib"  // DEFLATE (zlib format)
+	CompressionZstd  CompressionType = "zstd"  // Zstandard (fast & good ratio)
+	CompressionXz    CompressionType = "xz"    // LZMA/XZ (best ratio, slower)
 )
 
 // CompressionLevel represents the compression level (1-9)
