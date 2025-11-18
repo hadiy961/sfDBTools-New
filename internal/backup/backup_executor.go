@@ -29,28 +29,29 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 
 	// 2. Setup max_statement_time untuk GLOBAL (set ke unlimited untuk backup jangka panjang)
 	// GLOBAL scope agar mysqldump juga affected (mysqldump membuat koneksi terpisah)
-	s.Log.Info("Mengatur GLOBAL max_statement_time untuk mencegah query timeout...")
-	restore, originalMaxStatementTime, err := database.WithGlobalMaxStatementTime(ctx, sourceClient, 0)
-	if err != nil {
-		s.Log.Warnf("Setup GLOBAL max_statement_time gagal: %v", err)
-	} else {
-		s.Log.Infof("Original GLOBAL max_statement_time: %f detik", originalMaxStatementTime)
-		defer func() {
-			// Kembalikan max_statement_time ke nilai original
-			if rerr := restore(context.Background()); rerr != nil {
-				s.Log.Warnf("Gagal mengembalikan GLOBAL max_statement_time: %v", rerr)
-			} else {
-				s.Log.Info("GLOBAL max_statement_time berhasil dikembalikan.")
-			}
-		}()
-	}
+	// OPTIMISASI: Skip jika tidak critical untuk performa (query ini bisa lambat)
+	s.Log.Debug("Skipping GLOBAL max_statement_time setup untuk performa optimal")
+	// Uncomment jika diperlukan untuk backup jangka sangat panjang (>1 jam):
+	// restore, originalMaxStatementTime, err := database.WithGlobalMaxStatementTime(ctx, sourceClient, 0)
+	// if err != nil {
+	// 	s.Log.Warnf("Setup GLOBAL max_statement_time gagal: %v", err)
+	// } else {
+	// 	s.Log.Infof("Original GLOBAL max_statement_time: %f detik", originalMaxStatementTime)
+	// 	defer func() {
+	// 		if rerr := restore(context.Background()); rerr != nil {
+	// 			s.Log.Warnf("Gagal mengembalikan GLOBAL max_statement_time: %v", rerr)
+	// 		} else {
+	// 			s.Log.Info("GLOBAL max_statement_time berhasil dikembalikan.")
+	// 		}
+	// 	}()
+	// }
 
-	// 3. Cleanup old backups sebelum backup baru (jika enabled)
+	// 3. Cleanup old backups SETELAH backup baru (jika enabled)
+	// OPTIMISASI: Pindahkan cleanup ke AFTER backup untuk tidak block backup execution
+	cleanupDeferred := false
 	if s.Config.Backup.Cleanup.Enabled {
-		s.Log.Info("Cleanup old backups enabled, menjalankan cleanup sebelum backup...")
-		if err := s.cleanupOldBackups(); err != nil {
-			s.Log.Warnf("Cleanup old backups gagal: %v (backup akan tetap dilanjutkan)", err)
-		}
+		s.Log.Debug("Cleanup akan dijalankan setelah backup selesai")
+		cleanupDeferred = true
 	}
 
 	// 4. Eksekusi backup sesuai mode
@@ -67,7 +68,15 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 
 	result.TotalTimeTaken = timer.Elapsed()
 
-	// 5. Cek apakah ada error dalam result
+	// 5. Cleanup old backups SETELAH backup selesai (jika enabled)
+	if cleanupDeferred {
+		s.Log.Info("Menjalankan cleanup old backups setelah backup...")
+		if err := s.cleanupOldBackups(); err != nil {
+			s.Log.Warnf("Cleanup old backups gagal: %v", err)
+		}
+	}
+
+	// 6. Cek apakah ada error dalam result
 	if len(result.Errors) > 0 || len(result.FailedDatabaseInfos) > 0 {
 		// Jika ada error, kembalikan sebagai error
 		errorMsg := "backup gagal"
@@ -86,7 +95,7 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 		}, fmt.Errorf(errorMsg)
 	}
 
-	// 6. Kembalikan hasil backup sukses
+	// 7. Kembalikan hasil backup sukses
 	return &types.BackupResult{
 		TotalDatabases:    len(dbFiltered),
 		SuccessfulBackups: len(dbFiltered),

@@ -40,11 +40,15 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 		s.Log.Debugf("Kunci enkripsi didapat dari: %s", source)
 	}
 
+	// PERFORMANCE: Track timing untuk debug bottleneck
+	// totalStartTime := helper.NewTimer()
+
 	// Start spinner dengan elapsed time SETELAH encryption key resolved
 	spin := ui.NewSpinnerWithElapsed("Memproses backup database")
 	spin.Start()
 	defer spin.Stop()
 
+	// PERFORMANCE: Log timing untuk file creation
 	outputFile, err := os.Create(outputPath)
 	if err != nil {
 		return nil, fmt.Errorf("gagal membuat file output: %w", err)
@@ -108,6 +112,8 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 	// logArgs := s.sanitizeArgsForLogging(mysqldumpArgs)
 	// s.Logger.Infof("Command: mysqldump %s", strings.Join(logArgs, " "))
 
+	// PERFORMANCE: Log timing untuk mysqldump execution
+	// cmdStartTime := helper.NewTimer()
 	if err := cmd.Run(); err != nil {
 		stderrOutput := stderrBuf.String()
 
