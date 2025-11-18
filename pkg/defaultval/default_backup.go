@@ -27,8 +27,14 @@ func DefaultBackupOptions(mode string) types.BackupDBOptions {
 	opts.Encryption.Key = cfg.Backup.Encryption.Key
 	// Output Directory
 	opts.OutputDir = cfg.Backup.Output.BaseDirectory
-	// Capture GTID
-	opts.CaptureGTID = cfg.Backup.Output.CaptureGtid
+	// Capture GTID (hanya untuk combined mode)
+	if mode == "combined" {
+		opts.CaptureGTID = cfg.Backup.Output.CaptureGtid
+	} else {
+		opts.CaptureGTID = false
+	}
+	// Exclude User - ambil dari config backup.exclude.user
+	opts.ExcludeUser = cfg.Backup.Exclude.User
 	// Dry Run
 	opts.DryRun = false
 	// Mode
@@ -36,7 +42,6 @@ func DefaultBackupOptions(mode string) types.BackupDBOptions {
 
 	// Exclude Filters (ambil langsung dari config agar tampil sebagai default di --help)
 	opts.Filter.ExcludeSystem = cfg.Backup.Exclude.SystemDatabases
-	opts.Filter.ExcludeUser = cfg.Backup.Exclude.User
 	opts.Filter.ExcludeData = cfg.Backup.Exclude.Data
 	opts.Filter.ExcludeEmpty = cfg.Backup.Exclude.Empty
 	// Set keduanya: file dan daftar database (biarkan kosong jika memang tidak dikonfigurasi)

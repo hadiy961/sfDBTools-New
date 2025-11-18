@@ -43,8 +43,15 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types.BackupDBOption
 		opts.Encryption.Key = v
 	}
 
-	// Capture GTID
-	opts.CaptureGTID = helper.GetBoolFlagOrEnv(cmd, "capture-gtid", "")
+	// Capture GTID (hanya untuk combined)
+	if mode == "combined" {
+		opts.CaptureGTID = helper.GetBoolFlagOrEnv(cmd, "capture-gtid", "")
+	} else {
+		opts.CaptureGTID = false
+	}
+
+	// Exclude User
+	opts.ExcludeUser = helper.GetBoolFlagOrEnv(cmd, "exclude-user", "")
 
 	// Dry Run
 	opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
@@ -56,7 +63,7 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types.BackupDBOption
 	opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
 
 	// Mode
-	opts.Mode = "combined"
+	opts.Mode = mode
 
 	return opts, nil
 }

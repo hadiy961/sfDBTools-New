@@ -26,6 +26,9 @@ func AddBackupFlags(cmd *cobra.Command, opts *types.BackupDBOptions) {
 	// Capture GTID
 	cmd.Flags().Bool("capture-gtid", opts.CaptureGTID, "Tangkap informasi GTID saat melakukan backup")
 
+	// Exclude User
+	cmd.Flags().Bool("exclude-user", opts.ExcludeUser, "Exclude user grants dari export (default: false = export user)")
+
 	// Dry Run
 	cmd.Flags().Bool("dry-run", opts.DryRun, "Jalankan backup dalam mode dry-run (tidak benar-benar membuat file backup)")
 
