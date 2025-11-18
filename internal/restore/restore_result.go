@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/global"
 	"time"
 )
@@ -152,17 +151,34 @@ func BuildDryRunResult(databases []string, sourceFile string) types.RestoreResul
 // setupMaxStatementTimeForRestore sets up GLOBAL max_statement_time untuk restore
 // Returns restore function yang harus di-defer
 func (s *Service) setupMaxStatementTimeForRestore(ctx context.Context) (restoreFunc func(context.Context) error, err error) {
-	restore, originalMaxStatementTime, err := database.WithGlobalMaxStatementTime(ctx, s.Client, 0)
+	// Get original value (will use current s.Client)
+	originalMaxStatementTime, err := s.Client.GetGlobalMaxStatementTime(ctx)
 	if err != nil {
-		s.Log.Warnf("Setup GLOBAL max_statement_time gagal: %v", err)
+		s.Log.Warnf("Setup GLOBAL max_statement_time gagal (get original): %v", err)
+		return nil, err
+	}
+
+	// Set to unlimited (0) untuk restore jangka panjang
+	if err := s.Client.SetGlobalMaxStatementTime(ctx, 0); err != nil {
+		s.Log.Warnf("Setup GLOBAL max_statement_time gagal (set ke 0): %v", err)
 		return nil, err
 	}
 
 	s.Log.Infof("Original GLOBAL max_statement_time: %f detik", originalMaxStatementTime)
 
 	// Return restore function yang akan dipanggil dalam defer
+	// PENTING: Function ini TIDAK menangkap s.Client dalam closure,
+	// melainkan menggunakan s.Client saat function dipanggil (bukan saat dibuat).
+	// Ini penting karena s.Client bisa di-replace oleh ensureValidConnection.
 	return func(ctx context.Context) error {
-		if rerr := restore(ctx); rerr != nil {
+		// Pastikan koneksi masih valid sebelum restore max_statement_time
+		if err := s.ensureValidConnection(ctx); err != nil {
+			s.Log.Warnf("Gagal mengembalikan GLOBAL max_statement_time: %v", err)
+			return err
+		}
+
+		// Restore ke nilai original menggunakan s.Client yang SAAT INI aktif
+		if rerr := s.Client.SetGlobalMaxStatementTime(ctx, originalMaxStatementTime); rerr != nil {
 			s.Log.Warnf("Gagal mengembalikan GLOBAL max_statement_time: %v", rerr)
 			return rerr
 		}

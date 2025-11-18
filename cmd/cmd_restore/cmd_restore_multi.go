@@ -8,11 +8,14 @@ package cmdrestore
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"sfDBTools/internal/restore"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/flags"
+	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -85,8 +88,24 @@ Contoh penggunaan:
 		// Create restore service
 		svc := restore.NewRestoreService(logger, types.Deps.Config, &restoreOpts)
 
-		// Setup context
-		ctx := context.Background()
+		// Setup context dengan cancellation untuk graceful shutdown
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		// Set cancel function ke service untuk graceful shutdown
+		svc.SetCancelFunc(cancel)
+
+		// Setup signal handler untuk CTRL+C (SIGINT) dan SIGTERM
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+		// Goroutine untuk menangani signal
+		go func() {
+			sig := <-sigChan
+			logger.Warnf("Menerima signal %v, menghentikan restore...", sig)
+			svc.HandleShutdown()
+			cancel()
+		}()
 
 		// Setup restore entry config
 		restoreConfig := types.RestoreEntryConfig{
@@ -99,6 +118,14 @@ Contoh penggunaan:
 
 		// Execute restore command
 		if err := svc.ExecuteRestoreCommand(ctx, restoreConfig); err != nil {
+			if errors.Is(err, types.ErrUserCancelled) {
+				logger.Warn("Proses dibatalkan oleh pengguna.")
+				return nil
+			}
+			if errors.Is(err, context.Canceled) {
+				logger.Warn("Proses restore dibatalkan.")
+				os.Exit(130) // Standard exit code untuk SIGINT
+			}
 			logger.Errorf("Restore multi gagal: %v", err)
 			os.Exit(1)
 		}

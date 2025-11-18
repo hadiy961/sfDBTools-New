@@ -19,7 +19,9 @@ type Config struct {
 	AllowNativePasswords bool
 	ParseTime            bool
 	Loc                  *time.Location
-	Database             string // Optional, bisa kosong
+	Database             string        // Optional, bisa kosong
+	ReadTimeout          time.Duration // Read timeout untuk long-running queries
+	WriteTimeout         time.Duration // Write timeout untuk large data transfers
 }
 
 type Client struct {
@@ -46,6 +48,9 @@ func (c *Config) DSN() string {
 		AllowOldPasswords:    true, // Aktifkan untuk kompatibilitas MariaDB lama
 		// Aktifkan ini untuk kompatibilitas dengan beberapa konfigurasi MariaDB
 		AllowCleartextPasswords: false,
+		// Timeout settings untuk long-running operations (restore/backup)
+		ReadTimeout:  c.ReadTimeout,  // 0 = unlimited
+		WriteTimeout: c.WriteTimeout, // 0 = unlimited
 	}
 
 	return cfg.FormatDSN()
@@ -63,6 +68,9 @@ func NewClient(ctx context.Context, cfg Config, timeout time.Duration, maxOpenCo
 	db.SetMaxOpenConns(maxOpenConns)
 	db.SetMaxIdleConns(maxIdleConns)
 	db.SetConnMaxLifetime(connMaxLifetime)
+	// Set idle timeout to 0 (unlimited) untuk avoid premature connection closure
+	// pada long-running operations seperti restore/backup
+	db.SetConnMaxIdleTime(0)
 
 	// Gunakan context dengan timeout untuk ping awal
 	pingCtx, cancel := context.WithTimeout(ctx, timeout)

@@ -55,10 +55,13 @@ func ConnectToSourceDatabase(creds types.SourceDBConnection) (*Client, error) {
 		AllowNativePasswords: true,
 		ParseTime:            true,
 		Database:             creds.Database,
+		ReadTimeout:          0, // Unlimited - untuk long-running queries (backup/restore)
+		WriteTimeout:         0, // Unlimited - untuk large data transfers
 	}
 
 	ctx := context.Background()
-	client, err := NewClient(ctx, cfg, 10*time.Second, 10, 5, 0) // Timeout lebih lama
+	// connMaxLifetime = 0 (unlimited) karena operasi bisa memakan waktu sangat lama
+	client, err := NewClient(ctx, cfg, 10*time.Second, 10, 5, 0)
 	spin.Stop()
 
 	if err != nil {
@@ -81,6 +84,8 @@ func ConnectToDestinationDatabase(creds types.DestinationDBConnection) (*Client,
 		AllowNativePasswords: true,
 		ParseTime:            true,
 		Database:             creds.Database,
+		ReadTimeout:          0, // Unlimited - untuk long-running queries (backup/restore)
+		WriteTimeout:         0, // Unlimited - untuk large data transfers
 	}
 
 	ctx := context.Background()

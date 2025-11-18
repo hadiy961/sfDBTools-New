@@ -50,7 +50,8 @@ func (s *Service) setupReaderPipeline(sourceFile string) (*ReaderPipelineResult,
 
 	// Detect encryption dan compression
 	result.IsEncrypted = strings.HasSuffix(sourceFile, ".enc")
-	result.CompressionType = detectCompressionType(sourceFile)
+	compressionType := compress.DetectCompressionTypeFromFile(sourceFile)
+	result.CompressionType = string(compressionType)
 
 	// Decrypt if encrypted
 	if result.IsEncrypted {

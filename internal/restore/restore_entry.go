@@ -27,19 +27,26 @@ func (s *Service) ExecuteRestoreCommand(ctx context.Context, restoreConfig types
 	s.Log.Infof("%s Memulai restore database...", restoreConfig.LogPrefix)
 
 	// Validate source file exists
+	ui.PrintSubHeader("Validasi File Backup")
 	if err := s.validateSourceFile(); err != nil {
 		return fmt.Errorf("validasi source file gagal: %w", err)
 	}
 
 	// Resolve target profile
+	ui.PrintSubHeader("Resolving Target Profile")
 	if err := s.resolveTargetProfile(ctx); err != nil {
 		return fmt.Errorf("resolve target profile gagal: %w", err)
 	}
 
 	// Verify backup file (basic validation)
-	s.Log.Info("Memverifikasi backup file...")
-	if err := s.verifyBackupFile(ctx); err != nil {
-		return fmt.Errorf("verifikasi backup file gagal: %w", err)
+	// Skip verifikasi untuk mode multi karena SourceFile adalah direktori, bukan file backup
+	// Verifikasi per-file akan dilakukan saat scan backup files
+	if restoreConfig.RestoreMode != "multi" {
+		ui.PrintSubHeader("Verifikasi File Backup")
+		s.Log.Info("Memverifikasi backup file...")
+		if err := s.verifyBackupFile(ctx); err != nil {
+			return fmt.Errorf("verifikasi backup file gagal: %w", err)
+		}
 	}
 
 	// Show options dan minta konfirmasi jika ShowOptions=true dan Force=false
@@ -54,10 +61,22 @@ func (s *Service) ExecuteRestoreCommand(ctx context.Context, restoreConfig types
 	}
 
 	// Koneksi ke target database
+	ui.PrintSubHeader("Koneksi ke Target Database")
 	if err := s.connectToTargetDatabase(ctx); err != nil {
 		return fmt.Errorf("koneksi ke target database gagal: %w", err)
 	}
 	defer s.Client.Close()
+
+	// Setup max_statement_time untuk GLOBAL restore (set ke unlimited untuk restore jangka panjang)
+	// Ini dilakukan sekali di awal untuk semua mode restore (single/multi/all)
+	restoreMaxStmt, maxStmtErr := s.setupMaxStatementTimeForRestore(ctx)
+	if maxStmtErr == nil {
+		defer func() {
+			if rerr := restoreMaxStmt(context.Background()); rerr != nil {
+				// Error sudah di-log di dalam function
+			}
+		}()
+	}
 
 	// Execute restore based on mode
 	var result types.RestoreResult

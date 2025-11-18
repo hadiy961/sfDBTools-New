@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/profilehelper"
@@ -18,14 +17,13 @@ import (
 type DatabaseNameResolution struct {
 	TargetDB     string // Database name yang akan digunakan sebagai target
 	SourceDB     string // Database name dari source (untuk display/logging)
-	ResolvedFrom string // "metadata", "filename", "user_input", "flag"
+	ResolvedFrom string // "filename", "user_input", "flag"
 }
 
 // resolveDatabaseName mendapatkan database name dengan priority:
 // 1. User-specified target DB (dari flag --target-db)
-// 2. Metadata file
-// 3. Extract dari filename pattern
-// 4. Interactive prompt (jika tidak quiet mode)
+// 2. Extract dari filename pattern
+// 3. Interactive prompt (jika tidak quiet mode)
 func (s *Service) resolveDatabaseName(sourceFile string, userSpecifiedTargetDB string) (*DatabaseNameResolution, error) {
 	result := &DatabaseNameResolution{
 		TargetDB: userSpecifiedTargetDB,
@@ -43,20 +41,7 @@ func (s *Service) resolveDatabaseName(sourceFile string, userSpecifiedTargetDB s
 		return result, nil
 	}
 
-	// Priority 2: Load dari metadata file
-	metadataFile := sourceFile + consts.MetadataFileSuffix
-	if fsops.FileExists(metadataFile) {
-		metadata, err := s.loadBackupMetadata(metadataFile)
-		if err == nil && len(metadata.DatabaseNames) > 0 {
-			result.TargetDB = metadata.DatabaseNames[0]
-			result.SourceDB = metadata.DatabaseNames[0]
-			result.ResolvedFrom = "metadata"
-			s.Log.Infof("✓ Target database dari metadata: %s", result.TargetDB)
-			return result, nil
-		}
-	}
-
-	// Priority 3: Extract dari filename pattern
+	// Priority 2: Extract dari filename pattern
 	dbName := extractDatabaseNameFromPattern(sourceFile)
 	if dbName != "" {
 		result.TargetDB = dbName
@@ -70,7 +55,7 @@ func (s *Service) resolveDatabaseName(sourceFile string, userSpecifiedTargetDB s
 	s.Log.Warnf("⚠ Filename tidak sesuai dengan pattern: %s", FixedBackupPattern)
 	s.Log.Warnf("  Backup file: %s", filepath.Base(sourceFile))
 
-	// Priority 4: Interactive prompt jika tidak quiet mode
+	// Priority 3: Interactive prompt jika tidak quiet mode
 	quietMode := helper.GetEnvOrDefault(consts.ENV_QUIET, "false") == "true"
 	if !quietMode {
 		s.Log.Info("Filename tidak sesuai pattern, gunakan interactive mode untuk input database name...")
@@ -93,21 +78,14 @@ func (s *Service) resolveDatabaseName(sourceFile string, userSpecifiedTargetDB s
 // tryGetSourceDatabaseName mencoba mendapatkan source database name untuk display/logging
 // Tidak error jika gagal, return empty string
 func (s *Service) tryGetSourceDatabaseName(sourceFile string) string {
-	// Try metadata first
-	metadataFile := sourceFile + consts.MetadataFileSuffix
-	if fsops.FileExists(metadataFile) {
-		if metadata, err := s.loadBackupMetadata(metadataFile); err == nil && len(metadata.DatabaseNames) > 0 {
-			return metadata.DatabaseNames[0]
-		}
-	}
-
 	// Try filename pattern
 	return extractDatabaseNameFromPattern(sourceFile)
 }
 
 // getFileInfo mendapatkan informasi file untuk DatabaseRestoreInfo
 func getFileInfo(sourceFile string) (fileSize int64, fileSizeHuman string) {
-	if fileInfo, ok := fsops.FileExistsWithInfo(sourceFile); ok {
+	fileInfo, err := os.Stat(sourceFile)
+	if err == nil {
 		fileSize = fileInfo.Size()
 		fileSizeHuman = global.FormatFileSize(fileSize)
 	}

@@ -12,10 +12,9 @@ import (
 	"io"
 	"path/filepath"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/servicehelper"
+	"sfDBTools/pkg/ui"
 	"strings"
 )
 
@@ -23,36 +22,35 @@ import (
 func (s *Service) executeRestoreAll(ctx context.Context) (types.RestoreResult, error) {
 	defer servicehelper.TrackProgress(s)()
 
+	// Mark restore as in progress untuk graceful shutdown
+	s.SetRestoreInProgress(true)
+	defer s.SetRestoreInProgress(false)
+
 	timer := helper.NewTimer()
 	sourceFile := s.RestoreOptions.SourceFile
 
 	s.Log.Infof("Restoring all databases from: %s", filepath.Base(sourceFile))
 
-	// Load metadata untuk mendapatkan list database
-	metadataFile := sourceFile + consts.MetadataFileSuffix
-	var databases []string
-
-	if fsops.FileExists(metadataFile) {
-		metadata, err := s.loadBackupMetadata(metadataFile)
-		if err != nil {
-			s.Log.Warnf("Gagal load metadata: %v, akan restore semua database dari backup", err)
-		} else {
-			databases = metadata.DatabaseNames
-			s.Log.Infof("Found %d databases in metadata: %v", len(databases), databases)
-		}
-	}
+	// Untuk combined backup, kita tidak tahu pasti database mana yang ada di dalam file
+	// karena tidak ada metadata yang di-generate saat backup.
+	// Combined backup akan me-restore semua database yang ada dalam file backup.
+	// List databases akan kosong, yang artinya restore semua.
+	databases := []string{} // Empty list = restore all databases from backup file
 
 	// Check if dry run
 	if s.RestoreOptions.DryRun {
+		ui.PrintSubHeader("Mode Simulasi (Dry Run)")
 		s.Log.Info("[DRY RUN] Restore tidak dijalankan (mode simulasi)")
 		return BuildDryRunResult(databases, sourceFile), nil
 	}
 
 	// Pre-backup before restore (safety backup) - untuk combined backup
-	// Backup semua databases yang akan di-restore - skip jika flag --skip-backup aktif
+	// Karena kita tidak tahu database mana yang ada dalam backup, skip pre-backup
+	// atau user harus manual backup sebelumnya
 	var preBackupResult string
 	if !s.RestoreOptions.SkipBackup && len(databases) > 0 {
-		s.Log.Info("Creating safety backups before restore...")
+		ui.PrintSubHeader("Membuat Safety Backup untuk Semua Database")
+		s.Log.Infof("Creating safety backups untuk %d database sebelum restore...", len(databases))
 		var preBackupFiles []string
 		for _, dbName := range databases {
 			preBackupFile, err := s.executePreBackup(ctx, dbName)
@@ -70,6 +68,8 @@ func (s *Service) executeRestoreAll(ctx context.Context) (types.RestoreResult, e
 	}
 
 	// Execute restore all databases
+	ui.PrintSubHeader("Melakukan Restore All Databases")
+	s.Log.Info("Starting restore semua database dari combined backup...")
 	restoreInfo, err := s.restoreAllDatabases(ctx, sourceFile, databases)
 	duration := timer.Elapsed()
 

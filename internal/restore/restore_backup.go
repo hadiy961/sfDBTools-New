@@ -19,7 +19,7 @@ import (
 // Menggunakan existing backup infrastructure (backup.Service)
 // Returns: backup file path dan error
 func (s *Service) executePreBackup(ctx context.Context, targetDB string) (string, error) {
-	s.Log.Infof("Membuat backup database '%s' sebelum restore...", targetDB)
+	s.Log.Infof("Membuat safety backup untuk database '%s'...", targetDB)
 
 	timer := helper.NewTimer()
 

@@ -14,6 +14,7 @@ import (
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/servicehelper"
 	"sfDBTools/pkg/ui"
 	"time"
@@ -31,8 +32,13 @@ type BackupFileInfo struct {
 func (s *Service) executeRestoreMulti(ctx context.Context) (types.RestoreResult, error) {
 	defer servicehelper.TrackProgress(s)()
 
+	// Mark restore as in progress untuk graceful shutdown
+	s.SetRestoreInProgress(true)
+	defer s.SetRestoreInProgress(false)
+
 	sourceDir := s.RestoreOptions.SourceFile
 
+	ui.PrintSubHeader("Scanning Direktori Backup")
 	s.Log.Infof("Scanning direktori untuk backup files: %s", sourceDir)
 
 	// Scan direktori untuk mendapatkan semua backup files
@@ -54,6 +60,7 @@ func (s *Service) executeRestoreMulti(ctx context.Context) (types.RestoreResult,
 
 	// Check if dry run
 	if s.RestoreOptions.DryRun {
+		ui.PrintSubHeader("Mode Simulasi (Dry Run)")
 		s.Log.Info("[DRY RUN] Restore tidak dijalankan (mode simulasi)")
 		builder := NewRestoreResultBuilder()
 		builder.SetTotalDatabases(len(latestFiles))
@@ -71,10 +78,6 @@ func (s *Service) executeRestoreMulti(ctx context.Context) (types.RestoreResult,
 		return builder.Build(), nil
 	}
 
-	// Execute restore untuk setiap database
-	ui.PrintSubHeader("Restore Databases")
-	s.Log.Info("Starting database restore...")
-
 	builder := NewRestoreResultBuilder()
 	builder.SetTotalDatabases(len(latestFiles))
 
@@ -82,6 +85,8 @@ func (s *Service) executeRestoreMulti(ctx context.Context) (types.RestoreResult,
 	// sebelum melakukan restore. Fungsi ExecuteMultiPreBackup sudah tersedia
 	// namun sebelumnya tidak pernah dipanggil.
 	if !s.RestoreOptions.SkipBackup {
+		ui.PrintSubHeader("Membuat Safety Backup untuk Semua Database")
+		s.Log.Info("Creating safety backups sebelum restore...")
 		preBackupDir, err := s.ExecuteMultiPreBackup(ctx, latestFiles)
 		if err != nil {
 			s.Log.Warnf("Gagal membuat pre-backup untuk multiple restore: %v", err)
@@ -91,11 +96,24 @@ func (s *Service) executeRestoreMulti(ctx context.Context) (types.RestoreResult,
 		}
 	}
 
+	// Execute restore untuk setiap database
+	ui.PrintSubHeader("Melakukan Restore Multiple Databases")
+	s.Log.Infof("Starting restore untuk %d database...", len(latestFiles))
+
 	for i, fileInfo := range latestFiles {
+		// Check context cancellation untuk graceful shutdown
+		select {
+		case <-ctx.Done():
+			s.Log.Warn("Restore dibatalkan, menghentikan proses...")
+			return builder.Build(), ctx.Err()
+		default:
+		}
+
 		s.Log.Infof("[%d/%d] Restoring database: %s from %s",
 			i+1, len(latestFiles), fileInfo.DatabaseName, filepath.Base(fileInfo.FilePath))
 
 		// Prepare database: drop (jika flag aktif) → create (jika tidak ada)
+		// prepareDatabaseForRestore sudah melakukan ensureValidConnection di dalamnya
 		prepResult, err := s.prepareDatabaseForRestore(ctx, fileInfo.DatabaseName, s.RestoreOptions.DropTarget)
 		if err != nil {
 			s.Log.Errorf("Gagal prepare database %s: %v", fileInfo.DatabaseName, err)
@@ -116,6 +134,22 @@ func (s *Service) executeRestoreMulti(ctx context.Context) (types.RestoreResult,
 		dbTimer := helper.NewTimer()
 		restoreInfo, err := s.restoreSingleDatabase(ctx, fileInfo.FilePath, fileInfo.DatabaseName, fileInfo.DatabaseName)
 		dbDuration := dbTimer.Elapsed()
+
+		// Force reconnect setelah restore untuk cleanup stale connections
+		// dan prepare fresh connection untuk database berikutnya
+		if i < len(latestFiles)-1 { // Skip di iterasi terakhir
+			s.Log.Debug("Refreshing database connection untuk database berikutnya...")
+			if s.Client != nil {
+				s.Client.Close() // Close existing connection
+			}
+			client, connErr := profilehelper.ConnectWithProfile(s.TargetProfile, "mysql")
+			if connErr != nil {
+				s.Log.Warnf("Gagal refresh connection: %v", connErr)
+			} else {
+				s.Client = client
+				s.Log.Debug("✓ Connection refreshed")
+			}
+		}
 
 		if err != nil {
 			builder.AddFailureWithPrefix(fileInfo.DatabaseName, restoreInfo, dbDuration, err, fmt.Sprintf("Database %s", fileInfo.DatabaseName))
@@ -146,13 +180,31 @@ func (s *Service) ExecuteMultiPreBackup(ctx context.Context, filesInfo []BackupF
 
 	s.Log.Infof("Pre-backup directory: %s", backupBasePath)
 
-	for i, fileInfo := range filesInfo {
-		// Check if database exists before backing up
-		exists, err := s.isTargetDatabaseExists(ctx, fileInfo.DatabaseName)
+	// Collect database existence info sekali saja untuk semua database
+	// untuk avoid duplicate check saat loop backup
+	dbExistenceMap := make(map[string]bool)
+	for _, fileInfo := range filesInfo {
+		s.Log.Debugf("Checking database existence: %s", fileInfo.DatabaseName)
+		exists, err := s.Client.DatabaseExists(ctx, fileInfo.DatabaseName)
 		if err != nil {
-			s.Log.Warnf("Gagal check keberadaan database %s: %v, skip pre-backup", fileInfo.DatabaseName, err)
-			continue
+			s.Log.Warnf("Gagal check keberadaan database %s: %v, anggap tidak ada", fileInfo.DatabaseName, err)
+			dbExistenceMap[fileInfo.DatabaseName] = false
+		} else {
+			dbExistenceMap[fileInfo.DatabaseName] = exists
 		}
+	}
+
+	for i, fileInfo := range filesInfo {
+		// Check context cancellation untuk graceful shutdown
+		select {
+		case <-ctx.Done():
+			s.Log.Warn("Pre-backup dibatalkan, menghentikan proses...")
+			return backupBasePath, ctx.Err()
+		default:
+		}
+
+		// Check database existence dari map (sudah di-check sebelumnya)
+		exists := dbExistenceMap[fileInfo.DatabaseName]
 
 		if !exists {
 			s.Log.Infof("[%d/%d] Database %s tidak ada, skip pre-backup",

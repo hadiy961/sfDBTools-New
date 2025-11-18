@@ -39,10 +39,15 @@ func (s *Service) prepareDatabaseForRestore(ctx context.Context, targetDB string
 	}
 
 	// Check apakah database target sudah ada
-	exists, err := s.isTargetDatabaseExists(ctx, targetDB)
+	s.Log.Infof("Checking target database existence: %s", targetDB)
+	exists, err := s.Client.DatabaseExists(ctx, targetDB)
 	if err != nil {
-		result.ErrorMessage = fmt.Sprintf("gagal check keberadaan database: %v", err)
+		result.ErrorMessage = fmt.Sprintf("gagal check database existence: %v", err)
 		return result, fmt.Errorf("gagal check database existence: %w", err)
+	}
+
+	if exists {
+		s.Log.Infof("✓ Database %s sudah ada", targetDB)
 	}
 
 	result.DatabaseExists = exists
@@ -76,10 +81,10 @@ func (s *Service) prepareDatabaseForRestore(ctx context.Context, targetDB string
 // executePreBackupIfNeeded menjalankan pre-backup jika diperlukan berdasarkan kondisi
 // Kondisi yang di-check:
 // - SkipBackup flag
-// - Database existence
+// - Database existence (dari parameter databaseExists, bukan check ulang)
 // - Dry run mode
 // Returns: backup file path, executed status, error
-func (s *Service) executePreBackupIfNeeded(ctx context.Context, targetDB string) (string, bool, error) {
+func (s *Service) executePreBackupIfNeeded(ctx context.Context, targetDB string, databaseExists bool) (string, bool, error) {
 	// Skip pre-backup jika flag --skip-backup aktif
 	if s.RestoreOptions.SkipBackup {
 		s.Log.Debug("Pre-backup skipped (--skip-backup flag aktif)")
@@ -92,19 +97,9 @@ func (s *Service) executePreBackupIfNeeded(ctx context.Context, targetDB string)
 		return "", false, nil
 	}
 
-	// Pastikan koneksi valid sebelum check database
-	if err := s.ensureValidConnection(ctx); err != nil {
-		return "", false, fmt.Errorf("gagal ensure valid connection: %w", err)
-	}
-
-	// Check apakah database target ada
-	exists, err := s.isTargetDatabaseExists(ctx, targetDB)
-	if err != nil {
-		return "", false, fmt.Errorf("gagal check database existence untuk pre-backup: %w", err)
-	}
-
 	// Skip pre-backup jika database tidak ada (tidak ada yang perlu di-backup)
-	if !exists {
+	// Database existence info sudah didapat dari prepareDatabaseForRestore
+	if !databaseExists {
 		s.Log.Infof("Database target tidak ada, skip pre-backup untuk: %s", targetDB)
 		return "", false, nil
 	}

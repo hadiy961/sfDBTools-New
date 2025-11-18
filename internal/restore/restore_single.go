@@ -20,6 +20,10 @@ import (
 func (s *Service) executeRestoreSingle(ctx context.Context) (types.RestoreResult, error) {
 	defer servicehelper.TrackProgress(s)()
 
+	// Mark restore as in progress untuk graceful shutdown
+	s.SetRestoreInProgress(true)
+	defer s.SetRestoreInProgress(false)
+
 	timer := helper.NewTimer()
 	sourceFile := s.RestoreOptions.SourceFile
 
@@ -37,6 +41,7 @@ func (s *Service) executeRestoreSingle(ctx context.Context) (types.RestoreResult
 
 	// Check if dry run
 	if s.RestoreOptions.DryRun {
+		ui.PrintSubHeader("Mode Simulasi (Dry Run)")
 		s.Log.Info("[DRY RUN] Restore tidak dijalankan (mode simulasi)")
 		dbName := sourceDatabaseName
 		if dbName == "" {
@@ -45,19 +50,30 @@ func (s *Service) executeRestoreSingle(ctx context.Context) (types.RestoreResult
 		return BuildDryRunResult([]string{dbName}, sourceFile), nil
 	}
 
+	// Prepare database: check exists → drop (jika flag aktif) → create (jika tidak ada)
+	// Hasil preparation akan berisi info database existence SEBELUM preparation
+	ui.PrintSubHeader("Mempersiapkan Database Target")
+	prepResult, err := s.prepareDatabaseForRestore(ctx, targetDB, s.RestoreOptions.DropTarget)
+	if err != nil {
+		return types.RestoreResult{}, fmt.Errorf("gagal prepare database: %w", err)
+	}
+
 	// Pre-backup before restore (safety backup)
-	preBackupFile, _, err := s.executePreBackupIfNeeded(ctx, targetDB)
+	// Gunakan info database existence dari prepResult untuk avoid duplicate check
+	ui.PrintSubHeader("Membuat Safety Backup")
+	preBackupFile, _, err := s.executePreBackupIfNeeded(ctx, targetDB, prepResult.DatabaseExists)
 	if err != nil {
 		return types.RestoreResult{}, fmt.Errorf("gagal create pre-backup: %w", err)
 	}
 
-	ui.PrintSubHeader("Restore Database...")
-	// Prepare database: drop (jika flag aktif) → create (jika tidak ada)
-	if _, err := s.prepareDatabaseForRestore(ctx, targetDB, s.RestoreOptions.DropTarget); err != nil {
-		return types.RestoreResult{}, fmt.Errorf("gagal prepare database: %w", err)
+	// Healthcheck koneksi sebelum restore
+	s.Log.Debug("Validasi koneksi database sebelum restore...")
+	if err := s.ensureValidConnection(ctx); err != nil {
+		return types.RestoreResult{}, fmt.Errorf("gagal validasi koneksi database: %w", err)
 	}
 
 	// Execute restore
+	ui.PrintSubHeader("Melakukan Restore Database")
 	restoreInfo, err := s.restoreSingleDatabase(ctx, sourceFile, targetDB, sourceDatabaseName)
 	duration := timer.Elapsed()
 
@@ -106,16 +122,6 @@ func (s *Service) restoreSingleDatabase(ctx context.Context, sourceFile, targetD
 		return info, err
 	}
 	defer closePipeline(pipeline)
-
-	// Setup max_statement_time untuk GLOBAL restore (set ke unlimited untuk restore jangka panjang)
-	restoreMaxStmt, err := s.setupMaxStatementTimeForRestore(ctx)
-	if err == nil {
-		defer func() {
-			if rerr := restoreMaxStmt(context.Background()); rerr != nil {
-				// Error sudah di-log di dalam function
-			}
-		}()
-	}
 
 	// Execute mysql restore menggunakan pipe
 	if err := s.executeMysqlRestore(ctx, pipeline.Reader, targetDB, sourceFile, sourceDatabaseName); err != nil {
