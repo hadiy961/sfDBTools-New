@@ -66,9 +66,11 @@ type OutputConfig struct {
 		CreateSubdirs bool   `yaml:"create_subdirs"`
 		Pattern       string `yaml:"pattern"`
 	} `yaml:"structure"`
-	TempDirectory    string `yaml:"temp_directory"`
-	CaptureGtid      bool   `yaml:"capture_gtid"`
-	CreateBackupInfo bool   `yaml:"create_backup_info"`
+	CaptureGtid bool `yaml:"capture_gtid"`
+	// Support both legacy `create_backup_info` and config key `save_backup_info`
+	// because some installations use `save_backup_info` in YAML.
+	SaveBackupInfo   bool `yaml:"save_backup_info"`
+	CreateBackupInfo bool `yaml:"create_backup_info"`
 }
 
 type VerificationConfig struct {

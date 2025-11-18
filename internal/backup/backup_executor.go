@@ -27,25 +27,6 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 		return nil, fmt.Errorf("gagal setup backup execution: %w", err)
 	}
 
-	// 2. Setup max_statement_time untuk GLOBAL (set ke unlimited untuk backup jangka panjang)
-	// GLOBAL scope agar mysqldump juga affected (mysqldump membuat koneksi terpisah)
-	// OPTIMISASI: Skip jika tidak critical untuk performa (query ini bisa lambat)
-	s.Log.Debug("Skipping GLOBAL max_statement_time setup untuk performa optimal")
-	// Uncomment jika diperlukan untuk backup jangka sangat panjang (>1 jam):
-	// restore, originalMaxStatementTime, err := database.WithGlobalMaxStatementTime(ctx, sourceClient, 0)
-	// if err != nil {
-	// 	s.Log.Warnf("Setup GLOBAL max_statement_time gagal: %v", err)
-	// } else {
-	// 	s.Log.Infof("Original GLOBAL max_statement_time: %f detik", originalMaxStatementTime)
-	// 	defer func() {
-	// 		if rerr := restore(context.Background()); rerr != nil {
-	// 			s.Log.Warnf("Gagal mengembalikan GLOBAL max_statement_time: %v", rerr)
-	// 		} else {
-	// 			s.Log.Info("GLOBAL max_statement_time berhasil dikembalikan.")
-	// 		}
-	// 	}()
-	// }
-
 	// 3. Cleanup old backups SETELAH backup baru (jika enabled)
 	// OPTIMISASI: Pindahkan cleanup ke AFTER backup untuk tidak block backup execution
 	cleanupDeferred := false

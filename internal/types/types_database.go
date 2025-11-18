@@ -44,7 +44,6 @@ type FilterOptions struct {
 	IncludeDatabases []string // Whitelist - hanya database ini yang diizinkan (priority tertinggi)
 	IncludeFile      string   // Path ke file berisi whitelist database (satu per baris)
 	ExcludeDBFile    string   // Path ke file berisi blacklist database (satu per baris)
-	ExcludeUser      bool     // Exclude databases user
 	ExcludeData      bool     // Exclude databases with no data
 	ExcludeEmpty     bool     // Exclude databases with empty data
 }
@@ -76,6 +75,13 @@ type DatabaseBackupInfo struct {
 	Status              string `json:"status"`                   // "success", "success_with_warnings", "failed"
 	Warnings            string `json:"warnings,omitempty"`       // Warning/error messages dari mysqldump
 	ErrorLogFile        string `json:"error_log_file,omitempty"` // Path ke file log error
+
+	// Additional metadata (optional)
+	BackupID       string    `json:"backup_id,omitempty"`
+	StartTime      time.Time `json:"start_time,omitempty"`
+	EndTime        time.Time `json:"end_time,omitempty"`
+	ThroughputMBps float64   `json:"throughput_mb_per_sec,omitempty"`
+	ManifestFile   string    `json:"manifest_file,omitempty"`
 }
 
 // DatabaseDetail menyimpan informasi detail database dari tabel database_details

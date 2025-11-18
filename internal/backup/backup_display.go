@@ -31,8 +31,19 @@ func (s *Service) DisplayBackupDBOptions() (proceed bool, err error) {
 		{"Filename Pattern", helper.FixedBackupPattern},
 		{filenameLabel, ui.ColorText(s.BackupDBOptions.File.Path, ui.ColorCyan)},
 		{"Dry Run", fmt.Sprintf("%v", s.BackupDBOptions.DryRun)},
-		{"Capture GTID", fmt.Sprintf("%v", s.BackupDBOptions.CaptureGTID)},
 	}
+
+	// Tampilkan Capture GTID hanya untuk mode combined
+	if s.BackupDBOptions.Mode == "combined" {
+		data = append(data, []string{"Capture GTID", fmt.Sprintf("%v", s.BackupDBOptions.CaptureGTID)})
+	}
+
+	// Tampilkan Exclude User
+	exportUserStatus := "Yes"
+	if s.BackupDBOptions.ExcludeUser {
+		exportUserStatus = "No"
+	}
+	data = append(data, []string{"Export User Grants", ui.ColorText(exportUserStatus, ui.ColorGreen)})
 
 	// Informasi Profile
 	if s.BackupDBOptions.Profile.Name != "" {
@@ -46,7 +57,6 @@ func (s *Service) DisplayBackupDBOptions() (proceed bool, err error) {
 	data = append(data, []string{"", ""}) // Empty row for separation
 	data = append(data, []string{ui.ColorText("Filter Options", ui.ColorPurple), ""})
 	data = append(data, []string{"Exclude System DB", fmt.Sprintf("%v", s.BackupDBOptions.Filter.ExcludeSystem)})
-	data = append(data, []string{"Exclude User DB", fmt.Sprintf("%v", s.BackupDBOptions.Filter.ExcludeUser)})
 	data = append(data, []string{"Exclude Empty DB", fmt.Sprintf("%v", s.BackupDBOptions.Filter.ExcludeEmpty)})
 	data = append(data, []string{"Exclude Data DB", fmt.Sprintf("%v", s.BackupDBOptions.Filter.ExcludeData)})
 
@@ -156,6 +166,23 @@ func (s *Service) DisplayBackupResult(result *types.BackupResult) {
 				{"File Output", info.OutputFile},
 				{"Ukuran File", info.FileSizeHuman},
 				{"Durasi Backup", info.Duration},
+			}
+
+			// Display new metadata if available
+			if info.BackupID != "" {
+				detailData = append(detailData, []string{"Backup ID", ui.ColorText(info.BackupID, ui.ColorYellow)})
+			}
+			if !info.StartTime.IsZero() {
+				detailData = append(detailData, []string{"Start Time", ui.ColorText(info.StartTime.String(), ui.ColorCyan)})
+			}
+			if !info.EndTime.IsZero() {
+				detailData = append(detailData, []string{"End Time", ui.ColorText(info.EndTime.String(), ui.ColorCyan)})
+			}
+			if info.ThroughputMBps > 0 {
+				detailData = append(detailData, []string{"Throughput", ui.ColorText(fmt.Sprintf("%.2f MB/s", info.ThroughputMBps), ui.ColorGreen)})
+			}
+			if info.ManifestFile != "" {
+				detailData = append(detailData, []string{"Manifest", ui.ColorText(info.ManifestFile, ui.ColorPurple)})
 			}
 
 			// Tambahkan informasi kompresi ratio jika ada

@@ -2,6 +2,7 @@ package backup
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
+	"time"
 )
 
 // executeBackupSeparated melakukan backup setiap database dalam file terpisah
@@ -78,6 +80,9 @@ func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []strin
 		// Eksekusi mysqldump
 		Compression := s.BackupDBOptions.Compression.Enabled
 		CompressionType := s.BackupDBOptions.Compression.Type
+		// Capture start time for this database backup
+		startTime := dbTimer.StartTime()
+
 		writeResult, err := s.executeMysqldumpWithPipe(ctx, mysqldumpArgs, fullOutputPath, Compression, CompressionType)
 
 		if err != nil {
@@ -122,6 +127,7 @@ func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []strin
 
 		// Backup berhasil
 		backupDuration := dbTimer.Elapsed()
+		endTime := time.Now()
 		fileInfo, err := os.Stat(fullOutputPath)
 		var fileSize int64
 		if err == nil {
@@ -137,14 +143,67 @@ func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []strin
 			s.Log.Info(fmt.Sprintf("✓ Database %s berhasil di-backup", dbName))
 		}
 
+		// Prepare manifest and optionally write it
+		meta := types.BackupMetadata{
+			BackupFile:      fullOutputPath,
+			BackupType:      "separated",
+			DatabaseNames:   []string{dbName},
+			Hostname:        s.BackupDBOptions.Profile.DBInfo.HostName,
+			BackupStartTime: startTime,
+			BackupEndTime:   endTime,
+			BackupDuration:  global.FormatDuration(backupDuration),
+			FileSize:        fileSize,
+			FileSizeHuman:   global.FormatFileSize(fileSize),
+			Compressed:      Compression,
+			CompressionType: CompressionType,
+			Encrypted:       s.BackupDBOptions.Encryption.Enabled,
+			BackupStatus:    backupStatus,
+			Warnings:        []string{},
+			GeneratedBy:     "sfDBTools",
+			GeneratedAt:     time.Now(),
+		}
+		if stderrOutput != "" {
+			meta.Warnings = append(meta.Warnings, stderrOutput)
+		}
+
+		shouldSaveMeta := s.Config.Backup.Output.CreateBackupInfo || s.Config.Backup.Output.SaveBackupInfo
+		manifestPath := ""
+		if shouldSaveMeta {
+			manifestPath = fullOutputPath + ".meta.json"
+			tmpManifest := manifestPath + ".tmp"
+			if manifestBytes, mErr := json.MarshalIndent(meta, "", "  "); mErr == nil {
+				if wErr := os.WriteFile(tmpManifest, manifestBytes, 0644); wErr != nil {
+					s.Log.Errorf("Gagal menulis file manifest sementara: %v", wErr)
+					manifestPath = ""
+				} else if rErr := os.Rename(tmpManifest, manifestPath); rErr != nil {
+					s.Log.Errorf("Gagal merename manifest sementara ke target: %v", rErr)
+					manifestPath = ""
+				}
+			} else {
+				s.Log.Errorf("Gagal membuat manifest JSON: %v", mErr)
+				manifestPath = ""
+			}
+		}
+
+		backupID := fmt.Sprintf("bk-%d", time.Now().UnixNano())
+		var throughputMBs float64
+		if backupDuration.Seconds() > 0 {
+			throughputMBs = float64(fileSize) / (1024.0 * 1024.0) / backupDuration.Seconds()
+		}
+
 		res.BackupInfo = append(res.BackupInfo, types.DatabaseBackupInfo{
-			DatabaseName:  dbName,
-			OutputFile:    fullOutputPath,
-			FileSize:      fileSize,
-			FileSizeHuman: global.FormatFileSize(fileSize),
-			Duration:      global.FormatDuration(backupDuration),
-			Status:        backupStatus,
-			Warnings:      stderrOutput,
+			DatabaseName:   dbName,
+			OutputFile:     fullOutputPath,
+			FileSize:       fileSize,
+			FileSizeHuman:  global.FormatFileSize(fileSize),
+			Duration:       global.FormatDuration(backupDuration),
+			Status:         backupStatus,
+			Warnings:       stderrOutput,
+			BackupID:       backupID,
+			StartTime:      startTime,
+			EndTime:        endTime,
+			ThroughputMBps: throughputMBs,
+			ManifestFile:   manifestPath,
 		})
 
 		successCount++
@@ -152,6 +211,19 @@ func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []strin
 
 	// Clear current backup file setelah selesai
 	s.ClearCurrentBackupFile()
+
+	// Export user grants jika flag TIDAK exclude (ExcludeUser = false berarti export)
+	if !s.BackupDBOptions.ExcludeUser && successCount > 0 {
+		s.Log.Info("Export user grants ke file...")
+		// Gunakan file backup pertama yang berhasil sebagai referensi untuk nama file
+		if len(res.BackupInfo) > 0 {
+			firstBackupFile := res.BackupInfo[0].OutputFile
+			if userErr := s.ExportAndSaveUserGrants(ctx, firstBackupFile); userErr != nil {
+				s.Log.Errorf("Gagal export user grants: %v", userErr)
+				// Tidak fatal, lanjutkan
+			}
+		}
+	}
 
 	return res
 }
