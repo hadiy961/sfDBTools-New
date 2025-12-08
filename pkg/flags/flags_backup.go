@@ -2,12 +2,14 @@ package flags
 
 import (
 	"sfDBTools/internal/types"
+	"sfDBTools/internal/types/types_backup"
+	flagsbackup "sfDBTools/pkg/flags/flags_backup"
 
 	"github.com/spf13/cobra"
 )
 
 // AddBackupFlags
-func AddBackupFlags(cmd *cobra.Command, opts *types.BackupDBOptions) {
+func AddBackupFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
 	AddProfileFlags(cmd, &opts.Profile)
 
 	// Filters
@@ -39,13 +41,32 @@ func AddBackupFlags(cmd *cobra.Command, opts *types.BackupDBOptions) {
 
 // AddEncryptionFlags menambahkan flags untuk konfigurasi enkripsi.
 func AddEncryptionFlags(cmd *cobra.Command, opts *types.EncryptionOptions) {
-	cmd.Flags().Bool("encrypt", opts.Enabled, "Aktifkan enkripsi untuk file backup")
-	cmd.Flags().String("encryption-key", opts.Key, "Kunci enkripsi yang digunakan untuk mengenkripsi file backup")
+	cmd.Flags().StringP("encryption-key", "K", opts.Key, "Kunci enkripsi yang digunakan untuk mengenkripsi file backup")
 }
 
 // AddCompressionFlags menambahkan flags untuk konfigurasi kompresi.
 func AddCompressionFlags(cmd *cobra.Command, opts *types.CompressionOptions) {
-	cmd.Flags().Bool("compress", opts.Enabled, "Aktifkan kompresi untuk file backup")
-	cmd.Flags().String("compression-type", opts.Type, "Tipe kompresi yang digunakan (gzip, zstd, xz, pgzip, zlib)")
-	cmd.Flags().Int("compression-level", opts.Level, "Tingkat kompresi yang digunakan (1-9)")
+	cmd.Flags().StringP("compress-type", "C", opts.Type, "Tipe kompresi yang digunakan (gzip, zstd, xz, pgzip, zlib, none)")
+	cmd.Flags().Int("compress-level", opts.Level, "Tingkat kompresi yang digunakan (1-9)")
+}
+
+func AddBackupFlgs(cmd *cobra.Command, opts *types_backup.BackupDBOptions, mode string) {
+	if mode == "single" {
+		AddProfileFlags(cmd, &opts.Profile)
+		AddCompressionFlags(cmd, &opts.Compression)
+		AddEncryptionFlags(cmd, &opts.Encryption)
+		flagsbackup.SingleBackupFlags(cmd, opts)
+	} else if mode == "primary" {
+		AddProfileFlags(cmd, &opts.Profile)
+		AddCompressionFlags(cmd, &opts.Compression)
+		AddEncryptionFlags(cmd, &opts.Encryption)
+		flagsbackup.PrimaryBackupFlags(cmd, opts)
+	} else if mode == "secondary" {
+		AddProfileFlags(cmd, &opts.Profile)
+		AddCompressionFlags(cmd, &opts.Compression)
+		AddEncryptionFlags(cmd, &opts.Encryption)
+		flagsbackup.SecondaryBackupFlags(cmd, opts)
+	} else {
+		AddBackupFlags(cmd, opts)
+	}
 }

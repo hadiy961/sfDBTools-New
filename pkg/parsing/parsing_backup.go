@@ -1,7 +1,7 @@
 package parsing
 
 import (
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
 	defaultVal "sfDBTools/pkg/defaultval"
 	"sfDBTools/pkg/helper"
@@ -10,7 +10,7 @@ import (
 )
 
 // ParsingBackupOptions melakukan parsing opsi untuk backup combined
-func ParsingBackupOptions(cmd *cobra.Command, mode string) (types.BackupDBOptions, error) {
+func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupDBOptions, error) {
 	// Mulai dari default untuk mode combined
 	opts := defaultVal.DefaultBackupOptions(mode)
 	// Profile & key
@@ -28,19 +28,22 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types.BackupDBOption
 	opts.Filter.IncludeDatabases = helper.GetStringArrayFlagOrEnv(cmd, "db", "")
 	opts.Filter.IncludeFile = helper.GetStringFlagOrEnv(cmd, "db-file", "")
 
-	// Compression
-	opts.Compression.Enabled = helper.GetBoolFlagOrEnv(cmd, "compress", "")
-	if v := helper.GetStringFlagOrEnv(cmd, "compression-type", ""); v != "" {
+	// Compression - derive from compress-type (enabled unless type is "none" or empty)
+	if v := helper.GetStringFlagOrEnv(cmd, "compress-type", ""); v != "" && v != "none" {
 		opts.Compression.Type = v
+		opts.Compression.Enabled = true
+	} else if v == "none" {
+		opts.Compression.Type = v
+		opts.Compression.Enabled = false
 	}
-	if v := helper.GetIntFlagOrEnv(cmd, "compression-level", ""); v != 0 {
+	if v := helper.GetIntFlagOrEnv(cmd, "compress-level", ""); v != 0 {
 		opts.Compression.Level = v
 	}
 
-	// Encryption
-	opts.Encryption.Enabled = helper.GetBoolFlagOrEnv(cmd, "encrypt", "")
+	// Encryption - derive from encryption-key (enabled if key is not empty)
 	if v := helper.GetStringFlagOrEnv(cmd, "encryption-key", consts.ENV_BACKUP_ENCRYPTION_KEY); v != "" {
 		opts.Encryption.Key = v
+		opts.Encryption.Enabled = true
 	}
 
 	// Capture GTID (hanya untuk combined)
@@ -61,6 +64,35 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types.BackupDBOption
 		opts.OutputDir = v
 	}
 	opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
+
+	// Mode-specific options
+	if mode == "single" {
+		if v := helper.GetStringFlagOrEnv(cmd, "database", ""); v != "" {
+			opts.DBName = v
+		}
+		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
+			opts.File.Filename = v
+		}
+		opts.Filter.ExcludeData = helper.GetBoolFlagOrEnv(cmd, "exclude-data", "")
+		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
+		opts.IncludeTemp = helper.GetBoolFlagOrEnv(cmd, "include-temp", "")
+		opts.IncludeArchive = helper.GetBoolFlagOrEnv(cmd, "include-archive", "")
+	} else if mode == "primary" {
+		// Mode primary sama seperti single, hanya tanpa --database flag
+		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
+			opts.File.Filename = v
+		}
+		opts.Filter.ExcludeData = helper.GetBoolFlagOrEnv(cmd, "exclude-data", "")
+		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
+		opts.IncludeTemp = helper.GetBoolFlagOrEnv(cmd, "include-temp", "")
+		opts.IncludeArchive = helper.GetBoolFlagOrEnv(cmd, "include-archive", "")
+	} else if mode == "secondary" {
+		// Mode secondary sama seperti primary, hanya untuk database dengan suffix _secondary
+		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
+			opts.File.Filename = v
+		}
+		opts.Filter.ExcludeData = helper.GetBoolFlagOrEnv(cmd, "exclude-data", "")
+	}
 
 	// Mode
 	opts.Mode = mode

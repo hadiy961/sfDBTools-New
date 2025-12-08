@@ -18,4 +18,7 @@ func init() {
 	// Tambahkan semua sub-command (Perlu diinisialisasi di file masing-masing)
 	CmdDBBackupMain.AddCommand(CmdDBBackupCombined)
 	CmdDBBackupMain.AddCommand(CmdDBBackupSeparated)
+	CmdDBBackupMain.AddCommand(CmdBackupSingle)
+	CmdDBBackupMain.AddCommand(CmdBackupPrimary)
+	CmdDBBackupMain.AddCommand(CmdBackupSecondary)
 }

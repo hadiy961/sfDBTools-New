@@ -29,8 +29,11 @@ type BackupConfig struct {
 }
 
 type IncludeConfig struct {
-	Databases []string `yaml:"databases"`
-	File      string   `yaml:"file"`
+	Databases      []string `yaml:"databases"`
+	File           string   `yaml:"file"`
+	IncludeDmart   bool     `yaml:"include_dmart"`
+	IncludeTemp    bool     `yaml:"include_temp"`
+	IncludeArchive bool     `yaml:"include_archive"`
 }
 
 type CompressionConfig struct {

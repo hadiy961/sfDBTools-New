@@ -55,6 +55,5 @@ func ProfileDelete(cmd *cobra.Command) {
 // ProfileList - Flag untuk daftar profil yang ada
 func AddProfileFlags(cmd *cobra.Command, opts *types.ProfileInfo) {
 	cmd.Flags().StringP("profile", "p", opts.Path, "Nama file profil yang akan dipilih (WAJIB)")
-	cmd.Flags().StringP("profile-key", "k", opts.EncryptionKey, "kunci enkripsi untuk mendekripsi file profil")
-	cmd.MarkFlagRequired("profile")
+	cmd.Flags().StringP("profile-key", "P", opts.EncryptionKey, "kunci enkripsi untuk mendekripsi file profil")
 }

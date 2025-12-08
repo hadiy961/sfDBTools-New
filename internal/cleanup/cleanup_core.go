@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
 	"sort"
@@ -95,8 +95,17 @@ func cleanupCore(dryRun bool, pattern string) error {
 	return nil
 }
 
+// scanFilesWithLogger adalah wrapper untuk scanFiles dengan custom logger
+// Digunakan ketika dipanggil dari package lain (seperti backup)
+func scanFilesWithLogger(baseDir string, cutoff time.Time, pattern string, logger applog.Logger) ([]types_backup.BackupFileInfo, error) {
+	oldLogger := Logger
+	Logger = logger
+	defer func() { Logger = oldLogger }()
+	return scanFiles(baseDir, cutoff, pattern)
+}
+
 // scanFiles memilih metode pemindaian file (menyeluruh atau berdasarkan pola).
-func scanFiles(baseDir string, cutoff time.Time, pattern string) ([]types.BackupFileInfo, error) {
+func scanFiles(baseDir string, cutoff time.Time, pattern string) ([]types_backup.BackupFileInfo, error) {
 	// Jika tidak ada pattern, kita buat pattern default untuk mencari semua file secara rekursif.
 	// Tanda '**/*' berarti "semua file di semua sub-direktori".
 	if pattern == "" {
@@ -109,7 +118,7 @@ func scanFiles(baseDir string, cutoff time.Time, pattern string) ([]types.Backup
 		return nil, fmt.Errorf("gagal memproses pattern glob %s: %w", pattern, err)
 	}
 
-	var filesToDelete []types.BackupFileInfo
+	var filesToDelete []types_backup.BackupFileInfo
 	for _, path := range paths {
 		// Karena Glob mengembalikan path relatif, kita gabungkan lagi dengan baseDir
 		fullPath := filepath.Join(baseDir, path)
@@ -126,7 +135,7 @@ func scanFiles(baseDir string, cutoff time.Time, pattern string) ([]types.Backup
 		}
 
 		if info.ModTime().Before(cutoff) {
-			filesToDelete = append(filesToDelete, types.BackupFileInfo{
+			filesToDelete = append(filesToDelete, types_backup.BackupFileInfo{
 				Path:    fullPath,
 				ModTime: info.ModTime(),
 				Size:    info.Size(),
@@ -141,8 +150,17 @@ func scanFiles(baseDir string, cutoff time.Time, pattern string) ([]types.Backup
 	return filesToDelete, nil
 }
 
+// performDeletionWithLogger adalah wrapper untuk performDeletion dengan custom logger
+// Digunakan ketika dipanggil dari package lain (seperti backup)
+func performDeletionWithLogger(files []types_backup.BackupFileInfo, logger applog.Logger) {
+	oldLogger := Logger
+	Logger = logger
+	defer func() { Logger = oldLogger }()
+	performDeletion(files)
+}
+
 // performDeletion menghapus file-file yang ada dalam daftar.
-func performDeletion(files []types.BackupFileInfo) {
+func performDeletion(files []types_backup.BackupFileInfo) {
 	Logger.Infof("Ditemukan %d file backup lama yang akan dihapus", len(files))
 
 	var deletedCount int
@@ -163,7 +181,7 @@ func performDeletion(files []types.BackupFileInfo) {
 }
 
 // logDryRunSummary mencatat ringkasan file yang akan dihapus dalam mode dry-run.
-func logDryRunSummary(files []types.BackupFileInfo) {
+func logDryRunSummary(files []types_backup.BackupFileInfo) {
 	Logger.Infof("DRY-RUN: Ditemukan %d file backup yang AKAN dihapus:", len(files))
 
 	var totalSize int64

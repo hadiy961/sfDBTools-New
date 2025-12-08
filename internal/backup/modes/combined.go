@@ -1,0 +1,83 @@
+// File : internal/backup/modes/combined.go
+// Deskripsi : Mode backup combined - semua database dalam satu file
+// Author : Hadiyatna Muflihun
+// Tanggal : 2025-12-05
+// Last Modified : 2025-12-05
+
+package modes
+
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+	"sfDBTools/internal/types/types_backup"
+	"strings"
+)
+
+// CombinedExecutor menangani backup combined mode
+type CombinedExecutor struct {
+	service BackupService
+}
+
+// NewCombinedExecutor membuat instance baru CombinedExecutor
+func NewCombinedExecutor(svc BackupService) *CombinedExecutor {
+	return &CombinedExecutor{service: svc}
+}
+
+// Execute melakukan backup semua database dalam satu file
+func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) types_backup.BackupResult {
+	var res types_backup.BackupResult
+	e.service.LogInfo("Melakukan backup database dalam mode combined")
+
+	totalDBFound := e.service.GetTotalDatabaseCount(ctx, dbFiltered)
+
+	filename := e.service.GetBackupOptions().File.Path
+	fullOutputPath := filepath.Join(e.service.GetBackupOptions().OutputDir, filename)
+	e.service.LogDebug("Backup file: " + fullOutputPath)
+
+	// Execute backup
+	backupInfo, execErr := e.service.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
+		DBList:       dbFiltered,
+		OutputPath:   fullOutputPath,
+		BackupType:   "combined",
+		TotalDBFound: totalDBFound,
+		IsMultiDB:    true,
+	})
+
+	if execErr != nil {
+		res.Errors = append(res.Errors, execErr.Error())
+		for _, dbName := range dbFiltered {
+			res.FailedDatabaseInfos = append(res.FailedDatabaseInfos, types_backup.FailedDatabaseInfo{
+				DatabaseName: dbName,
+				Error:        execErr.Error(),
+			})
+		}
+		return res
+	}
+
+	// Capture dan save GTID jika diperlukan
+	if err := e.service.CaptureAndSaveGTID(ctx, fullOutputPath); err != nil {
+		e.service.LogWarn("GTID handling error: " + err.Error())
+	}
+
+	// Export user grants
+	e.service.ExportUserGrantsIfNeeded(ctx, fullOutputPath)
+
+	// Format display name dengan helper
+	backupInfo.DatabaseName = e.formatCombinedBackupDisplayName(dbFiltered)
+
+	res.BackupInfo = append(res.BackupInfo, backupInfo)
+	return res
+}
+
+// formatCombinedBackupDisplayName memformat nama display untuk combined backup
+func (e *CombinedExecutor) formatCombinedBackupDisplayName(databases []string) string {
+	if len(databases) <= 10 {
+		dbList := make([]string, len(databases))
+		for i, db := range databases {
+			dbList[i] = fmt.Sprintf("- %s", db)
+		}
+		return fmt.Sprintf("Combined backup (%d databases):\n%s", len(databases), strings.Join(dbList, "\n"))
+	}
+	return fmt.Sprintf("Combined backup (%d databases)", len(databases))
+}

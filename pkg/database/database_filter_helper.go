@@ -9,11 +9,12 @@ package database
 import (
 	"context"
 	"sfDBTools/internal/types"
+	"sfDBTools/internal/types/types_backup"
 )
 
 // FilterFromBackupOptions membuat FilterOptions dari BackupDBOptions dan execute filtering
 // Helper untuk menghindari duplikasi di backup_filter.go
-func FilterFromBackupOptions(ctx context.Context, client *Client, opts *types.BackupDBOptions) ([]string, *types.DatabaseFilterStats, error) {
+func FilterFromBackupOptions(ctx context.Context, client *Client, opts *types_backup.BackupDBOptions) ([]string, *types.DatabaseFilterStats, error) {
 	filterOpts := types.FilterOptions{
 		ExcludeSystem:    opts.Filter.ExcludeSystem,
 		ExcludeDatabases: opts.Filter.ExcludeDatabases,

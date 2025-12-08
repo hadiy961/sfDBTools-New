@@ -64,20 +64,28 @@ func NewPathPatternReplacer(database string, hostname string, compressionType co
 }
 
 // ReplacePattern mengganti semua pattern dalam string dengan nilai yang sesuai
-func (r *PathPatternReplacer) ReplacePattern(pattern string) string {
+// Parameters:
+// - pattern: string yang berisi pattern yang ingin di-replace
+// - excludeHostname: jika true, {hostname} tidak akan di-replace (gunakan untuk directory pattern)
+func (r *PathPatternReplacer) ReplacePattern(pattern string, excludeHostname ...bool) string {
 	result := pattern
+	skipHostname := len(excludeHostname) > 0 && excludeHostname[0]
 
 	// Daftar replacements
 	replacements := map[string]string{
 		"{database}":  r.Database,
 		"{timestamp}": r.Timestamp.Format("20060102_150405"),
-		"{hostname}":  r.Hostname,
 		"{year}":      r.Year,
 		"{month}":     r.Month,
 		"{day}":       r.Day,
 		"{hour}":      r.Hour,
 		"{minute}":    r.Minute,
 		"{second}":    r.Second,
+	}
+
+	// Hanya replace {hostname} jika tidak di-exclude (untuk filename saja)
+	if !skipHostname {
+		replacements["{hostname}"] = r.Hostname
 	}
 
 	// Replace semua pattern
@@ -133,6 +141,12 @@ func GenerateBackupFilename(database string, mode string, hostname string, compr
 }
 
 // GenerateBackupDirectory menghasilkan path direktori backup berdasarkan base directory dan structure pattern
+// Hostname akan di-exclude dari directory path (hanya untuk filename)
+//
+// Examples:
+//
+//	GenerateBackupDirectory("/media/ArchiveDB", "{year}{month}{day}/", "dbserver1")
+//	returns: /media/ArchiveDB/20251205/
 func GenerateBackupDirectory(baseDir string, structurePattern string, hostname string) (string, error) {
 	// Gunakan database kosong karena directory tidak butuh nama database
 	// Untuk directory tidak perlu ekstensi kompresi/enkripsi
@@ -141,8 +155,8 @@ func GenerateBackupDirectory(baseDir string, structurePattern string, hostname s
 		return "", fmt.Errorf("gagal membuat pattern replacer: %w", err)
 	}
 
-	// Replace pattern di structure
-	subPath := replacer.ReplacePattern(structurePattern)
+	// Replace pattern di structure - exclude hostname dari directory path
+	subPath := replacer.ReplacePattern(structurePattern, true)
 
 	// Gabungkan base directory dengan subpath
 	fullPath := filepath.Join(baseDir, subPath)

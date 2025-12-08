@@ -201,3 +201,5 @@ When identifying duplicate patterns:
 - Follow existing code style and conventions for new features or modifications.
 - Ensure proper error handling and logging in all new code paths.
 - No need to create documentation if not requested by the user.
+- No need to create summary if not requested by the user.
+- No backwards compatibility is required; refactor liberally for code quality.

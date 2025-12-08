@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"sfDBTools/internal/backup"
 	"sfDBTools/internal/types"
+	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/profilehelper"
 )
@@ -25,7 +26,7 @@ func (s *Service) executePreBackup(ctx context.Context, targetDB string) (string
 
 	// Build BackupDBOptions untuk backup service
 	// Menggunakan struktur yang sama dengan backup command
-	backupOpts := types.BackupDBOptions{
+	backupOpts := types_backup.BackupDBOptions{
 		Filter: types.FilterOptions{
 			IncludeDatabases: []string{targetDB}, // Backup hanya database yang akan di-restore
 			ExcludeDatabases: []string{},
@@ -38,7 +39,7 @@ func (s *Service) executePreBackup(ctx context.Context, targetDB string) (string
 		DryRun: false,
 		Force:  false,
 		Mode:   "separated", // Gunakan separated mode untuk single database
-		Entry: types.BackupEntryConfig{
+		Entry: types_backup.BackupEntryConfig{
 			HeaderTitle: fmt.Sprintf("Pre-Restore Backup - %s", targetDB),
 			Force:       false,
 			SuccessMsg:  "",
