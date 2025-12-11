@@ -31,6 +31,9 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 
 	totalDBFound := e.service.GetTotalDatabaseCount(ctx, dbFiltered)
 
+	// Initialize result statistics
+	res.TotalDatabases = len(dbFiltered)
+
 	filename := e.service.GetBackupOptions().File.Path
 	fullOutputPath := filepath.Join(e.service.GetBackupOptions().OutputDir, filename)
 	e.service.LogDebug("Backup file: " + fullOutputPath)
@@ -46,6 +49,7 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 
 	if execErr != nil {
 		res.Errors = append(res.Errors, execErr.Error())
+		res.FailedBackups = len(dbFiltered)
 		for _, dbName := range dbFiltered {
 			res.FailedDatabaseInfos = append(res.FailedDatabaseInfos, types_backup.FailedDatabaseInfo{
 				DatabaseName: dbName,
@@ -54,6 +58,9 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 		}
 		return res
 	}
+
+	// Success - all databases backed up in one file
+	res.SuccessfulBackups = len(dbFiltered)
 
 	// Capture dan save GTID jika diperlukan
 	if err := e.service.CaptureAndSaveGTID(ctx, fullOutputPath); err != nil {

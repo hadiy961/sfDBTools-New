@@ -6,9 +6,9 @@ import "github.com/spf13/cobra"
 var CmdDBBackupMain = &cobra.Command{
 	Use:     "db-backup",
 	Aliases: []string{"backup", "dbbackup", "dump"},
-	Short:   "Database backup tools (combined, separated, dll)",
+	Short:   "Database backup tools (all, filter, single, dll)",
 	Long: `Perintah 'db-backup' digunakan untuk melakukan backup database.
-Tersedia beberapa sub-perintah seperti combined dan separated. Gunakan 'db-backup <sub-command> --help' untuk informasi lebih lanjut.`,
+Tersedia beberapa sub-perintah seperti all, filter, dan single. Gunakan 'db-backup <sub-command> --help' untuk informasi lebih lanjut.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
@@ -16,8 +16,8 @@ Tersedia beberapa sub-perintah seperti combined dan separated. Gunakan 'db-backu
 
 func init() {
 	// Tambahkan semua sub-command (Perlu diinisialisasi di file masing-masing)
-	CmdDBBackupMain.AddCommand(CmdDBBackupCombined)
-	CmdDBBackupMain.AddCommand(CmdDBBackupSeparated)
+	CmdDBBackupMain.AddCommand(CmdDBBackupAll)
+	CmdDBBackupMain.AddCommand(CmdDBBackupFilter)
 	CmdDBBackupMain.AddCommand(CmdBackupSingle)
 	CmdDBBackupMain.AddCommand(CmdBackupPrimary)
 	CmdDBBackupMain.AddCommand(CmdBackupSecondary)

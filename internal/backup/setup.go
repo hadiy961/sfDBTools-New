@@ -10,19 +10,20 @@ import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/backup/display"
-	"sfDBTools/internal/backup/helper"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/fsops"
 	pkghelper "sfDBTools/pkg/helper"
+	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
+	"strings"
 )
 
 // CheckAndSelectConfigFile memeriksa file konfigurasi yang ada atau memandu pengguna untuk memilihnya
 func (s *Service) CheckAndSelectConfigFile() error {
-	allowInteractive := (s.BackupDBOptions.Mode == "single" || s.BackupDBOptions.Mode == "primary" || s.BackupDBOptions.Mode == "secondary") && s.BackupDBOptions.Profile.Path == ""
+	allowInteractive := (s.BackupDBOptions.Mode == "single" || s.BackupDBOptions.Mode == "primary" || s.BackupDBOptions.Mode == "secondary" || s.BackupDBOptions.Mode == "combined" || s.BackupDBOptions.Mode == "separated") && s.BackupDBOptions.Profile.Path == ""
 	profile, err := profilehelper.LoadSourceProfile(
 		s.BackupDBOptions.Profile.Path,
 		s.BackupDBOptions.Encryption.Key,
@@ -119,10 +120,20 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 		return nil, nil, fmt.Errorf("tidak ada database tersedia untuk backup setelah filtering")
 	}
 
+	// Untuk mode single/primary/secondary, update stats setelah filtering kandidat
+	if isSingleModeVariant(s.BackupDBOptions.Mode) {
+		// Filter candidates untuk mendapatkan jumlah yang akurat
+		candidates := s.filterCandidatesByMode(dbFiltered, s.BackupDBOptions.Mode)
+		stats.TotalIncluded = len(candidates)
+		stats.TotalExcluded = stats.TotalFound - len(candidates)
+	}
+
 	display.DisplayFilterStats(stats, s.Log)
 
 	// Generate output directory dan filename
-	if err := s.generateBackupPaths(ctx, client, dbFiltered); err != nil {
+	// Untuk mode single/primary/secondary, dbFiltered akan di-update dengan database yang dipilih + companion
+	dbFiltered, err = s.generateBackupPaths(ctx, client, dbFiltered)
+	if err != nil {
 		return nil, nil, err
 	}
 
@@ -139,8 +150,85 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 }
 
 // GetFilteredDatabases mengambil dan memfilter daftar database sesuai aturan
+// Untuk command filter tanpa include/exclude flags: tampilkan multi-select
+// Untuk command all atau filter dengan flags: gunakan filter biasa
 func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Client) ([]string, *types.DatabaseFilterStats, error) {
+	hasIncludeFlags := len(s.BackupDBOptions.Filter.IncludeDatabases) > 0 || s.BackupDBOptions.Filter.IncludeFile != ""
+
+	// Jika ada include flags, selalu gunakan filter biasa (tidak perlu multi-select)
+	if hasIncludeFlags {
+		return database.FilterFromBackupOptions(ctx, client, s.BackupDBOptions)
+	}
+
+	// Jika ini command filter (IsFilterCommand=true) dan tidak ada include/exclude yang di-set manual
+	// maka tampilkan multi-select
+	isFilterMode := s.BackupDBOptions.Filter.IsFilterCommand
+	hasAnyExcludeConfig := len(s.BackupDBOptions.Filter.ExcludeDatabases) > 0 ||
+		s.BackupDBOptions.Filter.ExcludeDBFile != ""
+
+	// Untuk command filter tanpa include dan exclude manual → multi-select
+	if isFilterMode && !hasAnyExcludeConfig {
+		return s.getFilteredDatabasesWithMultiSelect(ctx, client)
+	}
+
+	// Untuk command all atau filter dengan flags → gunakan filter biasa dengan nilai default
 	return database.FilterFromBackupOptions(ctx, client, s.BackupDBOptions)
+}
+
+// getFilteredDatabasesWithMultiSelect menampilkan multi-select untuk memilih database
+func (s *Service) getFilteredDatabasesWithMultiSelect(ctx context.Context, client *database.Client) ([]string, *types.DatabaseFilterStats, error) {
+	// Get all databases from server
+	allDatabases, err := client.GetDatabaseList(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("gagal mengambil daftar database: %w", err)
+	}
+
+	stats := &types.DatabaseFilterStats{
+		TotalFound:    len(allDatabases),
+		TotalIncluded: 0,
+		TotalExcluded: 0,
+	}
+
+	if len(allDatabases) == 0 {
+		return nil, stats, fmt.Errorf("tidak ada database yang ditemukan di server")
+	}
+
+	// Filter system databases untuk pilihan
+	nonSystemDBs := make([]string, 0, len(allDatabases))
+	systemDBs := []string{"information_schema", "performance_schema", "mysql", "sys"}
+
+	for _, db := range allDatabases {
+		isSystem := false
+		for _, sysDB := range systemDBs {
+			if strings.EqualFold(db, sysDB) {
+				isSystem = true
+				break
+			}
+		}
+		if !isSystem {
+			nonSystemDBs = append(nonSystemDBs, db)
+		}
+	}
+
+	if len(nonSystemDBs) == 0 {
+		return nil, stats, fmt.Errorf("tidak ada database non-system yang tersedia untuk dipilih")
+	}
+
+	// Tampilkan multi-select
+	ui.PrintSubHeader("Pilih Database untuk Backup")
+	selectedDBs, err := s.selectMultipleDatabases(nonSystemDBs)
+	if err != nil {
+		return nil, stats, err
+	}
+
+	if len(selectedDBs) == 0 {
+		return nil, stats, fmt.Errorf("tidak ada database yang dipilih")
+	}
+
+	stats.TotalIncluded = len(selectedDBs)
+	stats.TotalExcluded = len(allDatabases) - len(selectedDBs)
+
+	return selectedDBs, stats, nil
 }
 
 // displayFilterWarnings menampilkan warning messages untuk filter stats
@@ -181,14 +269,10 @@ func (s *Service) displayFilterWarnings(stats *types.DatabaseFilterStats) {
 }
 
 // generateBackupPaths generate output directory dan filename untuk backup
-func (s *Service) generateBackupPaths(ctx context.Context, client *database.Client, dbFiltered []string) error {
+// Returns updated dbFiltered untuk mode single/primary/secondary (database yang dipilih + companion)
+func (s *Service) generateBackupPaths(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error) {
 	dbHostname := s.BackupDBOptions.Profile.DBInfo.Host
-
-	compressionSettings := helper.NewCompressionSettings(
-		s.BackupDBOptions.Compression.Enabled,
-		s.BackupDBOptions.Compression.Type,
-		s.BackupDBOptions.Compression.Level,
-	)
+	compressionSettings := s.getCompressionSettings()
 
 	// Generate output directory
 	var err error
@@ -203,18 +287,22 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 
 	// Generate filename berdasarkan mode
 	exampleDBName := ""
+	dbCount := 0
 	if s.BackupDBOptions.Mode == "separated" || s.BackupDBOptions.Mode == "separate" ||
-		s.BackupDBOptions.Mode == "single" || s.BackupDBOptions.Mode == "primary" ||
-		s.BackupDBOptions.Mode == "secondary" {
+		isSingleModeVariant(s.BackupDBOptions.Mode) {
 		exampleDBName = "database_name"
+	} else if s.BackupDBOptions.Mode == "combined" {
+		// Untuk combined, gunakan jumlah database yang akan di-backup
+		dbCount = len(dbFiltered)
 	}
 
-	s.BackupDBOptions.File.Path, err = pkghelper.GenerateBackupFilename(
+	s.BackupDBOptions.File.Path, err = pkghelper.GenerateBackupFilenameWithCount(
 		exampleDBName,
 		s.BackupDBOptions.Mode,
 		dbHostname,
 		compressionSettings.Type,
 		s.BackupDBOptions.Encryption.Enabled,
+		dbCount,
 	)
 	if err != nil {
 		s.Log.Warn("gagal generate filename preview: " + err.Error())
@@ -222,19 +310,20 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 	}
 
 	// Handle single/primary/secondary mode dengan database selection
-	if s.BackupDBOptions.Mode == "single" || s.BackupDBOptions.Mode == "primary" || s.BackupDBOptions.Mode == "secondary" {
+	if isSingleModeVariant(s.BackupDBOptions.Mode) {
 		return s.handleSingleModeSetup(ctx, client, dbFiltered, compressionSettings)
 	}
 
-	return nil
+	return dbFiltered, nil
 }
 
 // handleSingleModeSetup handle setup untuk mode single/primary/secondary
-func (s *Service) handleSingleModeSetup(ctx context.Context, client *database.Client, dbFiltered []string, compressionSettings types_backup.CompressionSettings) error {
+// Returns companionDbs (database yang dipilih + companion) sebagai dbFiltered yang baru
+func (s *Service) handleSingleModeSetup(ctx context.Context, client *database.Client, dbFiltered []string, compressionSettings types_backup.CompressionSettings) ([]string, error) {
 	companionDbs, selectedDB, companionStatus, selErr := s.selectDatabaseAndBuildList(
 		ctx, client, s.BackupDBOptions.DBName, dbFiltered, s.BackupDBOptions.Mode)
 	if selErr != nil {
-		return selErr
+		return nil, selErr
 	}
 
 	s.BackupDBOptions.DBName = selectedDB
@@ -254,8 +343,39 @@ func (s *Service) handleSingleModeSetup(ctx context.Context, client *database.Cl
 	}
 	s.BackupDBOptions.File.Path = previewFilename
 
-	// Update dbFiltered dengan companion databases
-	copy(dbFiltered, companionDbs)
+	// Return companionDbs sebagai dbFiltered yang baru
+	// companionDbs berisi: [database_yang_dipilih, companion_dmart, companion_temp, companion_archive]
+	return companionDbs, nil
+}
 
-	return nil
+// selectMultipleDatabases menampilkan multi-select menu untuk memilih database
+func (s *Service) selectMultipleDatabases(databases []string) ([]string, error) {
+	if len(databases) == 0 {
+		return nil, fmt.Errorf("tidak ada database yang tersedia untuk dipilih")
+	}
+
+	s.Log.Info(fmt.Sprintf("Tersedia %d database non-system", len(databases)))
+	s.Log.Info("Gunakan [Space] untuk memilih/membatalkan, [Enter] untuk konfirmasi")
+
+	// Gunakan ShowMultiSelect dari input package
+	indices, err := input.ShowMultiSelect("Pilih database untuk backup:", databases)
+	if err != nil {
+		return nil, fmt.Errorf("pemilihan database dibatalkan: %w", err)
+	}
+
+	if len(indices) == 0 {
+		return nil, fmt.Errorf("tidak ada database yang dipilih")
+	}
+
+	// Convert indices to database names
+	selectedDBs := make([]string, 0, len(indices))
+	for _, idx := range indices {
+		if idx > 0 && idx <= len(databases) {
+			selectedDBs = append(selectedDBs, databases[idx-1])
+		}
+	}
+
+	s.Log.Info(fmt.Sprintf("Dipilih %d database: %s", len(selectedDBs), strings.Join(selectedDBs, ", ")))
+
+	return selectedDBs, nil
 }

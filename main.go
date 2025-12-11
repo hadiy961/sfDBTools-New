@@ -7,13 +7,9 @@ import (
 	config "sfDBTools/internal/appconfig"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/ui"
-	"time"
 
 	applog "sfDBTools/internal/applog"
-
-	"github.com/briandowns/spinner"
 )
 
 // Inisialisasi awal untuk Config dan Logger.
@@ -56,24 +52,24 @@ func main() {
 
 	// 3. Inisialisasi koneksi database dari environment variables
 	// In quiet mode atau saat completion, skip DB connection entirely
-	if !quiet && !isCompletion {
-		dbSpinner := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-		dbSpinner.Suffix = " Menghubungkan ke database..."
-		dbSpinner.Start()
-		dbClient, err := database.ConnectToAppDatabase()
-		dbSpinner.Stop()
-		if err != nil {
-			// Log error tapi jangan exit
-			fmt.Println("✗ Gagal menghubungkan ke database")
-			appLogger.Warn(fmt.Sprintf("Gagal menginisialisasi koneksi database: %v", err))
-			return
-		} else {
-			// fmt.Println("✓ Berhasil terhubung ke database")
-			defer dbClient.Close()
-		}
-	} else {
-		// no-op
-	}
+	// if !quiet && !isCompletion {
+	// 	dbSpinner := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+	// 	dbSpinner.Suffix = " Menghubungkan ke database..."
+	// 	dbSpinner.Start()
+	// 	dbClient, err := database.ConnectToAppDatabase()
+	// 	dbSpinner.Stop()
+	// 	if err != nil {
+	// 		// Log error tapi jangan exit
+	// 		fmt.Println("✗ Gagal menghubungkan ke database")
+	// 		appLogger.Warn(fmt.Sprintf("Gagal menginisialisasi koneksi database: %v", err))
+	// 		return
+	// 	} else {
+	// 		// fmt.Println("✓ Berhasil terhubung ke database")
+	// 		defer dbClient.Close()
+	// 	}
+	// } else {
+	// 	// no-op
+	// }
 
 	// 4. Buat objek dependensi untuk di-inject
 	deps := &types.Dependencies{

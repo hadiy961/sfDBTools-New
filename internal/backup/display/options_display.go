@@ -11,7 +11,6 @@ import (
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
-	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"sort"
@@ -57,34 +56,39 @@ func (d *OptionsDisplayer) Display() (bool, error) {
 
 // buildGeneralSection builds general information section
 func (d *OptionsDisplayer) buildGeneralSection() [][]string {
-	filenameLabel := "Filename Example"
-	if d.isSeparatedMode() {
-		filenameLabel = "Filename Example (per DB)"
-	}
-
-	return [][]string{
+	data := [][]string{
 		{"Mode Backup", ui.ColorText(d.options.Mode, ui.ColorCyan)},
 		{"Output Directory", d.options.OutputDir},
-		{"Filename Pattern", helper.FixedBackupPattern},
-		{filenameLabel, ui.ColorText(d.options.File.Path, ui.ColorCyan)},
-		{"Dry Run", fmt.Sprintf("%v", d.options.DryRun)},
 	}
+
+	// Filename display logic:
+	// - Mode single/primary/secondary/combined: tampilkan filename akurat
+	// - Mode separated dengan filter: tampilkan contoh filename
+	if d.isSeparatedMode() {
+		// Mode separated - tampilkan contoh
+		data = append(data, []string{"Filename Example", ui.ColorText(d.options.File.Path, ui.ColorCyan)})
+	} else if d.isSingleMode() || d.options.Mode == "combined" {
+		// Mode single/primary/secondary/combined - tampilkan filename akurat
+		data = append(data, []string{"Backup Filename", ui.ColorText(d.options.File.Path, ui.ColorCyan)})
+	}
+
+	data = append(data, []string{"Dry Run", fmt.Sprintf("%v", d.options.DryRun)})
+
+	return data
 }
 
 // buildModeSpecificSection builds mode-specific section (single/primary/secondary)
 func (d *OptionsDisplayer) buildModeSpecificSection() [][]string {
 	if !d.isSingleMode() {
 		// Combined/separated mode specific
+		data := [][]string{}
+
 		if d.options.Mode == "combined" {
-			return [][]string{
-				{"Capture GTID", fmt.Sprintf("%v", d.options.CaptureGTID)},
-				{"Export User Grants", d.getExportUserStatus()},
-			}
+			data = append(data, []string{"Capture GTID", fmt.Sprintf("%v", d.options.CaptureGTID)})
 		}
-		// Separated mode
-		return [][]string{
-			{"Export User Grants", d.getExportUserStatus()},
-		}
+
+		data = append(data, []string{"Export User Grants", d.getExportUserStatus()})
+		return data
 	}
 
 	// Single/primary/secondary mode

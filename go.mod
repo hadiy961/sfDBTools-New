@@ -18,6 +18,7 @@ require (
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/klauspost/compress v1.18.1
 	github.com/klauspost/pgzip v1.2.6
+	github.com/ulikunitz/xz v0.5.15
 )
 
 require (
@@ -32,7 +33,6 @@ require (
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
-	github.com/ulikunitz/xz v0.5.15 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/text v0.30.0 // indirect
 )

@@ -46,6 +46,7 @@ type FilterOptions struct {
 	ExcludeDBFile    string   // Path ke file berisi blacklist database (satu per baris)
 	ExcludeData      bool     // Exclude databases with no data
 	ExcludeEmpty     bool     // Exclude databases with empty data
+	IsFilterCommand  bool     // Flag untuk menandai apakah ini dari command filter (untuk multi-select logic)
 }
 
 // FilterStats berisi statistik hasil filtering

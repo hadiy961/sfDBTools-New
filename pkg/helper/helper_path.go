@@ -112,16 +112,28 @@ func (r *PathPatternReplacer) ReplacePattern(pattern string, excludeHostname ...
 
 // GenerateBackupFilename menghasilkan nama file backup menggunakan fixed pattern
 // Fixed pattern: {database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}
-// Untuk mode combined, database akan diganti dengan "all_databases"
+// Untuk mode combined, format: combined_{hostname}_{timestamp}_{jumlah_db}
 func GenerateBackupFilename(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool) (string, error) {
+	return GenerateBackupFilenameWithCount(database, mode, hostname, compressionType, encrypted, 0)
+}
+
+// GenerateBackupFilenameWithCount menghasilkan nama file backup dengan jumlah database
+// Untuk mode combined dengan dbCount > 0, format: combined_{hostname}_{timestamp}_{jumlah_db}
+func GenerateBackupFilenameWithCount(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, dbCount int) (string, error) {
 	// Untuk mode separated, validasi bahwa database tidak kosong
 	if (mode == "separated" || mode == "separate") && database == "" {
 		return "", fmt.Errorf("database name tidak boleh kosong untuk mode separated")
 	}
 
-	// Untuk mode combined, gunakan nama khusus
-	if mode == "combined" && database == "" {
-		database = "all_databases"
+	// Untuk mode combined, gunakan format khusus
+	if mode == "combined" {
+		if dbCount > 0 {
+			// Format: combined_{hostname}_{timestamp}_{jumlah_db}
+			timestamp := time.Now().Format("20060102_150405")
+			database = fmt.Sprintf("combined_%s_%s_%ddb", hostname, timestamp, dbCount)
+		} else if database == "" {
+			database = "all_databases"
+		}
 	}
 
 	replacer, err := NewPathPatternReplacer(database, hostname, compressionType, encrypted, true)
@@ -129,8 +141,16 @@ func GenerateBackupFilename(database string, mode string, hostname string, compr
 		return "", fmt.Errorf("gagal membuat pattern replacer: %w", err)
 	}
 
-	// Gunakan fixed pattern
-	filename := replacer.ReplacePattern(FixedBackupPattern)
+	// Untuk combined dengan custom format, gunakan pattern sederhana
+	var filename string
+	if mode == "combined" && dbCount > 0 {
+		// Sudah include hostname dan timestamp di database name
+		// Ekstensi kompresi dan enkripsi akan ditambahkan otomatis oleh replacer
+		filename = replacer.ReplacePattern("{database}")
+	} else {
+		// Gunakan fixed pattern
+		filename = replacer.ReplacePattern(FixedBackupPattern)
+	}
 
 	// Validasi hasil tidak boleh kosong atau hanya ekstensi
 	if filename == "" || filename == ".sql" || strings.HasPrefix(filename, ".") {

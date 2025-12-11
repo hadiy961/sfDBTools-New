@@ -15,6 +15,7 @@ import (
 	cmdprofile "sfDBTools/cmd/cmd_profile"
 	cmdrestore "sfDBTools/cmd/cmd_restore"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/ui"
 
 	"github.com/spf13/cobra"
 	// Import globals dan sub-command
@@ -45,6 +46,8 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Silakan jalankan 'sfdbtools --help' untuk melihat perintah yang tersedia.")
+		ui.PrintSeparator()
+		cmd.Help()
 	},
 }
 

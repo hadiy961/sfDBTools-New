@@ -22,16 +22,30 @@ import (
 )
 
 // =============================================================================
-// Path Generation Helpers
+// Configuration Helpers
 // =============================================================================
 
-// generateFullBackupPath membuat full path untuk backup file
-func (s *Service) generateFullBackupPath(dbName string, mode string) (string, error) {
-	compressionSettings := helper.NewCompressionSettings(
+// getCompressionSettings mengembalikan compression settings dari BackupDBOptions
+func (s *Service) getCompressionSettings() types_backup.CompressionSettings {
+	return helper.NewCompressionSettings(
 		s.BackupDBOptions.Compression.Enabled,
 		s.BackupDBOptions.Compression.Type,
 		s.BackupDBOptions.Compression.Level,
 	)
+}
+
+// =============================================================================
+// Path Generation Helpers
+// =============================================================================
+
+// isSingleModeVariant checks if mode is single/primary/secondary
+func isSingleModeVariant(mode string) bool {
+	return mode == "single" || mode == "primary" || mode == "secondary"
+}
+
+// generateFullBackupPath membuat full path untuk backup file
+func (s *Service) generateFullBackupPath(dbName string, mode string) (string, error) {
+	compressionSettings := s.getCompressionSettings()
 
 	filename, err := pkghelper.GenerateBackupFilename(
 		dbName,
@@ -190,20 +204,25 @@ func (s *Service) executeAndBuildBackup(ctx context.Context, cfg types_backup.Ba
 	return backupInfo, nil
 }
 
+// logBackupSuccess logs success message based on backup type
+func (s *Service) logBackupSuccess(cfg types_backup.BackupExecutionConfig, hasWarning bool, stderrOutput string) string {
+	if hasWarning {
+		if !cfg.IsMultiDB {
+			s.Log.Warningf("Database %s backup dengan warning: %s", cfg.DBName, stderrOutput)
+		}
+		return "success_with_warnings"
+	}
+	if !cfg.IsMultiDB {
+		s.Log.Infof("✓ Database %s berhasil di-backup", cfg.DBName)
+	}
+	return "success"
+}
+
 // buildBackupInfoFromResult membangun DatabaseBackupInfo dari result
 func (s *Service) buildBackupInfoFromResult(cfg types_backup.BackupExecutionConfig, writeResult *types_backup.BackupWriteResult, timer *pkghelper.Timer, startTime time.Time) types.DatabaseBackupInfo {
 	fileSize := writeResult.FileSize
 	stderrOutput := writeResult.StderrOutput
-	status := "success"
-
-	if stderrOutput != "" {
-		status = "success_with_warnings"
-		if !cfg.IsMultiDB {
-			s.Log.Warningf("Database %s backup dengan warning: %s", cfg.DBName, stderrOutput)
-		}
-	} else if !cfg.IsMultiDB {
-		s.Log.Infof("✓ Database %s berhasil di-backup", cfg.DBName)
-	}
+	status := s.logBackupSuccess(cfg, stderrOutput != "", stderrOutput)
 
 	backupDuration := timer.Elapsed()
 	endTime := time.Now()
@@ -352,21 +371,49 @@ func (s *Service) exportUserGrantsIfNeeded(ctx context.Context, referenceBackupF
 func (s *Service) filterCandidatesByMode(dbFiltered []string, mode string) []string {
 	candidates := make([]string, 0, len(dbFiltered))
 
+	// System databases yang harus di-exclude
+	systemDatabases := []string{"information_schema", "performance_schema", "mysql", "sys"}
+
 	for _, db := range dbFiltered {
 		dbLower := strings.ToLower(db)
 
+		// Check if it's a system database (untuk semua mode)
+		isSystemDB := false
+		for _, sysDB := range systemDatabases {
+			if dbLower == sysDB {
+				isSystemDB = true
+				break
+			}
+		}
+		if isSystemDB {
+			continue
+		}
+
 		switch mode {
 		case "primary":
+			// Primary: hanya database dengan pattern dbsf_nbc_{nama_database}
+			// Exclude: yang punya _secondary, _dmart, _temp, _archive
 			if strings.Contains(dbLower, "_secondary") || strings.HasSuffix(dbLower, "_dmart") ||
 				strings.HasSuffix(dbLower, "_temp") || strings.HasSuffix(dbLower, "_archive") {
 				continue
 			}
+			// Harus match pattern dbsf_nbc_
+			if !strings.HasPrefix(dbLower, "dbsf_nbc_") {
+				continue
+			}
 		case "secondary":
-			if !strings.Contains(dbLower, "_secondary") || strings.HasSuffix(dbLower, "_dmart") ||
-				strings.HasSuffix(dbLower, "_temp") || strings.HasSuffix(dbLower, "_archive") {
+			// Secondary: hanya database dengan pattern dbsf_nbc_{nama_database}_secondary_{instance}
+			// Exclude: _dmart, _temp, _archive
+			if strings.HasSuffix(dbLower, "_dmart") || strings.HasSuffix(dbLower, "_temp") ||
+				strings.HasSuffix(dbLower, "_archive") {
+				continue
+			}
+			// Harus match pattern dbsf_nbc_ dan mengandung _secondary
+			if !strings.HasPrefix(dbLower, "dbsf_nbc_") || !strings.Contains(dbLower, "_secondary") {
 				continue
 			}
 		case "single":
+			// Single: exclude companion databases
 			if strings.HasSuffix(dbLower, "_dmart") || strings.HasSuffix(dbLower, "_temp") ||
 				strings.HasSuffix(dbLower, "_archive") {
 				continue
@@ -379,21 +426,37 @@ func (s *Service) filterCandidatesByMode(dbFiltered []string, mode string) []str
 	return candidates
 }
 
+// addCompanionDatabases menambahkan semua companion databases yang diaktifkan
+func (s *Service) addCompanionDatabases(selectedDB string, companionDbs *[]string,
+	companionStatus map[string]bool, allDatabases []string) {
+
+	if s.BackupDBOptions.IncludeDmart {
+		s.addCompanionDatabase(selectedDB, "_dmart", companionDbs, companionStatus, allDatabases)
+	}
+	if s.BackupDBOptions.IncludeTemp {
+		s.addCompanionDatabase(selectedDB, "_temp", companionDbs, companionStatus, allDatabases)
+	}
+	if s.BackupDBOptions.IncludeArchive {
+		s.addCompanionDatabase(selectedDB, "_archive", companionDbs, companionStatus, allDatabases)
+	}
+}
+
 // addCompanionDatabase menambahkan single companion database dengan suffix
 func (s *Service) addCompanionDatabase(selectedDB string, suffix string, companionDbs *[]string,
 	companionStatus map[string]bool, allDatabases []string) bool {
 
 	dbName := selectedDB + suffix
-	if pkghelper.StringSliceContainsFold(allDatabases, dbName) {
+	exists := pkghelper.StringSliceContainsFold(allDatabases, dbName)
+
+	if exists {
 		s.Log.Infof("Menambahkan database companion: %s", dbName)
 		*companionDbs = append(*companionDbs, dbName)
-		companionStatus[dbName] = true
-		return true
 	} else {
 		s.Log.Warnf("Database %s tidak ditemukan, melewati", dbName)
-		companionStatus[dbName] = false
-		return false
 	}
+
+	companionStatus[dbName] = exists
+	return exists
 }
 
 // selectDatabaseAndBuildList menangani database selection dan companion databases logic
@@ -428,16 +491,9 @@ func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interfa
 	companionDbs := []string{selectedDB}
 	companionStatus := map[string]bool{selectedDB: true}
 
+	// Add companion databases if not secondary mode
 	if mode != "secondary" {
-		if s.BackupDBOptions.IncludeDmart {
-			s.addCompanionDatabase(selectedDB, "_dmart", &companionDbs, companionStatus, allDatabases)
-		}
-		if s.BackupDBOptions.IncludeTemp {
-			s.addCompanionDatabase(selectedDB, "_temp", &companionDbs, companionStatus, allDatabases)
-		}
-		if s.BackupDBOptions.IncludeArchive {
-			s.addCompanionDatabase(selectedDB, "_archive", &companionDbs, companionStatus, allDatabases)
-		}
+		s.addCompanionDatabases(selectedDB, &companionDbs, companionStatus, allDatabases)
 	}
 
 	return companionDbs, selectedDB, companionStatus, nil

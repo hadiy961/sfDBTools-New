@@ -25,17 +25,40 @@ import (
 
 const bufferSize = 256 * 1024 // 256KB buffer untuk buffered I/O
 
+// createBufferedOutputFile membuat output file dengan buffered writer
+func (s *Service) createBufferedOutputFile(outputPath string) (*os.File, *bufio.Writer, error) {
+	outputFile, err := os.Create(outputPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("gagal membuat file output: %w", err)
+	}
+	bufWriter := bufio.NewWriterSize(outputFile, bufferSize)
+	return outputFile, bufWriter, nil
+}
+
+// resolveEncryptionKeyIfNeeded resolve encryption key jika encryption enabled
+func (s *Service) resolveEncryptionKeyIfNeeded() (string, error) {
+	if !s.BackupDBOptions.Encryption.Enabled {
+		return "", nil
+	}
+
+	resolvedKey, source, err := helper.ResolveEncryptionKey(
+		s.BackupDBOptions.Encryption.Key,
+		consts.ENV_BACKUP_ENCRYPTION_KEY,
+	)
+	if err != nil {
+		return "", fmt.Errorf("gagal mendapatkan kunci enkripsi: %w", err)
+	}
+
+	s.Log.Debugf("Kunci enkripsi didapat dari: %s", source)
+	return resolvedKey, nil
+}
+
 // executeMysqldumpWithPipe menjalankan mysqldump dengan pipe untuk kompresi dan enkripsi
 func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []string, outputPath string, compressionRequired bool, compressionType string) (*types_backup.BackupWriteResult, error) {
 	// Resolve encryption key SEBELUM spinner dimulai
-	var encryptionKey string
-	if s.BackupDBOptions.Encryption.Enabled {
-		resolvedKey, source, err := helper.ResolveEncryptionKey(s.BackupDBOptions.Encryption.Key, consts.ENV_BACKUP_ENCRYPTION_KEY)
-		if err != nil {
-			return nil, fmt.Errorf("gagal mendapatkan kunci enkripsi: %w", err)
-		}
-		encryptionKey = resolvedKey
-		s.Log.Debugf("Kunci enkripsi didapat dari: %s", source)
+	encryptionKey, err := s.resolveEncryptionKeyIfNeeded()
+	if err != nil {
+		return nil, err
 	}
 
 	// Start spinner dengan elapsed time
@@ -43,15 +66,12 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 	spin.Start()
 	defer spin.Stop()
 
-	// Create output file
-	outputFile, err := os.Create(outputPath)
+	// Setup output file with buffered writer
+	outputFile, bufWriter, err := s.createBufferedOutputFile(outputPath)
 	if err != nil {
-		return nil, fmt.Errorf("gagal membuat file output: %w", err)
+		return nil, err
 	}
 	defer outputFile.Close()
-
-	// Setup buffered writer
-	bufWriter := bufio.NewWriterSize(outputFile, bufferSize)
 	defer func() {
 		if flushErr := bufWriter.Flush(); flushErr != nil {
 			s.Log.Errorf("Error flushing buffer: %v", flushErr)

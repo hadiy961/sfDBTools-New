@@ -13,6 +13,11 @@ import (
 func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupDBOptions, error) {
 	// Mulai dari default untuk mode combined
 	opts := defaultVal.DefaultBackupOptions(mode)
+
+	// Deteksi apakah ini command filter (untuk multi-select logic)
+	// Command filter memiliki Use="filter", sedangkan all memiliki Use="all"
+	isFilterCommand := cmd.Use == "filter"
+
 	// Profile & key
 	if v := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE); v != "" {
 		opts.Profile.Path = v
@@ -27,6 +32,12 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	opts.Filter.ExcludeDBFile = helper.GetStringFlagOrEnv(cmd, "exclude-db-file", "")
 	opts.Filter.IncludeDatabases = helper.GetStringArrayFlagOrEnv(cmd, "db", "")
 	opts.Filter.IncludeFile = helper.GetStringFlagOrEnv(cmd, "db-file", "")
+
+	// Set flag untuk command filter agar bisa tampilkan multi-select jika tidak ada include/exclude
+	// Ini digunakan di setup.go untuk menentukan apakah perlu multi-select atau tidak
+	if isFilterCommand {
+		opts.Filter.IsFilterCommand = true
+	}
 
 	// Compression - derive from compress-type (enabled unless type is "none" or empty)
 	if v := helper.GetStringFlagOrEnv(cmd, "compress-type", ""); v != "" && v != "none" {
