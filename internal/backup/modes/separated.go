@@ -25,6 +25,15 @@ func NewSeparatedExecutor(svc BackupService) *SeparatedExecutor {
 func (e *SeparatedExecutor) Execute(ctx context.Context, dbFiltered []string) types_backup.BackupResult {
 	e.service.LogInfo("Melakukan backup database dalam mode separated")
 
+	// Capture GTID sekali di awal (semua database dari server yang sama)
+	if len(dbFiltered) > 0 {
+		// Gunakan nama database pertama untuk generate path reference
+		firstPath, _ := e.service.GenerateFullBackupPath(dbFiltered[0], e.service.GetBackupOptions().Mode)
+		if err := e.service.CaptureAndSaveGTID(ctx, firstPath); err != nil {
+			e.service.LogWarn("GTID handling error: " + err.Error())
+		}
+	}
+
 	// Jalankan backup loop
 	loopResult := e.service.ExecuteBackupLoop(ctx, dbFiltered, types_backup.BackupLoopConfig{
 		Mode:       "separated",

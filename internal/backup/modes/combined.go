@@ -38,6 +38,11 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	fullOutputPath := filepath.Join(e.service.GetBackupOptions().OutputDir, filename)
 	e.service.LogDebug("Backup file: " + fullOutputPath)
 
+	// Capture GTID sebelum backup dimulai
+	if err := e.service.CaptureAndSaveGTID(ctx, fullOutputPath); err != nil {
+		e.service.LogWarn("GTID handling error: " + err.Error())
+	}
+
 	// Execute backup
 	backupInfo, execErr := e.service.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
 		DBList:       dbFiltered,
@@ -61,11 +66,6 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 
 	// Success - all databases backed up in one file
 	res.SuccessfulBackups = len(dbFiltered)
-
-	// Capture dan save GTID jika diperlukan
-	if err := e.service.CaptureAndSaveGTID(ctx, fullOutputPath); err != nil {
-		e.service.LogWarn("GTID handling error: " + err.Error())
-	}
 
 	// Export user grants
 	e.service.ExportUserGrantsIfNeeded(ctx, fullOutputPath)

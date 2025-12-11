@@ -35,6 +35,7 @@ type Service struct {
 	// Backup-specific state
 	currentBackupFile string
 	backupInProgress  bool
+	gtidInfo          *database.GTIDInfo
 }
 
 // NewBackupService membuat instance baru Service

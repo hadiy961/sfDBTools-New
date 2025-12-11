@@ -97,14 +97,14 @@ func (r *PathPatternReplacer) ReplacePattern(pattern string, excludeHostname ...
 
 	// Tambahkan ekstensi hanya jika ini untuk filename (bukan directory path)
 	if r.IsFilename {
-		// Tambahkan ekstensi .sql jika tidak ada kompresi
-		// (file mentah SQL harus punya ekstensi .sql)
-		if r.CompressionExt == "" {
-			result = result + ".sql"
-		}
+		// Selalu tambahkan .sql terlebih dahulu
+		result = result + ".sql"
 
-		// Tambahkan ekstensi kompresi dan enkripsi di akhir
-		result = result + r.CompressionExt + r.EncryptionExt
+		// Kemudian tambahkan ekstensi kompresi (jika ada)
+		result = result + r.CompressionExt
+
+		// Terakhir tambahkan ekstensi enkripsi (jika ada)
+		result = result + r.EncryptionExt
 	}
 
 	return result

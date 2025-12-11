@@ -199,7 +199,7 @@ func (s *Service) executeAndBuildBackup(ctx context.Context, cfg types_backup.Ba
 	}
 
 	// Get file info and generate metadata
-	backupInfo := s.buildBackupInfoFromResult(cfg, writeResult, timer, startTime)
+	backupInfo := s.buildBackupInfoFromResult(ctx, cfg, writeResult, timer, startTime)
 
 	return backupInfo, nil
 }
@@ -219,7 +219,7 @@ func (s *Service) logBackupSuccess(cfg types_backup.BackupExecutionConfig, hasWa
 }
 
 // buildBackupInfoFromResult membangun DatabaseBackupInfo dari result
-func (s *Service) buildBackupInfoFromResult(cfg types_backup.BackupExecutionConfig, writeResult *types_backup.BackupWriteResult, timer *pkghelper.Timer, startTime time.Time) types.DatabaseBackupInfo {
+func (s *Service) buildBackupInfoFromResult(ctx context.Context, cfg types_backup.BackupExecutionConfig, writeResult *types_backup.BackupWriteResult, timer *pkghelper.Timer, startTime time.Time) types.DatabaseBackupInfo {
 	fileSize := writeResult.FileSize
 	stderrOutput := writeResult.StderrOutput
 	status := s.logBackupSuccess(cfg, stderrOutput != "", stderrOutput)
@@ -235,6 +235,35 @@ func (s *Service) buildBackupInfoFromResult(cfg types_backup.BackupExecutionConf
 		dbNames = []string{cfg.DBName}
 	}
 
+	// Format GTID info jika ada
+	gtidInfoStr := ""
+	if s.gtidInfo != nil {
+		if s.gtidInfo.GTIDBinlog != "" {
+			// Gunakan GTID string jika tersedia
+			gtidInfoStr = s.gtidInfo.GTIDBinlog
+		} else {
+			// Fallback ke File dan Pos jika GTID string tidak tersedia
+			gtidInfoStr = fmt.Sprintf("File=%s, Pos=%d", s.gtidInfo.MasterLogFile, s.gtidInfo.MasterLogPos)
+		}
+	}
+
+	// Dapatkan versi database
+	dbVersion := ""
+	if s.Client != nil {
+		if version, err := s.Client.GetVersion(ctx); err == nil {
+			dbVersion = version
+		}
+	}
+
+	// Generate path untuk user grants file (akan dibuat setelah backup selesai)
+	userGrantsPath := ""
+	if !s.BackupDBOptions.ExcludeUser {
+		userGrantsPath = helper.GenerateUserFilePath(cfg.OutputPath)
+	}
+
+	// Dapatkan versi mysqldump dari stderr output (biasanya ada di baris pertama)
+	mysqldumpVer := s.extractMysqldumpVersion(stderrOutput)
+
 	meta := metadata.GenerateBackupMetadata(types_backup.MetadataConfig{
 		BackupFile:      cfg.OutputPath,
 		BackupType:      cfg.BackupType,
@@ -244,17 +273,28 @@ func (s *Service) buildBackupInfoFromResult(cfg types_backup.BackupExecutionConf
 		Compressed:      s.BackupDBOptions.Compression.Enabled,
 		CompressionType: s.BackupDBOptions.Compression.Type,
 		Encrypted:       s.BackupDBOptions.Encryption.Enabled,
+		GTIDInfo:        gtidInfoStr,
 		BackupStatus:    status,
 		StderrOutput:    stderrOutput,
 		Duration:        backupDuration,
 		StartTime:       startTime,
 		EndTime:         endTime,
 		Logger:          s.Log,
+		// Replication information
+		ReplicationUser:     s.Config.Backup.Replication.ReplicationUser,
+		ReplicationPassword: s.Config.Backup.Replication.ReplicationPassword,
+		SourceHost:          s.BackupDBOptions.Profile.DBInfo.Host,
+		SourcePort:          s.BackupDBOptions.Profile.DBInfo.Port,
+		// Additional files
+		UserGrantsFile: userGrantsPath,
+		// Version information
+		MysqldumpVersion: mysqldumpVer,
+		MariaDBVersion:   dbVersion,
 	})
 
 	// Save metadata if configured
 	manifestPath := ""
-	if s.Config.Backup.Output.CreateBackupInfo || s.Config.Backup.Output.SaveBackupInfo {
+	if s.Config.Backup.Output.SaveBackupInfo {
 		manifestPath = metadata.TrySaveBackupMetadata(meta, s.Log)
 	}
 
@@ -326,11 +366,8 @@ func (s *Service) captureAndSaveGTID(ctx context.Context, backupFilePath string)
 
 	s.Log.Infof("GTID berhasil diambil: File=%s, Pos=%d", gtidInfo.MasterLogFile, gtidInfo.MasterLogPos)
 
-	s.Log.Info("Menyimpan informasi GTID ke file...")
-	if err := metadata.SaveGTIDToFile(s.Log, gtidInfo, backupFilePath); err != nil {
-		s.Log.Errorf("Gagal menyimpan GTID ke file: %v", err)
-		return nil
-	}
+	// Simpan GTID info ke service untuk dimasukkan ke metadata nanti
+	s.gtidInfo = gtidInfo
 
 	return nil
 }
@@ -497,4 +534,27 @@ func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interfa
 	}
 
 	return companionDbs, selectedDB, companionStatus, nil
+}
+
+// =============================================================================
+// Version Extraction Helpers
+// =============================================================================
+
+// extractMysqldumpVersion mengambil versi mysqldump dari stderr output
+// Biasanya format: "mysqldump  Ver 10.19 Distrib 10.11.6-MariaDB, for Linux (x86_64)"
+func (s *Service) extractMysqldumpVersion(stderrOutput string) string {
+	if stderrOutput == "" {
+		return ""
+	}
+
+	lines := strings.Split(stderrOutput, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "mysqldump") && strings.Contains(line, "Ver") {
+			// Extract version from line like "mysqldump  Ver 10.19 Distrib 10.11.6-MariaDB"
+			return strings.TrimSpace(line)
+		}
+	}
+
+	return ""
 }

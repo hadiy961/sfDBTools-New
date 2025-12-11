@@ -32,10 +32,21 @@ func GenerateBackupMetadata(cfg types_backup.MetadataConfig) *types_backup.Backu
 		Compressed:      cfg.Compressed,
 		CompressionType: cfg.CompressionType,
 		Encrypted:       cfg.Encrypted,
+		GTIDInfo:        cfg.GTIDInfo,
 		BackupStatus:    cfg.BackupStatus,
 		Warnings:        cfg.Warnings,
 		GeneratedBy:     "sfDBTools",
 		GeneratedAt:     time.Now(),
+		// Replication information
+		ReplicationUser:     cfg.ReplicationUser,
+		ReplicationPassword: cfg.ReplicationPassword,
+		SourceHost:          cfg.SourceHost,
+		SourcePort:          cfg.SourcePort,
+		// Additional files
+		UserGrantsFile: cfg.UserGrantsFile,
+		// Version information
+		MysqldumpVersion: cfg.MysqldumpVersion,
+		MariaDBVersion:   cfg.MariaDBVersion,
 	}
 
 	if cfg.StderrOutput != "" {

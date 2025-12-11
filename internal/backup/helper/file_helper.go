@@ -12,19 +12,23 @@ import (
 )
 
 // GenerateUserFilePath menghasilkan path file untuk user grants berdasarkan backup file path
-// Contoh: /backup/db_20250101.sql.gz -> /backup/db_20250101_users.cnf
+// Contoh: /backup/db_20250101.sql.gz -> /backup/db_20250101_users.sql
 func GenerateUserFilePath(backupFilePath string) string {
 	dir := filepath.Dir(backupFilePath)
 	base := filepath.Base(backupFilePath)
 
-	// Remove extension
-	ext := filepath.Ext(base)
-	nameWithoutExt := strings.TrimSuffix(base, ext)
-
-	// Handle double extensions like .sql.gz
+	// Remove all extensions (.enc, .gz, .sql, etc)
+	nameWithoutExt := base
+	// Remove .enc if exists
+	nameWithoutExt = strings.TrimSuffix(nameWithoutExt, ".enc")
+	// Remove compression extensions
+	for _, ext := range []string{".gz", ".zst", ".xz", ".zlib"} {
+		nameWithoutExt = strings.TrimSuffix(nameWithoutExt, ext)
+	}
+	// Remove .sql
 	nameWithoutExt = strings.TrimSuffix(nameWithoutExt, ".sql")
 
-	userFileName := nameWithoutExt + "_users.cnf"
+	userFileName := nameWithoutExt + "_users.sql"
 	return filepath.Join(dir, userFileName)
 }
 

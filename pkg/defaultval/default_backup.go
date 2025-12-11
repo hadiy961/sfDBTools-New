@@ -38,7 +38,7 @@ func DefaultBackupOptions(mode string) types_backup.BackupDBOptions {
 	opts.OutputDir = outputDir
 	// Capture GTID (hanya untuk combined mode)
 	if mode == "combined" {
-		opts.CaptureGTID = cfg.Backup.Output.CaptureGtid
+		opts.CaptureGTID = cfg.Backup.Replication.CaptureGtid
 	} else {
 		opts.CaptureGTID = false
 	}

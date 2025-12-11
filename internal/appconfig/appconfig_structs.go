@@ -26,6 +26,7 @@ type BackupConfig struct {
 	Encryption    EncryptionConfig   `yaml:"encryption"`
 	Output        OutputConfig       `yaml:"output"`
 	Verification  VerificationConfig `yaml:"verification"`
+	Replication   ReplicationConfig  `yaml:"replication"`
 }
 
 type IncludeConfig struct {
@@ -69,15 +70,17 @@ type OutputConfig struct {
 		CreateSubdirs bool   `yaml:"create_subdirs"`
 		Pattern       string `yaml:"pattern"`
 	} `yaml:"structure"`
-	CaptureGtid bool `yaml:"capture_gtid"`
-	// Support both legacy `create_backup_info` and config key `save_backup_info`
-	// because some installations use `save_backup_info` in YAML.
-	SaveBackupInfo   bool `yaml:"save_backup_info"`
-	CreateBackupInfo bool `yaml:"create_backup_info"`
+	SaveBackupInfo bool `yaml:"save_backup_info"`
 }
 
 type VerificationConfig struct {
 	DiskSpaceCheck bool `yaml:"disk_space_check"`
+}
+
+type ReplicationConfig struct {
+	CaptureGtid         bool   `yaml:"capture_gtid"`
+	ReplicationUser     string `yaml:"replication_user"`
+	ReplicationPassword string `yaml:"replication_password"`
 }
 
 // Struct untuk bagian 'config_dir'

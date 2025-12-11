@@ -27,5 +27,16 @@ type MetadataConfig struct {
 	Duration        time.Duration
 	StartTime       time.Time
 	EndTime         time.Time
+	GTIDInfo        string
 	Logger          applog.Logger
+	// Replication information
+	ReplicationUser     string
+	ReplicationPassword string
+	SourceHost          string
+	SourcePort          int
+	// Additional files
+	UserGrantsFile string
+	// Version information
+	MysqldumpVersion string
+	MariaDBVersion   string
 }

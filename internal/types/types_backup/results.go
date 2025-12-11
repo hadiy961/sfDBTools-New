@@ -54,85 +54,175 @@ type BackupMetadata struct {
 	MysqldumpVersion string    `json:"mysqldump_version,omitempty"` // Versi mysqldump
 	MariaDBVersion   string    `json:"mariadb_version,omitempty"`   // Versi MariaDB/MySQL
 	GTIDInfo         string    `json:"gtid_info,omitempty"`         // GTID information
+	GTIDFile         string    `json:"gtid_file,omitempty"`         // Path ke file GTID
+	UserGrantsFile   string    `json:"user_grants_file,omitempty"`  // Path ke file user grants
 	BackupStatus     string    `json:"backup_status"`               // "success", "partial", "failed"
 	Warnings         []string  `json:"warnings,omitempty"`          // Warning messages
 	GeneratedBy      string    `json:"generated_by"`                // Tool name dan version
 	GeneratedAt      time.Time `json:"generated_at"`                // Waktu generate metadata
+	// Replication information
+	ReplicationUser     string `json:"replication_user,omitempty"`     // User replikasi
+	ReplicationPassword string `json:"replication_password,omitempty"` // Password replikasi
+	SourceHost          string `json:"source_host,omitempty"`          // IP/Host sumber database
+	SourcePort          int    `json:"source_port,omitempty"`          // Port sumber database
 }
 
-// MarshalJSON customizes JSON output so BackupStartTime and BackupEndTime are
-// formatted as MariaDB-compatible DATETIME strings: "2006-01-02 15:04:05".
+// MarshalJSON customizes JSON output dengan struktur yang terorganisir dalam grup
+// untuk memudahkan pembacaan dan pemahaman metadata backup
 func (b BackupMetadata) MarshalJSON() ([]byte, error) {
-	type metaJSON struct {
-		BackupFile       string    `json:"backup_file"`
-		BackupType       string    `json:"backup_type"`
-		DatabaseNames    []string  `json:"database_names"`
-		Hostname         string    `json:"hostname"`
-		BackupStartTime  string    `json:"backup_start_time"`
-		BackupEndTime    string    `json:"backup_end_time"`
-		BackupDuration   string    `json:"backup_duration"`
-		FileSize         int64     `json:"file_size_bytes"`
-		FileSizeHuman    string    `json:"file_size_human"`
-		Compressed       bool      `json:"compressed"`
-		CompressionType  string    `json:"compression_type,omitempty"`
-		Encrypted        bool      `json:"encrypted"`
-		MysqldumpVersion string    `json:"mysqldump_version,omitempty"`
-		MariaDBVersion   string    `json:"mariadb_version,omitempty"`
-		GTIDInfo         string    `json:"gtid_info,omitempty"`
-		BackupStatus     string    `json:"backup_status"`
-		Warnings         []string  `json:"warnings,omitempty"`
-		GeneratedBy      string    `json:"generated_by"`
-		GeneratedAt      time.Time `json:"generated_at"`
+	// Grup untuk informasi file backup
+	type backupInfo struct {
+		File      string   `json:"file"`
+		Type      string   `json:"type"`
+		Status    string   `json:"status"`
+		Databases []string `json:"databases"`
 	}
 
-	mj := metaJSON{
-		BackupFile:       b.BackupFile,
-		BackupType:       b.BackupType,
-		DatabaseNames:    b.DatabaseNames,
-		Hostname:         b.Hostname,
-		BackupStartTime:  b.BackupStartTime.Format("2006-01-02 15:04:05"),
-		BackupEndTime:    b.BackupEndTime.Format("2006-01-02 15:04:05"),
-		BackupDuration:   b.BackupDuration,
-		FileSize:         b.FileSize,
-		FileSizeHuman:    b.FileSizeHuman,
-		Compressed:       b.Compressed,
-		CompressionType:  b.CompressionType,
-		Encrypted:        b.Encrypted,
-		MysqldumpVersion: b.MysqldumpVersion,
-		MariaDBVersion:   b.MariaDBVersion,
-		GTIDInfo:         b.GTIDInfo,
-		BackupStatus:     b.BackupStatus,
-		Warnings:         b.Warnings,
-		GeneratedBy:      b.GeneratedBy,
-		GeneratedAt:      b.GeneratedAt,
+	// Grup untuk informasi waktu
+	type timeInfo struct {
+		StartTime string `json:"start_time"`
+		EndTime   string `json:"end_time"`
+		Duration  string `json:"duration"`
 	}
 
-	return json.MarshalIndent(mj, "", "  ")
+	// Grup untuk informasi file
+	type fileInfo struct {
+		SizeBytes int64  `json:"size_bytes"`
+		SizeHuman string `json:"size_human"`
+	}
+
+	// Grup untuk informasi kompresi
+	type compressionInfo struct {
+		Enabled bool   `json:"enabled"`
+		Type    string `json:"type,omitempty"`
+	}
+
+	// Grup untuk informasi enkripsi
+	type encryptionInfo struct {
+		Enabled bool `json:"enabled"`
+	}
+
+	// Grup untuk informasi sumber database
+	type sourceInfo struct {
+		Hostname string `json:"hostname"`
+		Host     string `json:"host,omitempty"`
+		Port     int    `json:"port,omitempty"`
+	}
+
+	// Grup untuk informasi replikasi
+	type replicationInfo struct {
+		User     string `json:"user,omitempty"`
+		Password string `json:"password,omitempty"`
+		GTIDInfo string `json:"gtid_info,omitempty"`
+	}
+
+	// Grup untuk informasi versi
+	type versionInfo struct {
+		MysqldumpVersion string `json:"mysqldump,omitempty"`
+		MariaDBVersion   string `json:"mariadb,omitempty"`
+	}
+
+	// Grup untuk file tambahan
+	type additionalFiles struct {
+		UserGrants string `json:"user_grants,omitempty"`
+	}
+
+	// Grup untuk informasi generator
+	type generatorInfo struct {
+		GeneratedBy string    `json:"generated_by"`
+		GeneratedAt time.Time `json:"generated_at"`
+	}
+
+	// Struct utama dengan grouping
+	metaJSON := struct {
+		Backup      backupInfo      `json:"backup"`
+		Time        timeInfo        `json:"time"`
+		File        fileInfo        `json:"file"`
+		Compression compressionInfo `json:"compression"`
+		Encryption  encryptionInfo  `json:"encryption"`
+		Source      sourceInfo      `json:"source"`
+		Replication replicationInfo `json:"replication"`
+		Version     versionInfo     `json:"version,omitempty"`
+		Additional  additionalFiles `json:"additional_files,omitempty"`
+		Generator   generatorInfo   `json:"generator"`
+		Warnings    []string        `json:"warnings,omitempty"`
+	}{
+		Backup: backupInfo{
+			File:      b.BackupFile,
+			Type:      b.BackupType,
+			Status:    b.BackupStatus,
+			Databases: b.DatabaseNames,
+		},
+		Time: timeInfo{
+			StartTime: b.BackupStartTime.Format("2006-01-02 15:04:05"),
+			EndTime:   b.BackupEndTime.Format("2006-01-02 15:04:05"),
+			Duration:  b.BackupDuration,
+		},
+		File: fileInfo{
+			SizeBytes: b.FileSize,
+			SizeHuman: b.FileSizeHuman,
+		},
+		Compression: compressionInfo{
+			Enabled: b.Compressed,
+			Type:    b.CompressionType,
+		},
+		Encryption: encryptionInfo{
+			Enabled: b.Encrypted,
+		},
+		Source: sourceInfo{
+			Hostname: b.Hostname,
+			Host:     b.SourceHost,
+			Port:     b.SourcePort,
+		},
+		Replication: replicationInfo{
+			User:     b.ReplicationUser,
+			Password: b.ReplicationPassword,
+			GTIDInfo: b.GTIDInfo,
+		},
+		Version: versionInfo{
+			MysqldumpVersion: b.MysqldumpVersion,
+			MariaDBVersion:   b.MariaDBVersion,
+		},
+		Additional: additionalFiles{
+			UserGrants: b.UserGrantsFile,
+		},
+		Generator: generatorInfo{
+			GeneratedBy: b.GeneratedBy,
+			GeneratedAt: b.GeneratedAt,
+		},
+		Warnings: b.Warnings,
+	}
+
+	return json.MarshalIndent(metaJSON, "", "  ")
 }
 
 // UnmarshalJSON accepts either MariaDB-compatible DATETIME strings
 // ("2006-01-02 15:04:05") or RFC3339 timestamps for the start/end fields.
 func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 	type metaJSONIn struct {
-		BackupFile       string    `json:"backup_file"`
-		BackupType       string    `json:"backup_type"`
-		DatabaseNames    []string  `json:"database_names"`
-		Hostname         string    `json:"hostname"`
-		BackupStartTime  string    `json:"backup_start_time"`
-		BackupEndTime    string    `json:"backup_end_time"`
-		BackupDuration   string    `json:"backup_duration"`
-		FileSize         int64     `json:"file_size_bytes"`
-		FileSizeHuman    string    `json:"file_size_human"`
-		Compressed       bool      `json:"compressed"`
-		CompressionType  string    `json:"compression_type,omitempty"`
-		Encrypted        bool      `json:"encrypted"`
-		MysqldumpVersion string    `json:"mysqldump_version,omitempty"`
-		MariaDBVersion   string    `json:"mariadb_version,omitempty"`
-		GTIDInfo         string    `json:"gtid_info,omitempty"`
-		BackupStatus     string    `json:"backup_status"`
-		Warnings         []string  `json:"warnings,omitempty"`
-		GeneratedBy      string    `json:"generated_by"`
-		GeneratedAt      time.Time `json:"generated_at"`
+		BackupFile          string    `json:"backup_file"`
+		BackupType          string    `json:"backup_type"`
+		DatabaseNames       []string  `json:"database_names"`
+		Hostname            string    `json:"hostname"`
+		BackupStartTime     string    `json:"backup_start_time"`
+		BackupEndTime       string    `json:"backup_end_time"`
+		BackupDuration      string    `json:"backup_duration"`
+		FileSize            int64     `json:"file_size_bytes"`
+		FileSizeHuman       string    `json:"file_size_human"`
+		Compressed          bool      `json:"compressed"`
+		CompressionType     string    `json:"compression_type,omitempty"`
+		Encrypted           bool      `json:"encrypted"`
+		MysqldumpVersion    string    `json:"mysqldump_version,omitempty"`
+		MariaDBVersion      string    `json:"mariadb_version,omitempty"`
+		GTIDInfo            string    `json:"gtid_info,omitempty"`
+		BackupStatus        string    `json:"backup_status"`
+		Warnings            []string  `json:"warnings,omitempty"`
+		GeneratedBy         string    `json:"generated_by"`
+		GeneratedAt         time.Time `json:"generated_at"`
+		ReplicationUser     string    `json:"replication_user,omitempty"`
+		ReplicationPassword string    `json:"replication_password,omitempty"`
+		SourceHost          string    `json:"source_host,omitempty"`
+		SourcePort          int       `json:"source_port,omitempty"`
 	}
 
 	var mj metaJSONIn
@@ -181,6 +271,10 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 	b.Warnings = mj.Warnings
 	b.GeneratedBy = mj.GeneratedBy
 	b.GeneratedAt = mj.GeneratedAt
+	b.ReplicationUser = mj.ReplicationUser
+	b.ReplicationPassword = mj.ReplicationPassword
+	b.SourceHost = mj.SourceHost
+	b.SourcePort = mj.SourcePort
 
 	return nil
 }
