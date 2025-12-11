@@ -43,11 +43,12 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 		e.service.LogWarn("GTID handling error: " + err.Error())
 	}
 
-	// Execute backup
+	// Execute backup - gunakan mode dari BackupOptions (bisa 'all' atau 'combined')
+	backupMode := e.service.GetBackupOptions().Mode
 	backupInfo, execErr := e.service.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
 		DBList:       dbFiltered,
 		OutputPath:   fullOutputPath,
-		BackupType:   "combined",
+		BackupType:   backupMode,
 		TotalDBFound: totalDBFound,
 		IsMultiDB:    true,
 	})

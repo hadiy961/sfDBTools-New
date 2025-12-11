@@ -13,22 +13,23 @@ import (
 
 // MetadataConfig menyimpan parameter untuk generate metadata
 type MetadataConfig struct {
-	BackupFile      string
-	BackupType      string // "combined", "separated"
-	DatabaseNames   []string
-	Hostname        string
-	FileSize        int64
-	Compressed      bool
-	CompressionType string
-	Encrypted       bool
-	BackupStatus    string
-	Warnings        []string
-	StderrOutput    string
-	Duration        time.Duration
-	StartTime       time.Time
-	EndTime         time.Time
-	GTIDInfo        string
-	Logger          applog.Logger
+	BackupFile        string
+	BackupType        string // "combined", "separated", "all"
+	DatabaseNames     []string
+	ExcludedDatabases []string // List database yang dikecualikan (untuk mode 'all')
+	Hostname          string
+	FileSize          int64
+	Compressed        bool
+	CompressionType   string
+	Encrypted         bool
+	BackupStatus      string
+	Warnings          []string
+	StderrOutput      string
+	Duration          time.Duration
+	StartTime         time.Time
+	EndTime           time.Time
+	GTIDInfo          string
+	Logger            applog.Logger
 	// Replication information
 	ReplicationUser     string
 	ReplicationPassword string

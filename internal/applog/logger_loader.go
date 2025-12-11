@@ -166,25 +166,35 @@ func (hook *ConditionalCallerHook) Levels() []logrus.Level {
 }
 
 func (hook *ConditionalCallerHook) Fire(entry *logrus.Entry) error {
-	// Logika Kunci:
-	// Jika level config adalah INFO (mode produksi) DAN entry log adalah INFO/DEBUG/TRACE:
-	if hook.ConfiguredLevel <= logrus.InfoLevel && entry.Level < logrus.WarnLevel {
-		return nil // JANGAN TAMBAHKAN CALLER (Log INFO/DEBUG harus ringkas)
+	// Note: Di logrus, level numerik terbalik:
+	// PANIC=0, FATAL=1, ERROR=2, WARN=3, INFO=4, DEBUG=5, TRACE=7
+	// Semakin kecil nilai = semakin severe
+
+	// Jika configured level adalah INFO (mode produksi):
+	// - JANGAN tampilkan caller untuk level INFO, DEBUG, TRACE
+	// - TAMPILKAN caller hanya untuk level WARN, ERROR, FATAL, PANIC
+	if hook.ConfiguredLevel == logrus.InfoLevel {
+		// Hanya tampilkan caller untuk level yang lebih severe dari INFO
+		if entry.Level <= logrus.WarnLevel {
+			if entry.Caller != nil {
+				fileName := filepath.Base(entry.Caller.File)
+				callerInfo := fmt.Sprintf("%s:%d", fileName, entry.Caller.Line)
+				entry.Data["caller_info"] = callerInfo
+			}
+		}
+		return nil
 	}
 
-	// Untuk semua kasus lain (Level config WARN/ERROR/FATAL ATAU entry log WARN/ERROR/FATAL): TAMBAHKAN CALLER
+	// Untuk level config DEBUG, TRACE, atau level lainnya:
+	// Tampilkan caller untuk SEMUA level log
 	if entry.Caller != nil {
-		// Bentuk string caller: file:line
 		fileName := filepath.Base(entry.Caller.File)
 		callerInfo := fmt.Sprintf("%s:%d", fileName, entry.Caller.Line)
-
-		// Set field "caller_info" agar bisa diakses oleh custom formatter
 		entry.Data["caller_info"] = callerInfo
 	}
-	return nil
-}
 
-// CustomTextFormatter mengimplementasikan logrus.Formatter
+	return nil
+} // CustomTextFormatter mengimplementasikan logrus.Formatter
 type CustomTextFormatter struct {
 	Location *time.Location
 }

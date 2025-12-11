@@ -58,6 +58,7 @@ type FilterStats struct {
 	ExcludedByList      int      // Excluded karena ada di blacklist
 	ExcludedByFile      int      // Excluded karena tidak ada di whitelist file
 	ExcludedEmpty       int      // Excluded karena nama kosong
+	ExcludedDatabases   []string // List database yang dikecualikan (untuk metadata)
 	NotFoundInInclude   []string // Database di include list yang tidak ditemukan di server
 	NotFoundInExclude   []string // Database di exclude list yang tidak ditemukan di server
 	NotFoundInWhitelist []string // Database di whitelist file yang tidak ditemukan di server

@@ -22,6 +22,7 @@ func FilterDatabases(ctx context.Context, client *Client, options types.FilterOp
 	// Initialize stats
 	stats := &types.FilterStats{
 		TotalFound:          len(allDatabases),
+		ExcludedDatabases:   []string{},
 		NotFoundInInclude:   []string{},
 		NotFoundInExclude:   []string{},
 		NotFoundInWhitelist: []string{},
@@ -179,6 +180,7 @@ func shouldExcludeDatabase(dbName string, whitelist, blacklist []string, exclude
 	// 1. Exclude empty names
 	if dbName == "" {
 		stats.ExcludedEmpty++
+		stats.ExcludedDatabases = append(stats.ExcludedDatabases, dbName)
 		return true
 	}
 
@@ -186,6 +188,7 @@ func shouldExcludeDatabase(dbName string, whitelist, blacklist []string, exclude
 	if len(whitelist) > 0 {
 		if !helper.StringSliceContainsFold(whitelist, dbName) {
 			stats.ExcludedByFile++
+			stats.ExcludedDatabases = append(stats.ExcludedDatabases, dbName)
 			return true
 		}
 		return false // Database is in whitelist, include it (skip other checks)
@@ -194,12 +197,14 @@ func shouldExcludeDatabase(dbName string, whitelist, blacklist []string, exclude
 	// 3. Check blacklist
 	if helper.StringSliceContainsFold(blacklist, dbName) {
 		stats.ExcludedByList++
+		stats.ExcludedDatabases = append(stats.ExcludedDatabases, dbName)
 		return true
 	}
 
 	// 4. Check system databases
 	if excludeSystem && IsSystemDatabase(dbName) {
 		stats.ExcludedSystem++
+		stats.ExcludedDatabases = append(stats.ExcludedDatabases, dbName)
 		return true
 	}
 

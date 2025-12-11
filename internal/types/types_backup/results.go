@@ -39,28 +39,29 @@ type BackupWriteResult struct {
 
 // BackupMetadata menyimpan metadata lengkap untuk sebuah backup file
 type BackupMetadata struct {
-	BackupFile       string                 `json:"backup_file"`                 // Path file backup
-	BackupType       string                 `json:"backup_type"`                 // "combined" atau "separated"
-	DatabaseNames    []string               `json:"database_names"`              // List database yang di-backup
-	DatabaseDetails  []DatabaseBackupDetail `json:"database_details,omitempty"`  // Detail per database untuk primary/secondary
-	Hostname         string                 `json:"hostname"`                    // Database server hostname
-	BackupStartTime  time.Time              `json:"backup_start_time"`           // Waktu mulai backup
-	BackupEndTime    time.Time              `json:"backup_end_time"`             // Waktu selesai backup
-	BackupDuration   string                 `json:"backup_duration"`             // Duration dalam format human-readable
-	FileSize         int64                  `json:"file_size_bytes"`             // Ukuran file backup
-	FileSizeHuman    string                 `json:"file_size_human"`             // Ukuran file human-readable
-	Compressed       bool                   `json:"compressed"`                  // Apakah terkompresi
-	CompressionType  string                 `json:"compression_type,omitempty"`  // gzip, zstd, xz, dll
-	Encrypted        bool                   `json:"encrypted"`                   // Apakah terenkripsi
-	MysqldumpVersion string                 `json:"mysqldump_version,omitempty"` // Versi mysqldump
-	MariaDBVersion   string                 `json:"mariadb_version,omitempty"`   // Versi MariaDB/MySQL
-	GTIDInfo         string                 `json:"gtid_info,omitempty"`         // GTID information
-	GTIDFile         string                 `json:"gtid_file,omitempty"`         // Path ke file GTID
-	UserGrantsFile   string                 `json:"user_grants_file,omitempty"`  // Path ke file user grants
-	BackupStatus     string                 `json:"backup_status"`               // "success", "partial", "failed"
-	Warnings         []string               `json:"warnings,omitempty"`          // Warning messages
-	GeneratedBy      string                 `json:"generated_by"`                // Tool name dan version
-	GeneratedAt      time.Time              `json:"generated_at"`                // Waktu generate metadata
+	BackupFile        string                 `json:"backup_file"`                  // Path file backup
+	BackupType        string                 `json:"backup_type"`                  // "combined" atau "separated"
+	DatabaseNames     []string               `json:"database_names"`               // List database yang di-backup
+	ExcludedDatabases []string               `json:"excluded_databases,omitempty"` // List database yang dikecualikan (untuk mode 'all')
+	DatabaseDetails   []DatabaseBackupDetail `json:"database_details,omitempty"`   // Detail per database untuk primary/secondary
+	Hostname          string                 `json:"hostname"`                     // Database server hostname
+	BackupStartTime   time.Time              `json:"backup_start_time"`            // Waktu mulai backup
+	BackupEndTime     time.Time              `json:"backup_end_time"`              // Waktu selesai backup
+	BackupDuration    string                 `json:"backup_duration"`              // Duration dalam format human-readable
+	FileSize          int64                  `json:"file_size_bytes"`              // Ukuran file backup
+	FileSizeHuman     string                 `json:"file_size_human"`              // Ukuran file human-readable
+	Compressed        bool                   `json:"compressed"`                   // Apakah terkompresi
+	CompressionType   string                 `json:"compression_type,omitempty"`   // gzip, zstd, xz, dll
+	Encrypted         bool                   `json:"encrypted"`                    // Apakah terenkripsi
+	MysqldumpVersion  string                 `json:"mysqldump_version,omitempty"`  // Versi mysqldump
+	MariaDBVersion    string                 `json:"mariadb_version,omitempty"`    // Versi MariaDB/MySQL
+	GTIDInfo          string                 `json:"gtid_info,omitempty"`          // GTID information
+	GTIDFile          string                 `json:"gtid_file,omitempty"`          // Path ke file GTID
+	UserGrantsFile    string                 `json:"user_grants_file,omitempty"`   // Path ke file user grants
+	BackupStatus      string                 `json:"backup_status"`                // "success", "partial", "failed"
+	Warnings          []string               `json:"warnings,omitempty"`           // Warning messages
+	GeneratedBy       string                 `json:"generated_by"`                 // Tool name dan version
+	GeneratedAt       time.Time              `json:"generated_at"`                 // Waktu generate metadata
 	// Replication information
 	ReplicationUser     string `json:"replication_user,omitempty"`     // User replikasi
 	ReplicationPassword string `json:"replication_password,omitempty"` // Password replikasi
@@ -81,10 +82,11 @@ type DatabaseBackupDetail struct {
 func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 	// Grup untuk informasi file backup
 	type backupInfo struct {
-		File      string   `json:"file"`
-		Type      string   `json:"type"`
-		Status    string   `json:"status"`
-		Databases []string `json:"databases"`
+		File              string   `json:"file"`
+		Type              string   `json:"type"`
+		Status            string   `json:"status"`
+		Databases         []string `json:"databases"`
+		ExcludedDatabases []string `json:"excluded_databases"` // Hapus omitempty untuk testing
 	}
 
 	// Grup untuk informasi waktu
@@ -158,10 +160,11 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 		Warnings        []string               `json:"warnings,omitempty"`
 	}{
 		Backup: backupInfo{
-			File:      b.BackupFile,
-			Type:      b.BackupType,
-			Status:    b.BackupStatus,
-			Databases: b.DatabaseNames,
+			File:              b.BackupFile,
+			Type:              b.BackupType,
+			Status:            b.BackupStatus,
+			Databases:         b.DatabaseNames,
+			ExcludedDatabases: b.ExcludedDatabases,
 		},
 		DatabaseDetails: b.DatabaseDetails,
 		Time: timeInfo{
@@ -213,10 +216,11 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 	// Coba parse dengan struktur grup dulu
 	type backupInfo struct {
-		File      string   `json:"file"`
-		Type      string   `json:"type"`
-		Status    string   `json:"status"`
-		Databases []string `json:"databases"`
+		File              string   `json:"file"`
+		Type              string   `json:"type"`
+		Status            string   `json:"status"`
+		Databases         []string `json:"databases"`
+		ExcludedDatabases []string `json:"excluded_databases"`
 	}
 	type timeInfo struct {
 		StartTime string `json:"start_time"`
@@ -299,6 +303,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		b.BackupType = grouped.Backup.Type
 		b.BackupStatus = grouped.Backup.Status
 		b.DatabaseNames = grouped.Backup.Databases
+		b.ExcludedDatabases = grouped.Backup.ExcludedDatabases
 		b.DatabaseDetails = grouped.DatabaseDetails
 		b.Hostname = grouped.Source.Hostname
 		b.SourceHost = grouped.Source.Host

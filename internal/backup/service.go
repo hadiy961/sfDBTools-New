@@ -36,6 +36,7 @@ type Service struct {
 	currentBackupFile string
 	backupInProgress  bool
 	gtidInfo          *database.GTIDInfo
+	excludedDatabases []string // List database yang dikecualikan (untuk mode 'all')
 }
 
 // NewBackupService membuat instance baru Service
@@ -46,9 +47,10 @@ func NewBackupService(logs applog.Logger, cfg *appconfig.Config, backup interfac
 	}
 
 	svc := &Service{
-		Log:      logs,
-		Config:   cfg,
-		ErrorLog: errorlog.NewErrorLogger(logs, logDir, "backup"),
+		Log:               logs,
+		Config:            cfg,
+		ErrorLog:          errorlog.NewErrorLogger(logs, logDir, "backup"),
+		excludedDatabases: []string{}, // Initialize dengan empty slice, bukan nil
 	}
 
 	if backup != nil {

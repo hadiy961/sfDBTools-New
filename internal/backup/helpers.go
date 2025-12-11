@@ -194,7 +194,7 @@ func (s *Service) executeAndBuildBackup(ctx context.Context, cfg types_backup.Ba
 				err,
 				stderrDetail,
 				map[string]interface{}{
-					"type": "combined_backup",
+					"type": cfg.BackupType + "_backup",
 					"file": cfg.OutputPath,
 				},
 			)
@@ -283,21 +283,22 @@ func (s *Service) buildBackupInfoFromResult(ctx context.Context, cfg types_backu
 	mysqldumpVer := backuphelper.ExtractMysqldumpVersion(stderrOutput)
 
 	meta := metadata.GenerateBackupMetadata(types_backup.MetadataConfig{
-		BackupFile:      cfg.OutputPath,
-		BackupType:      cfg.BackupType,
-		DatabaseNames:   dbNames,
-		Hostname:        s.BackupDBOptions.Profile.DBInfo.HostName,
-		FileSize:        fileSize,
-		Compressed:      s.BackupDBOptions.Compression.Enabled,
-		CompressionType: s.BackupDBOptions.Compression.Type,
-		Encrypted:       s.BackupDBOptions.Encryption.Enabled,
-		GTIDInfo:        gtidInfoStr,
-		BackupStatus:    status,
-		StderrOutput:    stderrOutput,
-		Duration:        backupDuration,
-		StartTime:       startTime,
-		EndTime:         endTime,
-		Logger:          s.Log,
+		BackupFile:        cfg.OutputPath,
+		BackupType:        cfg.BackupType,
+		DatabaseNames:     dbNames,
+		ExcludedDatabases: s.getExcludedDatabasesForMetadata(cfg.BackupType),
+		Hostname:          s.BackupDBOptions.Profile.DBInfo.HostName,
+		FileSize:          fileSize,
+		Compressed:        s.BackupDBOptions.Compression.Enabled,
+		CompressionType:   s.BackupDBOptions.Compression.Type,
+		Encrypted:         s.BackupDBOptions.Encryption.Enabled,
+		GTIDInfo:          gtidInfoStr,
+		BackupStatus:      status,
+		StderrOutput:      stderrOutput,
+		Duration:          backupDuration,
+		StartTime:         startTime,
+		EndTime:           endTime,
+		Logger:            s.Log,
 		// Replication information
 		ReplicationUser:     s.Config.Backup.Replication.ReplicationUser,
 		ReplicationPassword: s.Config.Backup.Replication.ReplicationPassword,
@@ -506,4 +507,18 @@ func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interfa
 	s.addCompanionDatabases(selectedDB, &companionDbs, companionStatus, allDatabases)
 
 	return companionDbs, selectedDB, companionStatus, nil
+}
+
+// getExcludedDatabasesForMetadata mengembalikan list excluded databases untuk metadata
+// Hanya untuk mode 'all' yang memiliki exclude filters
+func (s *Service) getExcludedDatabasesForMetadata(backupType string) []string {
+	if backupType == "all" {
+		s.Log.Debugf("getExcludedDatabasesForMetadata: returning %d excluded databases for type '%s'", len(s.excludedDatabases), backupType)
+		// Pastikan return empty slice jika nil, bukan nil slice
+		if s.excludedDatabases == nil {
+			return []string{}
+		}
+		return s.excludedDatabases
+	}
+	return []string{} // Return empty slice, bukan nil
 }

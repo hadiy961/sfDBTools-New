@@ -114,6 +114,15 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 		return nil, nil, fmt.Errorf("gagal mendapatkan daftar database: %w", err)
 	}
 
+	// Simpan excluded databases untuk metadata (khusus untuk mode 'all')
+	if s.BackupDBOptions.Mode == "all" && stats != nil {
+		s.excludedDatabases = stats.ExcludedDatabases
+		s.Log.Infof("Menyimpan %d excluded databases untuk metadata", len(s.excludedDatabases))
+		if len(s.excludedDatabases) > 0 {
+			s.Log.Debugf("Excluded databases: %v", s.excludedDatabases)
+		}
+	}
+
 	if len(dbFiltered) == 0 {
 		display.DisplayFilterStats(stats, s.Log)
 		ui.PrintError("Tidak ada database yang tersedia setelah filtering!")

@@ -13,7 +13,6 @@ import (
 	"sfDBTools/internal/applog"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/ui"
 
 	backuphelper "sfDBTools/internal/backup/helper"
 )
@@ -30,7 +29,6 @@ func ExportAndSaveUserGrants(ctx context.Context, client *database.Client, logge
 		return "", nil
 	}
 
-	logger.Info("Memulai export user grants...")
 	timer := helper.NewTimer()
 
 	// Export user grants dari database
@@ -54,7 +52,6 @@ func ExportAndSaveUserGrants(ctx context.Context, client *database.Client, logge
 
 	// Generate nama file user grants berdasarkan nama backup file
 	userFilePath := backuphelper.GenerateUserFilePath(backupFilePath)
-	logger.Infof("File user grants akan disimpan di: %s", userFilePath)
 
 	// Tulis ke file
 	logger.Debugf("Menulis user grants ke file: %s", userFilePath)
@@ -66,9 +63,6 @@ func ExportAndSaveUserGrants(ctx context.Context, client *database.Client, logge
 
 	duration := timer.Elapsed()
 	logger.Infof("✓ User grants berhasil disimpan ke: %s (durasi: %v)", userFilePath, duration)
-
-	// Print ke UI juga
-	ui.PrintSuccess(fmt.Sprintf("File user grants berhasil dibuat: %s", userFilePath))
 
 	return userFilePath, nil
 }
