@@ -12,6 +12,7 @@ import (
 	"sfDBTools/internal/backup/display"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/backuphelper"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/fsops"
 	pkghelper "sfDBTools/pkg/helper"
@@ -121,9 +122,9 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 	}
 
 	// Untuk mode single/primary/secondary, update stats setelah filtering kandidat
-	if isSingleModeVariant(s.BackupDBOptions.Mode) {
+	if backuphelper.IsSingleModeVariant(s.BackupDBOptions.Mode) {
 		// Filter candidates untuk mendapatkan jumlah yang akurat
-		candidates := s.filterCandidatesByMode(dbFiltered, s.BackupDBOptions.Mode)
+		candidates := backuphelper.FilterCandidatesByMode(dbFiltered, s.BackupDBOptions.Mode)
 		stats.TotalIncluded = len(candidates)
 		stats.TotalExcluded = stats.TotalFound - len(candidates)
 	}
@@ -289,7 +290,7 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 	exampleDBName := ""
 	dbCount := 0
 	if s.BackupDBOptions.Mode == "separated" || s.BackupDBOptions.Mode == "separate" ||
-		isSingleModeVariant(s.BackupDBOptions.Mode) {
+		backuphelper.IsSingleModeVariant(s.BackupDBOptions.Mode) {
 		exampleDBName = "database_name"
 	} else if s.BackupDBOptions.Mode == "combined" {
 		// Untuk combined, gunakan jumlah database yang akan di-backup
@@ -310,7 +311,7 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 	}
 
 	// Handle single/primary/secondary mode dengan database selection
-	if isSingleModeVariant(s.BackupDBOptions.Mode) {
+	if backuphelper.IsSingleModeVariant(s.BackupDBOptions.Mode) {
 		return s.handleSingleModeSetup(ctx, client, dbFiltered, compressionSettings)
 	}
 

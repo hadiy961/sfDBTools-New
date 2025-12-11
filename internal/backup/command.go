@@ -9,7 +9,6 @@ package backup
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"os/signal"
 	"sfDBTools/internal/backup/display"
@@ -30,43 +29,10 @@ import (
 // ExecuteBackup adalah unified function untuk menjalankan backup dengan mode apapun
 // Menggantikan 5 fungsi Execute* yang duplikat (Single, Separated, Combined, Primary, Secondary)
 func ExecuteBackup(cmd *cobra.Command, deps *types.Dependencies, mode string) error {
-	// Map mode ke konfigurasi yang sesuai
-	modeConfigs := map[string]types_backup.ExecutionConfig{
-		"single": {
-			Mode:        "single",
-			HeaderTitle: "Database Backup - Single",
-			LogPrefix:   "[Backup Single]",
-			SuccessMsg:  "Proses backup database single selesai.",
-		},
-		"separated": {
-			Mode:        "separated",
-			HeaderTitle: "Database Backup - Separated",
-			LogPrefix:   "[Backup Separated]",
-			SuccessMsg:  "Proses backup database separated selesai.",
-		},
-		"combined": {
-			Mode:        "combined",
-			HeaderTitle: "Database Backup - Combined",
-			LogPrefix:   "[Backup Combined]",
-			SuccessMsg:  "Proses backup database combined selesai.",
-		},
-		"primary": {
-			Mode:        "primary",
-			HeaderTitle: "Database Backup - Primary",
-			LogPrefix:   "[Backup Primary]",
-			SuccessMsg:  "Proses backup database primary selesai.",
-		},
-		"secondary": {
-			Mode:        "secondary",
-			HeaderTitle: "Database Backup - Secondary",
-			LogPrefix:   "[Backup Secondary]",
-			SuccessMsg:  "Proses backup database secondary selesai.",
-		},
-	}
-
-	config, exists := modeConfigs[mode]
-	if !exists {
-		return fmt.Errorf("mode backup tidak dikenali: %s", mode)
+	// Dapatkan konfigurasi execution berdasarkan mode
+	config, err := GetExecutionConfig(mode)
+	if err != nil {
+		return err
 	}
 
 	return executeBackupWithConfig(cmd, deps, config)

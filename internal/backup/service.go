@@ -176,27 +176,5 @@ func (s *Service) ToBackupResult(loopResult types_backup.BackupLoopResult) types
 	}
 }
 
-// =============================================================================
-// Mode Execution - Public API
-// =============================================================================
-
-// ExecuteBackupCombined melakukan backup dalam mode combined
-func (s *Service) ExecuteBackupCombined(ctx context.Context, dbFiltered []string) types_backup.BackupResult {
-	executor := modes.NewCombinedExecutor(s)
-	return executor.Execute(ctx, dbFiltered)
-}
-
-// ExecuteBackupSeparated melakukan backup dalam mode separated
-func (s *Service) ExecuteBackupSeparated(ctx context.Context, dbFiltered []string) types_backup.BackupResult {
-	executor := modes.NewSeparatedExecutor(s)
-	return executor.Execute(ctx, dbFiltered)
-}
-
-// ExecuteBackupSingle melakukan backup dalam mode single
-func (s *Service) ExecuteBackupSingle(ctx context.Context, dbList []string) types_backup.BackupResult {
-	executor := modes.NewSingleExecutor(s)
-	return executor.Execute(ctx, dbList)
-}
-
 // Verify interface implementation at compile time
 var _ modes.BackupService = (*Service)(nil)

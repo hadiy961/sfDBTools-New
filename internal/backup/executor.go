@@ -9,6 +9,7 @@ package backup
 import (
 	"context"
 	"fmt"
+	"sfDBTools/internal/backup/modes"
 	"sfDBTools/internal/cleanup"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/database"
@@ -49,14 +50,15 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 
 // executeBackupByMode menjalankan backup sesuai mode yang dipilih
 func (s *Service) executeBackupByMode(ctx context.Context, dbFiltered []string, backupMode string) types_backup.BackupResult {
-	switch backupMode {
-	case "separate", "separated":
-		return s.ExecuteBackupSeparated(ctx, dbFiltered)
-	case "single", "primary", "secondary":
-		return s.ExecuteBackupSingle(ctx, dbFiltered)
-	default:
-		return s.ExecuteBackupCombined(ctx, dbFiltered)
+	executor, err := modes.GetExecutor(backupMode, s)
+	if err != nil {
+		s.Log.Errorf("Gagal mendapatkan executor: %v", err)
+		return types_backup.BackupResult{
+			Errors: []string{fmt.Sprintf("gagal inisialisasi mode backup: %v", err)},
+		}
 	}
+
+	return executor.Execute(ctx, dbFiltered)
 }
 
 // handleBackupErrors menangani error dari backup execution

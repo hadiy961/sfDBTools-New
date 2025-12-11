@@ -17,7 +17,6 @@ import (
 	"sfDBTools/pkg/backuphelper"
 	pkghelper "sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
-	"strings"
 	"time"
 )
 
@@ -37,11 +36,6 @@ func (s *Service) getCompressionSettings() types_backup.CompressionSettings {
 // =============================================================================
 // Path Generation Helpers
 // =============================================================================
-
-// isSingleModeVariant checks if mode is single/primary/secondary
-func isSingleModeVariant(mode string) bool {
-	return mode == "single" || mode == "primary" || mode == "secondary"
-}
 
 // generateFullBackupPath membuat full path untuk backup file
 func (s *Service) generateFullBackupPath(dbName string, mode string) (string, error) {
@@ -262,7 +256,7 @@ func (s *Service) buildBackupInfoFromResult(ctx context.Context, cfg types_backu
 	}
 
 	// Dapatkan versi mysqldump dari stderr output (biasanya ada di baris pertama)
-	mysqldumpVer := s.extractMysqldumpVersion(stderrOutput)
+	mysqldumpVer := backuphelper.ExtractMysqldumpVersion(stderrOutput)
 
 	meta := metadata.GenerateBackupMetadata(types_backup.MetadataConfig{
 		BackupFile:      cfg.OutputPath,
@@ -404,65 +398,6 @@ func (s *Service) exportUserGrantsIfNeeded(ctx context.Context, referenceBackupF
 // Database Selection Helpers
 // =============================================================================
 
-// filterCandidatesByMode memfilter database candidates berdasarkan backup mode
-func (s *Service) filterCandidatesByMode(dbFiltered []string, mode string) []string {
-	candidates := make([]string, 0, len(dbFiltered))
-
-	// System databases yang harus di-exclude
-	systemDatabases := []string{"information_schema", "performance_schema", "mysql", "sys"}
-
-	for _, db := range dbFiltered {
-		dbLower := strings.ToLower(db)
-
-		// Check if it's a system database (untuk semua mode)
-		isSystemDB := false
-		for _, sysDB := range systemDatabases {
-			if dbLower == sysDB {
-				isSystemDB = true
-				break
-			}
-		}
-		if isSystemDB {
-			continue
-		}
-
-		switch mode {
-		case "primary":
-			// Primary: hanya database dengan pattern dbsf_nbc_{nama_database}
-			// Exclude: yang punya _secondary, _dmart, _temp, _archive
-			if strings.Contains(dbLower, "_secondary") || strings.HasSuffix(dbLower, "_dmart") ||
-				strings.HasSuffix(dbLower, "_temp") || strings.HasSuffix(dbLower, "_archive") {
-				continue
-			}
-			// Harus match pattern dbsf_nbc_
-			if !strings.HasPrefix(dbLower, "dbsf_nbc_") {
-				continue
-			}
-		case "secondary":
-			// Secondary: hanya database dengan pattern dbsf_nbc_{nama_database}_secondary_{instance}
-			// Exclude: _dmart, _temp, _archive
-			if strings.HasSuffix(dbLower, "_dmart") || strings.HasSuffix(dbLower, "_temp") ||
-				strings.HasSuffix(dbLower, "_archive") {
-				continue
-			}
-			// Harus match pattern dbsf_nbc_ dan mengandung _secondary
-			if !strings.HasPrefix(dbLower, "dbsf_nbc_") || !strings.Contains(dbLower, "_secondary") {
-				continue
-			}
-		case "single":
-			// Single: exclude companion databases
-			if strings.HasSuffix(dbLower, "_dmart") || strings.HasSuffix(dbLower, "_temp") ||
-				strings.HasSuffix(dbLower, "_archive") {
-				continue
-			}
-		}
-
-		candidates = append(candidates, db)
-	}
-
-	return candidates
-}
-
 // addCompanionDatabases menambahkan semua companion databases yang diaktifkan
 func (s *Service) addCompanionDatabases(selectedDB string, companionDbs *[]string,
 	companionStatus map[string]bool, allDatabases []string) {
@@ -508,7 +443,7 @@ func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interfa
 
 	selectedDB := selectedDBName
 	if selectedDB == "" {
-		candidates := s.filterCandidatesByMode(dbFiltered, mode)
+		candidates := backuphelper.FilterCandidatesByMode(dbFiltered, mode)
 
 		if len(candidates) == 0 {
 			return nil, "", nil, fmt.Errorf("tidak ada database yang tersedia untuk dipilih")
@@ -534,27 +469,4 @@ func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interfa
 	}
 
 	return companionDbs, selectedDB, companionStatus, nil
-}
-
-// =============================================================================
-// Version Extraction Helpers
-// =============================================================================
-
-// extractMysqldumpVersion mengambil versi mysqldump dari stderr output
-// Biasanya format: "mysqldump  Ver 10.19 Distrib 10.11.6-MariaDB, for Linux (x86_64)"
-func (s *Service) extractMysqldumpVersion(stderrOutput string) string {
-	if stderrOutput == "" {
-		return ""
-	}
-
-	lines := strings.Split(stderrOutput, "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "mysqldump") && strings.Contains(line, "Ver") {
-			// Extract version from line like "mysqldump  Ver 10.19 Distrib 10.11.6-MariaDB"
-			return strings.TrimSpace(line)
-		}
-	}
-
-	return ""
 }
