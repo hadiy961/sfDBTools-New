@@ -8,8 +8,10 @@ package restore
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"sfDBTools/pkg/database"
+	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
@@ -71,6 +73,61 @@ func (s *Service) promptDatabaseName(sourceFile string) (string, error) {
 	}
 }
 
+// PromptSourceFile meminta user untuk input lokasi file backup interactively
+// Mendukung relative dan absolute path
+func (s *Service) PromptSourceFile() (string, error) {
+	ui.PrintSubHeader("Source File Required")
+
+	s.Log.Info("Silakan masukkan lokasi file backup untuk restore:")
+	s.Log.Info("(Mendukung relative dan absolute path)")
+
+	fmt.Println() // Spacing
+
+	// Validator untuk file path
+	filePathValidator := input.ComposeValidators(
+		survey.Required,
+		validateFilePath,
+	)
+
+	// Loop sampai user input valid file path atau cancel
+	for {
+		filePath, err := input.AskString(
+			"Lokasi File Backup",
+			"", // No default value
+			filePathValidator,
+		)
+
+		if err != nil {
+			return "", validation.HandleInputError(err)
+		}
+
+		// Expand tilde dan resolve ke absolute path
+		filePath = helper.ExpandPath(filePath)
+		absPath, err := filepath.Abs(filePath)
+		if err != nil {
+			ui.PrintError(fmt.Sprintf("Gagal resolve path: %v", err))
+			continue
+		}
+
+		// Confirm dengan user (show absolute path)
+		confirm, err := input.AskYesNo(
+			fmt.Sprintf("Gunakan file '%s'?", absPath),
+			true,
+		)
+
+		if err != nil {
+			return "", validation.HandleInputError(err)
+		}
+
+		if confirm {
+			return absPath, nil
+		}
+
+		// User tidak confirm, loop lagi
+		fmt.Println()
+	}
+}
+
 // validateDatabaseName validates database name format
 // Database name harus alphanumeric dengan underscore/dash
 func validateDatabaseName(val interface{}) error {
@@ -97,6 +154,22 @@ func validateDatabaseName(val interface{}) error {
 		return fmt.Errorf("database name tidak valid: harus dimulai dengan huruf/underscore, hanya boleh berisi alphanumeric, underscore, dan dash (max 64 karakter)")
 	}
 
+	return nil
+}
+
+// validateFilePath validates file path format and existence
+func validateFilePath(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("file path harus berupa string")
+	}
+
+	if str == "" {
+		return fmt.Errorf("file path tidak boleh kosong")
+	}
+
+	// Tidak perlu check existence di sini karena akan di-check di verify
+	// Cukup pastikan format tidak aneh
 	return nil
 }
 

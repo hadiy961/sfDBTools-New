@@ -24,7 +24,7 @@ import (
 
 // CheckAndSelectConfigFile memeriksa file konfigurasi yang ada atau memandu pengguna untuk memilihnya
 func (s *Service) CheckAndSelectConfigFile() error {
-	allowInteractive := (s.BackupDBOptions.Mode == "single" || s.BackupDBOptions.Mode == "primary" || s.BackupDBOptions.Mode == "secondary" || s.BackupDBOptions.Mode == "combined" || s.BackupDBOptions.Mode == "separated") && s.BackupDBOptions.Profile.Path == ""
+	allowInteractive := (s.BackupDBOptions.Mode == "single" || s.BackupDBOptions.Mode == "primary" || s.BackupDBOptions.Mode == "secondary" || s.BackupDBOptions.Mode == "combined" || s.BackupDBOptions.Mode == "all" || s.BackupDBOptions.Mode == "separated") && s.BackupDBOptions.Profile.Path == ""
 	profile, err := profilehelper.LoadSourceProfile(
 		s.BackupDBOptions.Profile.Path,
 		s.BackupDBOptions.Encryption.Key,
@@ -121,12 +121,19 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 		return nil, nil, fmt.Errorf("tidak ada database tersedia untuk backup setelah filtering")
 	}
 
-	// Untuk mode single/primary/secondary, update stats setelah filtering kandidat
+	// Untuk mode single/primary/secondary, dbFiltered sudah difilter dengan ExcludeSystem
+	// Tapi kita perlu filter lagi berdasarkan mode (primary/secondary pattern)
 	if backuphelper.IsSingleModeVariant(s.BackupDBOptions.Mode) {
-		// Filter candidates untuk mendapatkan jumlah yang akurat
+		// Filter candidates berdasarkan mode untuk mendapatkan jumlah yang akurat
 		candidates := backuphelper.FilterCandidatesByMode(dbFiltered, s.BackupDBOptions.Mode)
+
+		// Hitung excluded: total database yang tidak masuk kandidat
+		// totalExcluded = system DB + database yang tidak match pattern mode
+		originalIncluded := stats.TotalIncluded
+		patternExcluded := originalIncluded - len(candidates)
+
 		stats.TotalIncluded = len(candidates)
-		stats.TotalExcluded = stats.TotalFound - len(candidates)
+		stats.TotalExcluded = stats.TotalExcluded + patternExcluded
 	}
 
 	display.DisplayFilterStats(stats, s.Log)
@@ -292,9 +299,11 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 	if s.BackupDBOptions.Mode == "separated" || s.BackupDBOptions.Mode == "separate" ||
 		backuphelper.IsSingleModeVariant(s.BackupDBOptions.Mode) {
 		exampleDBName = "database_name"
-	} else if s.BackupDBOptions.Mode == "combined" {
-		// Untuk combined, gunakan jumlah database yang akan di-backup
+	} else if s.BackupDBOptions.Mode == "combined" || s.BackupDBOptions.Mode == "all" {
+		// Untuk combined/all, gunakan jumlah database yang akan di-backup
 		dbCount = len(dbFiltered)
+		// exampleDBName dibiarkan kosong, akan di-generate oleh GenerateBackupFilenameWithCount
+		// dengan prefix sesuai mode ('all' atau 'combined')
 	}
 
 	s.BackupDBOptions.File.Path, err = pkghelper.GenerateBackupFilenameWithCount(

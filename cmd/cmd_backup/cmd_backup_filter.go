@@ -7,6 +7,7 @@ import (
 	defaultVal "sfDBTools/pkg/defaultval"
 	"sfDBTools/pkg/flags"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -28,6 +29,33 @@ Jika tidak ada --db atau --db-file yang di-provide, akan muncul multi-select unt
 
 		// Dapatkan mode dari flag
 		mode, _ := cmd.Flags().GetString("mode")
+
+		// Jika mode tidak di-provide (masih default "single-file"), tanyakan interaktif
+		if !cmd.Flags().Changed("mode") {
+			modeOptions := []string{
+				"single-file (gabungkan semua database dalam satu file)",
+				"multi-file (pisahkan setiap database ke file terpisah)",
+			}
+
+			var selected string
+			prompt := &survey.Select{
+				Message: "Pilih mode backup:",
+				Options: modeOptions,
+				Default: modeOptions[0], // Default single-file
+			}
+
+			if err := survey.AskOne(prompt, &selected); err != nil {
+				types.Deps.Logger.Error("Pemilihan mode dibatalkan: " + err.Error())
+				return
+			}
+
+			// Parse pilihan untuk mendapatkan mode
+			if selected == modeOptions[0] {
+				mode = "single-file"
+			} else {
+				mode = "multi-file"
+			}
+		}
 
 		// Map mode ke backup mode internal
 		var backupMode string

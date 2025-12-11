@@ -67,8 +67,19 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	// Success - all databases backed up in one file
 	res.SuccessfulBackups = len(dbFiltered)
 
-	// Export user grants
-	e.service.ExportUserGrantsIfNeeded(ctx, fullOutputPath)
+	// Export user grants:
+	// - backup all: export semua user (pass nil)
+	// - backup filter --mode=single-file: export hanya user dengan grants ke database yang dipilih (pass dbFiltered)
+	var databasesToFilter []string
+	if e.service.GetBackupOptions().Filter.IsFilterCommand {
+		// Command filter: filter berdasarkan database yang dipilih
+		databasesToFilter = dbFiltered
+	}
+	// Command all: nil (export semua user)
+
+	actualUserGrantsPath := e.service.ExportUserGrantsIfNeeded(ctx, fullOutputPath, databasesToFilter)
+	// Update metadata dengan actual path (atau "none" jika gagal)
+	e.service.UpdateMetadataUserGrantsPath(fullOutputPath, actualUserGrantsPath)
 
 	// Format display name dengan helper
 	backupInfo.DatabaseName = e.formatCombinedBackupDisplayName(dbFiltered)

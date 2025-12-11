@@ -41,10 +41,16 @@ func (s *Service) getCompressionSettings() types_backup.CompressionSettings {
 func (s *Service) generateFullBackupPath(dbName string, mode string) (string, error) {
 	compressionSettings := s.getCompressionSettings()
 
+	// Untuk mode separated, gunakan IP address instead of hostname
+	hostIdentifier := s.BackupDBOptions.Profile.DBInfo.HostName
+	if mode == "separated" || mode == "separate" {
+		hostIdentifier = s.BackupDBOptions.Profile.DBInfo.Host
+	}
+
 	filename, err := pkghelper.GenerateBackupFilename(
 		dbName,
 		mode,
-		s.BackupDBOptions.Profile.DBInfo.HostName,
+		hostIdentifier,
 		compressionSettings.Type,
 		s.BackupDBOptions.Encryption.Enabled,
 	)
@@ -125,6 +131,24 @@ func (s *Service) executeBackupLoop(
 
 		result.BackupInfos = append(result.BackupInfos, backupInfo)
 		result.Success++
+
+		// Untuk mode separated dan single, export user grants per database dan update metadata
+		// Untuk mode primary/secondary, skip metadata update per database (akan di-handle di akhir)
+		if config.Mode == "separated" || config.Mode == "separate" {
+			actualUserGrantsPath := s.exportUserGrantsIfNeeded(ctx, outputPath, []string{dbName})
+			// Update metadata dengan actual path (atau "" jika gagal)
+			if s.Config.Backup.Output.SaveBackupInfo {
+				s.updateMetadataUserGrantsPath(outputPath, actualUserGrantsPath)
+			}
+		}
+
+		// Untuk mode single, export user grants untuk database ini saja
+		if config.Mode == "single" {
+			actualUserGrantsPath := s.exportUserGrantsIfNeeded(ctx, outputPath, []string{dbName})
+			if s.Config.Backup.Output.SaveBackupInfo {
+				s.updateMetadataUserGrantsPath(outputPath, actualUserGrantsPath)
+			}
+		}
 	}
 
 	return result
@@ -287,6 +311,7 @@ func (s *Service) buildBackupInfoFromResult(ctx context.Context, cfg types_backu
 	})
 
 	// Save metadata if configured
+	// Untuk primary/secondary, metadata akan di-update nanti dengan full database list
 	manifestPath := ""
 	if s.Config.Backup.Output.SaveBackupInfo {
 		manifestPath = metadata.TrySaveBackupMetadata(meta, s.Log)
@@ -378,19 +403,31 @@ func (s *Service) getTotalDatabaseCount(ctx context.Context, dbFiltered []string
 }
 
 // exportUserGrantsIfNeeded export user grants jika diperlukan
-func (s *Service) exportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string) {
+// databases: daftar database yang di-backup (kosong untuk export semua user)
+// Return: path file yang berhasil dibuat, atau empty string jika gagal/tidak ada
+func (s *Service) exportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) string {
 	if s.BackupDBOptions.ExcludeUser {
-		return
+		return ""
 	}
 
 	if referenceBackupFile == "" {
 		s.Log.Warn("Tidak ada backup file untuk export user grants")
-		return
+		return ""
 	}
 
 	s.Log.Info("Export user grants ke file...")
-	if err := metadata.ExportAndSaveUserGrants(ctx, s.Client, s.Log, referenceBackupFile, s.BackupDBOptions.ExcludeUser); err != nil {
+	filePath, err := metadata.ExportAndSaveUserGrants(ctx, s.Client, s.Log, referenceBackupFile, s.BackupDBOptions.ExcludeUser, databases)
+	if err != nil {
 		s.Log.Errorf("Gagal export user grants: %v", err)
+		return ""
+	}
+	return filePath
+}
+
+// updateMetadataUserGrantsPath update metadata dengan actual user grants path
+func (s *Service) updateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string) {
+	if err := metadata.UpdateMetadataUserGrantsFile(backupFilePath, userGrantsPath, s.Log); err != nil {
+		s.Log.Warnf("Gagal update metadata user grants path: %v", err)
 	}
 }
 
@@ -463,10 +500,10 @@ func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interfa
 	companionDbs := []string{selectedDB}
 	companionStatus := map[string]bool{selectedDB: true}
 
-	// Add companion databases if not secondary mode
-	if mode != "secondary" {
-		s.addCompanionDatabases(selectedDB, &companionDbs, companionStatus, allDatabases)
-	}
+	// Tambahkan companion databases untuk semua mode (primary, secondary, single)
+	// Companion databases adalah database dengan suffix _dmart, _temp, _archive
+	// yang mengikuti database utama (baik primary maupun secondary)
+	s.addCompanionDatabases(selectedDB, &companionDbs, companionStatus, allDatabases)
 
 	return companionDbs, selectedDB, companionStatus, nil
 }

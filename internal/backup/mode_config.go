@@ -29,9 +29,15 @@ func GetExecutionConfig(mode string) (types_backup.ExecutionConfig, error) {
 		},
 		"combined": {
 			Mode:        "combined",
-			HeaderTitle: "Database Backup - Combined",
-			LogPrefix:   "[Backup Combined]",
-			SuccessMsg:  "Proses backup database combined selesai.",
+			HeaderTitle: "Database Backup - Filter (Single File)",
+			LogPrefix:   "[Backup Filter Single-File]",
+			SuccessMsg:  "Proses backup database filter (single file) selesai.",
+		},
+		"all": {
+			Mode:        "all",
+			HeaderTitle: "Database Backup - All (Exclude Filters)",
+			LogPrefix:   "[Backup All]",
+			SuccessMsg:  "Proses backup all databases selesai.",
 		},
 		"primary": {
 			Mode:        "primary",

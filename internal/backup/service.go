@@ -132,6 +132,11 @@ func (s *Service) LogError(msg string) {
 	s.Log.Error(msg)
 }
 
+// GetLogger implements modes.BackupService
+func (s *Service) GetLogger() applog.Logger {
+	return s.Log
+}
+
 // GetBackupOptions implements modes.BackupService
 func (s *Service) GetBackupOptions() *types_backup.BackupDBOptions {
 	return s.BackupDBOptions
@@ -163,8 +168,13 @@ func (s *Service) CaptureAndSaveGTID(ctx context.Context, backupFilePath string)
 }
 
 // ExportUserGrantsIfNeeded implements modes.BackupService
-func (s *Service) ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string) {
-	s.exportUserGrantsIfNeeded(ctx, referenceBackupFile)
+func (s *Service) ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) string {
+	return s.exportUserGrantsIfNeeded(ctx, referenceBackupFile, databases)
+}
+
+// UpdateMetadataUserGrantsPath implements modes.BackupService
+func (s *Service) UpdateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string) {
+	s.updateMetadataUserGrantsPath(backupFilePath, userGrantsPath)
 }
 
 // ToBackupResult implements modes.BackupService - konversi modes.BackupLoopResult ke types_backup.BackupResult

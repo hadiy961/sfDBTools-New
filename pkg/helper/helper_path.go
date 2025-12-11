@@ -118,19 +118,22 @@ func GenerateBackupFilename(database string, mode string, hostname string, compr
 }
 
 // GenerateBackupFilenameWithCount menghasilkan nama file backup dengan jumlah database
-// Untuk mode combined dengan dbCount > 0, format: combined_{hostname}_{timestamp}_{jumlah_db}
+// Untuk mode combined/all dengan dbCount > 0, format: {prefix}_{hostname}_{timestamp}_{jumlah_db}
+// prefix: "all" untuk backup all, "combined" untuk filter --mode=single-file
 func GenerateBackupFilenameWithCount(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, dbCount int) (string, error) {
 	// Untuk mode separated, validasi bahwa database tidak kosong
 	if (mode == "separated" || mode == "separate") && database == "" {
 		return "", fmt.Errorf("database name tidak boleh kosong untuk mode separated")
 	}
 
-	// Untuk mode combined, gunakan format khusus
-	if mode == "combined" {
+	// Untuk mode combined atau all, gunakan format khusus
+	if mode == "combined" || mode == "all" {
 		if dbCount > 0 {
-			// Format: combined_{hostname}_{timestamp}_{jumlah_db}
+			// Format: {prefix}_{hostname}_{timestamp}_{jumlah_db}
+			// prefix berbeda: "all" untuk backup all, "combined" untuk filter single-file
+			prefix := mode
 			timestamp := time.Now().Format("20060102_150405")
-			database = fmt.Sprintf("combined_%s_%s_%ddb", hostname, timestamp, dbCount)
+			database = fmt.Sprintf("%s_%s_%s_%ddb", prefix, hostname, timestamp, dbCount)
 		} else if database == "" {
 			database = "all_databases"
 		}
@@ -141,9 +144,9 @@ func GenerateBackupFilenameWithCount(database string, mode string, hostname stri
 		return "", fmt.Errorf("gagal membuat pattern replacer: %w", err)
 	}
 
-	// Untuk combined dengan custom format, gunakan pattern sederhana
+	// Untuk combined/all dengan custom format, gunakan pattern sederhana
 	var filename string
-	if mode == "combined" && dbCount > 0 {
+	if (mode == "combined" || mode == "all") && dbCount > 0 {
 		// Sudah include hostname dan timestamp di database name
 		// Ekstensi kompresi dan enkripsi akan ditambahkan otomatis oleh replacer
 		filename = replacer.ReplacePattern("{database}")

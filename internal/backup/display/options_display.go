@@ -62,14 +62,21 @@ func (d *OptionsDisplayer) buildGeneralSection() [][]string {
 	}
 
 	// Filename display logic:
-	// - Mode single/primary/secondary/combined: tampilkan filename akurat
+	// - Mode single/primary/secondary/combined/all: tampilkan filename akurat
 	// - Mode separated dengan filter: tampilkan contoh filename
 	if d.isSeparatedMode() {
 		// Mode separated - tampilkan contoh
 		data = append(data, []string{"Filename Example", ui.ColorText(d.options.File.Path, ui.ColorCyan)})
-	} else if d.isSingleMode() || d.options.Mode == "combined" {
-		// Mode single/primary/secondary/combined - tampilkan filename akurat
-		data = append(data, []string{"Backup Filename", ui.ColorText(d.options.File.Path, ui.ColorCyan)})
+	} else if d.isSingleMode() || d.options.Mode == "combined" || d.options.Mode == "all" {
+		// Mode single/primary/secondary/combined/all - tampilkan filename akurat
+		// Label berbeda untuk mode all vs combined
+		label := "Backup Filename"
+		if d.options.Mode == "all" {
+			label = "Output File (All)"
+		} else if d.options.Mode == "combined" {
+			label = "Output File (Filter)"
+		}
+		data = append(data, []string{label, ui.ColorText(d.options.File.Path, ui.ColorCyan)})
 	}
 
 	data = append(data, []string{"Dry Run", fmt.Sprintf("%v", d.options.DryRun)})
@@ -80,10 +87,17 @@ func (d *OptionsDisplayer) buildGeneralSection() [][]string {
 // buildModeSpecificSection builds mode-specific section (single/primary/secondary)
 func (d *OptionsDisplayer) buildModeSpecificSection() [][]string {
 	if !d.isSingleMode() {
-		// Combined/separated mode specific
+		// Combined/separated/all mode specific
 		data := [][]string{}
 
-		if d.options.Mode == "combined" {
+		// Tampilkan metode filter untuk combined vs all
+		if d.options.Mode == "all" {
+			data = append(data, []string{"Metode Filter", ui.ColorText("Exclude (semua kecuali yang dikecualikan)", ui.ColorYellow)})
+		} else if d.options.Mode == "combined" {
+			data = append(data, []string{"Metode Filter", ui.ColorText("Include (hanya yang dipilih)", ui.ColorYellow)})
+		}
+
+		if d.options.Mode == "combined" || d.options.Mode == "all" {
 			data = append(data, []string{"Capture GTID", fmt.Sprintf("%v", d.options.CaptureGTID)})
 		}
 

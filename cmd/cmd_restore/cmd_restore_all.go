@@ -61,6 +61,18 @@ Contoh penggunaan:
 		// Inisialisasi restore service
 		svc := restore.NewRestoreService(logger, types.Deps.Config, &restoreOpts)
 
+		// Jika source file tidak di-provide, minta user untuk input
+		if restoreOpts.SourceFile == "" {
+			sourceFile, err := svc.PromptSourceFile()
+			if err != nil {
+				logger.Error("gagal mendapatkan source file: " + err.Error())
+				os.Exit(1)
+			}
+			restoreOpts.SourceFile = sourceFile
+			// Update options di service juga
+			svc.RestoreOptions.SourceFile = sourceFile
+		}
+
 		// Setup context dengan cancellation untuk graceful shutdown
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()

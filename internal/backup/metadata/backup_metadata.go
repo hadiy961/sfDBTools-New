@@ -32,21 +32,25 @@ func GenerateBackupMetadata(cfg types_backup.MetadataConfig) *types_backup.Backu
 		Compressed:      cfg.Compressed,
 		CompressionType: cfg.CompressionType,
 		Encrypted:       cfg.Encrypted,
-		GTIDInfo:        cfg.GTIDInfo,
 		BackupStatus:    cfg.BackupStatus,
 		Warnings:        cfg.Warnings,
 		GeneratedBy:     "sfDBTools",
 		GeneratedAt:     time.Now(),
-		// Replication information
-		ReplicationUser:     cfg.ReplicationUser,
-		ReplicationPassword: cfg.ReplicationPassword,
-		SourceHost:          cfg.SourceHost,
-		SourcePort:          cfg.SourcePort,
 		// Additional files
 		UserGrantsFile: cfg.UserGrantsFile,
 		// Version information
 		MysqldumpVersion: cfg.MysqldumpVersion,
 		MariaDBVersion:   cfg.MariaDBVersion,
+	}
+
+	// GTID info dan replication info hanya disimpan untuk mode non-separated (combined, single, dll)
+	// Untuk mode separated/multi-file, informasi ini tidak relevan karena setiap database dibackup terpisah
+	if cfg.BackupType != "separated" {
+		meta.GTIDInfo = cfg.GTIDInfo
+		meta.ReplicationUser = cfg.ReplicationUser
+		meta.ReplicationPassword = cfg.ReplicationPassword
+		meta.SourceHost = cfg.SourceHost
+		meta.SourcePort = cfg.SourcePort
 	}
 
 	if cfg.StderrOutput != "" {
@@ -106,6 +110,106 @@ func TrySaveBackupMetadata(meta *types_backup.BackupMetadata, logger applog.Logg
 	}
 
 	return path
+}
+
+// UpdateMetadataUserGrantsFile membaca metadata yang ada, update UserGrantsFile field, dan save kembali
+func UpdateMetadataUserGrantsFile(backupFilePath string, userGrantsPath string, logger applog.Logger) error {
+	manifestPath := backupFilePath + ".meta.json"
+
+	// Baca metadata yang ada
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return fmt.Errorf("gagal membaca metadata: %w", err)
+	}
+
+	// Parse JSON
+	var meta types_backup.BackupMetadata
+	if err := json.Unmarshal(data, &meta); err != nil {
+		return fmt.Errorf("gagal parse metadata: %w", err)
+	}
+
+	// Update UserGrantsFile - jika empty string, set ke "none"
+	if userGrantsPath == "" {
+		meta.UserGrantsFile = "none"
+	} else {
+		meta.UserGrantsFile = userGrantsPath
+	}
+
+	// Save kembali
+	_, err = SaveBackupMetadata(&meta, logger)
+	return err
+}
+
+// UpdateMetadataDatabaseNames membaca metadata file, update DatabaseNames, dan save kembali
+func UpdateMetadataDatabaseNames(backupFilePath string, databaseNames []string, logger applog.Logger) error {
+	metadataPath := backupFilePath + ".meta.json"
+
+	// Baca metadata file
+	data, err := os.ReadFile(metadataPath)
+	if err != nil {
+		logger.Warnf("Gagal membaca metadata file %s: %v", metadataPath, err)
+		return err
+	}
+
+	// Parse JSON
+	var meta types_backup.BackupMetadata
+	if err := json.Unmarshal(data, &meta); err != nil {
+		logger.Warnf("Gagal parse metadata JSON %s: %v", metadataPath, err)
+		return err
+	}
+
+	// Update DatabaseNames
+	meta.DatabaseNames = databaseNames
+	logger.Debugf("Update metadata DatabaseNames: %v", databaseNames)
+
+	// Save kembali
+	_, err = SaveBackupMetadata(&meta, logger)
+	return err
+}
+
+// UpdateMetadataWithDatabaseDetails update metadata dengan detail lengkap per database
+func UpdateMetadataWithDatabaseDetails(backupFilePath string, databaseNames []string, backupInfos []types.DatabaseBackupInfo, logger applog.Logger) error {
+	metadataPath := backupFilePath + ".meta.json"
+
+	// Baca metadata file
+	data, err := os.ReadFile(metadataPath)
+	if err != nil {
+		logger.Warnf("Gagal membaca metadata file %s: %v", metadataPath, err)
+		return err
+	}
+
+	// Parse JSON
+	var meta types_backup.BackupMetadata
+	if err := json.Unmarshal(data, &meta); err != nil {
+		logger.Warnf("Gagal parse metadata JSON %s: %v", metadataPath, err)
+		return err
+	}
+
+	// Pastikan BackupFile ter-set (untuk SaveBackupMetadata nanti)
+	if meta.BackupFile == "" {
+		meta.BackupFile = backupFilePath
+	}
+
+	// Update DatabaseNames
+	meta.DatabaseNames = databaseNames
+
+	// Build DatabaseDetails dari backupInfos
+	details := make([]types_backup.DatabaseBackupDetail, 0, len(backupInfos))
+	for _, info := range backupInfos {
+		details = append(details, types_backup.DatabaseBackupDetail{
+			DatabaseName:  info.DatabaseName,
+			BackupFile:    info.OutputFile,
+			FileSizeBytes: info.FileSize,
+			FileSizeHuman: info.FileSizeHuman,
+		})
+	}
+	meta.DatabaseDetails = details
+
+	logger.Debugf("Update metadata dengan %d database details", len(details))
+
+	// Save kembali
+	_, err = SaveBackupMetadata(&meta, logger)
+	return err
 }
 
 // DatabaseBackupInfoBuilder membantu construct DatabaseBackupInfo dengan konsisten

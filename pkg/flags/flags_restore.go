@@ -45,9 +45,8 @@ func AddRestoreSingleFlags(cmd *cobra.Command, opts *types.RestoreOptions) {
 
 // AddRestoreAllFlags menambahkan flags untuk restore all command
 func AddRestoreAllFlags(cmd *cobra.Command, opts *types.RestoreOptions) {
-	// Source backup file
-	cmd.Flags().StringVarP(&opts.SourceFile, "source", "s", "", "Lokasi file combined backup source (required)")
-	cmd.MarkFlagRequired("source")
+	// Source backup file (optional - akan prompt jika kosong)
+	cmd.Flags().StringVarP(&opts.SourceFile, "source", "s", "", "Lokasi file combined backup source (jika kosong, akan diminta secara interaktif)")
 
 	// Target profile dan authentication
 	cmd.Flags().StringVarP(&opts.TargetProfile, "profile", "p", "", "Profile database target untuk restore (ENV: SFDB_TARGET_PROFILE)")

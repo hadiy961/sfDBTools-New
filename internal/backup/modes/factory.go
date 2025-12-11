@@ -13,7 +13,9 @@ import (
 // GetExecutor mengembalikan implementasi ModeExecutor yang sesuai berdasarkan mode string
 func GetExecutor(mode string, svc BackupService) (ModeExecutor, error) {
 	switch mode {
-	case "combined":
+	case "combined", "all":
+		// Combined dan all menggunakan executor yang sama (combined mode)
+		// Perbedaannya hanya di nama file output dan header display
 		return NewCombinedExecutor(svc), nil
 	case "single", "primary", "secondary", "separated", "separate":
 		return NewIterativeExecutor(svc, mode), nil

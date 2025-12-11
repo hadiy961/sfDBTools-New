@@ -8,6 +8,7 @@ package modes
 
 import (
 	"context"
+	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 )
@@ -25,6 +26,7 @@ type BackupService interface {
 	LogDebug(msg string)
 	LogWarn(msg string)
 	LogError(msg string)
+	GetLogger() applog.Logger
 
 	// Backup execution
 	ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.BackupExecutionConfig) (types.DatabaseBackupInfo, error)
@@ -35,6 +37,7 @@ type BackupService interface {
 	GenerateFullBackupPath(dbName string, mode string) (string, error)
 	GetTotalDatabaseCount(ctx context.Context, dbFiltered []string) int
 	CaptureAndSaveGTID(ctx context.Context, backupFilePath string) error
-	ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string)
+	ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) string
+	UpdateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string)
 	ToBackupResult(loopResult types_backup.BackupLoopResult) types_backup.BackupResult
 }

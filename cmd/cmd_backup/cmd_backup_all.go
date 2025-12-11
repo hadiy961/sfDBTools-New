@@ -35,14 +35,14 @@ Contoh penggunaan:
 			return
 		}
 
-		// Backup all menggunakan mode combined
-		if err := backup.ExecuteBackup(cmd, types.Deps, "combined"); err != nil {
+		// Backup all menggunakan mode 'all'
+		if err := backup.ExecuteBackup(cmd, types.Deps, "all"); err != nil {
 			types.Deps.Logger.Error("db-backup all gagal: " + err.Error())
 		}
 	},
 }
 
 func init() {
-	defaultOpts := defaultVal.DefaultBackupOptions("combined")
+	defaultOpts := defaultVal.DefaultBackupOptions("all")
 	flags.AddBackupAllFlags(CmdDBBackupAll, &defaultOpts)
 }
