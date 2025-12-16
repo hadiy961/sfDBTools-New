@@ -3,9 +3,9 @@ package cmdcrypto
 import (
 	"io"
 	"os"
-	"sfDBTools/internal/cryptoauth"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/cryptoauth"
 	"sfDBTools/pkg/cryptohelper"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"

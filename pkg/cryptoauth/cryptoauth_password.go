@@ -1,10 +1,10 @@
 package cryptoauth
 
-// File : internal/cryptoauth/cryptoauth_password.go
+// File : pkg/cryptoauth/cryptoauth_password.go
 // Deskripsi : Password authentication untuk crypto commands
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-11-11
-// Last Modified : 2025-11-11
+// Last Modified : 2025-12-16
 
 import (
 	"fmt"
