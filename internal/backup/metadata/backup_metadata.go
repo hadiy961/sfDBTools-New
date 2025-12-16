@@ -141,33 +141,6 @@ func UpdateMetadataUserGrantsFile(backupFilePath string, userGrantsPath string, 
 	return err
 }
 
-// UpdateMetadataDatabaseNames membaca metadata file, update DatabaseNames, dan save kembali
-func UpdateMetadataDatabaseNames(backupFilePath string, databaseNames []string, logger applog.Logger) error {
-	metadataPath := backupFilePath + ".meta.json"
-
-	// Baca metadata file
-	data, err := os.ReadFile(metadataPath)
-	if err != nil {
-		logger.Warnf("Gagal membaca metadata file %s: %v", metadataPath, err)
-		return err
-	}
-
-	// Parse JSON
-	var meta types_backup.BackupMetadata
-	if err := json.Unmarshal(data, &meta); err != nil {
-		logger.Warnf("Gagal parse metadata JSON %s: %v", metadataPath, err)
-		return err
-	}
-
-	// Update DatabaseNames
-	meta.DatabaseNames = databaseNames
-	logger.Debugf("Update metadata DatabaseNames: %v", databaseNames)
-
-	// Save kembali
-	_, err = SaveBackupMetadata(&meta, logger)
-	return err
-}
-
 // UpdateMetadataWithDatabaseDetails update metadata dengan detail lengkap per database
 func UpdateMetadataWithDatabaseDetails(backupFilePath string, databaseNames []string, backupInfos []types.DatabaseBackupInfo, logger applog.Logger) error {
 	metadataPath := backupFilePath + ".meta.json"

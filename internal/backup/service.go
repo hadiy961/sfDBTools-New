@@ -26,10 +26,7 @@ type Service struct {
 	Config          *appconfig.Config
 	Log             applog.Logger
 	ErrorLog        *errorlog.ErrorLogger
-	DBInfo          *types.DBInfo
-	Profile         *types.ProfileInfo
 	BackupDBOptions *types_backup.BackupDBOptions
-	BackupEntry     *types_backup.BackupEntryConfig
 	Client          *database.Client
 
 	// Backup-specific state
@@ -57,9 +54,6 @@ func NewBackupService(logs applog.Logger, cfg *appconfig.Config, backup interfac
 		switch v := backup.(type) {
 		case *types_backup.BackupDBOptions:
 			svc.BackupDBOptions = v
-			svc.Profile = &v.Profile
-			svc.BackupEntry = &v.Entry
-			svc.DBInfo = &v.Profile.DBInfo
 		default:
 			logs.Warn("Tipe backup tidak dikenali dalam Service")
 		}
@@ -113,26 +107,6 @@ func (s *Service) HandleShutdown() {
 // =============================================================================
 // Interface Implementation - modes.BackupService
 // =============================================================================
-
-// LogInfo implements modes.BackupService
-func (s *Service) LogInfo(msg string) {
-	s.Log.Info(msg)
-}
-
-// LogDebug implements modes.BackupService
-func (s *Service) LogDebug(msg string) {
-	s.Log.Debug(msg)
-}
-
-// LogWarn implements modes.BackupService
-func (s *Service) LogWarn(msg string) {
-	s.Log.Warn(msg)
-}
-
-// LogError implements modes.BackupService
-func (s *Service) LogError(msg string) {
-	s.Log.Error(msg)
-}
 
 // GetLogger implements modes.BackupService
 func (s *Service) GetLogger() applog.Logger {

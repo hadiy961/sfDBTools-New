@@ -12,11 +12,14 @@ import (
 	"path/filepath"
 	"sfDBTools/internal/backup/helper"
 	"sfDBTools/internal/backup/metadata"
+	"sfDBTools/internal/cleanup"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/backuphelper"
+	"sfDBTools/pkg/compress"
 	pkghelper "sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
+	"sfDBTools/pkg/ui"
 	"time"
 )
 
@@ -26,11 +29,15 @@ import (
 
 // getCompressionSettings mengembalikan compression settings dari BackupDBOptions
 func (s *Service) getCompressionSettings() types_backup.CompressionSettings {
-	return helper.NewCompressionSettings(
-		s.BackupDBOptions.Compression.Enabled,
-		s.BackupDBOptions.Compression.Type,
-		s.BackupDBOptions.Compression.Level,
-	)
+	compressionType := s.BackupDBOptions.Compression.Type
+	if !s.BackupDBOptions.Compression.Enabled {
+		compressionType = ""
+	}
+	return types_backup.CompressionSettings{
+		Type:    compress.CompressionType(compressionType),
+		Enabled: s.BackupDBOptions.Compression.Enabled,
+		Level:   s.BackupDBOptions.Compression.Level,
+	}
 }
 
 // =============================================================================
@@ -181,36 +188,43 @@ func (s *Service) executeAndBuildBackup(ctx context.Context, cfg types_backup.Ba
 
 	// Handle error
 	if err != nil {
-		errorHandler := NewBackupErrorHandler(s.Log, s.ErrorLog, true)
 		stderrDetail := ""
 		if writeResult != nil && writeResult.StderrOutput != "" {
 			stderrDetail = writeResult.StderrOutput
 		}
 
+		// Log error
+		logMetadata := map[string]interface{}{
+			"type": cfg.BackupType + "_backup",
+			"file": cfg.OutputPath,
+		}
+		if !cfg.IsMultiDB {
+			logMetadata["database"] = cfg.DBName
+		}
+		if s.ErrorLog != nil {
+			s.ErrorLog.LogWithOutput(logMetadata, stderrDetail, err)
+		}
+
+		// Cleanup failed backup file
+		cleanup.CleanupFailedBackup(cfg.OutputPath, s.Log)
+
+		// Build error message
 		var errorMsg string
 		if cfg.IsMultiDB {
-			backupErr := errorHandler.HandleCombinedBackupError(
-				cfg.OutputPath,
-				err,
-				stderrDetail,
-				map[string]interface{}{
-					"type": cfg.BackupType + "_backup",
-					"file": cfg.OutputPath,
-				},
-			)
-			errorMsg = backupErr.Error()
+			errorMsg = fmt.Sprintf("gagal menjalankan mysqldump: %v", err)
+			if stderrDetail != "" {
+				ui.PrintHeader("ERROR : Mysqldump Gagal dijalankan")
+				ui.PrintSubHeader("Detail Error dari mysqldump:")
+				ui.PrintError(stderrDetail)
+			}
+			s.Log.Errorf("Gagal menjalankan mysqldump: %v", err)
 		} else {
-			errorMsg = errorHandler.HandleDatabaseBackupError(
-				cfg.OutputPath,
-				cfg.DBName,
-				err,
-				stderrDetail,
-				map[string]interface{}{
-					"database": cfg.DBName,
-					"type":     cfg.BackupType + "_backup",
-					"file":     cfg.OutputPath,
-				},
-			)
+			errorMsg = fmt.Sprintf("gagal backup database %s: %v", cfg.DBName, err)
+			if stderrDetail != "" {
+				errorMsg = fmt.Sprintf("%s\nDetail: %s", errorMsg, stderrDetail)
+			}
+			ui.PrintError(fmt.Sprintf("✗ Database %s gagal di-backup", cfg.DBName))
+			s.Log.Error(errorMsg)
 		}
 
 		return types.DatabaseBackupInfo{}, fmt.Errorf("%s", errorMsg)

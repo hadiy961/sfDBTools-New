@@ -27,7 +27,8 @@ func NewCombinedExecutor(svc BackupService) *CombinedExecutor {
 // Execute melakukan backup semua database dalam satu file
 func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) types_backup.BackupResult {
 	var res types_backup.BackupResult
-	e.service.LogInfo("Melakukan backup database dalam mode combined")
+	logger := e.service.GetLogger()
+	logger.Info("Melakukan backup database dalam mode combined")
 
 	totalDBFound := e.service.GetTotalDatabaseCount(ctx, dbFiltered)
 
@@ -36,11 +37,11 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 
 	filename := e.service.GetBackupOptions().File.Path
 	fullOutputPath := filepath.Join(e.service.GetBackupOptions().OutputDir, filename)
-	e.service.LogDebug("Backup file: " + fullOutputPath)
+	logger.Debugf("Backup file: %s", fullOutputPath)
 
 	// Capture GTID sebelum backup dimulai
 	if err := e.service.CaptureAndSaveGTID(ctx, fullOutputPath); err != nil {
-		e.service.LogWarn("GTID handling error: " + err.Error())
+		logger.Warnf("GTID handling error: %v", err)
 	}
 
 	// Execute backup - gunakan mode dari BackupOptions (bisa 'all' atau 'combined')

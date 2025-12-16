@@ -40,7 +40,7 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 	}
 
 	// Handle errors
-	finalResult, err := s.handleBackupErrors(ctx, result)
+	finalResult, err := s.handleBackupErrors(result)
 	if err != nil {
 		return &finalResult, err
 	}
@@ -62,7 +62,7 @@ func (s *Service) executeBackupByMode(ctx context.Context, dbFiltered []string, 
 }
 
 // handleBackupErrors menangani error dari backup execution
-func (s *Service) handleBackupErrors(ctx context.Context, result types_backup.BackupResult) (types_backup.BackupResult, error) {
+func (s *Service) handleBackupErrors(result types_backup.BackupResult) (types_backup.BackupResult, error) {
 	if len(result.Errors) > 0 || len(result.FailedDatabaseInfos) > 0 {
 		errorMsg := "backup gagal"
 		if len(result.Errors) > 0 {
