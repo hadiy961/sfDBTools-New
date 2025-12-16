@@ -44,9 +44,8 @@ Catatan:
 			return err
 		}
 
-		// Inisialisasi service dan jalankan
-		svc := dbscan.NewDBScanService(logger, cfg)
-		svc.SetScanOptions(scanOpts)
+		// Inisialisasi service dengan pattern baru
+		svc := dbscan.NewDBScanService(cfg, logger, scanOpts)
 
 		scanConfig := types.ScanEntryConfig{
 			HeaderTitle: "Database Scanning - Filter",
@@ -56,7 +55,7 @@ Catatan:
 			Mode:        "database",
 		}
 
-		if err := svc.ExecuteScanCommand(scanConfig); err != nil {
+		if err := dbscan.ExecuteScanCommand(svc, scanConfig); err != nil {
 			if errors.Is(err, types.ErrUserCancelled) {
 				logger.Warn("Proses dibatalkan oleh pengguna.")
 				return nil

@@ -20,7 +20,7 @@ import (
 func (s *Service) PrepareRescanSession(ctx context.Context, headerTitle string, showOptions bool) (sourceClient *database.Client, targetClient *database.Client, dbFiltered []string, err error) {
 	if headerTitle != "" {
 		ui.Headers(headerTitle)
-		s.Logger.Infof("=== %s ===", headerTitle)
+		s.Log.Infof("=== %s ===", headerTitle)
 	}
 	if showOptions {
 		if proceed, askErr := s.DisplayScanOptions(); askErr != nil {

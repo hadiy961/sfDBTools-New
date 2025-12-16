@@ -42,7 +42,7 @@ func (s *Service) setupScanConnections(ctx context.Context, headerTitle string, 
 	if s.ScanOptions.SaveToDB {
 		targetClient, err = s.ConnectToTargetDB(ctx)
 		if err != nil {
-			s.Logger.Warn("Gagal koneksi ke target database, hasil scan tidak akan disimpan: " + err.Error())
+			s.Log.Warn("Gagal koneksi ke target database, hasil scan tidak akan disimpan: " + err.Error())
 			s.ScanOptions.SaveToDB = false
 		}
 	}

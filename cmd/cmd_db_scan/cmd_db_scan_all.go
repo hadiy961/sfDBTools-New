@@ -46,9 +46,8 @@ Contoh penggunaan:
 			return
 		}
 
-		// Inisialisasi service dbscan
-		svc := dbscan.NewDBScanService(logger, types.Deps.Config)
-		svc.SetScanOptions(parsedOpts)
+		// Inisialisasi service dbscan dengan pattern baru
+		svc := dbscan.NewDBScanService(types.Deps.Config, logger, parsedOpts)
 
 		// Execute scan
 		scanConfig := types.ScanEntryConfig{
@@ -59,7 +58,7 @@ Contoh penggunaan:
 			Mode:        "all",
 		}
 
-		if err := svc.ExecuteScanCommand(scanConfig); err != nil {
+		if err := dbscan.ExecuteScanCommand(svc, scanConfig); err != nil {
 			if errors.Is(err, types.ErrUserCancelled) {
 				logger.Warn("Proses dibatalkan oleh pengguna.")
 				return

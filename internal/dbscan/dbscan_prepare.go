@@ -1,8 +1,15 @@
+// File : internal/dbscan/dbscan_prepare.go
+// Deskripsi : Persiapan session untuk database scanning
+// Author : Hadiyatna Muflihun
+// Tanggal : 16 Desember 2025
+// Last Modified : 16 Desember 2025
+
 package dbscan
 
 import (
 	"context"
 	"fmt"
+
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/profilehelper"
@@ -15,7 +22,7 @@ import (
 func (s *Service) PrepareScanSession(ctx context.Context, headerTitle string, showOptions bool) (client *database.Client, dbFiltered []string, err error) {
 	if headerTitle != "" {
 		ui.Headers(headerTitle)
-		s.Logger.Infof("=== %s ===", headerTitle)
+		s.Log.Infof("=== %s ===", headerTitle)
 	}
 
 	if err = s.CheckAndSelectConfigFile(); err != nil {

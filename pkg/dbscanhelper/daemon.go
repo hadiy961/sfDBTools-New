@@ -1,17 +1,24 @@
-package dbscan
+// File : pkg/dbscanhelper/daemon.go
+// Deskripsi : Helper untuk daemon/background process scanning
+// Author : Hadiyatna Muflihun
+// Tanggal : 16 Desember 2025
+// Last Modified : 16 Desember 2025
+
+package dbscanhelper
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
+
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/process"
 	"sfDBTools/pkg/ui"
-	"time"
 )
 
-// spawnDaemonProcess spawns new process sebagai background daemon
-func (s *Service) spawnDaemonProcess(config types.ScanEntryConfig) error {
+// SpawnScanDaemon spawns new process sebagai background daemon untuk scanning
+func SpawnScanDaemon(config types.ScanEntryConfig) error {
 	// Get executable path
 	executable, err := os.Executable()
 	if err != nil {
@@ -21,7 +28,6 @@ func (s *Service) spawnDaemonProcess(config types.ScanEntryConfig) error {
 	// Scan ID hanya untuk tampilan
 	scanID := fmt.Sprintf("scan_%s", time.Now().Format("20060102_150405"))
 	logDir := filepath.Join("logs", "dbscan")
-	// PID file path (fixed)
 	pidFile := filepath.Join(logDir, "dbscan_background.pid")
 
 	args := os.Args[1:] // pass through args
