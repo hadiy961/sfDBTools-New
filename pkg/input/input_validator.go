@@ -62,16 +62,3 @@ func ComposeValidators(validators ...survey.Validator) survey.Validator {
 		return nil
 	}
 }
-
-// ValidateNonEmpty adalah validator untuk memastikan input tidak kosong.
-func ValidateNonEmpty(ans interface{}) error {
-	str, ok := ans.(string)
-	if !ok {
-		return fmt.Errorf("tidak dapat memvalidasi tipe data non-string")
-	}
-
-	if str == "" {
-		return fmt.Errorf("input tidak boleh kosong")
-	}
-	return nil
-}

@@ -31,11 +31,6 @@ func ColorText(text, color string) string {
 	return color + text + ColorReset
 }
 
-// PrintColoredText prints text with the specified color
-func PrintColoredText(text, color string) {
-	fmt.Print(ColorText(text, color))
-}
-
 // PrintColoredLine prints a line with the specified color
 func PrintColoredLine(text, color string) {
 	fmt.Println(ColorText(text, color))
@@ -108,18 +103,4 @@ func FormatTable(headers []string, rows [][]string) {
 
 	// Render the table
 	table.Render()
-}
-
-// getStatusIcon mengembalikan icon untuk status
-func GetStatusIcon(status string) string {
-	switch status {
-	case "success":
-		return "✅"
-	case "partial":
-		return "⚠️"
-	case "failed":
-		return "❌"
-	default:
-		return "❓"
-	}
 }

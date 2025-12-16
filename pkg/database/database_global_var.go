@@ -79,20 +79,3 @@ func (c *Client) GetServerHostname(ctx context.Context) (string, error) {
 	}
 	return hostname, nil
 }
-
-// GetServerInfo mendapatkan hostname dan port dari MySQL/MariaDB server
-func (c *Client) GetServerInfo(ctx context.Context) (hostname string, port int, err error) {
-	if err := c.db.QueryRowContext(ctx, "SELECT @@hostname, @@port").Scan(&hostname, &port); err != nil {
-		return "", 0, fmt.Errorf("gagal mendapatkan server info: %w", err)
-	}
-	return hostname, port, nil
-}
-
-// GetMaxAllowedPacket mendapatkan nilai max_allowed_packet dalam bytes
-func (c *Client) GetMaxAllowedPacket(ctx context.Context) (int64, error) {
-	var value int64
-	if err := c.db.QueryRowContext(ctx, "SELECT @@max_allowed_packet").Scan(&value); err != nil {
-		return 0, fmt.Errorf("gagal mendapatkan max_allowed_packet: %w", err)
-	}
-	return value, nil
-}

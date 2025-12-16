@@ -3,8 +3,6 @@ package compress
 import (
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 )
 
 // NewCompressingWriter creates a new compressing writer
@@ -75,53 +73,5 @@ func GetFileExtension(compressionType CompressionType) string {
 		return ".xz"
 	default:
 		return ""
-	}
-}
-
-// CompressFile compresses an existing file and creates a new compressed file
-func CompressFile(inputPath, outputPath string, config CompressionConfig) error {
-	// Open input file
-	inputFile, err := os.Open(inputPath)
-	if err != nil {
-		return fmt.Errorf("failed to open input file: %w", err)
-	}
-	defer inputFile.Close()
-
-	// Create output directory if it doesn't exist
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
-	}
-
-	// Create output file
-	outputFile, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
-	}
-	defer outputFile.Close()
-
-	// Create compressing writer
-	compressingWriter, err := NewCompressingWriter(outputFile, config)
-	if err != nil {
-		return fmt.Errorf("failed to create compressing writer: %w", err)
-	}
-	defer compressingWriter.Close()
-
-	// Copy data through compressor
-	if _, err := io.Copy(compressingWriter, inputFile); err != nil {
-		return fmt.Errorf("failed to compress data: %w", err)
-	}
-
-	return nil
-}
-
-// GetCompressionInfo returns information about available compression types
-func GetCompressionInfo() map[CompressionType]string {
-	return map[CompressionType]string{
-		CompressionNone:  "No compression",
-		CompressionGzip:  "Standard gzip compression",
-		CompressionPgzip: "Parallel gzip compression (faster for large files)",
-		CompressionZlib:  "Zlib compression (good compression ratio)",
-		CompressionZstd:  "Zstandard compression (fast and good ratio)",
-		CompressionXz:    "XZ compression (best ratio, slower)",
 	}
 }

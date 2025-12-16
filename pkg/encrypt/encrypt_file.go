@@ -65,32 +65,3 @@ func DecryptFile(inputPath, outputPath string, passphrase []byte) error {
 
 	return nil
 }
-
-// IsEncryptedFile memeriksa apakah file adalah file terenkripsi berdasarkan header
-func IsEncryptedFile(filePath string) (bool, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return false, fmt.Errorf("gagal membuka file: %w", err)
-	}
-	defer file.Close()
-
-	// Baca 8 byte pertama untuk cek header "Salted__"
-	header := make([]byte, 8)
-	n, err := file.Read(header)
-	if err != nil && err != io.EOF {
-		return false, fmt.Errorf("gagal membaca header file: %w", err)
-	}
-
-	if n < 8 {
-		return false, nil // File terlalu kecil untuk menjadi file terenkripsi
-	}
-
-	opensslHeader := []byte("Salted__")
-	for i := 0; i < 8; i++ {
-		if header[i] != opensslHeader[i] {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}

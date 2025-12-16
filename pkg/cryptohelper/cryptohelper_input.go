@@ -39,14 +39,3 @@ func GetInput(flagVal string, allowInteractive bool, prompt string) ([]byte, err
 
 	return nil, fmt.Errorf("tidak ada input: berikan flag input atau pipe melalui stdin")
 }
-
-// GetInputBytes adalah wrapper untuk backward compatibility.
-func GetInputBytes(flagVal string) ([]byte, error) {
-	return GetInput(flagVal, false, "")
-}
-
-// GetInputString adalah wrapper yang mengembalikan string.
-func GetInputString(flagVal string) (string, error) {
-	data, err := GetInput(flagVal, false, "")
-	return string(data), err
-}
