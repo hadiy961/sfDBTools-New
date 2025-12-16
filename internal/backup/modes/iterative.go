@@ -136,7 +136,7 @@ func (e *IterativeExecutor) generateCombinedMetadata(ctx context.Context, loopRe
 		return
 	}
 
-	e.service.LogInfo(fmt.Sprintf("Generating combined metadata untuk %d databases", len(dbList)))
+	// e.service.LogInfo(fmt.Sprintf("Generating combined metadata untuk %d databases", len(dbList)))
 
 	// Untuk primary/secondary:
 	// 1. Update metadata pertama dengan DatabaseNames dan DatabaseDetails (info lengkap per database)
@@ -146,7 +146,7 @@ func (e *IterativeExecutor) generateCombinedMetadata(ctx context.Context, loopRe
 	primaryBackupFile := loopResult.BackupInfos[0].OutputFile
 	logger := e.service.GetLogger()
 	if err := metadata.UpdateMetadataWithDatabaseDetails(primaryBackupFile, dbList, loopResult.BackupInfos, logger); err != nil {
-		e.service.LogWarn("Gagal update combined metadata: " + err.Error())
+		// e.service.LogWarn("Gagal update combined metadata: " + err.Error())
 	}
 
 	// Hapus metadata individual untuk companion databases (index 1+)
@@ -156,7 +156,7 @@ func (e *IterativeExecutor) generateCombinedMetadata(ctx context.Context, loopRe
 		}
 		// Companion databases: hapus metadata individual
 		metadataPath := info.OutputFile + ".meta.json"
-		e.service.LogDebug("Menghapus metadata companion: " + metadataPath)
+		// e.service.LogDebug("Menghapus metadata companion: " + metadataPath)
 		os.Remove(metadataPath)
 	}
 }

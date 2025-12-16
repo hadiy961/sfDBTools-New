@@ -40,4 +40,6 @@ type MetadataConfig struct {
 	// Version information
 	MysqldumpVersion string
 	MariaDBVersion   string
+	// Ticket information
+	Ticket string
 }

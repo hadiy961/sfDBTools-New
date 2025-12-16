@@ -97,7 +97,7 @@ func (s *Service) executeBackupLoop(ctx context.Context, databases []string, con
 			continue
 		}
 
-		s.Log.Debugf("Backup file: %s", outputPath)
+		// s.Log.Infof("Backup file: %s", outputPath)
 
 		// Execute backup
 		backupInfo, err := s.executeAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
@@ -311,6 +311,7 @@ func (s *Service) generateBackupMetadata(ctx context.Context, cfg types_backup.B
 		UserGrantsFile:      userGrantsPath,
 		MysqldumpVersion:    backuphelper.ExtractMysqldumpVersion(writeResult.StderrOutput),
 		MariaDBVersion:      dbVersion,
+		Ticket:              s.BackupDBOptions.Ticket,
 	})
 }
 
@@ -381,15 +382,66 @@ func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interfa
 	if selectedDB == "" {
 		candidates := backuphelper.FilterCandidatesByMode(dbFiltered, mode)
 
+		// Filter berdasarkan client-code dan instance jika diperlukan
+		if mode == "primary" && s.BackupDBOptions.ClientCode != "" {
+			candidates = backuphelper.FilterCandidatesByClientCode(candidates, s.BackupDBOptions.ClientCode)
+			if len(candidates) == 0 {
+				return nil, "", nil, fmt.Errorf("tidak ada database primary dengan client code '%s' yang ditemukan", s.BackupDBOptions.ClientCode)
+			}
+			// Jika hanya ada satu kandidat, langsung pilih
+			if len(candidates) == 1 {
+				selectedDB = candidates[0]
+			}
+		} else if mode == "secondary" {
+			// Untuk secondary, filter berdasarkan client-code dan/atau instance
+			if s.BackupDBOptions.ClientCode != "" || s.BackupDBOptions.Instance != "" {
+				candidates = backuphelper.FilterSecondaryByClientCodeAndInstance(
+					candidates,
+					s.BackupDBOptions.ClientCode,
+					s.BackupDBOptions.Instance,
+				)
+
+				if len(candidates) == 0 {
+					// Error message berbeda berdasarkan apa yang di-provide
+					if s.BackupDBOptions.ClientCode != "" && s.BackupDBOptions.Instance != "" {
+						return nil, "", nil, fmt.Errorf("tidak ada database secondary dengan client code '%s' dan instance '%s' yang ditemukan",
+							s.BackupDBOptions.ClientCode, s.BackupDBOptions.Instance)
+					} else if s.BackupDBOptions.ClientCode != "" {
+						return nil, "", nil, fmt.Errorf("tidak ada database secondary dengan client code '%s' yang ditemukan", s.BackupDBOptions.ClientCode)
+					} else {
+						return nil, "", nil, fmt.Errorf("tidak ada database secondary dengan instance '%s' yang ditemukan", s.BackupDBOptions.Instance)
+					}
+				}
+
+				// Jika instance juga di-provide dan hanya ada satu kandidat, langsung pilih
+				if s.BackupDBOptions.Instance != "" && len(candidates) == 1 {
+					selectedDB = candidates[0]
+				} else if s.BackupDBOptions.Instance != "" && s.BackupDBOptions.ClientCode != "" && len(candidates) == 0 {
+					// Instance di-provide tapi tidak ada yang match - tampilkan warning
+					s.Log.Warnf("Instance '%s' tidak ditemukan untuk client code '%s', menampilkan semua secondary database untuk client tersebut",
+						s.BackupDBOptions.Instance, s.BackupDBOptions.ClientCode)
+					// Re-filter hanya dengan client code
+					candidates = backuphelper.FilterSecondaryByClientCodeAndInstance(
+						backuphelper.FilterCandidatesByMode(dbFiltered, mode),
+						s.BackupDBOptions.ClientCode,
+						"", // tanpa instance
+					)
+				}
+			}
+		}
+
 		if len(candidates) == 0 {
 			return nil, "", nil, fmt.Errorf("tidak ada database yang tersedia untuk dipilih")
 		}
 
-		choice, choiceErr := input.ShowMenu("Pilih database yang akan di-backup:", candidates)
-		if choiceErr != nil {
-			return nil, "", nil, choiceErr
+		// Jika selectedDB masih kosong, tampilkan menu interaktif
+		if selectedDB == "" {
+			choice, choiceErr := input.ShowMenu("Pilih database yang akan di-backup:", candidates)
+			if choiceErr != nil {
+				return nil, "", nil, choiceErr
+			}
+			selectedDB = candidates[choice-1]
 		}
-		selectedDB = candidates[choice-1]
 	}
 
 	if !pkghelper.StringSliceContainsFold(allDatabases, selectedDB) {

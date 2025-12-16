@@ -37,6 +37,10 @@ func AddBackupFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
 	// Output Directory
 	cmd.Flags().String("output-dir", opts.OutputDir, "Direktori output untuk menyimpan file backup")
 	cmd.Flags().Bool("force", opts.Force, "Tampilkan opsi backup sebelum eksekusi")
+
+	// Ticket (wajib)
+	cmd.Flags().String("ticket", opts.Ticket, "Ticket number untuk request backup (wajib)")
+	cmd.MarkFlagRequired("ticket")
 }
 
 // AddEncryptionFlags menambahkan flags untuk konfigurasi enkripsi.
@@ -76,6 +80,9 @@ func AddBackupFilterFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions
 	// Output Directory
 	cmd.Flags().String("output-dir", opts.OutputDir, "Direktori output untuk menyimpan file backup")
 	cmd.Flags().Bool("force", opts.Force, "Tampilkan opsi backup sebelum eksekusi")
+
+	// Ticket
+	cmd.Flags().String("ticket", opts.Ticket, "Ticket number untuk request backup")
 }
 
 // AddBackupAllFlags menambahkan flags untuk backup all (dengan exclude flags, tanpa include)
@@ -109,6 +116,9 @@ func AddBackupAllFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
 	// Output Directory
 	cmd.Flags().String("output-dir", opts.OutputDir, "Direktori output untuk menyimpan file backup")
 	cmd.Flags().Bool("force", opts.Force, "Tampilkan opsi backup sebelum eksekusi")
+
+	// Ticket
+	cmd.Flags().String("ticket", opts.Ticket, "Ticket number untuk request backup")
 }
 
 func AddBackupFlgs(cmd *cobra.Command, opts *types_backup.BackupDBOptions, mode string) {

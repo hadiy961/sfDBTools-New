@@ -97,12 +97,29 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
 		opts.IncludeTemp = helper.GetBoolFlagOrEnv(cmd, "include-temp", "")
 		opts.IncludeArchive = helper.GetBoolFlagOrEnv(cmd, "include-archive", "")
+		if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
+			opts.ClientCode = v
+		}
 	} else if mode == "secondary" {
 		// Mode secondary sama seperti primary, hanya untuk database dengan suffix _secondary
 		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
 			opts.File.Filename = v
 		}
 		opts.Filter.ExcludeData = helper.GetBoolFlagOrEnv(cmd, "exclude-data", "")
+		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
+		opts.IncludeTemp = helper.GetBoolFlagOrEnv(cmd, "include-temp", "")
+		opts.IncludeArchive = helper.GetBoolFlagOrEnv(cmd, "include-archive", "")
+		if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
+			opts.ClientCode = v
+		}
+		if v := helper.GetStringFlagOrEnv(cmd, "instance", ""); v != "" {
+			opts.Instance = v
+		}
+	}
+
+	// Ticket (wajib untuk semua mode)
+	if v := helper.GetStringFlagOrEnv(cmd, "ticket", ""); v != "" {
+		opts.Ticket = v
 	}
 
 	// Mode

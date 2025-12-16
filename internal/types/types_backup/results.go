@@ -62,6 +62,7 @@ type BackupMetadata struct {
 	Warnings          []string               `json:"warnings,omitempty"`           // Warning messages
 	GeneratedBy       string                 `json:"generated_by"`                 // Tool name dan version
 	GeneratedAt       time.Time              `json:"generated_at"`                 // Waktu generate metadata
+	Ticket            string                 `json:"ticket"`                       // Ticket number untuk request backup
 	// Replication information
 	ReplicationUser     string `json:"replication_user,omitempty"`     // User replikasi
 	ReplicationPassword string `json:"replication_password,omitempty"` // Password replikasi

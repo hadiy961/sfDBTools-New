@@ -41,6 +41,9 @@ type BackupDBOptions struct {
 	IncludeTemp     bool            // Sertakan database <db>_temp jika tersedia
 	IncludeArchive  bool            // Sertakan database <db>_archive jika tersedia
 	CompanionStatus map[string]bool `json:"-"` // Status ketersediaan companion db (single mode)
+	ClientCode      string          // Client code untuk filter database (primary/secondary)
+	Instance        string          // Instance name untuk filter secondary database
+	Ticket          string          // Ticket number untuk request backup (wajib)
 }
 
 // BackupEntryConfig untuk konfigurasi backup entry point

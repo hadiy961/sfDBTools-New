@@ -43,6 +43,28 @@ func (s *Service) CheckAndSelectConfigFile() error {
 func (s *Service) SetupBackupExecution() error {
 	ui.PrintSubHeader("Persiapan Eksekusi Backup")
 
+	// Prompt untuk ticket jika tidak di-provide
+	if s.BackupDBOptions.Ticket == "" {
+		s.Log.Info("Ticket number tidak ditemukan, meminta input...")
+		ticket, err := input.AskString("Masukkan ticket number untuk backup request : ", "", func(ans interface{}) error {
+			str, ok := ans.(string)
+			if !ok {
+				return fmt.Errorf("input tidak valid")
+			}
+			if strings.TrimSpace(str) == "" {
+				return fmt.Errorf("ticket number tidak boleh kosong")
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("gagal mendapatkan ticket number: %w", err)
+		}
+		s.BackupDBOptions.Ticket = strings.TrimSpace(ticket)
+		s.Log.Infof("Ticket number: %s", s.BackupDBOptions.Ticket)
+	} else {
+		s.Log.Infof("Ticket number: %s", s.BackupDBOptions.Ticket)
+	}
+
 	// Membuat direktori output jika belum ada
 	s.Log.Info("Membuat direktori output jika belum ada : " + s.BackupDBOptions.OutputDir)
 	if err := fsops.CreateDirIfNotExist(s.BackupDBOptions.OutputDir); err != nil {
@@ -130,23 +152,6 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 		s.displayFilterWarnings(stats)
 		return nil, nil, fmt.Errorf("tidak ada database tersedia untuk backup setelah filtering")
 	}
-
-	// Untuk mode single/primary/secondary, dbFiltered sudah difilter dengan ExcludeSystem
-	// Tapi kita perlu filter lagi berdasarkan mode (primary/secondary pattern)
-	if backuphelper.IsSingleModeVariant(s.BackupDBOptions.Mode) {
-		// Filter candidates berdasarkan mode untuk mendapatkan jumlah yang akurat
-		candidates := backuphelper.FilterCandidatesByMode(dbFiltered, s.BackupDBOptions.Mode)
-
-		// Hitung excluded: total database yang tidak masuk kandidat
-		// totalExcluded = system DB + database yang tidak match pattern mode
-		originalIncluded := stats.TotalIncluded
-		patternExcluded := originalIncluded - len(candidates)
-
-		stats.TotalIncluded = len(candidates)
-		stats.TotalExcluded = stats.TotalExcluded + patternExcluded
-	}
-
-	display.DisplayFilterStats(stats, s.Log)
 
 	// Generate output directory dan filename
 	// Untuk mode single/primary/secondary, dbFiltered akan di-update dengan database yang dipilih + companion
@@ -344,17 +349,45 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 		return s.handleSingleModeSetup(ctx, client, dbFiltered, compressionSettings)
 	}
 
+	// Untuk mode non-single (all, filter, combined), tampilkan statistik di sini
+	allDatabases, err := client.GetDatabaseList(ctx)
+	if err != nil {
+		s.Log.Warnf("gagal mengambil daftar database untuk statistik: %v", err)
+	} else {
+		stats := &types.DatabaseFilterStats{
+			TotalFound:        len(allDatabases),
+			TotalIncluded:     len(dbFiltered),
+			TotalExcluded:     len(allDatabases) - len(dbFiltered),
+			ExcludedDatabases: s.excludedDatabases,
+		}
+		display.DisplayFilterStats(stats, s.Log)
+	}
+
 	return dbFiltered, nil
 }
 
 // handleSingleModeSetup handle setup untuk mode single/primary/secondary
 // Returns companionDbs (database yang dipilih + companion) sebagai dbFiltered yang baru
 func (s *Service) handleSingleModeSetup(ctx context.Context, client *database.Client, dbFiltered []string, compressionSettings types_backup.CompressionSettings) ([]string, error) {
+	// Get all databases untuk menghitung statistik yang akurat
+	allDatabases, err := client.GetDatabaseList(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("gagal mengambil daftar database: %w", err)
+	}
+
 	companionDbs, selectedDB, companionStatus, selErr := s.selectDatabaseAndBuildList(
 		ctx, client, s.BackupDBOptions.DBName, dbFiltered, s.BackupDBOptions.Mode)
 	if selErr != nil {
 		return nil, selErr
 	}
+
+	// Tampilkan statistik filtering setelah selection
+	stats := &types.DatabaseFilterStats{
+		TotalFound:    len(allDatabases),
+		TotalIncluded: len(companionDbs),
+		TotalExcluded: len(allDatabases) - len(companionDbs),
+	}
+	display.DisplayFilterStats(stats, s.Log)
 
 	s.BackupDBOptions.DBName = selectedDB
 	s.BackupDBOptions.CompanionStatus = companionStatus

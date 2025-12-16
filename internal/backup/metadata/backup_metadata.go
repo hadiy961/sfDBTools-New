@@ -37,6 +37,7 @@ func GenerateBackupMetadata(cfg types_backup.MetadataConfig) *types_backup.Backu
 		Warnings:          cfg.Warnings,
 		GeneratedBy:       "sfDBTools",
 		GeneratedAt:       time.Now(),
+		Ticket:            cfg.Ticket,
 		// Additional files
 		UserGrantsFile: cfg.UserGrantsFile,
 		// Version information
@@ -92,7 +93,7 @@ func SaveBackupMetadata(meta *types_backup.BackupMetadata, logger applog.Logger)
 		return "", fmt.Errorf("rename file error: %w", err)
 	}
 
-	logger.Debugf("Metadata berhasil disimpan: %s", manifestPath)
+	// logger.Debugf("Metadata berhasil disimpan: %s", manifestPath)
 	return manifestPath, nil
 }
 
