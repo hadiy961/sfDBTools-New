@@ -14,7 +14,7 @@ import (
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/helper"
 
-	backuphelper "sfDBTools/internal/backup/helper"
+	backuphelper "sfDBTools/internal/backup/filehelper"
 )
 
 // ExportAndSaveUserGrants mengambil user grants dari database dan menyimpannya ke file.
@@ -65,4 +65,25 @@ func ExportAndSaveUserGrants(ctx context.Context, client *database.Client, logge
 	logger.Infof("✓ User grants berhasil disimpan ke: %s (durasi: %v)", userFilePath, duration)
 
 	return userFilePath, nil
+}
+
+// ExportUserGrantsIfNeededWithLogging adalah wrapper untuk export user grants dengan logging
+// Return: path file yang berhasil dibuat, atau empty string jika gagal/tidak ada user
+func ExportUserGrantsIfNeededWithLogging(ctx context.Context, client *database.Client, logger applog.Logger, referenceBackupFile string, excludeUser bool, databases []string) string {
+	if excludeUser {
+		return ""
+	}
+
+	if referenceBackupFile == "" {
+		logger.Warn("Tidak ada backup file untuk export user grants")
+		return ""
+	}
+
+	logger.Info("Export user grants ke file...")
+	filePath, err := ExportAndSaveUserGrants(ctx, client, logger, referenceBackupFile, excludeUser, databases)
+	if err != nil {
+		logger.Errorf("Gagal export user grants: %v", err)
+		return ""
+	}
+	return filePath
 }

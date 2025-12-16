@@ -13,6 +13,7 @@ import (
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/backuphelper"
+	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/fsops"
 	pkghelper "sfDBTools/pkg/helper"
@@ -289,7 +290,17 @@ func (s *Service) displayFilterWarnings(stats *types.DatabaseFilterStats) {
 // Returns updated dbFiltered untuk mode single/primary/secondary (database yang dipilih + companion)
 func (s *Service) generateBackupPaths(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error) {
 	dbHostname := s.BackupDBOptions.Profile.DBInfo.Host
-	compressionSettings := s.getCompressionSettings()
+
+	// Build compression settings inline
+	compressionType := s.BackupDBOptions.Compression.Type
+	if !s.BackupDBOptions.Compression.Enabled {
+		compressionType = ""
+	}
+	compressionSettings := types_backup.CompressionSettings{
+		Type:    compress.CompressionType(compressionType),
+		Enabled: s.BackupDBOptions.Compression.Enabled,
+		Level:   s.BackupDBOptions.Compression.Level,
+	}
 
 	// Generate output directory
 	var err error

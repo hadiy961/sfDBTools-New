@@ -36,8 +36,7 @@ func NewIterativeExecutor(svc BackupService, mode string) *IterativeExecutor {
 
 // Execute menjalankan backup secara iteratif
 func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_backup.BackupResult {
-	logger := e.service.GetLogger()
-	logger.Info("Melakukan backup database dalam mode " + e.mode)
+	e.service.LogInfo("Melakukan backup database dalam mode " + e.mode)
 
 	// Untuk mode separated/multi-file: TIDAK capture GTID karena setiap database dibackup terpisah
 	// dan tidak ada konsep snapshot point global yang relevan
@@ -137,8 +136,7 @@ func (e *IterativeExecutor) generateCombinedMetadata(ctx context.Context, loopRe
 		return
 	}
 
-	logger := e.service.GetLogger()
-	logger.Infof("Generating combined metadata untuk %d databases", len(dbList))
+	e.service.LogInfo(fmt.Sprintf("Generating combined metadata untuk %d databases", len(dbList)))
 
 	// Untuk primary/secondary:
 	// 1. Update metadata pertama dengan DatabaseNames dan DatabaseDetails (info lengkap per database)
@@ -146,8 +144,9 @@ func (e *IterativeExecutor) generateCombinedMetadata(ctx context.Context, loopRe
 
 	// Update metadata pertama dengan full database list dan details
 	primaryBackupFile := loopResult.BackupInfos[0].OutputFile
+	logger := e.service.GetLogger()
 	if err := metadata.UpdateMetadataWithDatabaseDetails(primaryBackupFile, dbList, loopResult.BackupInfos, logger); err != nil {
-		logger.Warnf("Gagal update combined metadata: %v", err)
+		e.service.LogWarn("Gagal update combined metadata: " + err.Error())
 	}
 
 	// Hapus metadata individual untuk companion databases (index 1+)
@@ -157,7 +156,7 @@ func (e *IterativeExecutor) generateCombinedMetadata(ctx context.Context, loopRe
 		}
 		// Companion databases: hapus metadata individual
 		metadataPath := info.OutputFile + ".meta.json"
-		logger.Debugf("Menghapus metadata companion: %s", metadataPath)
+		e.service.LogDebug("Menghapus metadata companion: " + metadataPath)
 		os.Remove(metadataPath)
 	}
 }

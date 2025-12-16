@@ -21,7 +21,11 @@ type ModeExecutor interface {
 // BackupService interface untuk service yang dibutuhkan oleh mode executors
 // Ini memisahkan concerns dan membuat mode executors tidak tightly coupled ke Service
 type BackupService interface {
-	// Logger access
+	// Logging methods
+	LogInfo(msg string)
+	LogDebug(msg string)
+	LogWarn(msg string)
+	LogError(msg string)
 	GetLogger() applog.Logger
 
 	// Backup execution
