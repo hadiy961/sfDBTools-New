@@ -14,50 +14,39 @@ import (
 	"strings"
 )
 
-// GetInputBytes membaca byte data dari flag string atau STDIN jika tersedia.
-// Digunakan untuk membaca data binary atau teks untuk enkripsi/encode.
-//
+// GetInput membaca input dari flag, pipe stdin, atau fallback ke interactive prompt.
 // Parameter:
 //   - flagVal: nilai dari flag input (kosong jika tidak ada)
+//   - allowInteractive: jika true, fallback ke interactive prompt
+//   - prompt: pesan untuk interactive mode (hanya jika allowInteractive=true)
 //
 // Return:
 //   - []byte: data yang dibaca
 //   - error: error jika tidak ada input atau gagal membaca
-func GetInputBytes(flagVal string) ([]byte, error) {
+func GetInput(flagVal string, allowInteractive bool, prompt string) ([]byte, error) {
 	if s := strings.TrimSpace(flagVal); s != "" {
 		return []byte(s), nil
 	}
 
-	// Cek apakah ada data dari stdin (pipe)
 	stat, _ := os.Stdin.Stat()
-	if (stat.Mode() & os.ModeCharDevice) == 0 { // piped
-		reader := bufio.NewReader(os.Stdin)
-		return io.ReadAll(reader)
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		return io.ReadAll(bufio.NewReader(os.Stdin))
+	}
+
+	if allowInteractive {
+		return GetInteractiveInputBytes(prompt)
 	}
 
 	return nil, fmt.Errorf("tidak ada input: berikan flag input atau pipe melalui stdin")
 }
 
-// GetInputString membaca string dari flag atau STDIN jika tersedia.
-// Digunakan untuk membaca teks seperti base64 atau data terenkripsi.
-//
-// Parameter:
-//   - flagVal: nilai dari flag input (kosong jika tidak ada)
-//
-// Return:
-//   - string: data yang dibaca
-//   - error: error jika tidak ada input atau gagal membaca
+// GetInputBytes adalah wrapper untuk backward compatibility.
+func GetInputBytes(flagVal string) ([]byte, error) {
+	return GetInput(flagVal, false, "")
+}
+
+// GetInputString adalah wrapper yang mengembalikan string.
 func GetInputString(flagVal string) (string, error) {
-	if s := strings.TrimSpace(flagVal); s != "" {
-		return s, nil
-	}
-
-	stat, _ := os.Stdin.Stat()
-	if (stat.Mode() & os.ModeCharDevice) == 0 {
-		reader := bufio.NewReader(os.Stdin)
-		b, err := io.ReadAll(reader)
-		return string(b), err
-	}
-
-	return "", fmt.Errorf("tidak ada input: berikan flag input atau pipe melalui stdin")
+	data, err := GetInput(flagVal, false, "")
+	return string(data), err
 }

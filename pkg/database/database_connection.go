@@ -42,63 +42,38 @@ func ConnectToAppDatabase() (*Client, error) {
 	return client, nil
 }
 
-func ConnectToSourceDatabase(creds types.SourceDBConnection) (*Client, error) {
+// connectWithSpinner adalah helper untuk membuat koneksi dengan spinner UI.
+func connectWithSpinner(info types.DBInfo, database, label string, timeout time.Duration) (*Client, error) {
 	spin := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-	spin.Suffix = fmt.Sprintf(" Menghubungkan ke database sumber %s:%d...", creds.DBInfo.Host, creds.DBInfo.Port)
+	spin.Suffix = fmt.Sprintf(" Menghubungkan ke database %s %s:%d...", label, info.Host, info.Port)
 	spin.Start()
+	defer spin.Stop()
 
 	cfg := Config{
-		Host:                 creds.DBInfo.Host,
-		Port:                 creds.DBInfo.Port,
-		User:                 creds.DBInfo.User,
-		Password:             creds.DBInfo.Password,
+		Host:                 info.Host,
+		Port:                 info.Port,
+		User:                 info.User,
+		Password:             info.Password,
 		AllowNativePasswords: true,
 		ParseTime:            true,
-		Database:             creds.Database,
-		ReadTimeout:          0, // Unlimited - untuk long-running queries (backup/restore)
-		WriteTimeout:         0, // Unlimited - untuk large data transfers
+		Database:             database,
+		ReadTimeout:          0,
+		WriteTimeout:         0,
 	}
 
-	ctx := context.Background()
-	// connMaxLifetime = 0 (unlimited) karena operasi bisa memakan waktu sangat lama
-	client, err := NewClient(ctx, cfg, 10*time.Second, 10, 5, 0)
-	spin.Stop()
-
+	client, err := NewClient(context.Background(), cfg, timeout, 10, 5, 0)
 	if err != nil {
-		return nil, fmt.Errorf("koneksi database sumber gagal: %w", err)
+		return nil, fmt.Errorf("koneksi database %s gagal: %w", label, err)
 	}
-
 	return client, nil
 }
 
+func ConnectToSourceDatabase(creds types.SourceDBConnection) (*Client, error) {
+	return connectWithSpinner(creds.DBInfo, creds.Database, "sumber", 10*time.Second)
+}
+
 func ConnectToDestinationDatabase(creds types.DestinationDBConnection) (*Client, error) {
-	spin := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-	spin.Suffix = fmt.Sprintf(" Menghubungkan ke database tujuan %s:%d...", creds.DBInfo.Host, creds.DBInfo.Port)
-	spin.Start()
-
-	cfg := Config{
-		Host:                 creds.DBInfo.Host,
-		Port:                 creds.DBInfo.Port,
-		User:                 creds.DBInfo.User,
-		Password:             creds.DBInfo.Password,
-		AllowNativePasswords: true,
-		ParseTime:            true,
-		Database:             creds.Database,
-		ReadTimeout:          0, // Unlimited - untuk long-running queries (backup)
-		WriteTimeout:         0, // Unlimited - untuk large data transfers
-	}
-
-	ctx := context.Background()
-	// Untuk destination database (backup), gunakan ConnMaxLifetime 0 (unlimited)
-	// karena operasi bisa memakan waktu lama
-	client, err := NewClient(ctx, cfg, 5*time.Second, 10, 5, 0)
-	spin.Stop()
-
-	if err != nil {
-		return nil, fmt.Errorf("koneksi database tujuan gagal: %w", err)
-	}
-
-	return client, nil
+	return connectWithSpinner(creds.DBInfo, creds.Database, "tujuan", 5*time.Second)
 }
 
 // ConnectionTest - Menguji koneksi database berdasarkan informasi yang diberikan

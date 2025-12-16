@@ -20,7 +20,7 @@ func (s *Service) CheckConfigurationNameUnique(mode string) error {
 	switch mode {
 	case "create":
 		abs := s.filePathInConfigDir(s.ProfileInfo.Name)
-		exists := fsops.Exists(abs)
+		exists := fsops.PathExists(abs)
 		if exists {
 			return fmt.Errorf("nama konfigurasi '%s' sudah ada. Silakan pilih nama lain", s.ProfileInfo.Name)
 		}
@@ -42,7 +42,7 @@ func (s *Service) CheckConfigurationNameUnique(mode string) error {
 		if original == "" {
 			// Tidak ada nama asli yang direkam -> fallback: cek keberadaan target
 			targetAbs := filepath.Join(baseDir, validation.ProfileExt(newName))
-			if !fsops.Exists(targetAbs) {
+			if !fsops.PathExists(targetAbs) {
 				return fmt.Errorf("file konfigurasi '%s' tidak ditemukan. Silakan pilih nama lain", newName)
 			}
 			return nil
@@ -51,7 +51,7 @@ func (s *Service) CheckConfigurationNameUnique(mode string) error {
 		// Jika nama tidak berubah, pastikan file lama tetap ada
 		if original == newName {
 			origAbs := filepath.Join(baseDir, validation.ProfileExt(original))
-			if !fsops.Exists(origAbs) {
+			if !fsops.PathExists(origAbs) {
 				return fmt.Errorf("file konfigurasi asli '%s' tidak ditemukan", original)
 			}
 			return nil
@@ -59,12 +59,12 @@ func (s *Service) CheckConfigurationNameUnique(mode string) error {
 
 		// Nama berubah: pastikan target baru tidak ada
 		newAbs := filepath.Join(baseDir, validation.ProfileExt(newName))
-		if fsops.Exists(newAbs) {
+		if fsops.PathExists(newAbs) {
 			return fmt.Errorf("nama konfigurasi tujuan '%s' sudah ada. Silakan pilih nama lain", newName)
 		}
 		// juga pastikan file original ada (agar dapat dihapus setelah rename)
 		origAbs := filepath.Join(baseDir, validation.ProfileExt(original))
-		if !fsops.Exists(origAbs) {
+		if !fsops.PathExists(origAbs) {
 			return fmt.Errorf("file konfigurasi asli '%s' tidak ditemukan", original)
 		}
 

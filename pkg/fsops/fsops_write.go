@@ -63,11 +63,7 @@ func CreateBackupDirs(baseDir string, createSubdirs bool, structurePattern, clie
 	}
 
 	// Pastikan direktori dasar ada
-	dir, err := CheckDirExists(baseDir)
-	if err != nil {
-		return false, fmt.Errorf("gagal memastikan direktori dasar: %w", err)
-	}
-	if !dir {
+	if !DirExists(baseDir) {
 		// fmt.Println("Membuat direktori dasar:", baseDir)
 		if err := CreateDirIfNotExist(baseDir); err != nil {
 			return false, fmt.Errorf("gagal membuat direktori dasar: %w", err)
@@ -90,18 +86,10 @@ func CreateBackupDirs(baseDir string, createSubdirs bool, structurePattern, clie
 
 // CreateDirIfNotExist membuat direktori jika belum ada
 func CreateDirIfNotExist(dir string) error {
-	// Cek apakah direktori sudah ada
-	exists, err := CheckDirExists(dir)
-	if err != nil {
-		return err
+	if DirExists(dir) {
+		return nil
 	}
-	if !exists {
-		// Buat direktori beserta parent-nya
-		if err := CreateDir(dir); err != nil {
-			return err
-		}
-	}
-	return nil
+	return CreateDir(dir)
 }
 
 // CreateDir membuat direktori beserta parent-nya jika belum ada

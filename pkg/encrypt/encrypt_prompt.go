@@ -3,28 +3,23 @@ package encrypt
 import (
 	"os"
 	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 
 	"github.com/AlecAivazis/survey/v2"
 )
 
-// EncryptionPrompt mendapatkan password enkripsi dari env atau prompt.
-// Mengembalikan password, sumbernya ("env" atau "prompt"), dan error jika ada.
-func EncryptionPrompt(promptMessage string, env string) (string, string, error) {
-	// Cek environment variable SFDB_ENCRYPTION_KEY
-	// Jika ada, gunakan itu
-	// Jika tidak, minta user memasukkan password
-	if password := os.Getenv(env); password != "" {
-		return password, "env", nil
-	} else {
-		ui.PrintSubHeader("Authentication Required")
-		ui.PrintWarning("Environment variable " + env + " tidak ditemukan atau kosong. Silakan atur " + env + " atau ketik password.")
+// PromptPassword mendapatkan password dari environment variable atau user prompt.
+// Parameter:
+//   - envVar: nama environment variable (misal: "SFDB_ENCRYPTION_KEY")
+//   - promptMsg: pesan yang ditampilkan saat meminta input user
+//
+// Return:
+//   - password: password yang didapat
+//   - source: "env" atau "prompt"
+//   - error: jika gagal mendapatkan password
+func PromptPassword(envVar, promptMsg string) (password, source string, err error) {
+	if pw := os.Getenv(envVar); pw != "" {
+		return pw, "env", nil
 	}
-	// Minta user memasukkan password
-	// Validator: tidak boleh kosong
-	// return input.AskPassword(promptMessage, survey.Required)
-	EncryptionPassword, err := input.AskPassword("Encryption Password", survey.Required)
-
-	return EncryptionPassword, "prompt", err
-
+	pw, err := input.AskPassword(promptMsg, survey.Required)
+	return pw, "prompt", err
 }

@@ -43,7 +43,7 @@ var CmdEncryptText = &cobra.Command{
 		cryptoauth.MustValidatePassword()
 
 		// Ambil input
-		data, err := cryptohelper.GetInputBytesOrInteractive(encTextInput, "Masukkan teks yang akan dienkripsi:")
+		data, err := cryptohelper.GetInput(encTextInput, true, "Masukkan teks yang akan dienkripsi:")
 		if err != nil {
 			lg.Errorf("Gagal membaca input: %v", err)
 			return

@@ -31,7 +31,7 @@ var CmdBase64Encode = &cobra.Command{
 		// cryptoauth.MustValidatePassword()
 
 		// Coba baca input dari flag atau pipe, fallback ke interactive
-		b, err := cryptohelper.GetInputBytesOrInteractive(b64eInput, "📝 Masukkan teks yang akan di-encode:")
+		b, err := cryptohelper.GetInput(b64eInput, true, "📝 Masukkan teks yang akan di-encode:")
 		if err != nil {
 			lg.Errorf("Gagal membaca input: %v", err)
 			return

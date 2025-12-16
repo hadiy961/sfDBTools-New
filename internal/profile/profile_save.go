@@ -34,11 +34,7 @@ func (s *Service) SaveProfile(mode string) error {
 	}
 
 	// 2. Pastikan base directory ada, jika tidak buat (berlaku untuk config dir maupun absolut)
-	dir, err := fsops.CheckDirExists(baseDir)
-	if err != nil {
-		return fmt.Errorf("gagal memastikan direktori konfigurasi ada: %w", err)
-	}
-	if !dir {
+	if !fsops.DirExists(baseDir) {
 		s.Log.Info("Direktori konfigurasi tidak ada. Mencoba membuat: " + baseDir)
 		if err := fsops.CreateDirIfNotExist(baseDir); err != nil {
 			return fmt.Errorf("gagal membuat direktori konfigurasi: %w", err)

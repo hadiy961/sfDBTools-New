@@ -12,19 +12,9 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/AlecAivazis/survey/v2/terminal"
-	"github.com/charmbracelet/lipgloss"
 )
 
-// --- Styling Dasar (Menggantikan ANSI Codes di formatting.go) ---
-var (
-	errorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true) // Merah
-)
-
-// PrintError prints error message (menggunakan SafePrint coordination dari terminal.go)
-func PrintError(message string) {
-	fmt.Fprintf(os.Stderr, "%s\n", errorStyle.Render("❌ "+message))
-}
+// Removed duplicate PrintError - use ui.PrintError instead
 
 // --- Menu dan Interaktif Input ---
 
@@ -48,9 +38,6 @@ func ShowMenu(title string, options []string) (int, error) {
 
 	// Jika ada error (misalnya Ctrl+C)
 	if err != nil {
-		if err == terminal.InterruptErr {
-			return 0, fmt.Errorf("menu dibatalkan oleh pengguna")
-		}
 		return 0, err
 	}
 
@@ -73,9 +60,6 @@ func ShowMultiSelect(title string, options []string) ([]int, error) {
 		os.Stderr,
 	))
 	if err != nil {
-		if err == terminal.InterruptErr {
-			return nil, fmt.Errorf("menu dibatalkan oleh pengguna")
-		}
 		return nil, err
 	}
 
@@ -111,59 +95,36 @@ func AskPassword(message string, validator survey.Validator) (string, error) {
 	return answer, err
 }
 
-// AskInt menampilkan prompt untuk input integer dengan validasi.
 func AskInt(message string, defaultValue int, validator survey.Validator) (int, error) {
-	strDefault := fmt.Sprintf("%d", defaultValue)
-	answerStr := ""
+	var answer string
 	prompt := &survey.Input{
 		Message: message,
-		Default: strDefault,
+		Default: fmt.Sprintf("%d", defaultValue),
 	}
-
-	opts := survey.WithValidator(validator)
-
-	err := survey.AskOne(prompt, &answerStr, opts)
-	if err != nil {
+	if err := survey.AskOne(prompt, &answer, survey.WithValidator(validator)); err != nil {
 		return 0, err
 	}
-
-	// Konversi final setelah validasi berhasil
-	val, _ := strconv.Atoi(answerStr)
+	val, _ := strconv.Atoi(answer)
 	return val, nil
 }
 
-// AskString menampilkan prompt untuk input string dengan validasi.
 func AskString(message, defaultValue string, validator survey.Validator) (string, error) {
-	answer := ""
+	var answer string
 	prompt := &survey.Input{
 		Message: message,
 		Default: defaultValue,
 	}
-
-	// Bungkus validator dalam survey.WithValidator
-	opts := survey.WithValidator(validator)
-
-	err := survey.AskOne(prompt, &answer, opts)
+	err := survey.AskOne(prompt, &answer, survey.WithValidator(validator))
 	return answer, err
 }
 
-// AskYesNo prompts user for yes/no input with default value
 func AskYesNo(question string, defaultValue bool) (bool, error) {
 	var response bool
-
 	prompt := &survey.Confirm{
 		Message: question,
 		Default: defaultValue,
 	}
-
-	err := survey.AskOne(prompt, &response, survey.WithStdio(os.Stdin, os.Stdout, os.Stderr))
-	if err != nil {
-		if err == terminal.InterruptErr {
-			return false, terminal.InterruptErr
-		}
-		return false, err
-	}
-	return response, nil
+	return response, survey.AskOne(prompt, &response)
 }
 
 // sanitizeFileName membersihkan nama file dari karakter ilegal
@@ -181,23 +142,13 @@ func SanitizeFileName(name string) string {
 	// Untuk validasi lebih ketat, bisa gunakan regex.
 	// Misal: `[^a-zA-Z0-9._-]` untuk hanya mengizinkan alfanumerik, titik, underscore, dan dash.
 
-	// Ganti karakter ilegal dengan underscore
-	replacements := map[string]string{
-		" ":  "_",
-		"/":  "_",
-		"\\": "_",
-		":":  "_",
-		"*":  "_",
-		"?":  "_",
-		"\"": "_",
-		"<":  "_",
-		">":  "_",
-		"|":  "_",
-	}
-
-	for old, new := range replacements {
-		name = strings.ReplaceAll(name, old, new)
-	}
+	illegal := " /\\:*?\"<>|"
+	name = strings.Map(func(r rune) rune {
+		if strings.ContainsRune(illegal, r) {
+			return '_'
+		}
+		return r
+	}, name)
 
 	return name
 }

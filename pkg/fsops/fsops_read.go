@@ -16,21 +16,3 @@ func ReadDirFiles(dir string) ([]string, error) {
 	}
 	return files, nil
 }
-
-// Cek apakah file atau direktori ada
-func Exists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
-
-// CheckDirExists mengecek apakah direktori ada
-func CheckDirExists(dir string) (bool, error) {
-	info, err := os.Stat(dir)
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return info.IsDir(), nil
-}

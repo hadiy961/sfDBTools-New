@@ -39,7 +39,7 @@ func (s *Service) EditProfile() error {
 			if err != nil {
 				return err
 			}
-			if !fsops.Exists(absPath) {
+			if !fsops.PathExists(absPath) {
 				ui.PrintWarning(fmt.Sprintf("File konfigurasi '%s' tidak ditemukan.", absPath))
 				return fmt.Errorf("file konfigurasi tidak ditemukan: %s", absPath)
 			}

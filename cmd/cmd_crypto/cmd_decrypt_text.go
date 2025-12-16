@@ -43,11 +43,12 @@ var CmdDecryptText = &cobra.Command{
 		cryptoauth.MustValidatePassword()
 
 		// Ambil input base64
-		b64, err := cryptohelper.GetInputStringOrInteractive(decTextInput, "Masukkan teks base64 terenkripsi:")
+		data, err := cryptohelper.GetInput(decTextInput, true, "Masukkan teks base64 terenkripsi:")
 		if err != nil {
 			lg.Errorf("Gagal membaca input: %v", err)
 			return
 		}
+		b64 := string(data)
 
 		encBytes, err := base64.StdEncoding.DecodeString(strings.TrimSpace(b64))
 		if err != nil {

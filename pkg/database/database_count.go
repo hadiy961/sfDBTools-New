@@ -33,99 +33,34 @@ func (s *Client) GetDatabaseSize(ctx context.Context, dbName string) (int64, err
 }
 
 func (s *Client) GetTableCount(ctx context.Context, dbName string) (int, error) {
-	query := fmt.Sprintf("SET STATEMENT max_statement_time=0 FOR SHOW FULL TABLES FROM `%s` WHERE Table_type = 'BASE TABLE'", dbName)
-	rows, err := s.DB().QueryContext(ctx, query)
+	return s.countRows(ctx, fmt.Sprintf("SET STATEMENT max_statement_time=0 FOR SHOW FULL TABLES FROM `%s` WHERE Table_type = 'BASE TABLE'", dbName))
+}
+
+// countRows adalah helper untuk menghitung jumlah baris dari query.
+func (s *Client) countRows(ctx context.Context, query string, args ...interface{}) (int, error) {
+	rows, err := s.DB().QueryContext(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}
 	defer rows.Close()
 
-	var count int
+	count := 0
 	for rows.Next() {
 		count++
 	}
-
-	if err = rows.Err(); err != nil {
-		return 0, err
-	}
-	return count, nil
+	return count, rows.Err()
 }
 
 func (s *Client) GetProcedureCount(ctx context.Context, dbName string) (int, error) {
-	// 1. Gunakan perintah SHOW PROCEDURE STATUS yang jauh lebih cepat.
-	//    Filter langsung dengan klausa WHERE Db = ?.
-	query := `SET STATEMENT max_statement_time=0 FOR SHOW PROCEDURE STATUS WHERE Db = ?`
-
-	rows, err := s.DB().QueryContext(ctx, query, dbName)
-	if err != nil {
-		// 2. Kembalikan error agar pemanggil tahu ada masalah.
-		return 0, err
-	}
-	defer rows.Close()
-
-	var count int
-	// Cukup hitung jumlah baris yang dikembalikan.
-	for rows.Next() {
-		count++
-	}
-
-	// Selalu periksa error setelah iterasi selesai.
-	if err = rows.Err(); err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return s.countRows(ctx, `SET STATEMENT max_statement_time=0 FOR SHOW PROCEDURE STATUS WHERE Db = ?`, dbName)
 }
 
 func (s *Client) GetFunctionCount(ctx context.Context, dbName string) (int, error) {
-	// 1. Gunakan perintah SHOW FUNCTION STATUS yang jauh lebih cepat.
-	query := `SET STATEMENT max_statement_time=0 FOR SHOW FUNCTION STATUS WHERE Db = ?`
-
-	rows, err := s.DB().QueryContext(ctx, query, dbName)
-	if err != nil {
-		// 2. Kembalikan error yang sebenarnya agar masalah tidak tersembunyi.
-		return 0, err
-	}
-	defer rows.Close()
-
-	var count int
-	// Hitung jumlah baris yang dikembalikan.
-	for rows.Next() {
-		count++
-	}
-
-	// Periksa error yang mungkin terjadi saat iterasi.
-	if err = rows.Err(); err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return s.countRows(ctx, `SET STATEMENT max_statement_time=0 FOR SHOW FUNCTION STATUS WHERE Db = ?`, dbName)
 }
 
 func (s *Client) GetViewCount(ctx context.Context, dbName string) (int, error) {
-	// 1. Gunakan SHOW FULL TABLES, ini jauh lebih cepat.
-	//    Filter hasilnya dengan Table_type = 'VIEW'.
-	query := fmt.Sprintf("SET STATEMENT max_statement_time=0 FOR SHOW FULL TABLES FROM `%s` WHERE Table_type = 'VIEW'", dbName)
-
-	rows, err := s.DB().QueryContext(ctx, query)
-	if err != nil {
-		// 2. Kembalikan error agar pemanggil tahu ada masalah.
-		return 0, err
-	}
-	defer rows.Close()
-
-	var count int
-	// Hitung jumlah baris yang cocok.
-	for rows.Next() {
-		count++
-	}
-
-	// Periksa error yang mungkin terjadi saat iterasi.
-	if err = rows.Err(); err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return s.countRows(ctx, fmt.Sprintf("SET STATEMENT max_statement_time=0 FOR SHOW FULL TABLES FROM `%s` WHERE Table_type = 'VIEW'", dbName))
 }
 
 func (s *Client) GetUserGrantCount(ctx context.Context, dbName string) (int, error) {

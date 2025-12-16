@@ -41,7 +41,7 @@ func (s *Service) ShowProfile() error {
 			return err
 		}
 		// Coba muat snapshot dari path
-		if !fsops.Exists(abs) {
+		if !fsops.PathExists(abs) {
 			return fmt.Errorf("file konfigurasi tidak ditemukan: %s", abs)
 		}
 		// Muat snapshot dari path
@@ -58,7 +58,7 @@ func (s *Service) ShowProfile() error {
 	}
 
 	// 2. Pastikan file ada
-	if !fsops.Exists(s.OriginalProfileInfo.Path) {
+	if !fsops.PathExists(s.OriginalProfileInfo.Path) {
 		return fmt.Errorf("file konfigurasi tidak ditemukan: %s", s.OriginalProfileInfo.Path)
 	}
 

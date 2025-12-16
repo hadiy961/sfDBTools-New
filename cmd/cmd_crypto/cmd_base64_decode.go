@@ -31,11 +31,12 @@ var CmdBase64Decode = &cobra.Command{
 		// cryptoauth.MustValidatePassword()
 
 		// Coba baca input dari flag atau pipe, fallback ke interactive
-		in, err := cryptohelper.GetInputStringOrInteractive(b64dInput, "📝 Masukkan base64 yang akan di-decode:")
+		data, err := cryptohelper.GetInput(b64dInput, true, "📝 Masukkan base64 yang akan di-decode:")
 		if err != nil {
 			lg.Errorf("Gagal membaca input: %v", err)
 			return
 		}
+		in := string(data)
 
 		b, err := base64.StdEncoding.DecodeString(strings.TrimSpace(in))
 		if err != nil {

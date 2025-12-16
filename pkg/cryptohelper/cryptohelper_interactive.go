@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sfDBTools/pkg/fsops"
 	"strings"
 )
 
@@ -67,67 +68,7 @@ func GetInteractiveInputString(prompt string) (string, error) {
 	return string(data), nil
 }
 
-// GetInputBytesOrInteractive mencoba membaca dari flag/pipe terlebih dahulu,
-// jika tidak ada maka fallback ke interactive mode.
-//
-// Parameter:
-//   - flagVal: nilai dari flag input
-//   - prompt: pesan untuk interactive mode
-//
-// Return:
-//   - []byte: data yang dibaca
-//   - error: error jika gagal
-func GetInputBytesOrInteractive(flagVal, prompt string) ([]byte, error) {
-	// Coba dari flag
-	if s := strings.TrimSpace(flagVal); s != "" {
-		return []byte(s), nil
-	}
-
-	// Cek apakah ada pipe
-	stat, _ := os.Stdin.Stat()
-	if (stat.Mode() & os.ModeCharDevice) == 0 { // piped
-		reader := bufio.NewReader(os.Stdin)
-		return bufio.NewReader(reader).ReadBytes('\x00') // Read all
-	}
-
-	// Fallback ke interactive mode
-	return GetInteractiveInputBytes(prompt)
-}
-
-// GetInputStringOrInteractive mencoba membaca dari flag/pipe terlebih dahulu,
-// jika tidak ada maka fallback ke interactive mode.
-//
-// Parameter:
-//   - flagVal: nilai dari flag input
-//   - prompt: pesan untuk interactive mode
-//
-// Return:
-//   - string: data yang dibaca
-//   - error: error jika gagal
-func GetInputStringOrInteractive(flagVal, prompt string) (string, error) {
-	// Coba dari flag
-	if s := strings.TrimSpace(flagVal); s != "" {
-		return s, nil
-	}
-
-	// Cek apakah ada pipe
-	stat, _ := os.Stdin.Stat()
-	if (stat.Mode() & os.ModeCharDevice) == 0 { // piped
-		reader := bufio.NewReader(os.Stdin)
-		data, err := reader.ReadString('\x00') // Read all until null or EOF
-		if err != nil && err.Error() != "EOF" {
-			return "", err
-		}
-		return data, nil
-	}
-
-	// Fallback ke interactive mode
-	return GetInteractiveInputString(prompt)
-}
-
 // GetFilePathOrInteractive membaca file path dari flag atau meminta input interaktif.
-// Validasi bahwa file exists (untuk input file) atau direktori exists (untuk output file).
-//
 // Parameter:
 //   - flagVal: nilai dari flag path
 //   - prompt: pesan untuk interactive mode
@@ -137,18 +78,13 @@ func GetInputStringOrInteractive(flagVal, prompt string) (string, error) {
 //   - string: file path yang valid
 //   - error: error jika gagal atau file tidak valid
 func GetFilePathOrInteractive(flagVal, prompt string, mustExist bool) (string, error) {
-	// Jika ada flag value, gunakan itu
 	if s := strings.TrimSpace(flagVal); s != "" {
-		// Validasi file
-		if mustExist {
-			if _, err := os.Stat(s); os.IsNotExist(err) {
-				return "", fmt.Errorf("file tidak ditemukan: %s", s)
-			}
+		if mustExist && !fsops.FileExists(s) {
+			return "", fmt.Errorf("file tidak ditemukan: %s", s)
 		}
 		return s, nil
 	}
 
-	// Interactive mode
 	fmt.Println(prompt)
 	reader := bufio.NewReader(os.Stdin)
 
@@ -165,13 +101,10 @@ func GetFilePathOrInteractive(flagVal, prompt string, mustExist bool) (string, e
 			continue
 		}
 
-		// Validasi
-		if mustExist {
-			if _, err := os.Stat(path); os.IsNotExist(err) {
-				fmt.Printf("✗ File tidak ditemukan: %s\n", path)
-				fmt.Println("Coba lagi atau tekan Ctrl+C untuk batal.")
-				continue
-			}
+		if mustExist && !fsops.FileExists(path) {
+			fmt.Printf("✗ File tidak ditemukan: %s\n", path)
+			fmt.Println("Coba lagi atau tekan Ctrl+C untuk batal.")
+			continue
 		}
 
 		return path, nil
