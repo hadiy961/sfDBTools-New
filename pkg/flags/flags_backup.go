@@ -1,7 +1,6 @@
 package flags
 
 import (
-	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	flagsbackup "sfDBTools/pkg/flags/flags_backup"
 
@@ -44,12 +43,12 @@ func AddBackupFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
 }
 
 // AddEncryptionFlags menambahkan flags untuk konfigurasi enkripsi.
-func AddEncryptionFlags(cmd *cobra.Command, opts *types.EncryptionOptions) {
+func AddEncryptionFlags(cmd *cobra.Command, opts *types_backup.EncryptionOptions) {
 	cmd.Flags().StringP("encryption-key", "K", opts.Key, "Kunci enkripsi yang digunakan untuk mengenkripsi file backup")
 }
 
 // AddCompressionFlags menambahkan flags untuk konfigurasi kompresi.
-func AddCompressionFlags(cmd *cobra.Command, opts *types.CompressionOptions) {
+func AddCompressionFlags(cmd *cobra.Command, opts *types_backup.CompressionOptions) {
 	cmd.Flags().StringP("compress-type", "C", opts.Type, "Tipe kompresi yang digunakan (gzip, zstd, xz, pgzip, zlib, none)")
 	cmd.Flags().Int("compress-level", opts.Level, "Tingkat kompresi yang digunakan (1-9)")
 }

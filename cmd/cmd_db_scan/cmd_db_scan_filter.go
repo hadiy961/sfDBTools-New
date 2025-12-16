@@ -7,6 +7,7 @@ import (
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/flags"
 	"sfDBTools/pkg/parsing"
+	"sfDBTools/pkg/validation"
 
 	"github.com/spf13/cobra"
 )
@@ -56,7 +57,7 @@ Catatan:
 		}
 
 		if err := dbscan.ExecuteScanCommand(svc, scanConfig); err != nil {
-			if errors.Is(err, types.ErrUserCancelled) {
+			if errors.Is(err, validation.ErrUserCancelled) {
 				logger.Warn("Proses dibatalkan oleh pengguna.")
 				return nil
 			}

@@ -13,6 +13,7 @@ import (
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
+	"sfDBTools/pkg/validation"
 	"sort"
 )
 
@@ -49,7 +50,7 @@ func (d *OptionsDisplayer) Display() (bool, error) {
 		return false, err
 	}
 	if !confirm {
-		return false, types.ErrUserCancelled
+		return false, validation.ErrUserCancelled
 	}
 	return true, nil
 }
@@ -294,6 +295,6 @@ func (d *OptionsDisplayer) getExportUserStatus() string {
 }
 
 // DisplayFilterStats menampilkan statistik hasil pemfilteran database
-func DisplayFilterStats(stats *types.DatabaseFilterStats, logger applog.Logger) {
+func DisplayFilterStats(stats *types.FilterStats, logger applog.Logger) {
 	ui.DisplayFilterStats(stats, "backup", logger)
 }

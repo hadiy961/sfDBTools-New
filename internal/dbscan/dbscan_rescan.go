@@ -13,6 +13,7 @@ import (
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
+	"sfDBTools/pkg/validation"
 )
 
 // PrepareRescanSession mengatur persiapan khusus untuk rescan mode
@@ -26,7 +27,7 @@ func (s *Service) PrepareRescanSession(ctx context.Context, headerTitle string, 
 		if proceed, askErr := s.DisplayScanOptions(); askErr != nil {
 			return nil, nil, nil, askErr
 		} else if !proceed {
-			return nil, nil, nil, types.ErrUserCancelled
+			return nil, nil, nil, validation.ErrUserCancelled
 		}
 	}
 
@@ -74,7 +75,7 @@ func (s *Service) PrepareRescanSession(ctx context.Context, headerTitle string, 
 	}()
 
 	// Display stats untuk rescan (simplified - only set relevant fields)
-	stats := &types.DatabaseFilterStats{
+	stats := &types.FilterStats{
 		TotalFound:    len(failedDBNames),
 		TotalIncluded: len(failedDBNames),
 	}

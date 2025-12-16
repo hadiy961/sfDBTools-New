@@ -14,7 +14,7 @@ import (
 
 // FilterFromBackupOptions membuat FilterOptions dari BackupDBOptions dan execute filtering
 // Helper untuk menghindari duplikasi di backup_filter.go
-func FilterFromBackupOptions(ctx context.Context, client *Client, opts *types_backup.BackupDBOptions) ([]string, *types.DatabaseFilterStats, error) {
+func FilterFromBackupOptions(ctx context.Context, client *Client, opts *types_backup.BackupDBOptions) ([]string, *types.FilterStats, error) {
 	filterOpts := types.FilterOptions{
 		ExcludeSystem:    opts.Filter.ExcludeSystem,
 		ExcludeDatabases: opts.Filter.ExcludeDatabases,
@@ -28,7 +28,7 @@ func FilterFromBackupOptions(ctx context.Context, client *Client, opts *types_ba
 
 // FilterFromScanOptions membuat FilterOptions dari ScanOptions dan execute filtering
 // Helper untuk menghindari duplikasi di dbscan_filter.go
-func FilterFromScanOptions(ctx context.Context, client *Client, opts *types.ScanOptions) ([]string, *types.DatabaseFilterStats, error) {
+func FilterFromScanOptions(ctx context.Context, client *Client, opts *types.ScanOptions) ([]string, *types.FilterStats, error) {
 	filterOpts := types.FilterOptions{
 		ExcludeSystem:    opts.ExcludeSystem,
 		ExcludeDatabases: opts.ExcludeList,

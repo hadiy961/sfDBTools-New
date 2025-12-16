@@ -9,7 +9,7 @@ import (
 // DisplayFilterStats menampilkan statistik hasil pemfilteran database secara reusable.
 // Context parameter untuk menyesuaikan label (contoh: "Akan di-backup" atau "Akan di-scan")
 // Logger parameter opsional untuk logging (bisa nil)
-func DisplayFilterStats(stats *types.DatabaseFilterStats, konteks string, logger applog.Logger) {
+func DisplayFilterStats(stats *types.FilterStats, konteks string, logger applog.Logger) {
 	PrintSubHeader("Statistik Filtering Database")
 
 	// Hitung total excluded

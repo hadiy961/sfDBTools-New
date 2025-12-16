@@ -8,11 +8,11 @@ package dbscan
 
 import (
 	"fmt"
-
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/dbscanhelper"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
+	"sfDBTools/pkg/validation"
 )
 
 // DisplayScanOptions menampilkan opsi scanning yang sedang aktif dan meminta konfirmasi.
@@ -51,14 +51,14 @@ func (s *Service) DisplayScanOptions() (proceed bool, err error) {
 		return false, askErr
 	}
 	if !confirm {
-		return false, types.ErrUserCancelled
+		return false, validation.ErrUserCancelled
 	}
 	s.Log.Info("Proses scanning dilanjutkan.")
 	return true, nil
 }
 
 // DisplayFilterStats menampilkan statistik hasil pemfilteran database.
-func (s *Service) DisplayFilterStats(stats *types.DatabaseFilterStats) {
+func (s *Service) DisplayFilterStats(stats *types.FilterStats) {
 	ui.DisplayFilterStats(stats, "scan", s.Log)
 }
 

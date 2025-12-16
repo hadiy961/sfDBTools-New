@@ -7,6 +7,7 @@
 package backuphelper
 
 import (
+	"sfDBTools/internal/types"
 	"strings"
 )
 
@@ -33,21 +34,11 @@ func ExtractMysqldumpVersion(stderrOutput string) string {
 func FilterCandidatesByMode(dbFiltered []string, mode string) []string {
 	candidates := make([]string, 0, len(dbFiltered))
 
-	// System databases yang harus di-exclude
-	systemDatabases := []string{"information_schema", "performance_schema", "mysql", "sys"}
-
 	for _, db := range dbFiltered {
 		dbLower := strings.ToLower(db)
 
 		// Check if it's a system database (untuk semua mode)
-		isSystemDB := false
-		for _, sysDB := range systemDatabases {
-			if dbLower == sysDB {
-				isSystemDB = true
-				break
-			}
-		}
-		if isSystemDB {
+		if _, isSystemDB := types.SystemDatabases[dbLower]; isSystemDB {
 			continue
 		}
 

@@ -14,9 +14,9 @@ import (
 	"sfDBTools/internal/backup/display"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
-
 	"sfDBTools/pkg/parsing"
 	"sfDBTools/pkg/ui"
+	"sfDBTools/pkg/validation"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -127,7 +127,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *types.Dependencies, confi
 	}
 
 	if err := svc.ExecuteBackupCommand(ctx, backupConfig); err != nil {
-		if errors.Is(err, types.ErrUserCancelled) {
+		if errors.Is(err, validation.ErrUserCancelled) {
 			logger.Warn("Proses dibatalkan oleh pengguna.")
 			return nil
 		}

@@ -9,11 +9,11 @@ package dbscan
 import (
 	"context"
 	"fmt"
-
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
+	"sfDBTools/pkg/validation"
 )
 
 // PrepareScanSession mengatur seluruh alur persiapan sebelum proses scanning dimulai.
@@ -49,7 +49,7 @@ func (s *Service) PrepareScanSession(ctx context.Context, headerTitle string, sh
 		}
 	}()
 
-	var stats *types.DatabaseFilterStats
+	var stats *types.FilterStats
 	dbFiltered, stats, err = s.GetFilteredDatabases(ctx, client)
 	if err != nil {
 		return nil, nil, fmt.Errorf("gagal mendapatkan daftar database: %w", err)
@@ -60,7 +60,7 @@ func (s *Service) PrepareScanSession(ctx context.Context, headerTitle string, sh
 		if proceed, askErr := s.DisplayScanOptions(); askErr != nil {
 			return nil, nil, askErr
 		} else if !proceed {
-			return nil, nil, types.ErrUserCancelled
+			return nil, nil, validation.ErrUserCancelled
 		}
 	}
 

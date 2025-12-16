@@ -1,13 +1,5 @@
 package types
 
-// ScanAllDBOptions berisi opsi untuk scan semua database
-type ScanAllDBOptions struct {
-	ProfileInfo   ProfileInfo
-	ExcludeSystem bool
-	SaveToDB      bool
-	Background    bool // Jalankan scanning di background
-}
-
 // ScanEntryConfig untuk konfigurasi scan entry point
 type ScanEntryConfig struct {
 	HeaderTitle string
@@ -25,10 +17,6 @@ type ScanResult struct {
 	Duration       string
 	Errors         []string
 }
-
-// DatabaseFilterStats adalah alias untuk FilterStats untuk backward compatibility
-// DEPRECATED: Gunakan FilterStats langsung dari types_database.go
-type DatabaseFilterStats = FilterStats
 
 // ScanOptions berisi opsi untuk database scan
 type ScanOptions struct {

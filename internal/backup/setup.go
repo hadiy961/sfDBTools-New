@@ -18,6 +18,7 @@ import (
 	"sfDBTools/pkg/fsops"
 	pkghelper "sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
+	"sfDBTools/pkg/validation"
 	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
 	"strings"
@@ -129,7 +130,7 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 		s.Log.Infof("menggunakan hostname dari server: %s", serverHostname)
 	}
 
-	var stats *types.DatabaseFilterStats
+	var stats *types.FilterStats
 	dbFiltered, stats, err = s.GetFilteredDatabases(ctx, client)
 	if err != nil {
 		if stats != nil {
@@ -165,7 +166,7 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 		if proceed, askErr := display.NewOptionsDisplayer(s.BackupDBOptions).Display(); askErr != nil {
 			return nil, nil, askErr
 		} else if !proceed {
-			return nil, nil, types.ErrUserCancelled
+			return nil, nil, validation.ErrUserCancelled
 		}
 	}
 
@@ -176,7 +177,7 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 // GetFilteredDatabases mengambil dan memfilter daftar database sesuai aturan
 // Untuk command filter tanpa include/exclude flags: tampilkan multi-select
 // Untuk command all atau filter dengan flags: gunakan filter biasa
-func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Client) ([]string, *types.DatabaseFilterStats, error) {
+func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Client) ([]string, *types.FilterStats, error) {
 	hasIncludeFlags := len(s.BackupDBOptions.Filter.IncludeDatabases) > 0 || s.BackupDBOptions.Filter.IncludeFile != ""
 
 	// Jika ada include flags, selalu gunakan filter biasa (tidak perlu multi-select)
@@ -200,14 +201,14 @@ func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Cli
 }
 
 // getFilteredDatabasesWithMultiSelect menampilkan multi-select untuk memilih database
-func (s *Service) getFilteredDatabasesWithMultiSelect(ctx context.Context, client *database.Client) ([]string, *types.DatabaseFilterStats, error) {
+func (s *Service) getFilteredDatabasesWithMultiSelect(ctx context.Context, client *database.Client) ([]string, *types.FilterStats, error) {
 	// Get all databases from server
 	allDatabases, err := client.GetDatabaseList(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("gagal mengambil daftar database: %w", err)
 	}
 
-	stats := &types.DatabaseFilterStats{
+	stats := &types.FilterStats{
 		TotalFound:    len(allDatabases),
 		TotalIncluded: 0,
 		TotalExcluded: 0,
@@ -256,7 +257,7 @@ func (s *Service) getFilteredDatabasesWithMultiSelect(ctx context.Context, clien
 }
 
 // displayFilterWarnings menampilkan warning messages untuk filter stats
-func (s *Service) displayFilterWarnings(stats *types.DatabaseFilterStats) {
+func (s *Service) displayFilterWarnings(stats *types.FilterStats) {
 	ui.PrintWarning("Kemungkinan penyebab:")
 
 	if stats.TotalExcluded == stats.TotalFound {
@@ -355,7 +356,7 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 	if err != nil {
 		s.Log.Warnf("gagal mengambil daftar database untuk statistik: %v", err)
 	} else {
-		stats := &types.DatabaseFilterStats{
+		stats := &types.FilterStats{
 			TotalFound:        len(allDatabases),
 			TotalIncluded:     len(dbFiltered),
 			TotalExcluded:     len(allDatabases) - len(dbFiltered),
@@ -383,7 +384,7 @@ func (s *Service) handleSingleModeSetup(ctx context.Context, client *database.Cl
 	}
 
 	// Tampilkan statistik filtering setelah selection
-	stats := &types.DatabaseFilterStats{
+	stats := &types.FilterStats{
 		TotalFound:    len(allDatabases),
 		TotalIncluded: len(companionDbs),
 		TotalExcluded: len(allDatabases) - len(companionDbs),
