@@ -1,27 +1,35 @@
+// File : internal/cleanup/cleanup_main.go
+// Deskripsi : Service utama untuk cleanup operations
+// Author : Hadiyatna Muflihun
+// Tanggal : 2025-12-16
+// Last Modified : 2025-12-16
+
 package cleanup
 
 import (
+	"errors"
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
 )
 
-// Service adalah service untuk database scanning
+// Error definitions
+var (
+	ErrInvalidCleanupMode = errors.New("mode cleanup tidak valid")
+)
+
+// Service adalah service untuk cleanup operations
 type Service struct {
-	Logger         applog.Logger
 	Config         *appconfig.Config
+	Log            applog.Logger
 	CleanupOptions types.CleanupOptions
 }
 
-// NewService membuat instance baru dari Service
-func NewCleanupService(logger applog.Logger, config *appconfig.Config) *Service {
+// NewCleanupService membuat instance baru dari Service dengan proper dependency injection
+func NewCleanupService(config *appconfig.Config, logger applog.Logger, opts types.CleanupOptions) *Service {
 	return &Service{
-		Logger: logger,
-		Config: config,
+		Config:         config,
+		Log:            logger,
+		CleanupOptions: opts,
 	}
-}
-
-// SetCleanupOptions mengatur opsi cleanup
-func (s *Service) SetCleanupOptions(opts types.CleanupOptions) {
-	s.CleanupOptions = opts
 }

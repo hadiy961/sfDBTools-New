@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/profileselect"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/validation"
 	"strings"
 )
@@ -26,7 +26,12 @@ func (s *Service) filePathInConfigDir(name string) string {
 // loadSnapshotFromPath membaca file terenkripsi, mencoba dekripsi (jika kunci tersedia/di-prompt),
 // parse nilai penting, dan mengisi s.OriginalProfileInfo beserta metadata.
 func (s *Service) loadSnapshotFromPath(absPath string) error {
-	info, err := profileselect.LoadAndParseProfile(absPath, s.ProfileInfo.EncryptionKey)
+	info, err := profilehelper.ResolveAndLoadProfile(profilehelper.ProfileLoadOptions{
+		ConfigDir:      s.Config.ConfigDir.DatabaseProfile,
+		ProfilePath:    absPath,
+		ProfileKey:     s.ProfileInfo.EncryptionKey,
+		RequireProfile: true,
+	})
 	if err != nil {
 		s.fillOriginalInfoFromMeta(absPath, types.ProfileInfo{})
 		return err

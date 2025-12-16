@@ -101,3 +101,20 @@ func ParsingShowProfile(cmd *cobra.Command) (*types.ProfileShowOptions, error) {
 
 	return profileOptions, nil
 }
+
+// ParsingDeleteProfile parses flags for the profile delete command and returns ProfileDeleteOptions
+func ParsingDeleteProfile(cmd *cobra.Command) (*types.ProfileDeleteOptions, error) {
+	filePath := helper.GetStringFlagOrEnv(cmd, "file", consts.ENV_SOURCE_PROFILE)
+	key := helper.GetStringFlagOrEnv(cmd, "key", consts.ENV_SOURCE_PROFILE_KEY)
+	force := helper.GetBoolFlagOrEnv(cmd, "force", "")
+
+	profileOptions := &types.ProfileDeleteOptions{
+		ProfileInfo: types.ProfileInfo{
+			Path:          filePath,
+			EncryptionKey: key,
+		},
+		Force: force,
+	}
+
+	return profileOptions, nil
+}

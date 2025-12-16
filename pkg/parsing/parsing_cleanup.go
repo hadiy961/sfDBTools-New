@@ -9,19 +9,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ParsingScanAllOptions membaca flag untuk perintah `dbscan all` dengan
-// nama flag yang konsisten dengan perintah `dbscan filter`.
-// Mengembalikan ScanOptions yang siap dipakai service.
+// ParsingCleanupOptions membaca flag untuk perintah cleanup
+// Mengembalikan CleanupOptions yang siap dipakai service.
 func ParsingCleanupOptions(cmd *cobra.Command) (types.CleanupOptions, error) {
-	// Mulai dari default untuk mode all
+	// Mulai dari default
 	opts := defaultVal.DefaultCleanupOptions()
 
-	// Profile & key (konsisten dengan filter)
+	// Days - retention days untuk cleanup
 	if v := helper.GetIntFlagOrEnv(cmd, "days", ""); v != 0 {
 		opts.Days = v
 	}
 
-	// Options lain yang diminta
+	// Pattern - glob pattern untuk filter files
+	if v := helper.GetStringFlagOrEnv(cmd, "pattern", ""); v != "" {
+		opts.Pattern = v
+	}
+
+	// Background mode
 	opts.Background = helper.GetBoolFlagOrEnv(cmd, "background", consts.ENV_DAEMON_MODE)
 
 	return opts, nil

@@ -27,6 +27,7 @@ import (
 func (s *Service) CheckAndSelectConfigFile() error {
 	allowInteractive := (s.BackupDBOptions.Mode == "single" || s.BackupDBOptions.Mode == "primary" || s.BackupDBOptions.Mode == "secondary" || s.BackupDBOptions.Mode == "combined" || s.BackupDBOptions.Mode == "all" || s.BackupDBOptions.Mode == "separated") && s.BackupDBOptions.Profile.Path == ""
 	profile, err := profilehelper.LoadSourceProfile(
+		s.Config.ConfigDir.DatabaseProfile,
 		s.BackupDBOptions.Profile.Path,
 		s.BackupDBOptions.Encryption.Key,
 		allowInteractive,

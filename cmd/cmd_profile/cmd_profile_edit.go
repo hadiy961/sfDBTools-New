@@ -1,12 +1,9 @@
 package cmdprofile
 
 import (
-	"errors"
-	"fmt"
 	"sfDBTools/internal/profile"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/flags"
-	"sfDBTools/pkg/parsing"
 
 	"github.com/spf13/cobra"
 )
@@ -25,45 +22,8 @@ Pastikan profil ditentukan melalui --file/-f agar profil yang tepat dapat ditemu
 	sfdbtools profile edit --file myprofile --interactive
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Pastikan dependencies tersedia
-		if types.Deps == nil {
-			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
-			return
-		}
-
-		// Akses config dan logger dari dependency injection
-		cfg := types.Deps.Config
-		logger := types.Deps.Logger
-
-		// Log dimulainya proses edit profile
-		logger.Info("Memulai proses pengeditan profil")
-
-		// Membaca nilai dari flags
-		ProfileEditOptions, err := parsing.ParsingEditProfile(cmd)
-		if err != nil {
-			logger.Errorf("Gagal memparsing flags: %v", err)
-			return
-		}
-
-		// Tampilkan juga ke logger jika tersedia (logger mungkin tidak ke-stdout bergantung pada config)
-		logger.Infof("ProfileEdit options: interactive=%v, file=%s, new-name=%s",
-			ProfileEditOptions.Interactive,
-			ProfileEditOptions.ProfileInfo.Path,
-			ProfileEditOptions.NewName,
-		)
-		// Inisialisasi service profile
-		profileService := profile.NewProfileService(cfg, logger, ProfileEditOptions)
-
-		// Panggil method EditProfile
-		// Jalankan proses edit
-		if err := profileService.EditProfile(); err != nil {
-			if errors.Is(err, types.ErrUserCancelled) {
-				logger.Warn("Dibatalkan oleh pengguna.")
-				return
-			}
-			// Laporkan error lain agar terlihat di konsol/log
-			logger.Errorf("Edit konfigurasi gagal: %v", err)
-			return
+		if err := profile.ExecuteProfile(cmd, types.Deps, "edit"); err != nil {
+			types.Deps.Logger.Error("profile edit gagal: " + err.Error())
 		}
 	},
 }

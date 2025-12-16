@@ -1,11 +1,15 @@
+// File : internal/cleanup/cleanup_core.go
+// Deskripsi : Core cleanup logic - scan dan delete files
+// Author : Hadiyatna Muflihun
+// Tanggal : 2025-12-16
+// Last Modified : 2025-12-16
+
 package cleanup
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/appconfig"
-	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
@@ -20,92 +24,52 @@ const (
 	timeFormat = "2006-01-02 15:04:05"
 )
 
-var (
-	// Logger adalah instance logger untuk package cleanup
-	Logger applog.Logger
-
-	// cfg adalah instance konfigurasi untuk package cleanup
-	cfg *appconfig.Config
-)
-
-// SetConfig mengatur konfigurasi untuk package cleanup.
-func SetConfig(conf *appconfig.Config) {
-	cfg = conf
-}
-
-// CleanupOldBackups menjalankan proses penghapusan semua backup lama di direktori.
-func CleanupOldBackups() error {
-	return cleanupCore(false, "") // dryRun=false, tanpa pattern
-}
-
-// CleanupDryRun menampilkan preview semua backup lama yang akan dihapu
-func CleanupDryRun() error {
-	return cleanupCore(true, "") // dryRun=true, tanpa pattern
-}
-
-// CleanupByPattern menjalankan proses penghapusan backup lama yang cocok dengan pattern.
-func CleanupByPattern(pattern string) error {
-	if pattern == "" {
-		return fmt.Errorf("pattern tidak boleh kosong untuk CleanupByPattern")
-	}
-	return cleanupCore(false, pattern) // dryRun=false, dengan pattern
-}
-
 // cleanupCore adalah fungsi inti terpadu untuk semua logika pembersihan.
-func cleanupCore(dryRun bool, pattern string) error {
+func (s *Service) cleanupCore(dryRun bool, pattern string) error {
 	// Tentukan mode operasi untuk logging
 	mode := "Menjalankan"
 	if dryRun {
 		mode = "Menjalankan DRY-RUN"
 	}
 	if pattern != "" {
-		Logger.Infof("%s proses cleanup untuk pattern: %s", mode, pattern)
+		s.Log.Infof("%s proses cleanup untuk pattern: %s", mode, pattern)
 	} else {
-		Logger.Infof("%s proses cleanup backup...", mode)
+		s.Log.Infof("%s proses cleanup backup...", mode)
 	}
 
-	retentionDays := cfg.Backup.Cleanup.Days
+	retentionDays := s.Config.Backup.Cleanup.Days
 	if retentionDays <= 0 {
-		Logger.Info("Retention days tidak valid, melewati proses")
+		s.Log.Info("Retention days tidak valid, melewati proses")
 		return nil
 	}
 
-	Logger.Info("Path backup base directory:", cfg.Backup.Output.BaseDirectory)
-	Logger.Infof("Cleanup policy: hapus file backup lebih dari %d hari", retentionDays)
+	s.Log.Info("Path backup base directory:", s.Config.Backup.Output.BaseDirectory)
+	s.Log.Infof("Cleanup policy: hapus file backup lebih dari %d hari", retentionDays)
 	cutoffTime := time.Now().AddDate(0, 0, -retentionDays)
-	Logger.Infof("Cutoff time: %s", cutoffTime.Format(timeFormat))
+	s.Log.Infof("Cutoff time: %s", cutoffTime.Format(timeFormat))
 
 	// Pindai file berdasarkan mode (dengan atau tanpa pattern)
-	filesToDelete, err := scanFiles(cfg.Backup.Output.BaseDirectory, cutoffTime, pattern)
+	filesToDelete, err := s.scanFiles(s.Config.Backup.Output.BaseDirectory, cutoffTime, pattern)
 	if err != nil {
 		return fmt.Errorf("gagal memindai file backup: %w", err)
 	}
 
 	if len(filesToDelete) == 0 {
-		Logger.Info("Tidak ada file backup lama yang perlu dihapus")
+		s.Log.Info("Tidak ada file backup lama yang perlu dihapus")
 		return nil
 	}
 
 	if dryRun {
-		logDryRunSummary(filesToDelete)
+		s.logDryRunSummary(filesToDelete)
 	} else {
-		performDeletion(filesToDelete)
+		s.performDeletion(filesToDelete)
 	}
 
 	return nil
 }
 
-// scanFilesWithLogger adalah wrapper untuk scanFiles dengan custom logger
-// Digunakan ketika dipanggil dari package lain (seperti backup)
-func scanFilesWithLogger(baseDir string, cutoff time.Time, pattern string, logger applog.Logger) ([]types_backup.BackupFileInfo, error) {
-	oldLogger := Logger
-	Logger = logger
-	defer func() { Logger = oldLogger }()
-	return scanFiles(baseDir, cutoff, pattern)
-}
-
 // scanFiles memilih metode pemindaian file (menyeluruh atau berdasarkan pola).
-func scanFiles(baseDir string, cutoff time.Time, pattern string) ([]types_backup.BackupFileInfo, error) {
+func (s *Service) scanFiles(baseDir string, cutoff time.Time, pattern string) ([]types_backup.BackupFileInfo, error) {
 	// Jika tidak ada pattern, kita buat pattern default untuk mencari semua file secara rekursif.
 	// Tanda '**/*' berarti "semua file di semua sub-direktori".
 	if pattern == "" {
@@ -125,7 +89,7 @@ func scanFiles(baseDir string, cutoff time.Time, pattern string) ([]types_backup
 
 		info, err := os.Stat(fullPath)
 		if err != nil {
-			Logger.Errorf("Gagal mendapatkan info file %s: %v", fullPath, err)
+			s.Log.Errorf("Gagal mendapatkan info file %s: %v", fullPath, err)
 			continue
 		}
 
@@ -150,51 +114,42 @@ func scanFiles(baseDir string, cutoff time.Time, pattern string) ([]types_backup
 	return filesToDelete, nil
 }
 
-// performDeletionWithLogger adalah wrapper untuk performDeletion dengan custom logger
-// Digunakan ketika dipanggil dari package lain (seperti backup)
-func performDeletionWithLogger(files []types_backup.BackupFileInfo, logger applog.Logger) {
-	oldLogger := Logger
-	Logger = logger
-	defer func() { Logger = oldLogger }()
-	performDeletion(files)
-}
-
 // performDeletion menghapus file-file yang ada dalam daftar.
-func performDeletion(files []types_backup.BackupFileInfo) {
-	Logger.Infof("Ditemukan %d file backup lama yang akan dihapus", len(files))
+func (s *Service) performDeletion(files []types_backup.BackupFileInfo) {
+	s.Log.Infof("Ditemukan %d file backup lama yang akan dihapus", len(files))
 
 	var deletedCount int
 	var totalFreedSize int64
 
 	for _, file := range files {
 		if err := os.Remove(file.Path); err != nil {
-			Logger.Errorf("Gagal menghapus file %s: %v", file.Path, err)
+			s.Log.Errorf("Gagal menghapus file %s: %v", file.Path, err)
 			continue
 		}
 		deletedCount++
 		totalFreedSize += file.Size
-		Logger.Infof("Dihapus: %s (size: %s)", file.Path, global.FormatFileSize(file.Size))
+		s.Log.Infof("Dihapus: %s (size: %s)", file.Path, global.FormatFileSize(file.Size))
 	}
 
-	Logger.Infof("Cleanup selesai: %d file dihapus, total %s ruang dibebaskan.",
+	s.Log.Infof("Cleanup selesai: %d file dihapus, total %s ruang dibebaskan.",
 		deletedCount, global.FormatFileSize(totalFreedSize))
 }
 
 // logDryRunSummary mencatat ringkasan file yang akan dihapus dalam mode dry-run.
-func logDryRunSummary(files []types_backup.BackupFileInfo) {
-	Logger.Infof("DRY-RUN: Ditemukan %d file backup yang AKAN dihapus:", len(files))
+func (s *Service) logDryRunSummary(files []types_backup.BackupFileInfo) {
+	s.Log.Infof("DRY-RUN: Ditemukan %d file backup yang AKAN dihapus:", len(files))
 
 	var totalSize int64
 	for i, file := range files {
 		totalSize += file.Size
-		Logger.Infof("  [%d] %s (modified: %s, size: %s)",
+		s.Log.Infof("  [%d] %s (modified: %s, size: %s)",
 			i+1,
 			file.Path,
 			file.ModTime.Format(timeFormat),
 			global.FormatFileSize(file.Size))
 	}
 
-	Logger.Infof("DRY-RUN: Total %d file dengan ukuran %s akan dibebaskan.",
+	s.Log.Infof("DRY-RUN: Total %d file dengan ukuran %s akan dibebaskan.",
 		len(files), global.FormatFileSize(totalSize))
-	Logger.Info("DRY-RUN: Untuk menjalankan cleanup sebenarnya, jalankan tanpa flag --dry-run.")
+	s.Log.Info("DRY-RUN: Untuk menjalankan cleanup sebenarnya, jalankan tanpa flag --dry-run.")
 }

@@ -8,13 +8,14 @@ package profilehelper
 
 import (
 	"fmt"
-	"sfDBTools/internal/profileselect"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/profileselect"
 )
 
 // ProfileLoadOptions berisi opsi untuk loading profile
 type ProfileLoadOptions struct {
+	ConfigDir         string // Config directory untuk profile files
 	ProfilePath       string // Path ke profile file (bisa dari flag)
 	ProfileKey        string // Encryption key (bisa dari flag)
 	EnvProfilePath    string // Environment variable name untuk profile path (e.g., ENV_TARGET_PROFILE)
@@ -44,7 +45,7 @@ func ResolveAndLoadProfile(opts ProfileLoadOptions) (*types.ProfileInfo, error) 
 				if prompt == "" {
 					prompt = "Pilih file konfigurasi database:"
 				}
-				info, err := profileselect.SelectExistingDBConfig(prompt)
+				info, err := profileselect.SelectExistingDBConfig(opts.ConfigDir, prompt)
 				if err != nil {
 					return nil, fmt.Errorf("gagal memilih konfigurasi database: %w", err)
 				}
@@ -92,8 +93,9 @@ func ResolveAndLoadProfile(opts ProfileLoadOptions) (*types.ProfileInfo, error) 
 
 // LoadSourceProfile loads source profile untuk backup/dbscan operations dengan interactive mode
 // Wrapper function dengan default values untuk backup/dbscan
-func LoadSourceProfile(profilePath, profileKey string, allowInteractive bool) (*types.ProfileInfo, error) {
+func LoadSourceProfile(configDir, profilePath, profileKey string, allowInteractive bool) (*types.ProfileInfo, error) {
 	return ResolveAndLoadProfile(ProfileLoadOptions{
+		ConfigDir:         configDir,
 		ProfilePath:       profilePath,
 		ProfileKey:        profileKey,
 		EnvProfilePath:    "", // Backup/dbscan tidak menggunakan env var untuk path

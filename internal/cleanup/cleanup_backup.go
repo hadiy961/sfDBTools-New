@@ -1,8 +1,8 @@
 // File : internal/cleanup/cleanup_backup.go
 // Deskripsi : Fungsi cleanup yang dipanggil dari backup package
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-08
-// Last Modified : 2025-12-08
+// Tanggal : 2025-12-16
+// Last Modified : 2025-12-16
 
 package cleanup
 
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
+	"sfDBTools/internal/types"
 	"sfDBTools/pkg/fsops"
 	"time"
 )
@@ -29,8 +30,16 @@ func CleanupOldBackupsFromBackup(config *appconfig.Config, logger applog.Logger)
 	logger.Infof("Melakukan cleanup backup files lebih dari %d hari (sebelum %s)",
 		retentionDays, cutoffTime.Format(timeFormat))
 
-	// Scan files yang perlu dihapus - reuse scanFilesWithLogger
-	filesToDelete, err := scanFilesWithLogger(baseDir, cutoffTime, "", logger)
+	// Buat temporary service untuk cleanup
+	opts := types.CleanupOptions{
+		Enabled: true,
+		Days:    retentionDays,
+		Pattern: "",
+	}
+	svc := NewCleanupService(config, logger, opts)
+
+	// Scan files yang perlu dihapus
+	filesToDelete, err := svc.scanFiles(baseDir, cutoffTime, "")
 	if err != nil {
 		return fmt.Errorf("gagal scan old backup files: %w", err)
 	}
@@ -40,8 +49,8 @@ func CleanupOldBackupsFromBackup(config *appconfig.Config, logger applog.Logger)
 		return nil
 	}
 
-	// Hapus files - reuse performDeletionWithLogger
-	performDeletionWithLogger(filesToDelete, logger)
+	// Hapus files
+	svc.performDeletion(filesToDelete)
 
 	return nil
 }

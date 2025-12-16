@@ -2,11 +2,11 @@ package profile
 
 import (
 	"os"
-	"sfDBTools/internal/profileselect"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
+	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 
@@ -16,19 +16,19 @@ import (
 // promptSelectExistingConfig menampilkan daftar file konfigurasi dari direktori
 // konfigurasi aplikasi dan meminta pengguna memilih salah satu.
 func (s *Service) promptSelectExistingConfig() error {
-	info, err := profileselect.SelectExistingDBConfig("Select Existing Configuration File")
+	info, err := profilehelper.ResolveAndLoadProfile(profilehelper.ProfileLoadOptions{
+		ConfigDir:         s.Config.ConfigDir.DatabaseProfile,
+		ProfilePath:       "", // Empty to trigger interactive selection
+		AllowInteractive:  true,
+		InteractivePrompt: "Select Existing Configuration File",
+		RequireProfile:    true,
+	})
 	if err != nil {
 		return err
 	}
 
 	// Muat data ke struct ProfileInfo
-	s.ProfileInfo = &types.ProfileInfo{
-		Path:         info.Path,
-		Name:         info.Name,
-		DBInfo:       info.DBInfo,
-		Size:         info.Size,
-		LastModified: info.LastModified,
-	}
+	s.ProfileInfo = info
 
 	// Set OriginalProfileName untuk validasi edit
 	s.OriginalProfileName = info.Name

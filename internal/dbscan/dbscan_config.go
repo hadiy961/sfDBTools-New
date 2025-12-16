@@ -15,6 +15,7 @@ import (
 func (s *Service) CheckAndSelectConfigFile() error {
 	// Gunakan profilehelper untuk load source profile dengan interactive mode
 	profile, err := profilehelper.LoadSourceProfile(
+		s.Config.ConfigDir.DatabaseProfile,
 		s.ScanOptions.ProfileInfo.Path,
 		s.ScanOptions.Encryption.Key,
 		true, // enableInteractive - tampilkan selector jika path kosong

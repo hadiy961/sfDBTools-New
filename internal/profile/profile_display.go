@@ -2,9 +2,9 @@ package profile
 
 import (
 	"fmt"
-	"sfDBTools/internal/profileselect"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/input"
+	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -160,7 +160,12 @@ func (s *Service) revealPasswordConfirmAndShow(orig *types.ProfileInfo) {
 	}
 
 	// Gunakan helper untuk memuat dan parse dengan resolver kunci
-	info, err := profileselect.LoadAndParseProfile(orig.Path, key)
+	info, err := profilehelper.ResolveAndLoadProfile(profilehelper.ProfileLoadOptions{
+		ConfigDir:      s.Config.ConfigDir.DatabaseProfile,
+		ProfilePath:    orig.Path,
+		ProfileKey:     key,
+		RequireProfile: true,
+	})
 	if err != nil {
 		ui.PrintWarning("Enkripsi key salah atau file rusak. Tidak dapat menampilkan password asli.")
 		return

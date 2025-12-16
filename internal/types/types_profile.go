@@ -38,3 +38,12 @@ type ProfileDeleteOptions struct {
 	ProfileInfo ProfileInfo
 	Force       bool
 }
+
+// ProfileEntryConfig menyimpan konfigurasi untuk entry point profile operations
+type ProfileEntryConfig struct {
+	HeaderTitle string // UI header title
+	Mode        string // "create", "show", "edit", "delete"
+	ShowOptions bool   // Display profile info before operation
+	SuccessMsg  string // Success message
+	LogPrefix   string // Log prefix for tracking
+}

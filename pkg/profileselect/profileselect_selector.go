@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
@@ -13,21 +12,14 @@ import (
 	"sfDBTools/pkg/validation"
 )
 
-func SelectExistingDBConfig(purpose string) (types.ProfileInfo, error) {
+func SelectExistingDBConfig(configDir, purpose string) (types.ProfileInfo, error) {
 	// Tujuan: menampilkan daftar file konfigurasi yang ada dan membiarkan user memilih satu
 	// Kembalikan DBConfigInfo yang berisi metadata file dan detail koneksi (jika berhasil dimuat)
 	// Jika tidak ada file, kembalikan error
 	// Jika user membatalkan, kembalikan error khusus
 	ui.PrintSubHeader(purpose)
 
-	// Muat konfigurasi aplikasi untuk mendapatkan direktori konfigurasi
-	cfg, err := appconfig.LoadConfigFromEnv()
-	if err != nil {
-		return types.ProfileInfo{}, fmt.Errorf("gagal memuat konfigurasi aplikasi: %w", err)
-	}
-
 	// Baca isi direktori konfigurasi
-	configDir := cfg.ConfigDir.DatabaseProfile
 	ProfileInfo := types.ProfileInfo{}
 
 	// Bacaan direktori

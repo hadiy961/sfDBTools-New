@@ -1,11 +1,9 @@
 package cmdprofile
 
 import (
-	"fmt"
 	"sfDBTools/internal/profile"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/flags"
-	"sfDBTools/pkg/parsing"
 
 	"github.com/spf13/cobra"
 )
@@ -23,33 +21,7 @@ Gunakan flag --file/-f untuk menampilkan profil tertentu. Jika tidak memberikan 
 	sfdbtools profile show --file myprofile --reveal-password
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Pastikan dependencies tersedia
-		if types.Deps == nil {
-			return fmt.Errorf("dependencies belum di-inject")
-		}
-
-		// Akses config dan logger dari dependency injection
-		cfg := types.Deps.Config
-		logger := types.Deps.Logger
-
-		// Log dimulainya proses melihat profil
-		logger.Info("Memulai melihat profil")
-
-		// Membaca nilai dari flags
-		ProfileShowOptions, err := parsing.ParsingShowProfile(cmd)
-		if err != nil {
-			logger.Errorf("Gagal memparsing flags: %v", err)
-			return fmt.Errorf("gagal memparsing flags: %v", err)
-		}
-		// Inisialisasi service profile
-		profileService := profile.NewProfileService(cfg, logger, ProfileShowOptions)
-
-		// Panggil method CreateProfile
-		// Jalankan proses create
-		if err := profileService.ShowProfile(); err != nil {
-			return err
-		}
-		return nil
+		return profile.ExecuteProfile(cmd, types.Deps, "show")
 	},
 }
 

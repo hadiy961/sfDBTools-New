@@ -1,9 +1,15 @@
 package profile
 
 import (
+	"errors"
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
+)
+
+// Error definitions
+var (
+	ErrInvalidProfileMode = errors.New("mode profile tidak valid")
 )
 
 type Service struct {

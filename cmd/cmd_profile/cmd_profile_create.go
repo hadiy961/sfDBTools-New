@@ -1,11 +1,9 @@
 package cmdprofile
 
 import (
-	"fmt"
 	"sfDBTools/internal/profile"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/flags"
-	"sfDBTools/pkg/parsing"
 
 	"github.com/spf13/cobra"
 )
@@ -25,33 +23,8 @@ Jika flag tidak lengkap, proses dapat meminta input secara interaktif.`,
 	sfdbtools profile create --interactive
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Pastikan dependencies tersedia
-		if types.Deps == nil {
-			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
-			return
-		}
-
-		// Akses config dan logger dari dependency injection
-		cfg := types.Deps.Config
-		logger := types.Deps.Logger
-
-		// Log dimulainya proses create profile
-		logger.Info("Memulai proses pembuatan profil")
-
-		// Membaca nilai dari flags
-		ProfileCreateOptions, err := parsing.ParsingCreateProfile(cmd, logger)
-		if err != nil {
-			logger.Errorf("Gagal memparsing flags: %v", err)
-			return
-		}
-
-		// Inisialisasi service profile
-		profileService := profile.NewProfileService(cfg, logger, ProfileCreateOptions)
-
-		// Panggil method CreateProfile
-		// Jalankan proses create
-		if err := profileService.CreateProfile(); err != nil {
-			return
+		if err := profile.ExecuteProfile(cmd, types.Deps, "create"); err != nil {
+			types.Deps.Logger.Error("profile create gagal: " + err.Error())
 		}
 	},
 }
