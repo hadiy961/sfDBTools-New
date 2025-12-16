@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"sfDBTools/internal/profileselect"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 )
 
@@ -27,7 +26,7 @@ type ProfileLoadOptions struct {
 }
 
 // ResolveAndLoadProfile me-resolve dan load profile dengan fallback ke environment variables
-// Function ini menggabungkan pattern yang sama dari backup, dbscan, dan restore packages
+// Function ini menggabungkan pattern yang sama dari backup dan dbscan packages
 func ResolveAndLoadProfile(opts ProfileLoadOptions) (*types.ProfileInfo, error) {
 	profilePath := opts.ProfilePath
 	profileKey := opts.ProfileKey
@@ -89,20 +88,6 @@ func ResolveAndLoadProfile(opts ProfileLoadOptions) (*types.ProfileInfo, error) 
 	profile.Name = name
 
 	return profile, nil
-}
-
-// LoadTargetProfile loads target profile untuk restore operations
-// Wrapper function dengan default values untuk restore
-func LoadTargetProfile(profilePath, profileKey string) (*types.ProfileInfo, error) {
-	return ResolveAndLoadProfile(ProfileLoadOptions{
-		ProfilePath:      profilePath,
-		ProfileKey:       profileKey,
-		EnvProfilePath:   consts.ENV_TARGET_PROFILE,
-		EnvProfileKey:    consts.ENV_TARGET_PROFILE_KEY,
-		RequireProfile:   true,
-		ProfilePurpose:   "target",
-		AllowInteractive: false,
-	})
 }
 
 // LoadSourceProfile loads source profile untuk backup/dbscan operations dengan interactive mode

@@ -36,28 +36,3 @@ func ConnectWithProfile(profile *types.ProfileInfo, initialDB string) (*database
 
 	return client, nil
 }
-
-// ConnectWithTargetProfile membuat koneksi ke target database (untuk restore)
-// Wrapper untuk ConnectToDestinationDatabase
-func ConnectWithTargetProfile(profile *types.ProfileInfo, targetDB string) (*database.Client, error) {
-	if profile == nil {
-		return nil, fmt.Errorf("profile tidak boleh nil")
-	}
-
-	if targetDB == "" {
-		targetDB = "mysql" // default ke system database
-	}
-
-	creds := types.DestinationDBConnection{
-		DBInfo:   profile.DBInfo,
-		Database: targetDB,
-	}
-
-	client, err := database.ConnectToDestinationDatabase(creds)
-	if err != nil {
-		return nil, fmt.Errorf("gagal koneksi ke target %s@%s:%d: %w",
-			profile.DBInfo.User, profile.DBInfo.Host, profile.DBInfo.Port, err)
-	}
-
-	return client, nil
-}

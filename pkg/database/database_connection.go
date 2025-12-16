@@ -84,12 +84,12 @@ func ConnectToDestinationDatabase(creds types.DestinationDBConnection) (*Client,
 		AllowNativePasswords: true,
 		ParseTime:            true,
 		Database:             creds.Database,
-		ReadTimeout:          0, // Unlimited - untuk long-running queries (backup/restore)
+		ReadTimeout:          0, // Unlimited - untuk long-running queries (backup)
 		WriteTimeout:         0, // Unlimited - untuk large data transfers
 	}
 
 	ctx := context.Background()
-	// Untuk destination database (backup/restore), gunakan ConnMaxLifetime 0 (unlimited)
+	// Untuk destination database (backup), gunakan ConnMaxLifetime 0 (unlimited)
 	// karena operasi bisa memakan waktu lama
 	client, err := NewClient(ctx, cfg, 5*time.Second, 10, 5, 0)
 	spin.Stop()

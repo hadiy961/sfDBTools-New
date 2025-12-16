@@ -1,7 +1,7 @@
 package consts
 
 // File : pkg/consts/consts_backup.go
-// Deskripsi : Constants related to backup and restore operations
+// Deskripsi : Constants related to backup operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-11-11
 // Last Modified : 2025-11-14

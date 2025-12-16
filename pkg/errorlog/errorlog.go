@@ -1,5 +1,5 @@
 // File : pkg/errorlog/errorlog.go
-// Deskripsi : Error logging utility untuk semua fitur (restore, backup, dbscan)
+// Deskripsi : Error logging utility untuk semua fitur (backup, dbscan, cleanup)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-11-10
 // Last Modified : 2025-11-10
@@ -19,7 +19,7 @@ import (
 type ErrorLogger struct {
 	Logger  applog.Logger
 	LogDir  string
-	Feature string // "restore", "backup", "dbscan"
+	Feature string // "backup", "dbscan", "cleanup"
 }
 
 // NewErrorLogger membuat instance ErrorLogger baru
