@@ -1,3 +1,9 @@
+// File : internal/profile/service.go
+// Deskripsi : Service utama implementation untuk profile operations
+// Author : Hadiyatna Muflihun
+// Tanggal : 16 Desember 2025
+// Last Modified : 17 Desember 2025
+
 package profile
 
 import (
@@ -21,6 +27,7 @@ type Service struct {
 	ProfileDelete *types.ProfileDeleteOptions
 	ProfileEdit   *types.ProfileEditOptions
 	DBInfo        *types.DBInfo
+	
 	// OriginalProfileName menyimpan nama file profil yang dibuka untuk mode edit.
 	OriginalProfileName string
 	// OriginalProfileInfo menyimpan salinan data profil sebelum diedit (jika tersedia)
@@ -30,7 +37,7 @@ type Service struct {
 func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interface{}) *Service {
 	svc := &Service{
 		Log:    logs,
-		Config: cfg, // Perbaikan: set field Config agar tidak nil
+		Config: cfg,
 	}
 
 	if profile != nil {
@@ -52,20 +59,45 @@ func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interf
 				svc.OriginalProfileName = v.ProfileInfo.Path
 			}
 		case *types.ProfileDeleteOptions:
-			// Tambahkan inisialisasi untuk ProfileDeleteOptions jika diperlukan
 			svc.ProfileDelete = v
 			svc.ProfileInfo = &v.ProfileInfo
 			svc.DBInfo = &v.ProfileInfo.DBInfo
 		default:
 			logs.Warn("Tipe profil tidak dikenali dalam Service")
 			svc.ProfileInfo = &types.ProfileInfo{}
-
 		}
 	} else {
 		logs.Warn("Tipe profil tidak dikenali dalam Service")
 	}
 
 	return svc
+}
+
+// ExecuteProfileCommand adalah entry point utama untuk profile execution
+func (s *Service) ExecuteProfileCommand(config types.ProfileEntryConfig) error {
+	// Log prefix untuk tracking
+	if config.LogPrefix != "" {
+		s.Log.Infof("[%s] Memulai profile operation dengan mode: %s", config.LogPrefix, config.Mode)
+	}
+
+	// Tampilkan options jika diminta
+	if config.ShowOptions {
+		s.displayProfileOptions()
+	}
+
+	// Jalankan profile operation berdasarkan mode
+	switch config.Mode {
+	case "create":
+		return s.CreateProfile()
+	case "show":
+		return s.ShowProfile()
+	case "edit":
+		return s.EditProfile()
+	case "delete":
+		return s.PromptDeleteProfile()
+	default:
+		return ErrInvalidProfileMode
+	}
 }
 
 // isInteractiveMode menentukan apakah service sedang berjalan dalam mode interaktif.

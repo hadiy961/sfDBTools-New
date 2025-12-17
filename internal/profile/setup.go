@@ -1,3 +1,9 @@
+// File : internal/profile/setup.go
+// Deskripsi : Setup, configuration helpers, and path management
+// Author : Hadiyatna Muflihun
+// Tanggal : 16 Desember 2025
+// Last Modified : 17 Desember 2025
+
 package profile
 
 import (
@@ -12,7 +18,6 @@ import (
 )
 
 // buildFileName menormalkan input (menghapus suffix jika ada) lalu memastikan suffix .cnf.enc
-// Tujuan: menghindari duplikasi suffix saat user sudah mengetikkan nama dengan ekstensi.
 func buildFileName(name string) string {
 	return validation.ProfileExt(helper.TrimProfileSuffix(strings.TrimSpace(name)))
 }
@@ -23,8 +28,7 @@ func (s *Service) filePathInConfigDir(name string) string {
 	return filepath.Join(cfgDir, buildFileName(name))
 }
 
-// loadSnapshotFromPath membaca file terenkripsi, mencoba dekripsi (jika kunci tersedia/di-prompt),
-// parse nilai penting, dan mengisi s.OriginalProfileInfo beserta metadata.
+// loadSnapshotFromPath membaca file terenkripsi, mencoba dekripsi, parse, dan mengisi OriginalProfileInfo.
 func (s *Service) loadSnapshotFromPath(absPath string) error {
 	info, err := profilehelper.ResolveAndLoadProfile(profilehelper.ProfileLoadOptions{
 		ConfigDir:      s.Config.ConfigDir.DatabaseProfile,
@@ -61,7 +65,6 @@ func (s *Service) fillOriginalInfoFromMeta(absPath string, info types.ProfileInf
 // formatConfigToINI mengubah struct DBConfigInfo menjadi format string INI.
 func (s *Service) formatConfigToINI() string {
 	// [client] adalah header standar untuk file my.cnf
-	// Ini memastikan kompatibilitas dengan banyak tools command-line MySQL/MariaDB
 	content := `[client]
 host=%s
 port=%d

@@ -1,3 +1,9 @@
+// File : internal/profile/display.go
+// Deskripsi : Display functions untuk profile operations
+// Author : Hadiyatna Muflihun
+// Tanggal : 16 Desember 2025
+// Last Modified : 17 Desember 2025
+
 package profile
 
 import (
@@ -10,8 +16,12 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
+// displayProfileOptions can be implemented if needed for showing general options
+func (s *Service) displayProfileOptions() {
+	s.Log.Debug("displayProfileOptions called (not implemented)")
+}
+
 func (s *Service) DisplayProfileDetails() {
-	// Jika mode SHOW -> tampilkan detail penuh dari snapshot yang dimuat
 	if s.ProfileShow != nil {
 		if s.OriginalProfileInfo != nil {
 			title := s.OriginalProfileInfo.Name
@@ -22,26 +32,21 @@ func (s *Service) DisplayProfileDetails() {
 			s.printShowDetails()
 			return
 		}
-		// Jika ProfileShow ada tapi OriginalProfileInfo nil
 		ui.PrintSubHeader("Menampilkan Profil: " + s.ProfileInfo.Name)
 		s.printCreateSummary()
 		return
 	}
 
-	// Jika ada snapshot original -> ini alur EDIT: tampilkan hanya ringkasan perubahan
 	if s.OriginalProfileInfo != nil {
 		ui.PrintSubHeader("Ringkasan Perubahan : " + s.ProfileInfo.Name)
 		s.printChangeSummary()
 		return
 	}
 
-	// Default: create flow -> tampilkan ringkasan pembuatan
 	ui.PrintSubHeader("Konfigurasi Database Baru: " + s.ProfileInfo.Name)
 	s.printCreateSummary()
-
 }
 
-// printCreateSummary mencetak ringkasan konfigurasi baru.
 func (s *Service) printCreateSummary() {
 	rows := [][]string{
 		{"1", "Nama", s.ProfileInfo.Name},
@@ -58,7 +63,6 @@ func (s *Service) printCreateSummary() {
 	ui.FormatTable([]string{"No", "Field", "Value"}, rows)
 }
 
-// printChangeSummary compares OriginalProfileInfo and current ProfileInfo and prints a short summary.
 func (s *Service) printChangeSummary() {
 	orig := s.OriginalProfileInfo
 	if orig == nil {
@@ -68,11 +72,8 @@ func (s *Service) printChangeSummary() {
 	rows := [][]string{}
 	idx := 1
 
-	// helper to represent password state
 	pwState := func(pw string) string {
-		if pw == "" {
-			return "(not set)"
-		}
+		if pw == "" { return "(not set)" }
 		return "(set)"
 	}
 
@@ -102,11 +103,9 @@ func (s *Service) printChangeSummary() {
 		return
 	}
 
-	// headers: No, Field, Before, After
 	ui.FormatTable([]string{"No", "Field", "Before", "After"}, rows)
 }
 
-// printShowDetails mencetak seluruh detail konfigurasi dari snapshot (untuk mode show).
 func (s *Service) printShowDetails() {
 	orig := s.OriginalProfileInfo
 	if orig == nil {
@@ -132,23 +131,17 @@ func (s *Service) printShowDetails() {
 
 	ui.FormatTable([]string{"No", "Field", "Value"}, rows)
 
-	// Jika pengguna meminta reveal-password, lakukan konfirmasi dengan meminta
-	// ulang encryption password dan coba dekripsi file. Hanya tampilkan password
-	// asli jika dekripsi berhasil.
 	if s.ProfileShow != nil && s.ProfileShow.RevealPassword {
 		s.revealPasswordConfirmAndShow(orig)
 	}
 }
 
-// revealPasswordConfirmAndShow meminta encryption password, mencoba mendekripsi file,
-// dan menampilkan password jika dekripsi berhasil.
 func (s *Service) revealPasswordConfirmAndShow(orig *types.ProfileInfo) {
 	if orig.Path == "" {
 		ui.PrintWarning("Tidak ada file yang terkait untuk memverifikasi password.")
 		return
 	}
 
-	// Minta ulang encryption key
 	key, err := input.AskPassword("Masukkan ulang encryption key untuk verifikasi: ", survey.Required)
 	if err != nil {
 		ui.PrintWarning("Gagal mendapatkan encryption key: " + err.Error())
@@ -159,7 +152,6 @@ func (s *Service) revealPasswordConfirmAndShow(orig *types.ProfileInfo) {
 		return
 	}
 
-	// Gunakan helper untuk memuat dan parse dengan resolver kunci
 	info, err := profilehelper.ResolveAndLoadProfile(profilehelper.ProfileLoadOptions{
 		ConfigDir:      s.Config.ConfigDir.DatabaseProfile,
 		ProfilePath:    orig.Path,
@@ -172,7 +164,6 @@ func (s *Service) revealPasswordConfirmAndShow(orig *types.ProfileInfo) {
 	}
 	realPw := info.DBInfo.Password
 
-	// Tampilkan result dalam table kecil
 	display := "(not set)"
 	if realPw != "" {
 		display = realPw
