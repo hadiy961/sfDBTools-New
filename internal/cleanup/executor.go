@@ -1,8 +1,8 @@
-// File : internal/cleanup/cleanup_core.go
-// Deskripsi : Core cleanup logic - scan dan delete files
+// File : internal/cleanup/executor.go
+// Deskripsi : Core execution logic untuk scanning dan deletion
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-16
-// Last Modified : 2025-12-16
+// Tanggal : 16 Desember 2025
+// Last Modified : 17 Desember 2025
 
 package cleanup
 
@@ -10,11 +10,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/types/types_backup"
-	"sfDBTools/pkg/global"
-	"sfDBTools/pkg/helper"
 	"sort"
 	"time"
+
+	"sfDBTools/internal/appconfig"
+	"sfDBTools/internal/applog"
+	"sfDBTools/internal/types"
+	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/fsops"
+	"sfDBTools/pkg/global"
+	"sfDBTools/pkg/helper"
 
 	"github.com/bmatcuk/doublestar/v4"
 )
@@ -26,11 +31,11 @@ const (
 
 // cleanupCore adalah fungsi inti terpadu untuk semua logika pembersihan.
 func (s *Service) cleanupCore(dryRun bool, pattern string) error {
-	// Tentukan mode operasi untuk logging
 	mode := "Menjalankan"
 	if dryRun {
 		mode = "Menjalankan DRY-RUN"
 	}
+	
 	if pattern != "" {
 		s.Log.Infof("%s proses cleanup untuk pattern: %s", mode, pattern)
 	} else {
@@ -45,10 +50,11 @@ func (s *Service) cleanupCore(dryRun bool, pattern string) error {
 
 	s.Log.Info("Path backup base directory:", s.Config.Backup.Output.BaseDirectory)
 	s.Log.Infof("Cleanup policy: hapus file backup lebih dari %d hari", retentionDays)
+	
 	cutoffTime := time.Now().AddDate(0, 0, -retentionDays)
 	s.Log.Infof("Cutoff time: %s", cutoffTime.Format(timeFormat))
 
-	// Pindai file berdasarkan mode (dengan atau tanpa pattern)
+	// Pindai file
 	filesToDelete, err := s.scanFiles(s.Config.Backup.Output.BaseDirectory, cutoffTime, pattern)
 	if err != nil {
 		return fmt.Errorf("gagal memindai file backup: %w", err)
@@ -68,15 +74,13 @@ func (s *Service) cleanupCore(dryRun bool, pattern string) error {
 	return nil
 }
 
-// scanFiles memilih metode pemindaian file (menyeluruh atau berdasarkan pola).
+// scanFiles memindai file berdasarkan kriteria retensi dan pattern.
 func (s *Service) scanFiles(baseDir string, cutoff time.Time, pattern string) ([]types_backup.BackupFileInfo, error) {
-	// Jika tidak ada pattern, kita buat pattern default untuk mencari semua file secara rekursif.
-	// Tanda '**/*' berarti "semua file di semua sub-direktori".
 	if pattern == "" {
 		pattern = "**/*"
 	}
 
-	// Satu panggilan untuk menemukan semua file yang cocok, di mana pun lokasinya!
+	// Gunakan doublestar untuk recursive globbing
 	paths, err := doublestar.Glob(os.DirFS(baseDir), pattern)
 	if err != nil {
 		return nil, fmt.Errorf("gagal memproses pattern glob %s: %w", pattern, err)
@@ -84,7 +88,6 @@ func (s *Service) scanFiles(baseDir string, cutoff time.Time, pattern string) ([
 
 	var filesToDelete []types_backup.BackupFileInfo
 	for _, path := range paths {
-		// Karena Glob mengembalikan path relatif, kita gabungkan lagi dengan baseDir
 		fullPath := filepath.Join(baseDir, path)
 
 		info, err := os.Stat(fullPath)
@@ -93,7 +96,7 @@ func (s *Service) scanFiles(baseDir string, cutoff time.Time, pattern string) ([
 			continue
 		}
 
-		// Lewati direktori dan file yang tidak sesuai kriteria
+		// Validasi tipe file dan kriteria
 		if info.IsDir() || (pattern == "**/*" && !helper.IsBackupFile(fullPath)) {
 			continue
 		}
@@ -107,6 +110,7 @@ func (s *Service) scanFiles(baseDir string, cutoff time.Time, pattern string) ([
 		}
 	}
 
+	// Sort berdasarkan waktu modifikasi (terlama dulu)
 	sort.Slice(filesToDelete, func(i, j int) bool {
 		return filesToDelete[i].ModTime.Before(filesToDelete[j].ModTime)
 	})
@@ -114,7 +118,7 @@ func (s *Service) scanFiles(baseDir string, cutoff time.Time, pattern string) ([
 	return filesToDelete, nil
 }
 
-// performDeletion menghapus file-file yang ada dalam daftar.
+// performDeletion menghapus file yang ada dalam daftar.
 func (s *Service) performDeletion(files []types_backup.BackupFileInfo) {
 	s.Log.Infof("Ditemukan %d file backup lama yang akan dihapus", len(files))
 
@@ -135,21 +139,60 @@ func (s *Service) performDeletion(files []types_backup.BackupFileInfo) {
 		deletedCount, global.FormatFileSize(totalFreedSize))
 }
 
-// logDryRunSummary mencatat ringkasan file yang akan dihapus dalam mode dry-run.
-func (s *Service) logDryRunSummary(files []types_backup.BackupFileInfo) {
-	s.Log.Infof("DRY-RUN: Ditemukan %d file backup yang AKAN dihapus:", len(files))
+// =============================================================================
+// Public Helper Functions (Used by other modules like Backup)
+// =============================================================================
 
-	var totalSize int64
-	for i, file := range files {
-		totalSize += file.Size
-		s.Log.Infof("  [%d] %s (modified: %s, size: %s)",
-			i+1,
-			file.Path,
-			file.ModTime.Format(timeFormat),
-			global.FormatFileSize(file.Size))
+// CleanupOldBackupsFromBackup menjalankan cleanup old backup files (untuk integrasi dengan backup module).
+func CleanupOldBackupsFromBackup(config *appconfig.Config, logger applog.Logger) error {
+	retentionDays := config.Backup.Cleanup.Days
+	if retentionDays <= 0 {
+		logger.Info("Retention days tidak valid, melewati cleanup")
+		return nil
 	}
 
-	s.Log.Infof("DRY-RUN: Total %d file dengan ukuran %s akan dibebaskan.",
-		len(files), global.FormatFileSize(totalSize))
-	s.Log.Info("DRY-RUN: Untuk menjalankan cleanup sebenarnya, jalankan tanpa flag --dry-run.")
+	baseDir := config.Backup.Output.BaseDirectory
+	cutoffTime := time.Now().AddDate(0, 0, -retentionDays)
+
+	logger.Infof("Melakukan cleanup backup files lebih dari %d hari (sebelum %s)",
+		retentionDays, cutoffTime.Format(timeFormat))
+
+	opts := types.CleanupOptions{
+		Enabled: true,
+		Days:    retentionDays,
+		Pattern: "",
+	}
+	svc := NewCleanupService(config, logger, opts)
+
+	filesToDelete, err := svc.scanFiles(baseDir, cutoffTime, "")
+	if err != nil {
+		return fmt.Errorf("gagal scan old backup files: %w", err)
+	}
+
+	if len(filesToDelete) == 0 {
+		logger.Info("Tidak ada old backup files yang perlu dihapus")
+		return nil
+	}
+
+	svc.performDeletion(filesToDelete)
+	return nil
+}
+
+// CleanupFailedBackup menghapus file backup yang gagal.
+func CleanupFailedBackup(filePath string, logger applog.Logger) {
+	if fsops.FileExists(filePath) {
+		logger.Infof("Menghapus file backup yang gagal: %s", filePath)
+		if err := fsops.RemoveFile(filePath); err != nil {
+			logger.Warnf("Gagal menghapus file backup yang gagal: %v", err)
+		}
+	}
+}
+
+// CleanupPartialBackup menghapus file backup yang belum selesai (graceful shutdown).
+func CleanupPartialBackup(filePath string, logger applog.Logger) error {
+	if err := fsops.RemoveFile(filePath); err != nil {
+		return fmt.Errorf("gagal menghapus file backup: %w", err)
+	}
+	logger.Infof("File backup yang belum selesai berhasil dihapus: %s", filePath)
+	return nil
 }
