@@ -9,19 +9,20 @@ import (
 
 // AddBackupFlags
 func AddBackupFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
+	// Profile flags (shared)
 	AddProfileFlags(cmd, &opts.Profile)
 
-	// Filters
+	// Filters (Custom implementation for backup struct compatibility)
 	cmd.Flags().Bool("exclude-system", opts.Filter.ExcludeSystem, "Kecualikan system databases (information_schema, mysql, dll)")
 	cmd.Flags().StringArray("exclude-db", opts.Filter.ExcludeDatabases, "Daftar database yang akan dikecualikan. Dapat dikombinasi dengan --exclude-db-file.")
 	cmd.Flags().String("exclude-db-file", opts.Filter.ExcludeDBFile, "File berisi daftar database yang akan dikecualikan (satu per baris). Dapat dikombinasi dengan --exclude-db.")
 	cmd.Flags().StringArray("db", opts.Filter.IncludeDatabases, "Daftar database yang akan di-backup. Dapat dikombinasi dengan --db-file.")
 	cmd.Flags().String("db-file", opts.Filter.IncludeFile, "File berisi daftar database yang akan di-backup (satu per baris). Dapat dikombinasi dengan --db.")
 
-	// Compression
+	// Compression (shared)
 	AddCompressionFlags(cmd, &opts.Compression)
 
-	// Encryption
+	// Encryption (shared)
 	AddEncryptionFlags(cmd, &opts.Encryption)
 
 	// Capture GTID
@@ -40,17 +41,6 @@ func AddBackupFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
 	// Ticket (wajib)
 	cmd.Flags().String("ticket", opts.Ticket, "Ticket number untuk request backup (wajib)")
 	cmd.MarkFlagRequired("ticket")
-}
-
-// AddEncryptionFlags menambahkan flags untuk konfigurasi enkripsi.
-func AddEncryptionFlags(cmd *cobra.Command, opts *types_backup.EncryptionOptions) {
-	cmd.Flags().StringP("encryption-key", "K", opts.Key, "Kunci enkripsi yang digunakan untuk mengenkripsi file backup")
-}
-
-// AddCompressionFlags menambahkan flags untuk konfigurasi kompresi.
-func AddCompressionFlags(cmd *cobra.Command, opts *types_backup.CompressionOptions) {
-	cmd.Flags().StringP("compress-type", "C", opts.Type, "Tipe kompresi yang digunakan (gzip, zstd, xz, pgzip, zlib, none)")
-	cmd.Flags().Int("compress-level", opts.Level, "Tingkat kompresi yang digunakan (1-9)")
 }
 
 // AddBackupFilterFlags menambahkan flags untuk backup filter (tanpa exclude flags)

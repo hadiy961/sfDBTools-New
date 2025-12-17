@@ -2,7 +2,6 @@ package parsing
 
 import (
 	"sfDBTools/internal/types/types_backup"
-	"sfDBTools/pkg/consts"
 	defaultVal "sfDBTools/internal/defaultval"
 	"sfDBTools/pkg/helper"
 
@@ -18,20 +17,11 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	// Command filter memiliki Use="filter", sedangkan all memiliki Use="all"
 	isFilterCommand := cmd.Use == "filter"
 
-	// Profile & key
-	if v := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE); v != "" {
-		opts.Profile.Path = v
-	}
-	if v := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY); v != "" {
-		opts.Encryption.Key = v
-	}
+	// Profile & key (Shared Helper)
+	PopulateProfileFlags(cmd, &opts.Profile)
 
-	// Filters
-	opts.Filter.ExcludeSystem = helper.GetBoolFlagOrEnv(cmd, "exclude-system", "")
-	opts.Filter.ExcludeDatabases = helper.GetStringArrayFlagOrEnv(cmd, "exclude-db", "")
-	opts.Filter.ExcludeDBFile = helper.GetStringFlagOrEnv(cmd, "exclude-db-file", "")
-	opts.Filter.IncludeDatabases = helper.GetStringArrayFlagOrEnv(cmd, "db", "")
-	opts.Filter.IncludeFile = helper.GetStringFlagOrEnv(cmd, "db-file", "")
+	// Filters (Shared Helper)
+	PopulateFilterFlags(cmd, &opts.Filter)
 
 	// Set flag untuk command filter agar bisa tampilkan multi-select jika tidak ada include/exclude
 	// Ini digunakan di setup.go untuk menentukan apakah perlu multi-select atau tidak
@@ -39,23 +29,11 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 		opts.Filter.IsFilterCommand = true
 	}
 
-	// Compression - derive from compress-type (enabled unless type is "none" or empty)
-	if v := helper.GetStringFlagOrEnv(cmd, "compress-type", ""); v != "" && v != "none" {
-		opts.Compression.Type = v
-		opts.Compression.Enabled = true
-	} else if v == "none" {
-		opts.Compression.Type = v
-		opts.Compression.Enabled = false
-	}
-	if v := helper.GetIntFlagOrEnv(cmd, "compress-level", ""); v != 0 {
-		opts.Compression.Level = v
-	}
+	// Compression (Shared Helper)
+	PopulateCompressionFlags(cmd, &opts.Compression)
 
-	// Encryption - derive from encryption-key (enabled if key is not empty)
-	if v := helper.GetStringFlagOrEnv(cmd, "encryption-key", consts.ENV_BACKUP_ENCRYPTION_KEY); v != "" {
-		opts.Encryption.Key = v
-		opts.Encryption.Enabled = true
-	}
+	// Encryption (Shared Helper)
+	PopulateEncryptionFlags(cmd, &opts.Encryption)
 
 	// Capture GTID (hanya untuk combined)
 	if mode == "combined" {

@@ -1,7 +1,6 @@
 package flags
 
 import (
-	"sfDBTools/internal/types"
 	defaultVal "sfDBTools/internal/defaultval"
 
 	"github.com/spf13/cobra"
@@ -10,7 +9,7 @@ import (
 // ProfileCreate - Flag untuk membuat profil baru
 func ProfileCreate(cmd *cobra.Command) {
 	// Ambil default dari defaultVal
-	FlagsDBInfo(cmd)
+	AddDBInfoFlags(cmd)
 	defaultOptions := defaultVal.DefaultProfileCreateOptions()
 
 	// Tambahkan flag spesifik untuk pembuatan profil
@@ -23,7 +22,7 @@ func ProfileCreate(cmd *cobra.Command) {
 // ProfileEdit - Flag untuk mengedit profil yang ada
 func ProfileEdit(cmd *cobra.Command) {
 	// Ambil default dari defaultVal
-	FlagsDBInfo(cmd)
+	AddDBInfoFlags(cmd)
 	defaultOptions := defaultVal.DefaultProfileCreateOptions()
 
 	// Tambahkan flag spesifik untuk mengedit profil
@@ -50,10 +49,4 @@ func ProfileDelete(cmd *cobra.Command) {
 	// Tambahkan flag spesifik untuk menghapus profil
 	cmd.Flags().StringP("file", "f", "", "Nama file profil yang akan dihapus")
 	cmd.Flags().BoolP("force", "F", false, "Hapus profil tanpa konfirmasi")
-}
-
-// ProfileList - Flag untuk daftar profil yang ada
-func AddProfileFlags(cmd *cobra.Command, opts *types.ProfileInfo) {
-	cmd.Flags().StringP("profile", "p", opts.Path, "Nama file profil yang akan dipilih (WAJIB)")
-	cmd.Flags().StringP("profile-key", "P", opts.EncryptionKey, "kunci enkripsi untuk mendekripsi file profil")
 }

@@ -3,7 +3,6 @@ package parsing
 import (
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/consts"
 	defaultVal "sfDBTools/internal/defaultval"
 	"sfDBTools/pkg/helper"
 
@@ -17,15 +16,8 @@ func ParsingScanFilterOptions(cmd *cobra.Command, cfg *appconfig.Config) (types.
 	// Start dengan default untuk mode database (memuat fallback dari config/env)
 	opts := defaultVal.GetDefaultScanOptions("database")
 
-	// Profile & key
-	profile := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE)
-	if profile != "" {
-		opts.ProfileInfo.Path = profile
-	}
-	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
-	if key != "" {
-		opts.Encryption.Key = key
-	}
+	// Profile & key (Shared Helper)
+	PopulateProfileFlags(cmd, &opts.ProfileInfo)
 
 	// Exclude system
 	opts.ExcludeSystem = helper.GetBoolFlagOrEnv(cmd, "exclude-system", "")
