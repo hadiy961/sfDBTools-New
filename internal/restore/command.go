@@ -12,7 +12,7 @@ import (
 	"os/signal"
 	"sfDBTools/internal/restore/display"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/parsing"
+	"sfDBTools/internal/parsing"
 	"sfDBTools/pkg/ui"
 	"syscall"
 

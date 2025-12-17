@@ -8,7 +8,7 @@ import (
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/parsing"
+	"sfDBTools/internal/parsing"
 	"strconv"
 	"strings"
 )

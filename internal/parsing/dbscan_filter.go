@@ -1,0 +1,59 @@
+package parsing
+
+import (
+	"sfDBTools/internal/appconfig"
+	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
+	defaultVal "sfDBTools/internal/defaultval"
+	"sfDBTools/pkg/helper"
+
+	"github.com/spf13/cobra"
+)
+
+// ParsingScanFilterOptions membaca flag untuk perintah `dbscan filter`.
+// Hanya melakukan mapping flag ke struct ScanOptions.
+// Pembacaan file dan penggabungan list dilakukan oleh caller (Service/Logic).
+func ParsingScanFilterOptions(cmd *cobra.Command, cfg *appconfig.Config) (types.ScanOptions, error) {
+	// Start dengan default untuk mode database (memuat fallback dari config/env)
+	opts := defaultVal.GetDefaultScanOptions("database")
+
+	// Profile & key
+	profile := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE)
+	if profile != "" {
+		opts.ProfileInfo.Path = profile
+	}
+	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+	if key != "" {
+		opts.Encryption.Key = key
+	}
+
+	// Exclude system
+	opts.ExcludeSystem = helper.GetBoolFlagOrEnv(cmd, "exclude-system", "")
+
+	// Include sources
+	includeCSV := helper.GetStringFlagOrEnv(cmd, "db", "")
+	opts.IncludeList = helper.CSVToCleanList(includeCSV)
+
+	includeFile := helper.GetStringFlagOrEnv(cmd, "db-file", "")
+	if includeFile != "" {
+		opts.DatabaseList.File = includeFile
+	}
+	// Note: opts.DatabaseList.File might already be set by defaultVal from config.
+
+	// Exclude sources
+	excludeCSV := helper.GetStringFlagOrEnv(cmd, "exclude-db", "")
+	opts.ExcludeList = helper.CSVToCleanList(excludeCSV)
+
+	excludeFile := helper.GetStringFlagOrEnv(cmd, "exclude-file", "")
+	if excludeFile != "" {
+		opts.ExcludeFile = excludeFile
+	} else {
+		// Fallback ke konfigurasi bila tidak ada flag exclude-file
+		// Kita masukkan ke ExcludeList agar nanti di-merge
+		if len(cfg.Backup.Exclude.Databases) > 0 {
+			opts.ExcludeList = append(opts.ExcludeList, cfg.Backup.Exclude.Databases...)
+		}
+	}
+
+	return opts, nil
+}

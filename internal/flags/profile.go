@@ -2,7 +2,7 @@ package flags
 
 import (
 	"sfDBTools/internal/types"
-	defaultVal "sfDBTools/pkg/defaultval"
+	defaultVal "sfDBTools/internal/defaultval"
 
 	"github.com/spf13/cobra"
 )

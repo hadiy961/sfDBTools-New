@@ -1,4 +1,4 @@
-package flagsbackup
+package backupimpl
 
 import (
 	"sfDBTools/internal/types/types_backup"

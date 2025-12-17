@@ -3,7 +3,7 @@ package parsing
 import (
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
-	defaultVal "sfDBTools/pkg/defaultval"
+	defaultVal "sfDBTools/internal/defaultval"
 	"sfDBTools/pkg/helper"
 
 	"github.com/spf13/cobra"

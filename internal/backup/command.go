@@ -14,7 +14,7 @@ import (
 	"sfDBTools/internal/backup/display"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
-	"sfDBTools/pkg/parsing"
+	"sfDBTools/internal/parsing"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 	"syscall"

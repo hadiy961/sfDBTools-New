@@ -8,7 +8,7 @@ package profile
 
 import (
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/parsing"
+	"sfDBTools/internal/parsing"
 	"sfDBTools/pkg/ui"
 
 	"github.com/spf13/cobra"

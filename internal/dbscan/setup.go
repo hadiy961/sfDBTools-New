@@ -11,11 +11,53 @@ import (
 	"fmt"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
+	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
+
+// ResolveScanLists membaca file include/exclude dari path yang ada di ScanOptions
+// dan menggabungkannya ke dalam IncludeList/ExcludeList.
+func ResolveScanLists(opts *types.ScanOptions) error {
+	// Include File
+	if opts.DatabaseList.File != "" {
+		lines, err := fsops.ReadLinesFromFile(opts.DatabaseList.File)
+		if err != nil {
+			return fmt.Errorf("gagal membaca db-file %s: %w", opts.DatabaseList.File, err)
+		}
+		opts.IncludeList = append(opts.IncludeList, helper.ListTrimNonEmpty(lines)...)
+	}
+
+	// Exclude File
+	if opts.ExcludeFile != "" {
+		lines, err := fsops.ReadLinesFromFile(opts.ExcludeFile)
+		if err != nil {
+			return fmt.Errorf("gagal membaca exclude-file %s: %w", opts.ExcludeFile, err)
+		}
+		opts.ExcludeList = append(opts.ExcludeList, helper.ListTrimNonEmpty(lines)...)
+	}
+
+	// Deduplicate lists
+	opts.IncludeList = helper.ListUnique(opts.IncludeList)
+	opts.ExcludeList = helper.ListUnique(opts.ExcludeList)
+
+	// Validation: minimal ada kriteria filter
+	if len(opts.IncludeList) == 0 && len(opts.ExcludeList) == 0 {
+		return fmt.Errorf("minimal salah satu flag harus digunakan: gunakan --db/--db-file untuk include atau --exclude-db/--exclude-file untuk exclude")
+	}
+
+	// Logic: Include - Exclude
+	// Jika user memberikan include list DAN exclude list, maka kita kurangi include list dengan exclude list.
+	// Jika hanya exclude list, maka include list kosong (artinya scan semua kecuali exclude, ini ditangani di layer database filtering).
+	if len(opts.IncludeList) > 0 && len(opts.ExcludeList) > 0 {
+		opts.IncludeList = helper.ListSubtract(opts.IncludeList, opts.ExcludeList)
+		opts.ExcludeList = []string{} // Reset exclude list karena sudah diaplikasikan ke include list
+	}
+
+	return nil
+}
 
 // setupScanConnections mengorkestrasi setup koneksi source dan target database.
 // Menangani mode normal dan mode rescan.

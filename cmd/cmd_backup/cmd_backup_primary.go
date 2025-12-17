@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sfDBTools/internal/backup"
 	"sfDBTools/internal/types"
-	defaultVal "sfDBTools/pkg/defaultval"
-	"sfDBTools/pkg/flags"
+	defaultVal "sfDBTools/internal/defaultval"
+	"sfDBTools/internal/flags"
 
 	"github.com/spf13/cobra"
 )

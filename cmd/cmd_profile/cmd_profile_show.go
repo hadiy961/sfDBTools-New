@@ -3,7 +3,7 @@ package cmdprofile
 import (
 	"sfDBTools/internal/profile"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/flags"
+	"sfDBTools/internal/flags"
 
 	"github.com/spf13/cobra"
 )

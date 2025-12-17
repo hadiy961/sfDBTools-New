@@ -2,7 +2,7 @@ package flags
 
 import (
 	"sfDBTools/internal/types/types_backup"
-	flagsbackup "sfDBTools/pkg/flags/flags_backup"
+	backupimpl "sfDBTools/internal/flags/backupimpl"
 
 	"github.com/spf13/cobra"
 )
@@ -125,17 +125,17 @@ func AddBackupFlgs(cmd *cobra.Command, opts *types_backup.BackupDBOptions, mode 
 		AddProfileFlags(cmd, &opts.Profile)
 		AddCompressionFlags(cmd, &opts.Compression)
 		AddEncryptionFlags(cmd, &opts.Encryption)
-		flagsbackup.SingleBackupFlags(cmd, opts)
+		backupimpl.SingleBackupFlags(cmd, opts)
 	} else if mode == "primary" {
 		AddProfileFlags(cmd, &opts.Profile)
 		AddCompressionFlags(cmd, &opts.Compression)
 		AddEncryptionFlags(cmd, &opts.Encryption)
-		flagsbackup.PrimaryBackupFlags(cmd, opts)
+		backupimpl.PrimaryBackupFlags(cmd, opts)
 	} else if mode == "secondary" {
 		AddProfileFlags(cmd, &opts.Profile)
 		AddCompressionFlags(cmd, &opts.Compression)
 		AddEncryptionFlags(cmd, &opts.Encryption)
-		flagsbackup.SecondaryBackupFlags(cmd, opts)
+		backupimpl.SecondaryBackupFlags(cmd, opts)
 	} else {
 		AddBackupFlags(cmd, opts)
 	}

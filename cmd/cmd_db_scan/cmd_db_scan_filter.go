@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sfDBTools/internal/dbscan"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/flags"
-	"sfDBTools/pkg/parsing"
+	"sfDBTools/internal/flags"
+	"sfDBTools/internal/parsing"
 	"sfDBTools/pkg/validation"
 
 	"github.com/spf13/cobra"
@@ -42,6 +42,11 @@ Catatan:
 		// Parsing terpisah untuk merapikan command
 		scanOpts, err := parsing.ParsingScanFilterOptions(cmd, cfg)
 		if err != nil {
+			return err
+		}
+
+		// Resolve lists from files (baca file include/exclude dan merge)
+		if err := dbscan.ResolveScanLists(&scanOpts); err != nil {
 			return err
 		}
 
