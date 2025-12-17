@@ -1,8 +1,8 @@
-// File : internal/dbscan/dbscan_display.go
-// Deskripsi : Display functions untuk database scanning
+// File : internal/dbscan/display.go
+// Deskripsi : Display functions untuk database scanning results
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 16 Desember 2025
+// Last Modified : 17 Desember 2025
 
 package dbscan
 
@@ -15,14 +15,13 @@ import (
 	"sfDBTools/pkg/validation"
 )
 
-// DisplayScanOptions menampilkan opsi scanning yang sedang aktif dan meminta konfirmasi.
-// Mengembalikan:
-// - proceed=true jika pengguna memilih untuk melanjutkan
-// - proceed=false jika pengguna membatalkan (tanpa error)
-// - err != nil jika terjadi kegagalan saat meminta input
-func (s *Service) DisplayScanOptions() (proceed bool, err error) {
+// DisplayScanOptions menampilkan opsi scanning aktif dan meminta konfirmasi
+func (s *Service) DisplayScanOptions() (bool, error) {
 	ui.PrintSubHeader("Opsi Scanning")
+	
 	targetConn := s.getTargetDBConfig()
+	targetInfo := fmt.Sprintf("%s@%s:%d/%s",
+		targetConn.User, targetConn.Host, targetConn.Port, targetConn.Database)
 
 	data := [][]string{
 		{"Exclude System DB", fmt.Sprintf("%v", s.ScanOptions.ExcludeSystem)},
@@ -33,8 +32,6 @@ func (s *Service) DisplayScanOptions() (proceed bool, err error) {
 	}
 
 	if s.ScanOptions.SaveToDB {
-		targetInfo := fmt.Sprintf("%s@%s:%d/%s",
-			targetConn.User, targetConn.Host, targetConn.Port, targetConn.Database)
 		data = append(data, []string{"Target DB", targetInfo})
 	}
 
@@ -44,35 +41,35 @@ func (s *Service) DisplayScanOptions() (proceed bool, err error) {
 
 	ui.FormatTable([]string{"Parameter", "Value"}, data)
 
-	// Konfirmasi sebelum melanjutkan
-	confirm, askErr := input.AskYesNo("Apakah Anda ingin melanjutkan?", true)
-	if askErr != nil {
-		s.Log.Error("gagal mendapatkan konfirmasi user: " + askErr.Error())
-		return false, askErr
+	// Konfirmasi
+	confirm, err := input.AskYesNo("Apakah Anda ingin melanjutkan?", true)
+	if err != nil {
+		s.Log.Error("User confirmation error: " + err.Error())
+		return false, err
 	}
+	
 	if !confirm {
 		return false, validation.ErrUserCancelled
 	}
+	
 	s.Log.Info("Proses scanning dilanjutkan.")
 	return true, nil
 }
 
-// DisplayFilterStats menampilkan statistik hasil pemfilteran database.
+// Wrapper methods for pkg/dbscanhelper and pkg/ui display functions
+
 func (s *Service) DisplayFilterStats(stats *types.FilterStats) {
 	ui.DisplayFilterStats(stats, "scan", s.Log)
 }
 
-// DisplayScanResult menampilkan hasil scanning (wrapper untuk helper)
 func (s *Service) DisplayScanResult(result *types.ScanResult) {
 	dbscanhelper.DisplayScanResult(result)
 }
 
-// DisplayDetailResults menampilkan detail hasil scanning (wrapper untuk helper)
 func (s *Service) DisplayDetailResults(detailsMap map[string]types.DatabaseDetailInfo) {
 	dbscanhelper.DisplayDetailResults(detailsMap)
 }
 
-// LogDetailResults menulis detail hasil scanning ke logger (wrapper untuk helper)
 func (s *Service) LogDetailResults(detailsMap map[string]types.DatabaseDetailInfo) {
 	dbscanhelper.LogDetailResults(detailsMap, s.Log)
 }

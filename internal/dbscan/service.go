@@ -1,53 +1,77 @@
 // File : internal/dbscan/service.go
-// Deskripsi : Service implementation untuk database scanning operations
+// Deskripsi : Service utama implementation untuk database scanning operations
 // Author : Hadiyatna Muflihun
-// Tanggal : 16 Desember 2025
-// Last Modified : 16 Desember 2025
+// Tanggal : 15 Oktober 2025
+// Last Modified : 17 Desember 2025
 
 package dbscan
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
+	"sfDBTools/internal/appconfig"
+	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/dbscanhelper"
+	"sfDBTools/pkg/errorlog"
+	"sfDBTools/pkg/servicehelper"
 	"sfDBTools/pkg/ui"
 )
 
-// ExecuteScan adalah entry point untuk database scan
+// Error definitions
+var (
+	ErrInvalidScanMode = errors.New("mode scan tidak valid")
+)
+
+// Service adalah service untuk database scanning
+type Service struct {
+	servicehelper.BaseService
+
+	Config      *appconfig.Config
+	Log         applog.Logger
+	ErrorLog    *errorlog.ErrorLogger
+	ScanOptions types.ScanOptions
+}
+
+// NewDBScanService membuat instance baru dari Service dengan proper dependency injection
+func NewDBScanService(config *appconfig.Config, logger applog.Logger, opts types.ScanOptions) *Service {
+	logDir := config.Log.Output.File.Dir
+	if logDir == "" {
+		logDir = "/var/log/sfDBTools"
+	}
+
+	return &Service{
+		Config:      config,
+		Log:         logger,
+		ErrorLog:    errorlog.NewErrorLogger(logger, logDir, "dbscan"),
+		ScanOptions: opts,
+	}
+}
+
+// ExecuteScan adalah entry point utama untuk database scan
 func (s *Service) ExecuteScan(config types.ScanEntryConfig) error {
 	ctx := context.Background()
 	s.ScanOptions.Mode = config.Mode
 	s.ScanOptions.LocalScan = (config.Mode == "all-local")
 
-	// Jika background mode, spawn sebagai daemon process
+	// Jika background mode, spawn sebagai daemon process atau jalankan background task
 	if s.ScanOptions.Background {
-		if s.ScanOptions.ProfileInfo.Path == "" {
-			return fmt.Errorf("background mode memerlukan file konfigurasi database")
-		}
-
-		// Check jika sudah running dalam daemon mode
-		if os.Getenv(consts.ENV_DAEMON_MODE) == "1" {
-			// Sudah dalam daemon mode, jalankan actual work
-			return s.executeScanInBackground(ctx, config)
-		}
-
-		// Spawn new process sebagai daemon
-		return dbscanhelper.SpawnScanDaemon(config)
+		return s.handleBackgroundExecution(ctx, config)
 	}
 
-	// Setup connections
+	// Setup connections (Foreground Mode)
 	sourceClient, targetClient, dbFiltered, cleanup, err := s.setupScanConnections(ctx, config.HeaderTitle, config.ShowOptions)
 	if err != nil {
 		return err
 	}
 	defer cleanup()
 
-	// Lakukan scanning (foreground mode dengan UI output)
+	// Lakukan scanning dengan UI output
 	result, detailsMap, err := s.executeScanWithClients(ctx, sourceClient, targetClient, dbFiltered, false)
 	if err != nil {
 		s.Log.Error(config.LogPrefix + " gagal: " + err.Error())
@@ -68,6 +92,21 @@ func (s *Service) ExecuteScan(config types.ScanEntryConfig) error {
 	}
 
 	return nil
+}
+
+// handleBackgroundExecution menangani logika eksekusi background/daemon
+func (s *Service) handleBackgroundExecution(ctx context.Context, config types.ScanEntryConfig) error {
+	if s.ScanOptions.ProfileInfo.Path == "" {
+		return fmt.Errorf("background mode memerlukan file konfigurasi database")
+	}
+
+	// Check jika sudah running dalam daemon mode (env flag set)
+	if os.Getenv(consts.ENV_DAEMON_MODE) == "1" {
+		return s.executeScanInBackground(ctx, config)
+	}
+
+	// Spawn new process sebagai daemon
+	return dbscanhelper.SpawnScanDaemon(config)
 }
 
 // executeScanWithClients melakukan scanning dengan koneksi yang sudah tersedia
@@ -139,16 +178,15 @@ func (s *Service) executeScanWithClients(
 // getDataDir mendapatkan datadir dari source atau target client
 func (s *Service) getDataDir(ctx context.Context, sourceClient, targetClient *database.Client) (string, error) {
 	var datadir string
+	// Coba ambil dari source
 	if sourceClient != nil {
-		if err := sourceClient.DB().QueryRowContext(ctx, "SELECT @@datadir").Scan(&datadir); err != nil {
-			s.Log.Warnf("Gagal mendapatkan datadir dari source: %v", err)
-		}
+		_ = sourceClient.DB().QueryRowContext(ctx, "SELECT @@datadir").Scan(&datadir)
 	}
+	// Fallback ke target jika source gagal/tidak ada
 	if datadir == "" && targetClient != nil {
-		if err := targetClient.DB().QueryRowContext(ctx, "SELECT @@datadir").Scan(&datadir); err != nil {
-			s.Log.Warnf("Gagal mendapatkan datadir dari target: %v", err)
-		}
+		_ = targetClient.DB().QueryRowContext(ctx, "SELECT @@datadir").Scan(&datadir)
 	}
+	
 	if datadir == "" {
 		return "", fmt.Errorf("tidak dapat menentukan datadir dari source maupun target")
 	}
