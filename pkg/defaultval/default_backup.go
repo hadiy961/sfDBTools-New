@@ -60,10 +60,17 @@ func DefaultBackupOptions(mode string) types_backup.BackupDBOptions {
 	// Include Filters
 	opts.Filter.IncludeFile = cfg.Backup.Include.File
 	opts.Filter.IncludeDatabases = cfg.Backup.Include.Databases
-	// Include linked/companion databases (khusus single backup)
-	opts.IncludeDmart = cfg.Backup.Include.IncludeDmart
-	opts.IncludeTemp = cfg.Backup.Include.IncludeTemp
-	opts.IncludeArchive = cfg.Backup.Include.IncludeArchive
+	// Include linked/companion databases (hanya untuk primary dan secondary, bukan single)
+	if mode == "primary" || mode == "secondary" {
+		opts.IncludeDmart = cfg.Backup.Include.IncludeDmart
+		opts.IncludeTemp = cfg.Backup.Include.IncludeTemp
+		opts.IncludeArchive = cfg.Backup.Include.IncludeArchive
+	} else {
+		// Untuk mode single, selalu false
+		opts.IncludeDmart = false
+		opts.IncludeTemp = false
+		opts.IncludeArchive = false
+	}
 	opts.Force = false
 
 	return opts

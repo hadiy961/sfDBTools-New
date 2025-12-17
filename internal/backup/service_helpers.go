@@ -369,6 +369,8 @@ func (s *Service) updateMetadataUserGrantsPath(backupFilePath string, userGrants
 // =============================================================================
 
 // selectDatabaseAndBuildList menangani database selection dan companion databases logic
+// Untuk mode single: return hanya database yang dipilih
+// Untuk mode primary/secondary: return database yang dipilih + companion (jika enabled)
 func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interface {
 	GetDatabaseList(context.Context) ([]string, error)
 }, selectedDBName string, dbFiltered []string, mode string) ([]string, string, map[string]bool, error) {
@@ -451,26 +453,29 @@ func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interfa
 	companionDbs := []string{selectedDB}
 	companionStatus := map[string]bool{selectedDB: true}
 
-	// Add companion databases - consolidated loop for all suffixes
-	for suffix, enabled := range map[string]bool{
-		"_dmart":   s.BackupDBOptions.IncludeDmart,
-		"_temp":    s.BackupDBOptions.IncludeTemp,
-		"_archive": s.BackupDBOptions.IncludeArchive,
-	} {
-		if !enabled {
-			continue
-		}
+	// Add companion databases - hanya untuk mode primary dan secondary, bukan untuk single
+	if mode == "primary" || mode == "secondary" {
+		// Consolidated loop for all suffixes
+		for suffix, enabled := range map[string]bool{
+			"_dmart":   s.BackupDBOptions.IncludeDmart,
+			"_temp":    s.BackupDBOptions.IncludeTemp,
+			"_archive": s.BackupDBOptions.IncludeArchive,
+		} {
+			if !enabled {
+				continue
+			}
 
-		dbName := selectedDB + suffix
-		exists := pkghelper.StringSliceContainsFold(allDatabases, dbName)
+			dbName := selectedDB + suffix
+			exists := pkghelper.StringSliceContainsFold(allDatabases, dbName)
 
-		if exists {
-			s.Log.Infof("Menambahkan database companion: %s", dbName)
-			companionDbs = append(companionDbs, dbName)
-		} else {
-			s.Log.Warnf("Database %s tidak ditemukan, melewati", dbName)
+			if exists {
+				s.Log.Infof("Menambahkan database companion: %s", dbName)
+				companionDbs = append(companionDbs, dbName)
+			} else {
+				s.Log.Warnf("Database %s tidak ditemukan, melewati", dbName)
+			}
+			companionStatus[dbName] = exists
 		}
-		companionStatus[dbName] = exists
 	}
 
 	return companionDbs, selectedDB, companionStatus, nil

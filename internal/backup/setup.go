@@ -18,9 +18,9 @@ import (
 	"sfDBTools/pkg/fsops"
 	pkghelper "sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/validation"
 	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
+	"sfDBTools/pkg/validation"
 	"strings"
 )
 
@@ -48,20 +48,11 @@ func (s *Service) SetupBackupExecution() error {
 	// Prompt untuk ticket jika tidak di-provide
 	if s.BackupDBOptions.Ticket == "" {
 		s.Log.Info("Ticket number tidak ditemukan, meminta input...")
-		ticket, err := input.AskString("Masukkan ticket number untuk backup request : ", "", func(ans interface{}) error {
-			str, ok := ans.(string)
-			if !ok {
-				return fmt.Errorf("input tidak valid")
-			}
-			if strings.TrimSpace(str) == "" {
-				return fmt.Errorf("ticket number tidak boleh kosong")
-			}
-			return nil
-		})
+		ticket, err := input.AskTicket("backup")
 		if err != nil {
 			return fmt.Errorf("gagal mendapatkan ticket number: %w", err)
 		}
-		s.BackupDBOptions.Ticket = strings.TrimSpace(ticket)
+		s.BackupDBOptions.Ticket = ticket
 		s.Log.Infof("Ticket number: %s", s.BackupDBOptions.Ticket)
 	} else {
 		s.Log.Infof("Ticket number: %s", s.BackupDBOptions.Ticket)
@@ -156,7 +147,8 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 	}
 
 	// Generate output directory dan filename
-	// Untuk mode single/primary/secondary, dbFiltered akan di-update dengan database yang dipilih + companion
+	// Untuk mode single: dbFiltered = [database_yang_dipilih]
+	// Untuk mode primary/secondary: dbFiltered = [database_yang_dipilih, companion databases]
 	dbFiltered, err = s.generateBackupPaths(ctx, client, dbFiltered)
 	if err != nil {
 		return nil, nil, err
@@ -369,7 +361,7 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 }
 
 // handleSingleModeSetup handle setup untuk mode single/primary/secondary
-// Returns companionDbs (database yang dipilih + companion) sebagai dbFiltered yang baru
+// Returns companionDbs (database yang dipilih, + companion untuk primary/secondary) sebagai dbFiltered yang baru
 func (s *Service) handleSingleModeSetup(ctx context.Context, client *database.Client, dbFiltered []string, compressionSettings types_backup.CompressionSettings) ([]string, error) {
 	// Get all databases untuk menghitung statistik yang akurat
 	allDatabases, err := client.GetDatabaseList(ctx)
@@ -409,7 +401,8 @@ func (s *Service) handleSingleModeSetup(ctx context.Context, client *database.Cl
 	s.BackupDBOptions.File.Path = previewFilename
 
 	// Return companionDbs sebagai dbFiltered yang baru
-	// companionDbs berisi: [database_yang_dipilih, companion_dmart, companion_temp, companion_archive]
+	// Mode single: [database_yang_dipilih]
+	// Mode primary/secondary: [database_yang_dipilih, companion_dmart, companion_temp, companion_archive]
 	return companionDbs, nil
 }
 

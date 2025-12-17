@@ -49,11 +49,11 @@ type BackupDBOptions struct {
 	Entry           BackupEntryConfig
 	CaptureGTID     bool            // Tangkap informasi GTID saat backup (hanya untuk combined)
 	ExcludeUser     bool            // Exclude user grants dari export (default: false = export user)
-	DBName          string          // Nama database untuk backup single
-	IncludeDmart    bool            // Sertakan database <db>_dmart jika tersedia
-	IncludeTemp     bool            // Sertakan database <db>_temp jika tersedia
-	IncludeArchive  bool            // Sertakan database <db>_archive jika tersedia
-	CompanionStatus map[string]bool `json:"-"` // Status ketersediaan companion db (single mode)
+	DBName          string          // Nama database untuk backup single/primary/secondary
+	IncludeDmart    bool            // Sertakan database <db>_dmart jika tersedia (hanya primary/secondary)
+	IncludeTemp     bool            // Sertakan database <db>_temp jika tersedia (hanya primary/secondary)
+	IncludeArchive  bool            // Sertakan database <db>_archive jika tersedia (hanya primary/secondary)
+	CompanionStatus map[string]bool `json:"-"` // Status ketersediaan companion db (hanya primary/secondary)
 	ClientCode      string          // Client code untuk filter database (primary/secondary)
 	Instance        string          // Instance name untuk filter secondary database
 	Ticket          string          // Ticket number untuk request backup (wajib)

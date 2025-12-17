@@ -119,13 +119,16 @@ func (d *OptionsDisplayer) buildModeSpecificSection() [][]string {
 		data = append(data, []string{"Custom Filename", d.options.File.Filename})
 	}
 
-	data = append(data, []string{"Include DMart", fmt.Sprintf("%v", d.options.IncludeDmart)})
-	data = append(data, []string{"Include Temp", fmt.Sprintf("%v", d.options.IncludeTemp)})
-	data = append(data, []string{"Include Archive", fmt.Sprintf("%v", d.options.IncludeArchive)})
+	// Companion options hanya untuk primary/secondary, tidak untuk single
+	if d.options.Mode == "primary" || d.options.Mode == "secondary" {
+		data = append(data, []string{"Include DMart", fmt.Sprintf("%v", d.options.IncludeDmart)})
+		data = append(data, []string{"Include Temp", fmt.Sprintf("%v", d.options.IncludeTemp)})
+		data = append(data, []string{"Include Archive", fmt.Sprintf("%v", d.options.IncludeArchive)})
 
-	// Companion status
-	if len(d.options.CompanionStatus) > 0 {
-		data = append(data, d.buildCompanionStatus()...)
+		// Companion status
+		if len(d.options.CompanionStatus) > 0 {
+			data = append(data, d.buildCompanionStatus()...)
+		}
 	}
 
 	data = append(data, []string{"Export User Grants", d.getExportUserStatus()})

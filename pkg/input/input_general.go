@@ -8,6 +8,7 @@ package input
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -101,7 +102,13 @@ func AskInt(message string, defaultValue int, validator survey.Validator) (int, 
 		Message: message,
 		Default: fmt.Sprintf("%d", defaultValue),
 	}
-	if err := survey.AskOne(prompt, &answer, survey.WithValidator(validator)); err != nil {
+
+	var opts []survey.AskOpt
+	if validator != nil {
+		opts = append(opts, survey.WithValidator(validator))
+	}
+
+	if err := survey.AskOne(prompt, &answer, opts...); err != nil {
 		return 0, err
 	}
 	val, _ := strconv.Atoi(answer)
@@ -114,7 +121,13 @@ func AskString(message, defaultValue string, validator survey.Validator) (string
 		Message: message,
 		Default: defaultValue,
 	}
-	err := survey.AskOne(prompt, &answer, survey.WithValidator(validator))
+
+	var opts []survey.AskOpt
+	if validator != nil {
+		opts = append(opts, survey.WithValidator(validator))
+	}
+
+	err := survey.AskOne(prompt, &answer, opts...)
 	return answer, err
 }
 
@@ -125,6 +138,220 @@ func AskYesNo(question string, defaultValue bool) (bool, error) {
 		Default: defaultValue,
 	}
 	return response, survey.AskOne(prompt, &response)
+}
+
+// PromptString meminta input string dari user
+func PromptString(message string) (string, error) {
+	return AskString(message, "", nil)
+}
+
+// PromptPassword meminta input password dari user
+func PromptPassword(message string) (string, error) {
+	return AskPassword(message, nil)
+}
+
+// PromptConfirm meminta konfirmasi yes/no dari user
+func PromptConfirm(message string) (bool, error) {
+	return AskYesNo(message, true)
+}
+
+// SelectSingleFromList menampilkan list dan meminta user memilih satu item
+func SelectSingleFromList(items []string, message string) (string, error) {
+	var selected string
+	prompt := &survey.Select{
+		Message: message,
+		Options: items,
+	}
+	err := survey.AskOne(prompt, &selected, survey.WithStdio(
+		os.Stdin,
+		os.Stdout,
+		os.Stderr,
+	))
+	return selected, err
+}
+
+// SelectFileInteractive menampilkan file selector interaktif dengan fitur browse directory
+// Jika user input path directory, akan tampilkan list file di directory tersebut
+// Jika user input path file, akan konfirmasi yes/no
+func SelectFileInteractive(directory string, message string, extensions []string) (string, error) {
+	fmt.Println()
+	fmt.Println("📁 File Selector - Tekan Enter untuk browse directory saat ini")
+	fmt.Printf("   Directory: %s\n", directory)
+	fmt.Println("   Tips: Masukkan '.' untuk browse directory saat ini")
+	fmt.Println()
+
+	for {
+		var userInput string
+		prompt := &survey.Input{
+			Message: message,
+			Default: directory,
+			Help:    "Tekan Enter untuk browse, atau ketik path directory/file",
+		}
+		err := survey.AskOne(prompt, &userInput, survey.WithStdio(
+			os.Stdin,
+			os.Stdout,
+			os.Stderr,
+		))
+		if err != nil {
+			return "", err
+		}
+
+		userInput = strings.TrimSpace(userInput)
+		if userInput == "" {
+			userInput = directory
+		}
+
+		// Expand home directory
+		if strings.HasPrefix(userInput, "~") {
+			home, err := os.UserHomeDir()
+			if err == nil {
+				userInput = strings.Replace(userInput, "~", home, 1)
+			}
+		}
+
+		// Cek apakah path ada
+		fileInfo, err := os.Stat(userInput)
+		if err != nil {
+			if os.IsNotExist(err) {
+				fmt.Printf("Path tidak ditemukan: %s\n", userInput)
+				continue
+			}
+			return "", fmt.Errorf("gagal mengakses path: %w", err)
+		}
+
+		// Jika directory, tampilkan list file
+		if fileInfo.IsDir() {
+			selectedFile, err := selectFileFromDirectory(userInput, extensions)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				continue
+			}
+			if selectedFile == "" {
+				// User cancel atau pilih browse lagi
+				continue
+			}
+			return selectedFile, nil
+		}
+
+		// Jika file, konfirmasi
+		confirmed, err := AskYesNo(fmt.Sprintf("Gunakan file ini: %s?", userInput), true)
+		if err != nil {
+			return "", err
+		}
+		if confirmed {
+			return userInput, nil
+		}
+		// Jika tidak confirmed, loop lagi
+	}
+}
+
+// selectFileFromDirectory menampilkan list file dalam directory dengan filter ekstensi
+func selectFileFromDirectory(directory string, extensions []string) (string, error) {
+	files, err := os.ReadDir(directory)
+	if err != nil {
+		return "", fmt.Errorf("gagal membaca directory: %w", err)
+	}
+
+	// Pisahkan directories dan files
+	var subDirs []string
+	var matchedFiles []string
+
+	for _, file := range files {
+		if file.IsDir() {
+			subDirs = append(subDirs, file.Name()+"/")
+		} else {
+			fileName := file.Name()
+			if matchesExtension(fileName, extensions) {
+				matchedFiles = append(matchedFiles, fileName)
+			}
+		}
+	}
+
+	// Build options list
+	var options []string
+
+	// Tambahkan parent directory jika bukan root
+	if directory != "/" {
+		options = append(options, "📁 .. (parent directory)")
+	}
+
+	// Tambahkan subdirectories
+	for _, dir := range subDirs {
+		options = append(options, "📁 "+dir)
+	}
+
+	// Tambahkan separator jika ada files
+	if len(matchedFiles) > 0 && (len(subDirs) > 0 || directory != "/") {
+		options = append(options, "────────────────────────")
+	}
+
+	// Tambahkan files
+	for _, file := range matchedFiles {
+		options = append(options, "📄 "+file)
+	}
+
+	// Tambahkan opsi lain
+	if len(options) > 0 {
+		options = append(options, "────────────────────────")
+	}
+	options = append(options, "⌨️  [ Masukkan path manual ]")
+
+	if len(matchedFiles) == 0 && len(subDirs) == 0 {
+		fmt.Printf("\n⚠️  Tidak ada file backup atau subdirectory di: %s\n\n", directory)
+	}
+
+	var selected string
+	prompt := &survey.Select{
+		Message:  fmt.Sprintf("Browse: %s (Files: %d, Dirs: %d)", directory, len(matchedFiles), len(subDirs)),
+		Options:  options,
+		PageSize: 15,
+	}
+	err = survey.AskOne(prompt, &selected, survey.WithStdio(
+		os.Stdin,
+		os.Stdout,
+		os.Stderr,
+	))
+	if err != nil {
+		return "", err
+	}
+
+	// Handle selection
+	if selected == "⌨️  [ Masukkan path manual ]" {
+		return "", nil // Return empty untuk trigger loop lagi
+	}
+
+	if selected == "────────────────────────" {
+		return "", nil // Separator, retry
+	}
+
+	// Remove emoji prefix
+	selected = strings.TrimPrefix(selected, "📁 ")
+	selected = strings.TrimPrefix(selected, "📄 ")
+	selected = strings.TrimSpace(selected)
+
+	// Handle parent directory
+	if selected == ".. (parent directory)" {
+		parentDir := filepath.Dir(directory)
+		return selectFileFromDirectory(parentDir, extensions)
+	}
+
+	// Handle subdirectory
+	if strings.HasSuffix(selected, "/") {
+		subPath := filepath.Join(directory, strings.TrimSuffix(selected, "/"))
+		return selectFileFromDirectory(subPath, extensions)
+	}
+
+	// Return selected file with full path
+	return filepath.Join(directory, selected), nil
+} // matchesExtension cek apakah filename match dengan ekstensi yang diizinkan
+func matchesExtension(fileName string, extensions []string) bool {
+	lowerName := strings.ToLower(fileName)
+	for _, ext := range extensions {
+		if strings.HasSuffix(lowerName, ext) {
+			return true
+		}
+	}
+	return false
 }
 
 // sanitizeFileName membersihkan nama file dari karakter ilegal

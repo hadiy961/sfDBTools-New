@@ -157,6 +157,7 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 		Replication     replicationInfo        `json:"replication"`
 		Version         versionInfo            `json:"version,omitempty"`
 		Additional      additionalFiles        `json:"additional_files,omitempty"`
+		Ticket          string                 `json:"ticket,omitempty"`
 		Generator       generatorInfo          `json:"generator"`
 		Warnings        []string               `json:"warnings,omitempty"`
 	}{
@@ -201,6 +202,7 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 		Additional: additionalFiles{
 			UserGrants: b.UserGrantsFile,
 		},
+		Ticket: b.Ticket,
 		Generator: generatorInfo{
 			GeneratedBy: b.GeneratedBy,
 			GeneratedAt: b.GeneratedAt,
@@ -272,6 +274,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		Replication     replicationInfo        `json:"replication"`
 		Version         versionInfo            `json:"version,omitempty"`
 		Additional      additionalFiles        `json:"additional_files,omitempty"`
+		Ticket          string                 `json:"ticket,omitempty"`
 		Generator       generatorInfo          `json:"generator"`
 		Warnings        []string               `json:"warnings,omitempty"`
 	}
@@ -323,6 +326,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		b.ReplicationUser = grouped.Replication.User
 		b.ReplicationPassword = grouped.Replication.Password
 		b.UserGrantsFile = grouped.Additional.UserGrants
+		b.Ticket = grouped.Ticket
 		b.GeneratedBy = grouped.Generator.GeneratedBy
 		b.GeneratedAt = grouped.Generator.GeneratedAt
 		b.Warnings = grouped.Warnings
@@ -355,6 +359,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		ReplicationPassword string    `json:"replication_password,omitempty"`
 		SourceHost          string    `json:"source_host,omitempty"`
 		SourcePort          int       `json:"source_port,omitempty"`
+		Ticket              string    `json:"ticket,omitempty"`
 	}
 
 	var mj metaJSONIn
@@ -407,6 +412,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 	b.ReplicationPassword = mj.ReplicationPassword
 	b.SourceHost = mj.SourceHost
 	b.SourcePort = mj.SourcePort
+	b.Ticket = mj.Ticket
 
 	return nil
 }
