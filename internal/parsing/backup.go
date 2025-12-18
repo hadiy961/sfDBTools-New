@@ -1,8 +1,8 @@
 package parsing
 
 import (
-	"sfDBTools/internal/types/types_backup"
 	defaultVal "sfDBTools/internal/defaultval"
+	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/helper"
 
 	"github.com/spf13/cobra"
@@ -35,15 +35,19 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	// Encryption (Shared Helper)
 	PopulateEncryptionFlags(cmd, &opts.Encryption)
 
-	// Capture GTID (hanya untuk combined)
-	if mode == "combined" {
-		opts.CaptureGTID = helper.GetBoolFlagOrEnv(cmd, "capture-gtid", "")
+	// Capture GTID (untuk combined dan all)
+	if mode == "combined" || mode == "all" {
+		if cmd.Flags().Changed("capture-gtid") {
+			opts.CaptureGTID = helper.GetBoolFlagOrEnv(cmd, "capture-gtid", "")
+		}
 	} else {
 		opts.CaptureGTID = false
 	}
 
 	// Exclude User
-	opts.ExcludeUser = helper.GetBoolFlagOrEnv(cmd, "exclude-user", "")
+	if cmd.Flags().Changed("exclude-user") {
+		opts.ExcludeUser = helper.GetBoolFlagOrEnv(cmd, "exclude-user", "")
+	}
 
 	// Dry Run
 	opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")

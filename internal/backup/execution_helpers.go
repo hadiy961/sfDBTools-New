@@ -11,6 +11,7 @@ import (
 	"sfDBTools/pkg/backuphelper"
 	pkghelper "sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
+	"strings"
 	"time"
 )
 
@@ -18,8 +19,8 @@ import (
 // Backup Loop Helpers
 // =============================================================================
 
-// executeBackupLoop menjalankan backup untuk multiple databases dengan pattern yang sama
-func (s *Service) executeBackupLoop(ctx context.Context, databases []string, config types_backup.BackupLoopConfig, outputPathFunc func(dbName string) (string, error)) types_backup.BackupLoopResult {
+// ExecuteBackupLoop menjalankan backup untuk multiple databases dengan pattern yang sama
+func (s *Service) ExecuteBackupLoop(ctx context.Context, databases []string, config types_backup.BackupLoopConfig, outputPathFunc func(dbName string) (string, error)) types_backup.BackupLoopResult {
 	result := types_backup.BackupLoopResult{
 		BackupInfos: make([]types.DatabaseBackupInfo, 0),
 		FailedDBs:   make([]types_backup.FailedDatabaseInfo, 0),
@@ -52,7 +53,7 @@ func (s *Service) executeBackupLoop(ctx context.Context, databases []string, con
 		}
 
 		// Execute backup
-		backupInfo, err := s.executeAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
+		backupInfo, err := s.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
 			DBName:       dbName,
 			OutputPath:   outputPath,
 			BackupType:   config.BackupType,
@@ -71,9 +72,9 @@ func (s *Service) executeBackupLoop(ctx context.Context, databases []string, con
 
 		// Export user grants for separated/single modes
 		if config.Mode == "separated" || config.Mode == "separate" || config.Mode == "single" {
-			path := s.exportUserGrantsIfNeeded(ctx, outputPath, []string{dbName})
+			path := s.ExportUserGrantsIfNeeded(ctx, outputPath, []string{dbName})
 			if s.Config.Backup.Output.SaveBackupInfo {
-				s.updateMetadataUserGrantsPath(outputPath, path)
+				s.UpdateMetadataUserGrantsPath(outputPath, path)
 			}
 		}
 	}
@@ -85,13 +86,27 @@ func (s *Service) executeBackupLoop(ctx context.Context, databases []string, con
 // Backup Execution Helpers
 // =============================================================================
 
-// executeAndBuildBackup menjalankan backup dan generate metadata + backup info
-func (s *Service) executeAndBuildBackup(ctx context.Context, cfg types_backup.BackupExecutionConfig) (types.DatabaseBackupInfo, error) {
+// ExecuteAndBuildBackup menjalankan backup dan generate metadata + backup info
+func (s *Service) ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.BackupExecutionConfig) (types.DatabaseBackupInfo, error) {
 	timer := pkghelper.NewTimer()
 	startTime := timer.StartTime()
 
 	s.SetCurrentBackupFile(cfg.OutputPath)
 	defer s.ClearCurrentBackupFile()
+
+	// Get DB version SEBELUM backup (koneksi masih fresh)
+	dbVersion := ""
+	if s.Client != nil {
+		if v, err := s.Client.GetVersion(ctx); err == nil {
+			dbVersion = v
+			s.Log.Debugf("Database version: %s", dbVersion)
+		} else {
+			s.Log.Warnf("Gagal mendapatkan database version: %v", err)
+		}
+	}
+
+	// Debug: Log ExcludeData value
+	// s.Log.Debugf("ExcludeData flag value: %v", s.BackupDBOptions.Filter.ExcludeData)
 
 	// Build mysqldump args inline
 	conn := backuphelper.DatabaseConn{
@@ -114,6 +129,11 @@ func (s *Service) executeAndBuildBackup(ctx context.Context, cfg types_backup.Ba
 	}
 	mysqldumpArgs := backuphelper.BuildMysqldumpArgs(s.Config.Backup.MysqlDumpArgs, conn, filterOpts, dbList, cfg.DBName, cfg.TotalDBFound)
 
+	// DRY-RUN MODE: Skip actual backup execution
+	if s.BackupDBOptions.DryRun {
+		return s.buildDryRunBackupInfo(cfg, mysqldumpArgs, timer, startTime), nil
+	}
+
 	// Execute backup
 	writeResult, err := s.executeMysqldumpWithPipe(ctx, mysqldumpArgs, cfg.OutputPath, s.BackupDBOptions.Compression.Enabled, s.BackupDBOptions.Compression.Type)
 	if err != nil {
@@ -121,7 +141,7 @@ func (s *Service) executeAndBuildBackup(ctx context.Context, cfg types_backup.Ba
 		return types.DatabaseBackupInfo{}, err
 	}
 
-	return s.buildBackupInfoFromResult(ctx, cfg, writeResult, timer, startTime), nil
+	return s.buildBackupInfoFromResult(ctx, cfg, writeResult, timer, startTime, dbVersion), nil
 }
 
 // handleBackupError menangani error dari backup execution
@@ -154,8 +174,43 @@ func (s *Service) handleBackupError(err error, cfg types_backup.BackupExecutionC
 	}
 }
 
+// buildDryRunBackupInfo membangun dummy DatabaseBackupInfo untuk dry-run mode
+func (s *Service) buildDryRunBackupInfo(cfg types_backup.BackupExecutionConfig, mysqldumpArgs []string, timer *pkghelper.Timer, startTime time.Time) types.DatabaseBackupInfo {
+	backupDuration := timer.Elapsed()
+	endTime := time.Now()
+
+	// Log dry-run info
+	if cfg.IsMultiDB {
+		s.Log.Info("[DRY-RUN] Akan backup database: " + strings.Join(cfg.DBList, ", "))
+	} else {
+		s.Log.Infof("[DRY-RUN] Akan backup database: %s", cfg.DBName)
+	}
+	s.Log.Info("[DRY-RUN] Output file: " + cfg.OutputPath)
+	s.Log.Debug("[DRY-RUN] Mysqldump command: mysqldump " + strings.Join(mysqldumpArgs, " "))
+	s.Log.Info("[DRY-RUN] Backup tidak dijalankan (dry-run mode aktif)")
+
+	// Format display name
+	displayName := cfg.DBName
+	if cfg.IsMultiDB {
+		displayName = fmt.Sprintf("Combined backup (%d databases)", len(cfg.DBList))
+	}
+
+	return types.DatabaseBackupInfo{
+		DatabaseName:  displayName,
+		OutputFile:    cfg.OutputPath,
+		FileSize:      0,
+		FileSizeHuman: "0 B (dry-run)",
+		Duration:      backupDuration.String(),
+		Status:        "dry-run",
+		Warnings:      "Backup tidak dijalankan - mode dry-run aktif",
+		StartTime:     startTime,
+		EndTime:       endTime,
+		ManifestFile:  "",
+	}
+}
+
 // buildBackupInfoFromResult membangun DatabaseBackupInfo dari result
-func (s *Service) buildBackupInfoFromResult(ctx context.Context, cfg types_backup.BackupExecutionConfig, writeResult *types_backup.BackupWriteResult, timer *pkghelper.Timer, startTime time.Time) types.DatabaseBackupInfo {
+func (s *Service) buildBackupInfoFromResult(ctx context.Context, cfg types_backup.BackupExecutionConfig, writeResult *types_backup.BackupWriteResult, timer *pkghelper.Timer, startTime time.Time, dbVersion string) types.DatabaseBackupInfo {
 	fileSize := writeResult.FileSize
 	stderrOutput := writeResult.StderrOutput
 	backupDuration := timer.Elapsed()
@@ -173,7 +228,7 @@ func (s *Service) buildBackupInfoFromResult(ctx context.Context, cfg types_backu
 	}
 
 	// Get metadata
-	meta := s.generateBackupMetadata(ctx, cfg, writeResult, backupDuration, startTime, endTime, status)
+	meta := s.generateBackupMetadata(ctx, cfg, writeResult, backupDuration, startTime, endTime, status, dbVersion)
 
 	// Save and get manifest path
 	manifestPath := ""
@@ -201,7 +256,7 @@ func (s *Service) buildBackupInfoFromResult(ctx context.Context, cfg types_backu
 }
 
 // generateBackupMetadata generates metadata config untuk backup
-func (s *Service) generateBackupMetadata(ctx context.Context, cfg types_backup.BackupExecutionConfig, writeResult *types_backup.BackupWriteResult, duration time.Duration, startTime, endTime time.Time, status string) *types_backup.BackupMetadata {
+func (s *Service) generateBackupMetadata(ctx context.Context, cfg types_backup.BackupExecutionConfig, writeResult *types_backup.BackupWriteResult, duration time.Duration, startTime, endTime time.Time, status string, dbVersion string) *types_backup.BackupMetadata {
 	var dbNames []string
 	if cfg.IsMultiDB {
 		dbNames = cfg.DBList
@@ -216,14 +271,6 @@ func (s *Service) generateBackupMetadata(ctx context.Context, cfg types_backup.B
 			gtidStr = s.gtidInfo.GTIDBinlog
 		} else {
 			gtidStr = fmt.Sprintf("File=%s, Pos=%d", s.gtidInfo.MasterLogFile, s.gtidInfo.MasterLogPos)
-		}
-	}
-
-	// Get DB version
-	dbVersion := ""
-	if s.Client != nil {
-		if v, err := s.Client.GetVersion(ctx); err == nil {
-			dbVersion = v
 		}
 	}
 
@@ -249,6 +296,7 @@ func (s *Service) generateBackupMetadata(ctx context.Context, cfg types_backup.B
 		Compressed:          s.BackupDBOptions.Compression.Enabled,
 		CompressionType:     s.BackupDBOptions.Compression.Type,
 		Encrypted:           s.BackupDBOptions.Encryption.Enabled,
+		ExcludeData:         s.BackupDBOptions.Filter.ExcludeData,
 		GTIDInfo:            gtidStr,
 		BackupStatus:        status,
 		StderrOutput:        writeResult.StderrOutput,

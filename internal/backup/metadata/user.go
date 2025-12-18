@@ -79,6 +79,20 @@ func ExportUserGrantsIfNeededWithLogging(ctx context.Context, client *database.C
 		return ""
 	}
 
+	// Ping database connection untuk memastikan masih valid
+	// Jika koneksi invalid setelah backup lama, ini akan memicu reconnect otomatis
+	if err := client.Ping(ctx); err != nil {
+		logger.Warnf("Koneksi database tidak valid, mencoba reconnect: %v", err)
+		// Ping akan trigger reconnect secara otomatis melalui connection pool
+		// Coba ping sekali lagi setelah jeda singkat
+		// time.Sleep(100 * time.Millisecond)
+		if err := client.Ping(ctx); err != nil {
+			logger.Errorf("Gagal reconnect ke database: %v", err)
+			return ""
+		}
+		logger.Info("Reconnect ke database berhasil")
+	}
+
 	logger.Info("Export user grants ke file...")
 	filePath, err := ExportAndSaveUserGrants(ctx, client, logger, referenceBackupFile, excludeUser, databases)
 	if err != nil {

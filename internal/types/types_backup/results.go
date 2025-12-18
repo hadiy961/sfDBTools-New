@@ -53,6 +53,7 @@ type BackupMetadata struct {
 	Compressed        bool                   `json:"compressed"`                   // Apakah terkompresi
 	CompressionType   string                 `json:"compression_type,omitempty"`   // gzip, zstd, xz, dll
 	Encrypted         bool                   `json:"encrypted"`                    // Apakah terenkripsi
+	ExcludeData       bool                   `json:"exclude_data"`                 // Jika true, hanya backup struktur (tanpa data)
 	MysqldumpVersion  string                 `json:"mysqldump_version,omitempty"`  // Versi mysqldump
 	MariaDBVersion    string                 `json:"mariadb_version,omitempty"`    // Versi MariaDB/MySQL
 	GTIDInfo          string                 `json:"gtid_info,omitempty"`          // GTID information
@@ -88,6 +89,7 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 		Status            string   `json:"status"`
 		Databases         []string `json:"databases"`
 		ExcludedDatabases []string `json:"excluded_databases"` // Hapus omitempty untuk testing
+		ExcludeData       bool     `json:"exclude_data"`       // Jika true, hanya struktur database
 	}
 
 	// Grup untuk informasi waktu
@@ -167,6 +169,7 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 			Status:            b.BackupStatus,
 			Databases:         b.DatabaseNames,
 			ExcludedDatabases: b.ExcludedDatabases,
+			ExcludeData:       b.ExcludeData,
 		},
 		DatabaseDetails: b.DatabaseDetails,
 		Time: timeInfo{
@@ -224,6 +227,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		Status            string   `json:"status"`
 		Databases         []string `json:"databases"`
 		ExcludedDatabases []string `json:"excluded_databases"`
+		ExcludeData       bool     `json:"exclude_data"`
 	}
 	type timeInfo struct {
 		StartTime string `json:"start_time"`
@@ -308,6 +312,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		b.BackupStatus = grouped.Backup.Status
 		b.DatabaseNames = grouped.Backup.Databases
 		b.ExcludedDatabases = grouped.Backup.ExcludedDatabases
+		b.ExcludeData = grouped.Backup.ExcludeData
 		b.DatabaseDetails = grouped.DatabaseDetails
 		b.Hostname = grouped.Source.Hostname
 		b.SourceHost = grouped.Source.Host

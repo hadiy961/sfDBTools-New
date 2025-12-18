@@ -48,7 +48,7 @@ func PopulateFilterFlags(cmd *cobra.Command, opts *types.FilterOptions) {
 	if cmd.Flags().Changed("exclude-system") {
 		opts.ExcludeSystem = helper.GetBoolFlagOrEnv(cmd, "exclude-system", "")
 	}
-	
+
 	if v := helper.GetStringArrayFlagOrEnv(cmd, "exclude-db", ""); len(v) > 0 {
 		opts.ExcludeDatabases = v
 	}
@@ -61,11 +61,19 @@ func PopulateFilterFlags(cmd *cobra.Command, opts *types.FilterOptions) {
 			opts.ExcludeDBFile = v
 		}
 	}
-	
+
 	if v := helper.GetStringArrayFlagOrEnv(cmd, "db", ""); len(v) > 0 {
 		opts.IncludeDatabases = v
 	}
 	if v := helper.GetStringFlagOrEnv(cmd, "db-file", ""); v != "" {
 		opts.IncludeFile = v
+	}
+
+	// Exclude options (untuk backup all)
+	if cmd.Flags().Changed("exclude-data") {
+		opts.ExcludeData = helper.GetBoolFlagOrEnv(cmd, "exclude-data", "")
+	}
+	if cmd.Flags().Changed("exclude-empty") {
+		opts.ExcludeEmpty = helper.GetBoolFlagOrEnv(cmd, "exclude-empty", "")
 	}
 }

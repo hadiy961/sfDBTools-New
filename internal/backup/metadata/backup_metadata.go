@@ -33,6 +33,7 @@ func GenerateBackupMetadata(cfg types_backup.MetadataConfig) *types_backup.Backu
 		Compressed:        cfg.Compressed,
 		CompressionType:   cfg.CompressionType,
 		Encrypted:         cfg.Encrypted,
+		ExcludeData:       cfg.ExcludeData,
 		BackupStatus:      cfg.BackupStatus,
 		Warnings:          cfg.Warnings,
 		GeneratedBy:       "sfDBTools",

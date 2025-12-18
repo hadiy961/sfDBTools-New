@@ -21,19 +21,17 @@ type ModeExecutor interface {
 // BackupService interface untuk service yang dibutuhkan oleh mode executors
 // Ini memisahkan concerns dan membuat mode executors tidak tightly coupled ke Service
 type BackupService interface {
-	// Logging methods
-	LogInfo(msg string)
-	LogDebug(msg string)
-	LogWarn(msg string)
-	LogError(msg string)
-	GetLogger() applog.Logger
+	// Logger access
+	GetLog() applog.Logger
 
-	// Backup execution
+	// Options access
+	GetOptions() *types_backup.BackupDBOptions
+
+	// Core backup execution methods (di execution_helpers.go)
 	ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.BackupExecutionConfig) (types.DatabaseBackupInfo, error)
 	ExecuteBackupLoop(ctx context.Context, databases []string, config types_backup.BackupLoopConfig, outputPathFunc func(dbName string) (string, error)) types_backup.BackupLoopResult
 
 	// Helper methods
-	GetBackupOptions() *types_backup.BackupDBOptions
 	GenerateFullBackupPath(dbName string, mode string) (string, error)
 	GetTotalDatabaseCount(ctx context.Context, dbFiltered []string) int
 	CaptureAndSaveGTID(ctx context.Context, backupFilePath string) error

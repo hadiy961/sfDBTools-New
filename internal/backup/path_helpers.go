@@ -16,8 +16,8 @@ import (
 // Path Generation Helpers
 // =============================================================================
 
-// generateFullBackupPath membuat full path untuk backup file
-func (s *Service) generateFullBackupPath(dbName string, mode string) (string, error) {
+// GenerateFullBackupPath membuat full path untuk backup file
+func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, error) {
 	// Build compression settings inline
 	compressionType := s.BackupDBOptions.Compression.Type
 	if !s.BackupDBOptions.Compression.Enabled {

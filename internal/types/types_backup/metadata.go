@@ -42,4 +42,6 @@ type MetadataConfig struct {
 	MariaDBVersion   string
 	// Ticket information
 	Ticket string
+	// Backup options
+	ExcludeData bool // Jika true, hanya backup struktur database (tanpa data)
 }

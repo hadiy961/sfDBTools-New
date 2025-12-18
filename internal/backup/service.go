@@ -115,8 +115,8 @@ func (s *Service) HandleShutdown() {
 // GTID and User Grants Helpers
 // =============================================================================
 
-// captureAndSaveGTID mengambil dan menyimpan GTID info jika diperlukan
-func (s *Service) captureAndSaveGTID(ctx context.Context, backupFilePath string) error {
+// CaptureAndSaveGTID mengambil dan menyimpan GTID info jika diperlukan
+func (s *Service) CaptureAndSaveGTID(ctx context.Context, backupFilePath string) error {
 	if !s.BackupDBOptions.CaptureGTID {
 		return nil
 	}
@@ -136,8 +136,8 @@ func (s *Service) captureAndSaveGTID(ctx context.Context, backupFilePath string)
 	return nil
 }
 
-// getTotalDatabaseCount mengambil total database dari server
-func (s *Service) getTotalDatabaseCount(ctx context.Context, dbFiltered []string) int {
+// GetTotalDatabaseCount mengambil total database dari server
+func (s *Service) GetTotalDatabaseCount(ctx context.Context, dbFiltered []string) int {
 	allDatabases, err := s.Client.GetDatabaseList(ctx)
 	totalDBFound := len(allDatabases)
 	if err != nil {
@@ -147,14 +147,19 @@ func (s *Service) getTotalDatabaseCount(ctx context.Context, dbFiltered []string
 	return totalDBFound
 }
 
-// exportUserGrantsIfNeeded export user grants jika diperlukan
+// ExportUserGrantsIfNeeded export user grants jika diperlukan
 // Delegates to metadata.ExportUserGrantsIfNeededWithLogging dengan BackupDBOptions.ExcludeUser
-func (s *Service) exportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) string {
+func (s *Service) ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) string {
+	// Skip export user grants jika dry-run mode
+	if s.BackupDBOptions.DryRun {
+		s.Log.Info("[DRY-RUN] Skip export user grants (dry-run mode aktif)")
+		return ""
+	}
 	return metadata.ExportUserGrantsIfNeededWithLogging(ctx, s.Client, s.Log, referenceBackupFile, s.BackupDBOptions.ExcludeUser, databases)
 }
 
-// updateMetadataUserGrantsPath update metadata dengan actual user grants path
-func (s *Service) updateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string) {
+// UpdateMetadataUserGrantsPath update metadata dengan actual user grants path
+func (s *Service) UpdateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string) {
 	if err := metadata.UpdateMetadataUserGrantsFile(backupFilePath, userGrantsPath, s.Log); err != nil {
 		s.Log.Warnf("Gagal update metadata user grants path: %v", err)
 	}
@@ -164,72 +169,13 @@ func (s *Service) updateMetadataUserGrantsPath(backupFilePath string, userGrants
 // Interface Implementation - modes.BackupService
 // =============================================================================
 
-// LogInfo implements modes.BackupService
-func (s *Service) LogInfo(msg string) {
-	s.Log.Info(msg)
-}
+// GetLog returns logger instance
+func (s *Service) GetLog() applog.Logger { return s.Log }
 
-// LogDebug implements modes.BackupService
-func (s *Service) LogDebug(msg string) {
-	s.Log.Debug(msg)
-}
+// GetOptions returns backup options
+func (s *Service) GetOptions() *types_backup.BackupDBOptions { return s.BackupDBOptions }
 
-// LogWarn implements modes.BackupService
-func (s *Service) LogWarn(msg string) {
-	s.Log.Warn(msg)
-}
-
-// LogError implements modes.BackupService
-func (s *Service) LogError(msg string) {
-	s.Log.Error(msg)
-}
-
-// GetLogger implements modes.BackupService
-func (s *Service) GetLogger() applog.Logger {
-	return s.Log
-}
-
-// GetBackupOptions implements modes.BackupService
-func (s *Service) GetBackupOptions() *types_backup.BackupDBOptions {
-	return s.BackupDBOptions
-}
-
-// ExecuteAndBuildBackup implements modes.BackupService
-func (s *Service) ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.BackupExecutionConfig) (types.DatabaseBackupInfo, error) {
-	return s.executeAndBuildBackup(ctx, cfg)
-}
-
-// ExecuteBackupLoop implements modes.BackupService
-func (s *Service) ExecuteBackupLoop(ctx context.Context, databases []string, config types_backup.BackupLoopConfig, outputPathFunc func(dbName string) (string, error)) types_backup.BackupLoopResult {
-	return s.executeBackupLoop(ctx, databases, config, outputPathFunc)
-}
-
-// GenerateFullBackupPath implements modes.BackupService
-func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, error) {
-	return s.generateFullBackupPath(dbName, mode)
-}
-
-// GetTotalDatabaseCount implements modes.BackupService
-func (s *Service) GetTotalDatabaseCount(ctx context.Context, dbFiltered []string) int {
-	return s.getTotalDatabaseCount(ctx, dbFiltered)
-}
-
-// CaptureAndSaveGTID implements modes.BackupService
-func (s *Service) CaptureAndSaveGTID(ctx context.Context, backupFilePath string) error {
-	return s.captureAndSaveGTID(ctx, backupFilePath)
-}
-
-// ExportUserGrantsIfNeeded implements modes.BackupService
-func (s *Service) ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) string {
-	return s.exportUserGrantsIfNeeded(ctx, referenceBackupFile, databases)
-}
-
-// UpdateMetadataUserGrantsPath implements modes.BackupService
-func (s *Service) UpdateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string) {
-	s.updateMetadataUserGrantsPath(backupFilePath, userGrantsPath)
-}
-
-// ToBackupResult implements modes.BackupService - konversi modes.BackupLoopResult ke types_backup.BackupResult
+// ToBackupResult konversi BackupLoopResult ke BackupResult
 func (s *Service) ToBackupResult(loopResult types_backup.BackupLoopResult) types_backup.BackupResult {
 	return types_backup.BackupResult{
 		BackupInfo:          loopResult.BackupInfos,

@@ -27,24 +27,25 @@ func NewCombinedExecutor(svc BackupService) *CombinedExecutor {
 // Execute melakukan backup semua database dalam satu file
 func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) types_backup.BackupResult {
 	var res types_backup.BackupResult
-	e.service.LogInfo("Melakukan backup database dalam mode combined")
+	e.service.GetLog().Info("Melakukan backup database dalam mode combined")
 
 	totalDBFound := e.service.GetTotalDatabaseCount(ctx, dbFiltered)
 
 	// Initialize result statistics
 	res.TotalDatabases = len(dbFiltered)
 
-	filename := e.service.GetBackupOptions().File.Path
-	fullOutputPath := filepath.Join(e.service.GetBackupOptions().OutputDir, filename)
-	e.service.LogDebug("Backup file: " + fullOutputPath)
+	opts := e.service.GetOptions()
+	filename := opts.File.Path
+	fullOutputPath := filepath.Join(opts.OutputDir, filename)
+	e.service.GetLog().Debug("Backup file: " + fullOutputPath)
 
 	// Capture GTID sebelum backup dimulai
 	if err := e.service.CaptureAndSaveGTID(ctx, fullOutputPath); err != nil {
-		e.service.LogWarn("GTID handling error: " + err.Error())
+		e.service.GetLog().Warn("GTID handling error: " + err.Error())
 	}
 
 	// Execute backup - gunakan mode dari BackupOptions (bisa 'all' atau 'combined')
-	backupMode := e.service.GetBackupOptions().Mode
+	backupMode := opts.Mode
 	backupInfo, execErr := e.service.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
 		DBList:       dbFiltered,
 		OutputPath:   fullOutputPath,
@@ -72,7 +73,7 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	// - backup all: export semua user (pass nil)
 	// - backup filter --mode=single-file: export hanya user dengan grants ke database yang dipilih (pass dbFiltered)
 	var databasesToFilter []string
-	if e.service.GetBackupOptions().Filter.IsFilterCommand {
+	if e.service.GetOptions().Filter.IsFilterCommand {
 		// Command filter: filter berdasarkan database yang dipilih
 		databasesToFilter = dbFiltered
 	}

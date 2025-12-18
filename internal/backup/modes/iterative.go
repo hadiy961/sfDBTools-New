@@ -36,7 +36,7 @@ func NewIterativeExecutor(svc BackupService, mode string) *IterativeExecutor {
 
 // Execute menjalankan backup secara iteratif
 func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_backup.BackupResult {
-	e.service.LogInfo("Melakukan backup database dalam mode " + e.mode)
+	e.service.GetLog().Info("Melakukan backup database dalam mode " + e.mode)
 
 	// Untuk mode separated/multi-file: TIDAK capture GTID karena setiap database dibackup terpisah
 	// dan tidak ada konsep snapshot point global yang relevan
@@ -86,18 +86,19 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 
 // createOutputPathFunc membuat fungsi closure untuk menentukan path output setiap database
 func (e *IterativeExecutor) createOutputPathFunc(dbList []string) func(string) (string, error) {
-	primaryFilename := e.service.GetBackupOptions().File.Filename
+	opts := e.service.GetOptions()
+	primaryFilename := opts.File.Filename
 
 	return func(dbName string) (string, error) {
 		// Logika khusus untuk Single Mode Variant (Single, Primary, Secondary):
 		// Database pertama (index 0) bisa menggunakan custom filename jika diset user.
 		// Companion databases (dmart, temp, archive) akan tetap digenerate namanya.
 		if backuphelper.IsSingleModeVariant(e.mode) && len(dbList) > 0 && dbList[0] == dbName && primaryFilename != "" {
-			return filepath.Join(e.service.GetBackupOptions().OutputDir, primaryFilename), nil
+			return filepath.Join(opts.OutputDir, primaryFilename), nil
 		}
 
 		// Default: generate full path berdasarkan pattern standar
-		return e.service.GenerateFullBackupPath(dbName, e.service.GetBackupOptions().Mode)
+		return e.service.GenerateFullBackupPath(dbName, opts.Mode)
 	}
 }
 
@@ -144,9 +145,8 @@ func (e *IterativeExecutor) generateCombinedMetadata(ctx context.Context, loopRe
 
 	// Update metadata pertama dengan full database list dan details
 	primaryBackupFile := loopResult.BackupInfos[0].OutputFile
-	logger := e.service.GetLogger()
-	if err := metadata.UpdateMetadataWithDatabaseDetails(primaryBackupFile, dbList, loopResult.BackupInfos, logger); err != nil {
-		// e.service.LogWarn("Gagal update combined metadata: " + err.Error())
+	if err := metadata.UpdateMetadataWithDatabaseDetails(primaryBackupFile, dbList, loopResult.BackupInfos, e.service.GetLog()); err != nil {
+		// e.service.GetLog().Warn("Gagal update combined metadata: " + err.Error())
 	}
 
 	// Hapus metadata individual untuk companion databases (index 1+)
