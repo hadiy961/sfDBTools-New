@@ -9,12 +9,13 @@ package backup
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"sfDBTools/internal/backup/display"
+	"sfDBTools/internal/parsing"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
-	"sfDBTools/internal/parsing"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 	"syscall"
@@ -112,9 +113,15 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *types.Dependencies, confi
 	// Goroutine untuk menangani signal
 	go func() {
 		sig := <-sigChan
-		logger.Warnf("Menerima signal %v, menghentikan backup...", sig)
+		fmt.Println()
+		logger.Warnf("Menerima signal %v, menghentikan backup... (Tekan sekali lagi untuk force exit)", sig)
 		svc.HandleShutdown()
 		cancel()
+
+		<-sigChan
+		fmt.Println()
+		logger.Warn("Menerima signal kedua, memaksa berhenti (force exit)...")
+		os.Exit(1)
 	}()
 
 	// BackupEntryConfig menyimpan konfigurasi untuk proses backup
@@ -131,7 +138,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *types.Dependencies, confi
 			logger.Warn("Proses dibatalkan oleh pengguna.")
 			return nil
 		}
-		if errors.Is(err, context.Canceled) {
+		if ctx.Err() != nil || errors.Is(err, context.Canceled) {
 			logger.Warn("Proses backup dibatalkan.")
 			return nil
 		}

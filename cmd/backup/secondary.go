@@ -23,7 +23,8 @@ var CmdBackupSecondary = &cobra.Command{
 		}
 
 		if err := backup.ExecuteBackup(cmd, types.Deps, "secondary"); err != nil {
-			types.Deps.Logger.Error("db-backup secondary gagal: " + err.Error())
+			// Error has been logged by ExecuteBackup
+			return
 		}
 	},
 }

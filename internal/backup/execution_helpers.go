@@ -137,6 +137,12 @@ func (s *Service) ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.Ba
 	// Execute backup
 	writeResult, err := s.executeMysqldumpWithPipe(ctx, mysqldumpArgs, cfg.OutputPath, s.BackupDBOptions.Compression.Enabled, s.BackupDBOptions.Compression.Type)
 	if err != nil {
+		// Jika error karena context canceled (shutdown), jangan log sebagai error
+		if ctx.Err() != nil {
+			s.Log.Warnf("Backup database %s dibatalkan", cfg.DBName)
+			cleanup.CleanupFailedBackup(cfg.OutputPath, s.Log)
+			return types.DatabaseBackupInfo{}, err
+		}
 		s.handleBackupError(err, cfg, writeResult)
 		return types.DatabaseBackupInfo{}, err
 	}

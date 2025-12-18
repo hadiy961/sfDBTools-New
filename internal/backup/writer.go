@@ -21,6 +21,7 @@ import (
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
 	"strings"
+	"time"
 )
 
 const bufferSize = 256 * 1024 // 256KB buffer untuk buffered I/O
@@ -95,26 +96,39 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 
 	// Execute mysqldump command
 	cmd := exec.CommandContext(ctx, "mysqldump", mysqldumpArgs...)
-	cmd.Stdout = writer
+	
+	// Wrap writer with monitor for progress tracking
+	monitor := newDatabaseMonitorWriter(writer, spin)
+	cmd.Stdout = monitor
 
 	// Capture stderr
 	var stderrBuf strings.Builder
 	cmd.Stderr = &stderrBuf
 
 	// Run command
-	if err := cmd.Run(); err != nil {
+	runErr := cmd.Run()
+	
+	// Finish monitor (report last DB)
+	monitor.Finish(runErr == nil)
+
+	if runErr != nil {
 		stderrOutput := stderrBuf.String()
 
 		// Log ke error log file
 		logFile := s.ErrorLog.LogWithOutput(map[string]interface{}{
 			"type": "mysqldump_backup",
 			"file": outputPath,
-		}, stderrOutput, err)
+		}, stderrOutput, runErr)
 		_ = logFile
 
 		// Check fatal error
-		if s.isFatalMysqldumpError(err, stderrOutput) {
-			return nil, fmt.Errorf("mysqldump gagal: %w", err)
+		if s.isFatalMysqldumpError(runErr, stderrOutput) {
+			// Return result with stderr captured so upper layer can display it
+			result := &types_backup.BackupWriteResult{
+				StderrOutput: stderrOutput,
+				FileSize:     0,
+			}
+			return result, fmt.Errorf("mysqldump gagal: %w", runErr)
 		}
 		s.Log.Warn("mysqldump exit with non-fatal error, treated as warning")
 	}
@@ -185,4 +199,88 @@ func (s *Service) isFatalMysqldumpError(err error, stderrOutput string) bool {
 	}
 
 	return fatal
+}
+
+// =============================================================================
+// Database Monitor Writer
+// =============================================================================
+
+// databaseMonitorWriter membungkus io.Writer untuk memantau progress per database
+type databaseMonitorWriter struct {
+	target    io.Writer
+	spinner   *ui.SpinnerWithElapsed
+	currentDB string
+	startTime time.Time
+	
+	// Buffer untuk menangani split chunk (sederhana)
+	// Kita hanya perlu cukup byte untuk mendeteksi marker "-- Current Database: "
+	// Namun implementasi paling sederhana adalah scanning per chunk.
+	// Risiko miss kecil jika chunk size cukup besar (default io.Copy buffer 32KB)
+}
+
+func newDatabaseMonitorWriter(target io.Writer, spinner *ui.SpinnerWithElapsed) *databaseMonitorWriter {
+	return &databaseMonitorWriter{
+		target:  target,
+		spinner: spinner,
+	}
+}
+
+var dbMarker = []byte("-- Current Database: ")
+
+func (w *databaseMonitorWriter) Write(p []byte) (n int, err error) {
+	// Scan marker
+	if idx := strings.Index(string(p), string(dbMarker)); idx != -1 {
+		// Marker found, try to extract DB name
+		// Format: -- Current Database: `dbname`
+		remainder := p[idx+len(dbMarker):]
+		
+		// Cari backtick pembuka
+		if startTick := strings.IndexByte(string(remainder), '`'); startTick != -1 {
+			remainder = remainder[startTick+1:]
+			// Cari backtick penutup
+			if endTick := strings.IndexByte(string(remainder), '`'); endTick != -1 {
+				dbName := string(remainder[:endTick])
+				
+				if dbName != w.currentDB {
+					w.onDatabaseSwitch(dbName)
+				}
+			}
+		}
+	}
+	
+	return w.target.Write(p)
+}
+
+func (w *databaseMonitorWriter) onDatabaseSwitch(newDB string) {
+	now := time.Now()
+	
+	// Report previous DB success
+	if w.currentDB != "" {
+		duration := now.Sub(w.startTime)
+		msg := fmt.Sprintf("✓ Database %s (%s)", w.currentDB, duration.Round(time.Millisecond))
+		
+		// Gunakan SuspendAndRun untuk print ke stdout tanpa ganggu spinner
+		w.spinner.SuspendAndRun(func() {
+			fmt.Println(msg)
+		})
+	}
+	
+	// Update state
+	w.currentDB = newDB
+	w.startTime = now
+	
+	// Update spinner
+	w.spinner.UpdateMessage(fmt.Sprintf("Processing %s", newDB))
+}
+
+func (w *databaseMonitorWriter) Finish(success bool) {
+	// Report last DB
+	if w.currentDB != "" && success {
+		duration := time.Since(w.startTime)
+		msg := fmt.Sprintf("✓ Database %s (%s)", w.currentDB, duration.Round(time.Millisecond))
+		
+		w.spinner.SuspendAndRun(func() {
+			fmt.Println(msg)
+		})
+	}
 }

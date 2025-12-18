@@ -32,7 +32,7 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 	result.TotalTimeTaken = timer.Elapsed()
 
 	// Cleanup old backups jika enabled
-	if s.Config.Backup.Cleanup.Enabled {
+	if s.Config.Backup.Cleanup.Enabled && ctx.Err() == nil {
 		s.Log.Info("Menjalankan cleanup old backups setelah backup...")
 		if err := cleanup.CleanupOldBackupsFromBackup(s.Config, s.Log); err != nil {
 			s.Log.Warnf("Cleanup old backups gagal: %v", err)
@@ -66,7 +66,7 @@ func (s *Service) handleBackupErrors(result types_backup.BackupResult) (types_ba
 	if len(result.Errors) > 0 || len(result.FailedDatabaseInfos) > 0 {
 		errorMsg := "backup gagal"
 		if len(result.Errors) > 0 {
-			errorMsg = fmt.Sprintf("backup gagal: %s", result.Errors[0])
+			errorMsg = result.Errors[0]
 		}
 		return result, fmt.Errorf("%s", errorMsg)
 	}

@@ -41,10 +41,13 @@ func ExecuteRestoreSingleCommand(cmd *cobra.Command, deps *types.Dependencies) e
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		<-sigChan
-		logger.Warn("Menerima signal interrupt, menghentikan restore...")
+		sig := <-sigChan
+		logger.Warnf("Menerima signal %v, menghentikan restore... (Tekan sekali lagi untuk force exit)", sig)
 		svc.HandleShutdown()
 		cancel()
+
+		<-sigChan
+		logger.Warn("Menerima signal kedua, memaksa berhenti (force exit)...")
 		os.Exit(1)
 	}()
 
@@ -57,6 +60,10 @@ func ExecuteRestoreSingleCommand(cmd *cobra.Command, deps *types.Dependencies) e
 	// Execute restore
 	result, err := svc.ExecuteRestoreSingle(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			logger.Warn("Proses restore dibatalkan.")
+			return nil
+		}
 		logger.Error("Restore gagal: " + err.Error())
 		svc.ErrorLog.Log(map[string]interface{}{
 			"function": "ExecuteRestoreSingle",
@@ -96,10 +103,13 @@ func ExecuteRestorePrimaryCommand(cmd *cobra.Command, deps *types.Dependencies) 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		<-sigChan
-		logger.Warn("Menerima signal interrupt, menghentikan restore...")
+		sig := <-sigChan
+		logger.Warnf("Menerima signal %v, menghentikan restore... (Tekan sekali lagi untuk force exit)", sig)
 		svc.HandleShutdown()
 		cancel()
+
+		<-sigChan
+		logger.Warn("Menerima signal kedua, memaksa berhenti (force exit)...")
 		os.Exit(1)
 	}()
 
@@ -112,6 +122,10 @@ func ExecuteRestorePrimaryCommand(cmd *cobra.Command, deps *types.Dependencies) 
 	// Execute restore primary
 	result, err := svc.ExecuteRestorePrimary(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			logger.Warn("Proses restore primary dibatalkan.")
+			return nil
+		}
 		logger.Error("Restore primary gagal: " + err.Error())
 		svc.ErrorLog.Log(map[string]interface{}{
 			"function": "ExecuteRestorePrimary",
@@ -151,10 +165,13 @@ func ExecuteRestoreAllCommand(cmd *cobra.Command, deps *types.Dependencies) erro
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		<-sigChan
-		logger.Warn("Menerima signal interrupt, menghentikan restore...")
+		sig := <-sigChan
+		logger.Warnf("Menerima signal %v, menghentikan restore... (Tekan sekali lagi untuk force exit)", sig)
 		svc.HandleShutdown()
 		cancel()
+
+		<-sigChan
+		logger.Warn("Menerima signal kedua, memaksa berhenti (force exit)...")
 		os.Exit(1)
 	}()
 
@@ -167,6 +184,10 @@ func ExecuteRestoreAllCommand(cmd *cobra.Command, deps *types.Dependencies) erro
 	// Execute restore all
 	result, err := svc.ExecuteRestoreAll(ctx)
 	if err != nil {
+		if ctx.Err() != nil {
+			logger.Warn("Proses restore all dibatalkan.")
+			return nil
+		}
 		logger.Error("Restore all gagal: " + err.Error())
 		svc.ErrorLog.Log(map[string]interface{}{
 			"function": "ExecuteRestoreAll",

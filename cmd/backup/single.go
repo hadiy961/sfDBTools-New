@@ -23,7 +23,8 @@ var CmdBackupSingle = &cobra.Command{
 		}
 
 		if err := backup.ExecuteBackup(cmd, types.Deps, "single"); err != nil {
-			types.Deps.Logger.Error("db-backup single gagal: " + err.Error())
+			// Error has been logged by ExecuteBackup
+			return
 		}
 	},
 }

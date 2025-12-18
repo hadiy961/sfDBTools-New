@@ -37,7 +37,8 @@ Contoh penggunaan:
 
 		// Backup all menggunakan mode 'all'
 		if err := backup.ExecuteBackup(cmd, types.Deps, "all"); err != nil {
-			types.Deps.Logger.Error("db-backup all gagal: " + err.Error())
+			// Error has been logged by ExecuteBackup
+			return
 		}
 	},
 }

@@ -23,7 +23,8 @@ var CmdBackupPrimary = &cobra.Command{
 		}
 
 		if err := backup.ExecuteBackup(cmd, types.Deps, "primary"); err != nil {
-			types.Deps.Logger.Error("db-backup primary gagal: " + err.Error())
+			// Error has been logged by ExecuteBackup
+			return
 		}
 	},
 }
