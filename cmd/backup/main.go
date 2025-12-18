@@ -2,8 +2,8 @@ package backupcmd
 
 import "github.com/spf13/cobra"
 
-// CmdDBBackupMain adalah perintah induk (parent command) untuk semua perintah 'db-backup'.
-var CmdDBBackupMain = &cobra.Command{
+// CmdBackupMain adalah perintah induk (parent command) untuk semua perintah 'db-backup'.
+var CmdBackupMain = &cobra.Command{
 	Use:     "db-backup",
 	Aliases: []string{"backup", "dbbackup", "dump"},
 	Short:   "Database backup tools (all, filter, single, dll)",
@@ -16,9 +16,9 @@ Tersedia beberapa sub-perintah seperti all, filter, dan single. Gunakan 'db-back
 
 func init() {
 	// Tambahkan semua sub-command (Perlu diinisialisasi di file masing-masing)
-	CmdDBBackupMain.AddCommand(CmdDBBackupAll)
-	CmdDBBackupMain.AddCommand(CmdDBBackupFilter)
-	CmdDBBackupMain.AddCommand(CmdBackupSingle)
-	CmdDBBackupMain.AddCommand(CmdBackupPrimary)
-	CmdDBBackupMain.AddCommand(CmdBackupSecondary)
+	CmdBackupMain.AddCommand(CmdBackupAll)
+	CmdBackupMain.AddCommand(CmdBackupFilter)
+	CmdBackupMain.AddCommand(CmdBackupSingle)
+	CmdBackupMain.AddCommand(CmdBackupPrimary)
+	CmdBackupMain.AddCommand(CmdBackupSecondary)
 }

@@ -16,8 +16,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CmdDBBackupAll adalah perintah untuk melakukan backup semua database dengan exclude filters
-var CmdDBBackupAll = &cobra.Command{
+// CmdBackupAll adalah perintah untuk melakukan backup semua database dengan exclude filters
+var CmdBackupAll = &cobra.Command{
 	Use:   "all",
 	Short: "Backup semua database dalam satu file dengan exclude filters",
 	Long: `Perintah ini akan melakukan backup semua database dalam satu file (combined mode).
@@ -44,5 +44,5 @@ Contoh penggunaan:
 
 func init() {
 	defaultOpts := defaultVal.DefaultBackupOptions("all")
-	flags.AddBackupAllFlags(CmdDBBackupAll, &defaultOpts)
+	flags.AddBackupAllFlags(CmdBackupAll, &defaultOpts)
 }

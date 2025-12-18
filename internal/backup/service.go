@@ -10,6 +10,7 @@ import (
 	"context"
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
+	"sfDBTools/internal/backup/metadata"
 	"sfDBTools/internal/backup/modes"
 	"sfDBTools/internal/cleanup"
 	"sfDBTools/internal/types"
@@ -108,6 +109,55 @@ func (s *Service) HandleShutdown() {
 	}
 
 	s.Cancel()
+}
+
+// =============================================================================
+// GTID and User Grants Helpers
+// =============================================================================
+
+// captureAndSaveGTID mengambil dan menyimpan GTID info jika diperlukan
+func (s *Service) captureAndSaveGTID(ctx context.Context, backupFilePath string) error {
+	if !s.BackupDBOptions.CaptureGTID {
+		return nil
+	}
+
+	s.Log.Info("Mengambil informasi GTID sebelum backup...")
+	gtidInfo, err := s.Client.GetFullGTIDInfo(ctx)
+	if err != nil {
+		s.Log.Warnf("Gagal mendapatkan GTID: %v", err)
+		return nil
+	}
+
+	s.Log.Infof("GTID berhasil diambil: File=%s, Pos=%d", gtidInfo.MasterLogFile, gtidInfo.MasterLogPos)
+
+	// Simpan GTID info ke service untuk dimasukkan ke metadata nanti
+	s.gtidInfo = gtidInfo
+
+	return nil
+}
+
+// getTotalDatabaseCount mengambil total database dari server
+func (s *Service) getTotalDatabaseCount(ctx context.Context, dbFiltered []string) int {
+	allDatabases, err := s.Client.GetDatabaseList(ctx)
+	totalDBFound := len(allDatabases)
+	if err != nil {
+		s.Log.Warnf("Gagal mendapatkan total database: %v, menggunakan fallback", err)
+		totalDBFound = len(dbFiltered)
+	}
+	return totalDBFound
+}
+
+// exportUserGrantsIfNeeded export user grants jika diperlukan
+// Delegates to metadata.ExportUserGrantsIfNeededWithLogging dengan BackupDBOptions.ExcludeUser
+func (s *Service) exportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) string {
+	return metadata.ExportUserGrantsIfNeededWithLogging(ctx, s.Client, s.Log, referenceBackupFile, s.BackupDBOptions.ExcludeUser, databases)
+}
+
+// updateMetadataUserGrantsPath update metadata dengan actual user grants path
+func (s *Service) updateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string) {
+	if err := metadata.UpdateMetadataUserGrantsFile(backupFilePath, userGrantsPath, s.Log); err != nil {
+		s.Log.Warnf("Gagal update metadata user grants path: %v", err)
+	}
 }
 
 // =============================================================================

@@ -75,7 +75,7 @@ func init() {
 	rootCmd.AddCommand(dbscancmd.CmdDBScanMain)
 	rootCmd.AddCommand(cryptocmd.CmdCryptoMain)
 	rootCmd.AddCommand(cleanupcmd.CmdCleanupMain)
-	rootCmd.AddCommand(backupcmd.CmdDBBackupMain)
+	rootCmd.AddCommand(backupcmd.CmdBackupMain)
 	rootCmd.AddCommand(restorecmd.CmdRestore)
 	rootCmd.AddCommand(completionCmd)
 }

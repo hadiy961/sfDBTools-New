@@ -1,64 +1,18 @@
-// File : internal/backup/service_helpers.go
-// Deskripsi : Service helper methods untuk backup operations
-// Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-05
-// Last Modified : 2025-12-05
-
 package backup
 
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"sfDBTools/internal/backup/filehelper"
 	"sfDBTools/internal/backup/metadata"
 	"sfDBTools/internal/cleanup"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/backuphelper"
-	"sfDBTools/pkg/compress"
 	pkghelper "sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"time"
 )
-
-// =============================================================================
-// Path Generation Helpers
-// =============================================================================
-
-// generateFullBackupPath membuat full path untuk backup file
-func (s *Service) generateFullBackupPath(dbName string, mode string) (string, error) {
-	// Build compression settings inline
-	compressionType := s.BackupDBOptions.Compression.Type
-	if !s.BackupDBOptions.Compression.Enabled {
-		compressionType = ""
-	}
-	compressionSettings := types_backup.CompressionSettings{
-		Type:    compress.CompressionType(compressionType),
-		Enabled: s.BackupDBOptions.Compression.Enabled,
-		Level:   s.BackupDBOptions.Compression.Level,
-	}
-
-	// Untuk mode separated, gunakan IP address instead of hostname
-	hostIdentifier := s.BackupDBOptions.Profile.DBInfo.HostName
-	if mode == "separated" || mode == "separate" {
-		hostIdentifier = s.BackupDBOptions.Profile.DBInfo.Host
-	}
-
-	filename, err := pkghelper.GenerateBackupFilename(
-		dbName,
-		mode,
-		hostIdentifier,
-		compressionSettings.Type,
-		s.BackupDBOptions.Encryption.Enabled,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(s.BackupDBOptions.OutputDir, filename), nil
-}
 
 // =============================================================================
 // Backup Loop Helpers
@@ -96,8 +50,6 @@ func (s *Service) executeBackupLoop(ctx context.Context, databases []string, con
 			result.Failed++
 			continue
 		}
-
-		// s.Log.Infof("Backup file: %s", outputPath)
 
 		// Execute backup
 		backupInfo, err := s.executeAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
@@ -313,170 +265,4 @@ func (s *Service) generateBackupMetadata(ctx context.Context, cfg types_backup.B
 		MariaDBVersion:      dbVersion,
 		Ticket:              s.BackupDBOptions.Ticket,
 	})
-}
-
-// =============================================================================
-// GTID and User Grants Helpers
-// =============================================================================
-
-// captureAndSaveGTID mengambil dan menyimpan GTID info jika diperlukan
-func (s *Service) captureAndSaveGTID(ctx context.Context, backupFilePath string) error {
-	if !s.BackupDBOptions.CaptureGTID {
-		return nil
-	}
-
-	s.Log.Info("Mengambil informasi GTID sebelum backup...")
-	gtidInfo, err := s.Client.GetFullGTIDInfo(ctx)
-	if err != nil {
-		s.Log.Warnf("Gagal mendapatkan GTID: %v", err)
-		return nil
-	}
-
-	s.Log.Infof("GTID berhasil diambil: File=%s, Pos=%d", gtidInfo.MasterLogFile, gtidInfo.MasterLogPos)
-
-	// Simpan GTID info ke service untuk dimasukkan ke metadata nanti
-	s.gtidInfo = gtidInfo
-
-	return nil
-}
-
-// getTotalDatabaseCount mengambil total database dari server
-func (s *Service) getTotalDatabaseCount(ctx context.Context, dbFiltered []string) int {
-	allDatabases, err := s.Client.GetDatabaseList(ctx)
-	totalDBFound := len(allDatabases)
-	if err != nil {
-		s.Log.Warnf("Gagal mendapatkan total database: %v, menggunakan fallback", err)
-		totalDBFound = len(dbFiltered)
-	}
-	return totalDBFound
-}
-
-// exportUserGrantsIfNeeded export user grants jika diperlukan
-// Delegates to metadata.ExportUserGrantsIfNeededWithLogging dengan BackupDBOptions.ExcludeUser
-func (s *Service) exportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) string {
-	return metadata.ExportUserGrantsIfNeededWithLogging(ctx, s.Client, s.Log, referenceBackupFile, s.BackupDBOptions.ExcludeUser, databases)
-}
-
-// updateMetadataUserGrantsPath update metadata dengan actual user grants path
-func (s *Service) updateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string) {
-	if err := metadata.UpdateMetadataUserGrantsFile(backupFilePath, userGrantsPath, s.Log); err != nil {
-		s.Log.Warnf("Gagal update metadata user grants path: %v", err)
-	}
-}
-
-// =============================================================================
-// Database Selection Helpers
-// =============================================================================
-
-// selectDatabaseAndBuildList menangani database selection dan companion databases logic
-// Untuk mode single: return hanya database yang dipilih
-// Untuk mode primary/secondary: return database yang dipilih + companion (jika enabled)
-func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interface {
-	GetDatabaseList(context.Context) ([]string, error)
-}, selectedDBName string, dbFiltered []string, mode string) ([]string, string, map[string]bool, error) {
-
-	allDatabases, listErr := client.GetDatabaseList(ctx)
-	if listErr != nil {
-		return nil, "", nil, fmt.Errorf("gagal mengambil daftar database: %w", listErr)
-	}
-
-	selectedDB := selectedDBName
-	if selectedDB == "" {
-		candidates := backuphelper.FilterCandidatesByMode(dbFiltered, mode)
-
-		// Filter berdasarkan client-code dan instance jika diperlukan
-		if mode == "primary" && s.BackupDBOptions.ClientCode != "" {
-			candidates = backuphelper.FilterCandidatesByClientCode(candidates, s.BackupDBOptions.ClientCode)
-			if len(candidates) == 0 {
-				return nil, "", nil, fmt.Errorf("tidak ada database primary dengan client code '%s' yang ditemukan", s.BackupDBOptions.ClientCode)
-			}
-			// Jika hanya ada satu kandidat, langsung pilih
-			if len(candidates) == 1 {
-				selectedDB = candidates[0]
-			}
-		} else if mode == "secondary" {
-			// Untuk secondary, filter berdasarkan client-code dan/atau instance
-			if s.BackupDBOptions.ClientCode != "" || s.BackupDBOptions.Instance != "" {
-				candidates = backuphelper.FilterSecondaryByClientCodeAndInstance(
-					candidates,
-					s.BackupDBOptions.ClientCode,
-					s.BackupDBOptions.Instance,
-				)
-
-				if len(candidates) == 0 {
-					// Error message berbeda berdasarkan apa yang di-provide
-					if s.BackupDBOptions.ClientCode != "" && s.BackupDBOptions.Instance != "" {
-						return nil, "", nil, fmt.Errorf("tidak ada database secondary dengan client code '%s' dan instance '%s' yang ditemukan",
-							s.BackupDBOptions.ClientCode, s.BackupDBOptions.Instance)
-					} else if s.BackupDBOptions.ClientCode != "" {
-						return nil, "", nil, fmt.Errorf("tidak ada database secondary dengan client code '%s' yang ditemukan", s.BackupDBOptions.ClientCode)
-					} else {
-						return nil, "", nil, fmt.Errorf("tidak ada database secondary dengan instance '%s' yang ditemukan", s.BackupDBOptions.Instance)
-					}
-				}
-
-				// Jika instance juga di-provide dan hanya ada satu kandidat, langsung pilih
-				if s.BackupDBOptions.Instance != "" && len(candidates) == 1 {
-					selectedDB = candidates[0]
-				} else if s.BackupDBOptions.Instance != "" && s.BackupDBOptions.ClientCode != "" && len(candidates) == 0 {
-					// Instance di-provide tapi tidak ada yang match - tampilkan warning
-					s.Log.Warnf("Instance '%s' tidak ditemukan untuk client code '%s', menampilkan semua secondary database untuk client tersebut",
-						s.BackupDBOptions.Instance, s.BackupDBOptions.ClientCode)
-					// Re-filter hanya dengan client code
-					candidates = backuphelper.FilterSecondaryByClientCodeAndInstance(
-						backuphelper.FilterCandidatesByMode(dbFiltered, mode),
-						s.BackupDBOptions.ClientCode,
-						"", // tanpa instance
-					)
-				}
-			}
-		}
-
-		if len(candidates) == 0 {
-			return nil, "", nil, fmt.Errorf("tidak ada database yang tersedia untuk dipilih")
-		}
-
-		// Jika selectedDB masih kosong, tampilkan menu interaktif
-		if selectedDB == "" {
-			choice, choiceErr := input.ShowMenu("Pilih database yang akan di-backup:", candidates)
-			if choiceErr != nil {
-				return nil, "", nil, choiceErr
-			}
-			selectedDB = candidates[choice-1]
-		}
-	}
-
-	if !pkghelper.StringSliceContainsFold(allDatabases, selectedDB) {
-		return nil, "", nil, fmt.Errorf("database %s tidak ditemukan di server", selectedDB)
-	}
-
-	companionDbs := []string{selectedDB}
-	companionStatus := map[string]bool{selectedDB: true}
-
-	// Add companion databases - hanya untuk mode primary dan secondary, bukan untuk single
-	if mode == "primary" || mode == "secondary" {
-		// Consolidated loop for all suffixes
-		for suffix, enabled := range map[string]bool{
-			"_dmart":   s.BackupDBOptions.IncludeDmart,
-			"_temp":    s.BackupDBOptions.IncludeTemp,
-			"_archive": s.BackupDBOptions.IncludeArchive,
-		} {
-			if !enabled {
-				continue
-			}
-
-			dbName := selectedDB + suffix
-			exists := pkghelper.StringSliceContainsFold(allDatabases, dbName)
-
-			if exists {
-				s.Log.Infof("Menambahkan database companion: %s", dbName)
-				companionDbs = append(companionDbs, dbName)
-			} else {
-				s.Log.Warnf("Database %s tidak ditemukan, melewati", dbName)
-			}
-			companionStatus[dbName] = exists
-		}
-	}
-
-	return companionDbs, selectedDB, companionStatus, nil
 }

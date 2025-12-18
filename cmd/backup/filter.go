@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CmdDBBackupFilter adalah perintah untuk melakukan backup database dengan filter
-var CmdDBBackupFilter = &cobra.Command{
+// CmdBackupFilter adalah perintah untuk melakukan backup database dengan filter
+var CmdBackupFilter = &cobra.Command{
 	Use:   "filter",
 	Short: "Backup database dengan filter dan multi-select (single-file atau multi-file)",
 	Long: `Perintah ini akan melakukan backup database dengan metode filter.
@@ -27,45 +27,9 @@ Jika tidak ada --db atau --db-file yang di-provide, akan muncul multi-select unt
 			return
 		}
 
-		// Dapatkan mode dari flag
-		mode, _ := cmd.Flags().GetString("mode")
-
-		// Jika mode tidak di-provide (masih default "single-file"), tanyakan interaktif
-		if !cmd.Flags().Changed("mode") {
-			modeOptions := []string{
-				"single-file (gabungkan semua database dalam satu file)",
-				"multi-file (pisahkan setiap database ke file terpisah)",
-			}
-
-			var selected string
-			prompt := &survey.Select{
-				Message: "Pilih mode backup:",
-				Options: modeOptions,
-				Default: modeOptions[0], // Default single-file
-			}
-
-			if err := survey.AskOne(prompt, &selected); err != nil {
-				types.Deps.Logger.Error("Pemilihan mode dibatalkan: " + err.Error())
-				return
-			}
-
-			// Parse pilihan untuk mendapatkan mode
-			if selected == modeOptions[0] {
-				mode = "single-file"
-			} else {
-				mode = "multi-file"
-			}
-		}
-
-		// Map mode ke backup mode internal
-		var backupMode string
-		switch mode {
-		case "single-file":
-			backupMode = "combined"
-		case "multi-file":
-			backupMode = "separated"
-		default:
-			types.Deps.Logger.Error(fmt.Sprintf("Mode tidak valid: %s. Gunakan 'single-file' atau 'multi-file'", mode))
+		backupMode, err := getBackupMode(cmd)
+		if err != nil {
+			types.Deps.Logger.Error(err.Error())
 			return
 		}
 
@@ -77,8 +41,49 @@ Jika tidak ada --db atau --db-file yang di-provide, akan muncul multi-select unt
 
 func init() {
 	defaultOpts := defaultVal.DefaultBackupOptions("combined") // Default ke combined
-	flags.AddBackupFilterFlags(CmdDBBackupFilter, &defaultOpts)
+	flags.AddBackupFilterFlags(CmdBackupFilter, &defaultOpts)
 
 	// Tambahkan flag --mode khusus untuk filter command
-	CmdDBBackupFilter.Flags().String("mode", "single-file", "Mode backup: single-file (semua database dalam satu file) atau multi-file (satu file per database)")
+	CmdBackupFilter.Flags().String("mode", "single-file", "Mode backup: single-file (semua database dalam satu file) atau multi-file (satu file per database)")
+}
+
+func getBackupMode(cmd *cobra.Command) (string, error) {
+	// Dapatkan mode dari flag
+	mode, _ := cmd.Flags().GetString("mode")
+
+	// Jika mode tidak di-provide (masih default "single-file"), tanyakan interaktif
+	if !cmd.Flags().Changed("mode") {
+		modeOptions := []string{
+			"single-file (gabungkan semua database dalam satu file)",
+			"multi-file (pisahkan setiap database ke file terpisah)",
+		}
+
+		var selected string
+		prompt := &survey.Select{
+			Message: "Pilih mode backup:",
+			Options: modeOptions,
+			Default: modeOptions[0], // Default single-file
+		}
+
+		if err := survey.AskOne(prompt, &selected); err != nil {
+			return "", fmt.Errorf("pemilihan mode dibatalkan: %w", err)
+		}
+
+		// Parse pilihan untuk mendapatkan mode
+		if selected == modeOptions[0] {
+			mode = "single-file"
+		} else {
+			mode = "multi-file"
+		}
+	}
+
+	// Map mode ke backup mode internal
+	switch mode {
+	case "single-file":
+		return "combined", nil
+	case "multi-file":
+		return "separated", nil
+	default:
+		return "", fmt.Errorf("mode tidak valid: %s. Gunakan 'single-file' atau 'multi-file'", mode)
+	}
 }
