@@ -33,7 +33,9 @@ func ColorText(text, color string) string {
 
 // PrintColoredLine prints a line with the specified color
 func PrintColoredLine(text, color string) {
-	fmt.Println(ColorText(text, color))
+	RunWithSpinnerSuspended(func() {
+		fmt.Println(ColorText(text, color))
+	})
 }
 
 // PrintSuccess prints success message in green

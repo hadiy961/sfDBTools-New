@@ -69,6 +69,11 @@ func ParsingRestoreSingleOptions(cmd *cobra.Command) (types.RestoreSingleOptions
 		opts.SkipGrants = helper.GetBoolFlagOrEnv(cmd, "skip-grants", "")
 	}
 
+	// Dry-run mode
+	if cmd.Flags().Changed("dry-run") {
+		opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
+	}
+
 	// Backup options untuk pre-restore backup
 	opts.BackupOptions = &types.RestoreBackupOptions{}
 
@@ -140,7 +145,10 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptio
 	if cmd.Flags().Changed("skip-grants") {
 		opts.SkipGrants = helper.GetBoolFlagOrEnv(cmd, "skip-grants", "")
 	}
-
+	// Dry-run mode
+	if cmd.Flags().Changed("dry-run") {
+		opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
+	}
 	// Include dmart
 	if cmd.Flags().Changed("include-dmart") {
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
@@ -160,6 +168,63 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptio
 	opts.BackupOptions = &types.RestoreBackupOptions{}
 
 	// Backup directory
+	if v := helper.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {
+		opts.BackupOptions.OutputDir = v
+	}
+
+	return opts, nil
+}
+
+// ParsingRestoreAllOptions melakukan parsing opsi untuk restore all
+func ParsingRestoreAllOptions(cmd *cobra.Command) (types.RestoreAllOptions, error) {
+	opts := types.RestoreAllOptions{
+		SkipBackup:    false,
+		SkipSystemDBs: true, // Default true demi keamanan
+		StopOnError:   true,
+	}
+
+	// 1. Basic configs (Profile, Keys, File)
+	if v := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_TARGET_PROFILE); v != "" {
+		opts.Profile.Path = v
+	}
+	if v := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY); v != "" {
+		opts.Profile.EncryptionKey = v
+	}
+	if v := helper.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
+		opts.File = v
+	}
+	if v := helper.GetStringFlagOrEnv(cmd, "encryption-key", consts.ENV_BACKUP_ENCRYPTION_KEY); v != "" {
+		opts.EncryptionKey = v
+	}
+
+	// 2. Safety Flags
+	if cmd.Flags().Changed("skip-backup") {
+		opts.SkipBackup = helper.GetBoolFlagOrEnv(cmd, "skip-backup", "")
+	}
+	if cmd.Flags().Changed("dry-run") {
+		opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
+	}
+	if cmd.Flags().Changed("force") {
+		opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
+	}
+	if cmd.Flags().Changed("continue-on-error") {
+		opts.StopOnError = !helper.GetBoolFlagOrEnv(cmd, "continue-on-error", "")
+	}
+
+	// 3. Filtering Flags
+	if v, _ := cmd.Flags().GetStringSlice("exclude-dbs"); len(v) > 0 {
+		opts.ExcludeDBs = v
+	}
+	if cmd.Flags().Changed("include-system") {
+		// Jika user pass flag --include-system, maka SkipSystemDBs jadi false
+		opts.SkipSystemDBs = !helper.GetBoolFlagOrEnv(cmd, "include-system", "")
+	}
+
+	// 4. Ticket & Backup Dir
+	if v := helper.GetStringFlagOrEnv(cmd, "ticket", ""); v != "" {
+		opts.Ticket = v
+	}
+	opts.BackupOptions = &types.RestoreBackupOptions{}
 	if v := helper.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {
 		opts.BackupOptions.OutputDir = v
 	}

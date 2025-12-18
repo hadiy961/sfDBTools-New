@@ -26,6 +26,7 @@ type Service struct {
 	Profile            *types.ProfileInfo
 	RestoreOpts        *types.RestoreSingleOptions
 	RestorePrimaryOpts *types.RestorePrimaryOptions
+	RestoreAllOpts     *types.RestoreAllOptions
 	TargetClient       *database.Client
 
 	// Restore-specific state
@@ -62,6 +63,22 @@ func NewRestorePrimaryService(logs applog.Logger, cfg *appconfig.Config, opts *t
 		ErrorLog:           errorlog.NewErrorLogger(logs, logDir, "restore"),
 		RestorePrimaryOpts: opts,
 		Profile:            &opts.Profile,
+	}
+}
+
+// NewRestoreAllService membuat instance baru Service untuk all mode
+func NewRestoreAllService(logs applog.Logger, cfg *appconfig.Config, opts *types.RestoreAllOptions) *Service {
+	logDir := cfg.Log.Output.File.Dir
+	if logDir == "" {
+		logDir = "/var/log/sfDBTools"
+	}
+
+	return &Service{
+		Log:            logs,
+		Config:         cfg,
+		ErrorLog:       errorlog.NewErrorLogger(logs, logDir, "restore"),
+		RestoreAllOpts: opts,
+		Profile:        &opts.Profile,
 	}
 }
 
@@ -159,6 +176,11 @@ func (s *Service) GetPrimaryOptions() *types.RestorePrimaryOptions {
 	return s.RestorePrimaryOpts
 }
 
+func (s *Service) GetAllOptions() *types.RestoreAllOptions {
+	return s.RestoreAllOpts
+}
+
 // Ensure Service implements modes.RestoreService
 var _ modes.RestoreService = (*Service)(nil)
+
 // Other methods (BackupDatabaseIfNeeded, etc.) are implemented in service_helpers.go/restore_helpers.go

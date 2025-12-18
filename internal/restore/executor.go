@@ -29,3 +29,12 @@ func (s *Service) ExecuteRestorePrimary(ctx context.Context) (*types.RestoreResu
 	}
 	return executor.Execute(ctx)
 }
+
+// ExecuteRestoreAll menjalankan restore all databases dengan streaming filtering
+func (s *Service) ExecuteRestoreAll(ctx context.Context) (*types.RestoreResult, error) {
+	executor, err := modes.GetExecutor("all", s)
+	if err != nil {
+		return nil, err
+	}
+	return executor.Execute(ctx)
+}

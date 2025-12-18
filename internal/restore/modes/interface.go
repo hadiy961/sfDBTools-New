@@ -41,6 +41,7 @@ type RestoreService interface {
 	// Options Accessors
 	GetSingleOptions() *types.RestoreSingleOptions
 	GetPrimaryOptions() *types.RestorePrimaryOptions
+	GetAllOptions() *types.RestoreAllOptions
 
 	// Restore Operations (Exposed from helpers)
 	BackupDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, skipBackup bool, backupOpts *types.RestoreBackupOptions) (string, error)

@@ -292,3 +292,66 @@ func (s *Service) resolveTargetDatabasePrimary(ctx context.Context) error {
 	s.Log.Infof("Target database: %s", s.RestorePrimaryOpts.TargetDB)
 	return nil
 }
+
+// SetupRestoreAllSession melakukan setup untuk restore all databases session
+func (s *Service) SetupRestoreAllSession(ctx context.Context) error {
+	ui.PrintHeader("Restore All Databases")
+
+	// 1. Resolve backup file
+	if err := s.resolveBackupFile(&s.RestoreAllOpts.File); err != nil {
+		return fmt.Errorf("gagal resolve file backup: %w", err)
+	}
+
+	// 2. Resolve encryption key if needed
+	if err := s.resolveEncryptionKey(s.RestoreAllOpts.File, &s.RestoreAllOpts.EncryptionKey); err != nil {
+		return fmt.Errorf("gagal resolve encryption key: %w", err)
+	}
+
+	// 3. Resolve target profile
+	if err := s.resolveTargetProfile(&s.RestoreAllOpts.Profile); err != nil {
+		return fmt.Errorf("gagal resolve target profile: %w", err)
+	}
+
+	// 4. Connect to target database
+	if err := s.connectToTargetDatabase(ctx); err != nil {
+		return fmt.Errorf("gagal koneksi ke database target: %w", err)
+	}
+
+	// 5. Resolve ticket number
+	if err := s.resolveTicketNumber(&s.RestoreAllOpts.Ticket); err != nil {
+		return fmt.Errorf("gagal resolve ticket number: %w", err)
+	}
+
+	// 6. Setup backup options if not skipped
+	if !s.RestoreAllOpts.SkipBackup {
+		if s.RestoreAllOpts.BackupOptions == nil {
+			s.RestoreAllOpts.BackupOptions = &types.RestoreBackupOptions{}
+		}
+		s.setupBackupOptions(s.RestoreAllOpts.BackupOptions, s.RestoreAllOpts.EncryptionKey)
+	}
+
+	// 7. Display confirmation
+	confirmOpts := map[string]string{
+		"Source File":       filepath.Base(s.RestoreAllOpts.File),
+		"Target Host":       fmt.Sprintf("%s:%d", s.Profile.DBInfo.Host, s.Profile.DBInfo.Port),
+		"Skip System DBs":   fmt.Sprintf("%v", s.RestoreAllOpts.SkipSystemDBs),
+		"Skip Backup":       fmt.Sprintf("%v", s.RestoreAllOpts.SkipBackup),
+		"Dry Run":           fmt.Sprintf("%v", s.RestoreAllOpts.DryRun),
+		"Continue on Error": fmt.Sprintf("%v", !s.RestoreAllOpts.StopOnError),
+		"Ticket Number":     s.RestoreAllOpts.Ticket,
+	}
+
+	if len(s.RestoreAllOpts.ExcludeDBs) > 0 {
+		confirmOpts["Excluded DBs"] = strings.Join(s.RestoreAllOpts.ExcludeDBs, ", ")
+	}
+
+	if !s.RestoreAllOpts.SkipBackup && s.RestoreAllOpts.BackupOptions != nil {
+		confirmOpts["Backup Directory"] = s.RestoreAllOpts.BackupOptions.OutputDir
+	}
+
+	if err := display.DisplayConfirmation(confirmOpts); err != nil {
+		return err
+	}
+
+	return nil
+}

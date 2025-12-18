@@ -18,6 +18,7 @@ import (
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
 	"sfDBTools/pkg/servicehelper"
+	"sfDBTools/pkg/ui"
 )
 
 // Service adalah service utama untuk backup operations
@@ -94,7 +95,6 @@ func (s *Service) HandleShutdown() {
 
 	s.WithLock(func() {
 		if s.backupInProgress && s.currentBackupFile != "" {
-			s.Log.Warn("Proses backup dihentikan, melakukan rollback...")
 			shouldRemoveFile = true
 			fileToRemove = s.currentBackupFile
 			s.currentBackupFile = ""
@@ -103,9 +103,16 @@ func (s *Service) HandleShutdown() {
 	})
 
 	if shouldRemoveFile {
-		if err := cleanup.CleanupPartialBackup(fileToRemove, s.Log); err != nil {
-			s.Log.Errorf("Gagal menghapus file backup: %v", err)
-		}
+		ui.RunWithSpinnerSuspended(func() {
+			s.Log.Warn("Proses backup dihentikan, melakukan rollback...")
+			if err := cleanup.CleanupPartialBackup(fileToRemove, s.Log); err != nil {
+				s.Log.Errorf("Gagal menghapus file backup: %v", err)
+			}
+		})
+	} else {
+		ui.RunWithSpinnerSuspended(func() {
+			s.Log.Warn("Menerima signal interrupt, tidak ada proses backup aktif")
+		})
 	}
 
 	s.Cancel()

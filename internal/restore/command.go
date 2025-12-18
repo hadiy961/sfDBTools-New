@@ -10,9 +10,9 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"sfDBTools/internal/parsing"
 	"sfDBTools/internal/restore/display"
 	"sfDBTools/internal/types"
-	"sfDBTools/internal/parsing"
 	"sfDBTools/pkg/ui"
 	"syscall"
 
@@ -125,6 +125,61 @@ func ExecuteRestorePrimaryCommand(cmd *cobra.Command, deps *types.Dependencies) 
 
 	ui.PrintSuccess("Restore primary database berhasil diselesaikan")
 	logger.Info("Restore primary database berhasil diselesaikan")
+
+	return nil
+}
+
+// ExecuteRestoreAllCommand adalah entry point untuk restore all databases command
+func ExecuteRestoreAllCommand(cmd *cobra.Command, deps *types.Dependencies) error {
+	logger := deps.Logger
+	logger.Info("Memulai proses restore all databases")
+
+	// Parse options dari command flags
+	parsedOpts, err := parsing.ParsingRestoreAllOptions(cmd)
+	if err != nil {
+		logger.Error("gagal parsing opsi: " + err.Error())
+		return err
+	}
+
+	// Inisialisasi service restore all
+	svc := NewRestoreAllService(logger, deps.Config, &parsedOpts)
+
+	// Setup signal handling untuk graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		logger.Warn("Menerima signal interrupt, menghentikan restore...")
+		svc.HandleShutdown()
+		cancel()
+		os.Exit(1)
+	}()
+
+	// Setup restore session (koneksi database, validasi, dll)
+	if err := svc.SetupRestoreAllSession(ctx); err != nil {
+		return err
+	}
+	defer svc.Close()
+
+	// Execute restore all
+	result, err := svc.ExecuteRestoreAll(ctx)
+	if err != nil {
+		logger.Error("Restore all gagal: " + err.Error())
+		svc.ErrorLog.Log(map[string]interface{}{
+			"function": "ExecuteRestoreAll",
+			"error":    err.Error(),
+		}, err)
+		return err
+	}
+
+	// Display result
+	display.ShowRestoreAllResult(result)
+
+	ui.PrintSuccess("Restore all databases berhasil diselesaikan")
+	logger.Info("Restore all databases berhasil diselesaikan")
 
 	return nil
 }

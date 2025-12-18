@@ -9,6 +9,7 @@ package modes
 import (
 	"context"
 	"fmt"
+	"sfDBTools/internal/restore/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/ui"
 	"time"
@@ -28,7 +29,7 @@ func NewSingleExecutor(svc RestoreService) *SingleExecutor {
 func (e *SingleExecutor) Execute(ctx context.Context) (*types.RestoreResult, error) {
 	startTime := time.Now()
 	opts := e.service.GetSingleOptions()
-	
+
 	result := &types.RestoreResult{
 		TargetDB:   opts.TargetDB,
 		SourceFile: opts.File,
@@ -37,6 +38,12 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*types.RestoreResult, err
 	e.service.LogInfo("Memulai proses restore database")
 	e.service.SetRestoreInProgress(opts.TargetDB)
 	defer e.service.ClearRestoreInProgress()
+
+	// Dry-run mode: validasi file tanpa restore
+	if opts.DryRun {
+		e.service.LogInfo("Mode DRY-RUN: Validasi file tanpa restore...")
+		return e.executeDryRun(ctx, opts, result, startTime)
+	}
 
 	// 1. Check if database exists
 	e.service.LogDebugf("Mengecek apakah database %s sudah ada...", opts.TargetDB)
@@ -85,5 +92,44 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*types.RestoreResult, err
 	result.Duration = time.Since(startTime).Round(time.Second).String()
 	e.service.LogInfo("Restore database berhasil")
 
+	return result, nil
+}
+
+// executeDryRun melakukan validasi file backup tanpa restore
+func (e *SingleExecutor) executeDryRun(ctx context.Context, opts *types.RestoreSingleOptions, result *types.RestoreResult, startTime time.Time) (*types.RestoreResult, error) {
+	e.service.LogInfo("Validasi file backup...")
+
+	// Validasi file exist dan bisa dibaca
+	reader, closers, err := helpers.OpenAndPrepareReader(opts.File, opts.EncryptionKey)
+	if err != nil {
+		result.Error = fmt.Errorf("gagal membuka file: %w", err)
+		return result, result.Error
+	}
+	defer helpers.CloseReaders(closers)
+
+	// Close reader immediately setelah validasi
+	_ = reader
+
+	// Check database status
+	dbExists, err := e.service.GetTargetClient().CheckDatabaseExists(ctx, opts.TargetDB)
+	if err != nil {
+		result.Error = fmt.Errorf("gagal mengecek database target: %w", err)
+		return result, result.Error
+	}
+
+	// Print hasil validasi
+	ui.PrintSuccess("\n✓ Validasi File Backup:")
+	ui.PrintInfo(fmt.Sprintf("  Source File: %s", opts.File))
+	ui.PrintInfo(fmt.Sprintf("  Target DB: %s", opts.TargetDB))
+	ui.PrintInfo(fmt.Sprintf("  DB Exists: %v", dbExists))
+	if dbExists && !opts.SkipBackup {
+		ui.PrintInfo("  Pre-restore Backup: Will be created")
+	}
+	if opts.DropTarget && dbExists {
+		ui.PrintWarning("  ⚠️  Database will be DROPPED before restore")
+	}
+
+	result.Success = true
+	result.Duration = time.Since(startTime).Round(time.Second).String()
 	return result, nil
 }

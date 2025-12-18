@@ -18,6 +18,7 @@ type RestoreSingleOptions struct {
 	BackupOptions *RestoreBackupOptions // Opsi untuk backup sebelum restore (jika tidak skip)
 	GrantsFile    string                // Lokasi file user grants (optional, jika ada)
 	SkipGrants    bool                  // Skip restore user grants (default false)
+	DryRun        bool                  // Dry-run mode: validasi tanpa restore (default false)
 }
 
 // RestoreBackupOptions opsi untuk backup sebelum restore
@@ -56,6 +57,27 @@ type RestorePrimaryOptions struct {
 	IncludeDmart       bool                  // Include companion database _dmart (default true)
 	AutoDetectDmart    bool                  // Auto-detect file companion database _dmart (default true)
 	ConfirmIfNotExists bool                  // Konfirmasi jika database belum ada (default true)
+	DryRun             bool                  // Dry-run mode: validasi tanpa restore (default false)
+}
+
+// RestoreAllOptions opsi konfigurasi untuk restore all databases
+type RestoreAllOptions struct {
+	Profile       ProfileInfo
+	EncryptionKey string
+	File          string
+	Ticket        string
+
+	// Safety & Behavior
+	BackupOptions *RestoreBackupOptions
+	SkipBackup    bool
+	DryRun        bool
+	Force         bool
+	StopOnError   bool
+
+	// Filtering
+	ExcludeDBs    []string // List DB yang akan di-skip
+	SkipSystemDBs bool     // Skip mysql, sys, performance_schema, information_schema
+	SkipGrants    bool     // Opsi tambahan jika ingin skip user grants (biasanya di DB mysql)
 }
 
 // RestoreResult menyimpan hasil restore operation

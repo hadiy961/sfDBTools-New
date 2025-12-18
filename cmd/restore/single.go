@@ -53,6 +53,9 @@ func init() {
 	CmdRestoreSingle.Flags().StringP("grants-file", "g", "", "Lokasi file user grants untuk di-restore (optional)")
 	CmdRestoreSingle.Flags().Bool("skip-grants", false, "Skip restore user grants (tidak restore grants sama sekali)")
 
+	// Dry-run mode
+	CmdRestoreSingle.Flags().Bool("dry-run", false, "Dry-run mode: validasi file tanpa restore")
+
 	// Ticket (wajib)
 	CmdRestoreSingle.Flags().StringP("ticket", "t", "", "Ticket number untuk restore request (wajib)")
 }

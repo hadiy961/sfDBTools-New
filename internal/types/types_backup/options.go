@@ -32,6 +32,7 @@ type BackupExecutionConfig struct {
 	BackupType   string
 	TotalDBFound int
 	IsMultiDB    bool
+	ProgressChan chan<- string `json:"-"`
 }
 
 // BackupDBOptions menyimpan opsi konfigurasi untuk proses backup database.

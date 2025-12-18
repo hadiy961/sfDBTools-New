@@ -9,6 +9,7 @@ package modes
 import (
 	"context"
 	"fmt"
+	"sfDBTools/internal/restore/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/ui"
 	"time"
@@ -37,6 +38,12 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 	e.service.LogInfo("Memulai proses restore database primary")
 	e.service.SetRestoreInProgress(opts.TargetDB)
 	defer e.service.ClearRestoreInProgress()
+
+	// Dry-run mode: validasi file tanpa restore
+	if opts.DryRun {
+		e.service.LogInfo("Mode DRY-RUN: Validasi file tanpa restore...")
+		return e.executeDryRun(ctx, opts, result, startTime)
+	}
 
 	// 1. Check if database exists
 	dbExists, err := e.service.GetTargetClient().CheckDatabaseExists(ctx, opts.TargetDB)
@@ -135,5 +142,72 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 	result.Duration = time.Since(startTime).Round(time.Second).String()
 	e.service.LogInfo("Restore primary database berhasil")
 
+	return result, nil
+}
+
+// executeDryRun melakukan validasi file backup tanpa restore
+func (e *PrimaryExecutor) executeDryRun(ctx context.Context, opts *types.RestorePrimaryOptions, result *types.RestoreResult, startTime time.Time) (*types.RestoreResult, error) {
+	e.service.LogInfo("Validasi file backup primary...")
+
+	// Validasi primary file
+	reader, closers, err := helpers.OpenAndPrepareReader(opts.File, opts.EncryptionKey)
+	if err != nil {
+		result.Error = fmt.Errorf("gagal membuka file primary: %w", err)
+		return result, result.Error
+	}
+	helpers.CloseReaders(closers)
+	_ = reader
+
+	// Validasi companion file jika ada
+	var companionValid bool
+	if opts.IncludeDmart {
+		// Try detect companion file
+		if err := e.service.DetectOrSelectCompanionFile(); err == nil && opts.CompanionFile != "" {
+			reader, closers, err := helpers.OpenAndPrepareReader(opts.CompanionFile, opts.EncryptionKey)
+			if err == nil {
+				helpers.CloseReaders(closers)
+				_ = reader
+				companionValid = true
+				result.CompanionFile = opts.CompanionFile
+				result.CompanionDB = opts.TargetDB + "_dmart"
+			}
+		}
+	}
+
+	// Check database status
+	dbExists, err := e.service.GetTargetClient().CheckDatabaseExists(ctx, opts.TargetDB)
+	if err != nil {
+		result.Error = fmt.Errorf("gagal mengecek database target: %w", err)
+		return result, result.Error
+	}
+
+	var companionExists bool
+	if opts.IncludeDmart {
+		companionDB := opts.TargetDB + "_dmart"
+		companionExists, _ = e.service.GetTargetClient().CheckDatabaseExists(ctx, companionDB)
+	}
+
+	// Print hasil validasi
+	ui.PrintSuccess("\n✓ Validasi File Backup Primary:")
+	ui.PrintInfo(fmt.Sprintf("  Source File: %s", opts.File))
+	ui.PrintInfo(fmt.Sprintf("  Target DB: %s", opts.TargetDB))
+	ui.PrintInfo(fmt.Sprintf("  DB Exists: %v", dbExists))
+	if opts.IncludeDmart {
+		if companionValid {
+			ui.PrintInfo(fmt.Sprintf("  Companion File: %s", opts.CompanionFile))
+			ui.PrintInfo(fmt.Sprintf("  Companion DB: %s (Exists: %v)", result.CompanionDB, companionExists))
+		} else {
+			ui.PrintWarning("  Companion File: Not detected or invalid")
+		}
+	}
+	if dbExists && !opts.SkipBackup {
+		ui.PrintInfo("  Pre-restore Backup: Will be created")
+	}
+	if opts.DropTarget && dbExists {
+		ui.PrintWarning("  ⚠️  Database will be DROPPED before restore")
+	}
+
+	result.Success = true
+	result.Duration = time.Since(startTime).Round(time.Second).String()
 	return result, nil
 }
