@@ -36,6 +36,7 @@ type ProfileShowOptions struct {
 // ProfileDeleteOptions - Flags for profile delete command
 type ProfileDeleteOptions struct {
 	ProfileInfo ProfileInfo
+	Profiles    []string // List of profiles to delete
 	Force       bool
 }
 

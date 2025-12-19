@@ -1,0 +1,18 @@
+- Backup All Example
+go run main.go backup all --exclude-data --force --profile localhost_3333 --profile-key tes --ticket tes
+- Backup Primary Example
+go run main.go backup primary --exclude-data --profile sfCola125 --profile-key tes --ticket tes --client-code adaro --force
+- Backup Secondary Example
+go run main.go backup secondary --exclude-data --profile sfCola125 --profile-key tes --ticket tes --client-code adaro --force --instance training
+- Backup Single Example
+go run main.go backup single --exclude-data --profile sfCola125 --profile-key tes --ticket tes --force --database dbsf_nbc_sodexo
+
+- Profile Create Example
+go run main.go profile create --profile localhost_tes --profile-key tes --host localhost --port 3333 --user dbaDO --password 'DataOn24!!' --interactive=false
+- Profile Update Example
+go run main.go profile edit --profile localhost_tes --profile-key tes --host localhost --port 3306 --user dbaDO --password 'DataOn24!!' --interactive=false --new-name=localhost_tes2
+- Profile Delete Example
+go run main.go profile delete --profile localhost_tes2 --profile-key tes --interactive=false
+- Profile Show Example
+go run main.go profile show --profile localhost_tes2 --force
+

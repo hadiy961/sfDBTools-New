@@ -13,8 +13,23 @@ import (
 // CmdBackupPrimary adalah perintah untuk melakukan backup database primary.
 var CmdBackupPrimary = &cobra.Command{
 	Use:   "primary",
-	Short: "Backup database primary (tanpa secondary)",
-	Long:  `Perintah ini akan melakukan backup database primary. Hanya database tanpa suffix '_secondary' yang ditampilkan.`,
+	Short: "Backup kelompok database 'Primary' (Smart Filter)",
+	Long: `Melakukan backup otomatis untuk semua database yang DIANGGAP sebagai database 'Primary'.
+
+Sistem mendeteksi database 'Primary' dengan cara MENGECUALIKAN database yang memiliki suffix '_secondary'.
+Ini berguna jika Anda memiliki konvensi penamaan database development/staging dengan akhiran '_secondary'.
+
+Contoh:
+  - 'app_db'          -> Primary (Akan dibackup)
+  - 'app_db_secondary'-> Secondary (Akan diabaikan)`,
+	Example: `  # 1. Backup semua database primary
+  sfdbtools db-backup primary
+
+  # 2. Backup primary dengan kompresi
+  sfdbtools db-backup primary --compress
+
+  # 3. Backup primary ke direktori khusus
+  sfdbtools db-backup primary --output-dir "/backups/prod"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
 		if types.Deps == nil {

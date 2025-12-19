@@ -164,6 +164,7 @@ func (s *Service) handleSingleModeSetup(ctx context.Context, client interface {
 		s.BackupDBOptions.Profile.DBInfo.HostName,
 		compressionSettings.Type,
 		s.BackupDBOptions.Encryption.Enabled,
+		s.BackupDBOptions.Filter.ExcludeData,
 	)
 	if err != nil {
 		s.Log.Warn("gagal generate filename: " + err.Error())

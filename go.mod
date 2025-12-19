@@ -17,6 +17,7 @@ require (
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/klauspost/compress v1.18.2
 	github.com/klauspost/pgzip v1.2.6
+	github.com/stretchr/testify v1.11.1
 	github.com/ulikunitz/xz v0.5.15
 )
 
@@ -25,10 +26,11 @@ require (
 	github.com/clipperhouse/displaywidth v0.6.2 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
-	github.com/stretchr/testify v1.11.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 )
 

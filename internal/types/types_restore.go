@@ -73,6 +73,7 @@ type RestoreAllOptions struct {
 	DryRun        bool
 	Force         bool
 	StopOnError   bool
+	DropTarget    bool // Drop semua database non-sistem sebelum restore
 
 	// Filtering
 	ExcludeDBs    []string // List DB yang akan di-skip

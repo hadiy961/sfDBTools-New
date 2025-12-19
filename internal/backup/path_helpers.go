@@ -41,6 +41,7 @@ func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, er
 		hostIdentifier,
 		compressionSettings.Type,
 		s.BackupDBOptions.Encryption.Enabled,
+		s.BackupDBOptions.Filter.ExcludeData,
 	)
 	if err != nil {
 		return "", err
@@ -96,6 +97,7 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 		compressionSettings.Type,
 		s.BackupDBOptions.Encryption.Enabled,
 		dbCount,
+		s.BackupDBOptions.Filter.ExcludeData,
 	)
 	if err != nil {
 		s.Log.Warn("gagal generate filename preview: " + err.Error())

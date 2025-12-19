@@ -18,4 +18,5 @@ func SecondaryBackupFlags(cmd *cobra.Command, defaultOpts *types_backup.BackupDB
 	cmd.Flags().StringVar(&defaultOpts.ClientCode, "client-code", defaultOpts.ClientCode, "Filter database secondary berdasarkan client code (contoh: adaro)")
 	cmd.Flags().StringVar(&defaultOpts.Instance, "instance", defaultOpts.Instance, "Filter database secondary berdasarkan instance (contoh: 1, 2, 3)")
 	cmd.Flags().StringVar(&defaultOpts.Ticket, "ticket", defaultOpts.Ticket, "Ticket number untuk request backup")
+	cmd.Flags().BoolVar(&defaultOpts.Force, "force", defaultOpts.Force, "Tampilkan opsi backup sebelum eksekusi")
 }

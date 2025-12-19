@@ -235,6 +235,75 @@ func (s *Service) EditProfile() error {
 func (s *Service) PromptDeleteProfile() error {
 	ui.Headers("Delete Database Configurations")
 
+	// 1. Jika profile path disediakan via flag --profile (support multiple)
+	if s.ProfileDelete != nil && len(s.ProfileDelete.Profiles) > 0 {
+		var validPaths []string
+		var displayNames []string
+
+		// Validasi semua profil input
+		for _, p := range s.ProfileDelete.Profiles {
+			if p == "" { continue }
+			
+			absPath, name, err := helper.ResolveConfigPath(p)
+			if err != nil {
+				return err
+			}
+			
+			if !fsops.PathExists(absPath) {
+				return fmt.Errorf("file konfigurasi tidak ditemukan: %s (name: %s)", absPath, name)
+			}
+			validPaths = append(validPaths, absPath)
+			displayNames = append(displayNames, fmt.Sprintf("%s (%s)", name, absPath))
+		}
+
+		if len(validPaths) == 0 {
+			ui.PrintInfo("Tidak ada profil valid yang ditemukan untuk dihapus.")
+			return nil
+		}
+
+		// Jika force flag aktif, hapus langsung
+		if s.ProfileDelete.Force {
+			for _, path := range validPaths {
+				if err := fsops.RemoveFile(path); err != nil {
+					s.Log.Errorf("Gagal menghapus file %s: %v", path, err)
+					// Continue deleting others? Yes, usually force means best effort.
+					// But returning error at end might be good.
+				} else {
+					s.Log.Info(fmt.Sprintf("Berhasil menghapus (force): %s", path))
+					ui.PrintSuccess(fmt.Sprintf("Berhasil menghapus: %s", path))
+				}
+			}
+			return nil
+		}
+
+		// Jika tidak force, minta konfirmasi untuk batch
+		ui.PrintWarning("Akan menghapus profil berikut:")
+		for _, d := range displayNames {
+			ui.PrintWarning(" - " + d)
+		}
+		
+		ok, err := input.AskYesNo(fmt.Sprintf("Anda yakin ingin menghapus %d profil ini?", len(validPaths)), false)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		if !ok {
+			ui.PrintInfo("Penghapusan dibatalkan oleh pengguna.")
+			return nil
+		}
+
+		for _, path := range validPaths {
+			if err := fsops.RemoveFile(path); err != nil {
+				s.Log.Errorf("Gagal menghapus file %s: %v", path, err)
+				ui.PrintError(fmt.Sprintf("Gagal menghapus: %s (%v)", path, err))
+			} else {
+				s.Log.Info(fmt.Sprintf("Berhasil menghapus: %s", path))
+				ui.PrintSuccess(fmt.Sprintf("Berhasil menghapus: %s", path))
+			}
+		}
+		return nil
+	}
+
+	// 2. Interactive Selection (Existing Logic)
 	configDir := s.Config.ConfigDir.DatabaseProfile
 	files, err := fsops.ReadDirFiles(configDir)
 	if err != nil {
@@ -269,13 +338,21 @@ func (s *Service) PromptDeleteProfile() error {
 		return nil
 	}
 
-	ok, err := input.AskYesNo(fmt.Sprintf("Anda yakin ingin menghapus %d file?", len(selected)), false)
-	if err != nil {
-		return validation.HandleInputError(err)
+	// Cek force flag untuk multi-select (opsional, tapi konsisten)
+	force := false
+	if s.ProfileDelete != nil {
+		force = s.ProfileDelete.Force
 	}
-	if !ok {
-		ui.PrintInfo("Penghapusan dibatalkan oleh pengguna.")
-		return nil
+
+	if !force {
+		ok, err := input.AskYesNo(fmt.Sprintf("Anda yakin ingin menghapus %d file?", len(selected)), false)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		if !ok {
+			ui.PrintInfo("Penghapusan dibatalkan oleh pengguna.")
+			return nil
+		}
 	}
 
 	for _, p := range selected {

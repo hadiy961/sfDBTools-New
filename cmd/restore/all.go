@@ -17,17 +17,30 @@ import (
 // CmdRestoreAll adalah command untuk restore all databases
 var CmdRestoreAll = &cobra.Command{
 	Use:   "all",
-	Short: "Restore semua database dari file dump dengan streaming filtering",
-	Long: `Command ini akan restore semua database dari file backup hasil mysqldump --all-databases.
-	
-Fitur utama:
-  • Streaming processing - tidak load seluruh file ke RAM
-  • Filtering realtime - skip database tertentu di tengah proses
-  • Skip system databases - otomatis skip mysql, sys, information_schema, performance_schema
-  • Dry-run mode - analisis file tanpa restore
-  • Safety backup - backup sebelum restore (optional)
+	Short: "Restore seluruh database instance (Full Instance Restore)",
+	Long: `Mengembalikan (Restore) banyak database sekaligus dari file dump besar (misal hasil mysqldump --all-databases).
 
-PERHATIAN: Operasi ini berisiko karena akan restore/overwrite banyak database sekaligus!`,
+Command ini menggunakan teknik "Streaming Filtering" sehingga TIDAK meload seluruh file dump ke RAM,
+melainkan memprosesnya baris per baris. Sangat efisien untuk file dump berukuran besar (GB/TB).
+
+Fitur Utama:
+  - Streaming Restore: Hemat memori.
+  - Drop Target: Opsi untuk menghapus bersih semua database non-sistem sebelum restore.
+  - Safety Backup: Melakukan backup otomatis terhadap database yang ada sebelum ditimpa (kecuali --skip-backup).
+  - Dry-Run: Simulasi proses restore tanpa melakukan perubahan apa pun.
+
+PERINGATAN: Operasi ini bersifat DESTRUKTIF massal. Pastikan Anda memiliki backup yang valid sebelum menjalankannya!`,
+	Example: `  # 1. Restore standar dari file dump besar (memerlukan Ticket ID)
+  sfdbtools db-restore all --file "full_backup.sql" --ticket "TICKET-123"
+
+  # 2. Restore dengan menghapus semua database lama terlebih dahulu
+  sfdbtools db-restore all --file "full_backup.sql" --ticket "TICKET-123" --drop-target
+
+  # 3. Restore file terkompresi & terenkripsi
+  sfdbtools db-restore all --file "full_backup.sql.gz.enc" --encryption-key "my-secret" --ticket "TICKET-123"
+
+  # 4. Simulasi restore (Dry-Run) untuk mengecek isi file dump
+  sfdbtools db-restore all --file "full_backup.sql" --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
 		if types.Deps == nil {
@@ -61,8 +74,7 @@ func init() {
 	CmdRestoreAll.Flags().Bool("dry-run", false, "Dry-run mode: analisis file tanpa restore")
 	CmdRestoreAll.Flags().Bool("force", false, "Force restore tanpa konfirmasi interaktif")
 	CmdRestoreAll.Flags().Bool("continue-on-error", false, "Lanjutkan restore meski ada error (default: stop on error)")
-
-	// Filtering flags
-	CmdRestoreAll.Flags().StringSlice("exclude-dbs", []string{}, "Daftar database yang akan di-exclude (dipisah koma)")
-	CmdRestoreAll.Flags().Bool("include-system", false, "Include system databases (mysql, sys, dll) - default di-skip untuk keamanan")
+	
+	// Drop Target
+	CmdRestoreAll.Flags().Bool("drop-target", false, "Drop semua database non-sistem sebelum restore")
 }

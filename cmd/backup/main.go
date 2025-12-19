@@ -6,9 +6,20 @@ import "github.com/spf13/cobra"
 var CmdBackupMain = &cobra.Command{
 	Use:     "db-backup",
 	Aliases: []string{"backup", "dbbackup", "dump"},
-	Short:   "Database backup tools (all, filter, single, dll)",
-	Long: `Perintah 'db-backup' digunakan untuk melakukan backup database.
-Tersedia beberapa sub-perintah seperti all, filter, dan single. Gunakan 'db-backup <sub-command> --help' untuk informasi lebih lanjut.`,
+	Short:   "Suite lengkap untuk backup database",
+	Long: `Kumpulan alat untuk melakukan backup database dengan berbagai strategi.
+
+Mendukung berbagai skenario backup:
+  - Backup Seluruh Instance (all)
+  - Backup Selektif/Bulk (filter)
+  - Backup Database Tunggal (single)
+  - Backup Berbasis Konvensi (primary/secondary)
+
+Setiap command mendukung opsi standar seperti kompresi, enkripsi (opsional), dan custom output.`,
+	Example: `  # Lihat bantuan untuk command spesifik
+  sfdbtools db-backup all --help
+  sfdbtools db-backup single --help
+  sfdbtools db-backup filter --help`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},

@@ -113,14 +113,14 @@ func (r *PathPatternReplacer) ReplacePattern(pattern string, excludeHostname ...
 // GenerateBackupFilename menghasilkan nama file backup menggunakan fixed pattern
 // Fixed pattern: {database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}
 // Untuk mode combined, format: combined_{hostname}_{timestamp}_{jumlah_db}
-func GenerateBackupFilename(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool) (string, error) {
-	return GenerateBackupFilenameWithCount(database, mode, hostname, compressionType, encrypted, 0)
+func GenerateBackupFilename(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, excludeData bool) (string, error) {
+	return GenerateBackupFilenameWithCount(database, mode, hostname, compressionType, encrypted, 0, excludeData)
 }
 
 // GenerateBackupFilenameWithCount menghasilkan nama file backup dengan jumlah database
 // Untuk mode combined/all dengan dbCount > 0, format: {prefix}_{hostname}_{timestamp}_{jumlah_db}
 // prefix: "all" untuk backup all, "combined" untuk filter --mode=single-file
-func GenerateBackupFilenameWithCount(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, dbCount int) (string, error) {
+func GenerateBackupFilenameWithCount(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, dbCount int, excludeData bool) (string, error) {
 	// Untuk mode separated, validasi bahwa database tidak kosong
 	if (mode == "separated" || mode == "separate") && database == "" {
 		return "", fmt.Errorf("database name tidak boleh kosong untuk mode separated")
@@ -132,11 +132,18 @@ func GenerateBackupFilenameWithCount(database string, mode string, hostname stri
 			// Format: {prefix}_{hostname}_{timestamp}_{jumlah_db}
 			// prefix berbeda: "all" untuk backup all, "combined" untuk filter single-file
 			prefix := mode
+			if excludeData {
+				prefix += "_nodata"
+			}
 			timestamp := time.Now().Format("20060102_150405")
 			database = fmt.Sprintf("%s_%s_%s_%ddb", prefix, hostname, timestamp, dbCount)
 		} else if database == "" {
 			database = "all_databases"
 		}
+	} else if excludeData {
+		// Untuk mode single/separated/primary/secondary, tambahkan suffix _nodata
+		// jika exclude-data aktif
+		database += "_nodata"
 	}
 
 	replacer, err := NewPathPatternReplacer(database, hostname, compressionType, encrypted, true)
@@ -189,7 +196,7 @@ func GenerateBackupDirectory(baseDir string, structurePattern string, hostname s
 
 // GenerateFullBackupPath menghasilkan full path untuk file backup (directory + filename)
 // Note: filenamePattern parameter diabaikan karena menggunakan fixed pattern
-func GenerateFullBackupPath(baseDir string, structurePattern string, filenamePattern string, database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool) (string, error) {
+func GenerateFullBackupPath(baseDir string, structurePattern string, filenamePattern string, database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, excludeData bool) (string, error) {
 	// Generate directory
 	dir, err := GenerateBackupDirectory(baseDir, structurePattern, hostname)
 	if err != nil {
@@ -197,7 +204,7 @@ func GenerateFullBackupPath(baseDir string, structurePattern string, filenamePat
 	}
 
 	// Generate filename - filenamePattern diabaikan, gunakan fixed pattern
-	filename, err := GenerateBackupFilename(database, mode, hostname, compressionType, encrypted)
+	filename, err := GenerateBackupFilename(database, mode, hostname, compressionType, encrypted, excludeData)
 	if err != nil {
 		return "", err
 	}

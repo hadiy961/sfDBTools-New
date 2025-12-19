@@ -99,6 +99,86 @@ func (s *Service) BackupTargetDatabase(ctx context.Context, dbName string, backu
 	return outputPath, nil
 }
 
+// BackupAllDatabases melakukan backup semua database sebelum restore all
+func (s *Service) BackupAllDatabases(ctx context.Context, backupOpts *types.RestoreBackupOptions) (string, error) {
+	// Determine output directory
+	outputDir := ""
+	if backupOpts != nil && backupOpts.OutputDir != "" {
+		outputDir = backupOpts.OutputDir
+	} else {
+		outputDir = s.Config.Backup.Output.BaseDirectory
+	}
+
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return "", fmt.Errorf("gagal membuat direktori output: %w", err)
+	}
+
+	// Generate filename
+	timestamp := time.Now().Format("20060102_150405")
+	hostname := s.Profile.DBInfo.HostName
+	if hostname == "" {
+		hostname = s.Profile.DBInfo.Host
+	}
+
+	filename := fmt.Sprintf("all-databases_%s_%s_pre_restore", timestamp, hostname)
+	fullFilename := filename + ".sql"
+
+	if backupOpts.Compression.Enabled {
+		ext := compress.GetFileExtension(compress.CompressionType(backupOpts.Compression.Type))
+		fullFilename += ext
+	}
+	if backupOpts.Encryption.Enabled {
+		fullFilename += ".enc"
+	}
+
+	outputPath := filepath.Join(outputDir, fullFilename)
+
+	// Prepare backup options
+	backupOptions := &types_backup.BackupDBOptions{
+		Profile:   *s.Profile,
+		OutputDir: outputDir,
+		Mode:      "all",
+		File: types_backup.BackupFileInfo{
+			Filename: filename,
+		},
+		Compression: types_backup.CompressionOptions{
+			Enabled: backupOpts.Compression.Enabled,
+			Type:    backupOpts.Compression.Type,
+			Level:   backupOpts.Compression.Level,
+		},
+		Encryption: types_backup.EncryptionOptions{
+			Enabled: backupOpts.Encryption.Enabled,
+			Key:     backupOpts.Encryption.Key,
+		},
+		Filter: types.FilterOptions{},
+	}
+
+	// Create backup service
+	backupSvc := backup.NewBackupService(s.Log, s.Config, backupOptions)
+
+	// Get DB list for count
+	dbList, err := s.TargetClient.GetDatabaseList(ctx)
+	if err != nil {
+		return "", fmt.Errorf("gagal mendapatkan list database: %w", err)
+	}
+
+	backupConfig := types_backup.BackupExecutionConfig{
+		DBName:       "",
+		DBList:       dbList,
+		OutputPath:   outputPath,
+		BackupType:   "all",
+		TotalDBFound: len(dbList),
+		IsMultiDB:    true,
+	}
+
+	_, err = backupSvc.ExecuteAndBuildBackup(ctx, backupConfig)
+	if err != nil {
+		return "", fmt.Errorf("gagal backup all databases: %w", err)
+	}
+
+	return outputPath, nil
+}
+
 // DetectOrSelectCompanionFile mendeteksi atau meminta user memilih file companion database
 func (s *Service) DetectOrSelectCompanionFile() error {
 	// Jika companion file sudah di-set, skip
@@ -312,6 +392,43 @@ func (s *Service) selectCompanionFileInteractive() error {
 	s.RestorePrimaryOpts.CompanionFile = filepath.Join(dir, files[choice-1])
 	s.Log.Infof("User memilih companion file: %s", files[choice-1])
 
+	return nil
+}
+
+// DropAllDatabases menghapus semua database non-sistem
+func (s *Service) DropAllDatabases(ctx context.Context) error {
+	s.Log.Info("Mengambil daftar database untuk drop all...")
+
+	dbList, err := s.TargetClient.GetDatabaseList(ctx)
+	if err != nil {
+		return fmt.Errorf("gagal mengambil daftar database: %w", err)
+	}
+
+	systemDBs := []string{"mysql", "sys", "information_schema", "performance_schema"}
+	droppedCount := 0
+
+	for _, dbName := range dbList {
+		// Skip system databases
+		isSystem := false
+		for _, sys := range systemDBs {
+			if strings.EqualFold(dbName, sys) {
+				isSystem = true
+				break
+			}
+		}
+		if isSystem {
+			continue
+		}
+
+		s.Log.Infof("Dropping database: %s", dbName)
+		if err := s.TargetClient.DropDatabase(ctx, dbName); err != nil {
+			s.Log.Errorf("Gagal drop database %s: %v", dbName, err)
+			return fmt.Errorf("gagal drop database %s: %w", dbName, err)
+		}
+		droppedCount++
+	}
+
+	s.Log.Infof("Berhasil drop %d database", droppedCount)
 	return nil
 }
 

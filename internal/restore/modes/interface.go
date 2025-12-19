@@ -45,7 +45,9 @@ type RestoreService interface {
 
 	// Restore Operations (Exposed from helpers)
 	BackupDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, skipBackup bool, backupOpts *types.RestoreBackupOptions) (string, error)
+	BackupAllDatabases(ctx context.Context, backupOpts *types.RestoreBackupOptions) (string, error)
 	DropDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, shouldDrop bool) error
+	DropAllDatabases(ctx context.Context) error
 	CreateAndRestoreDatabase(ctx context.Context, dbName string, filePath string, encryptionKey string) error
 	RestoreUserGrantsIfAvailable(ctx context.Context, grantsFile string) (bool, error)
 	DetectOrSelectCompanionFile() error

@@ -49,19 +49,6 @@ func PopulateFilterFlags(cmd *cobra.Command, opts *types.FilterOptions) {
 		opts.ExcludeSystem = helper.GetBoolFlagOrEnv(cmd, "exclude-system", "")
 	}
 
-	if v := helper.GetStringArrayFlagOrEnv(cmd, "exclude-db", ""); len(v) > 0 {
-		opts.ExcludeDatabases = v
-	}
-	if v := helper.GetStringFlagOrEnv(cmd, "exclude-db-file", ""); v != "" {
-		opts.ExcludeDBFile = v
-	}
-	// Cek alias
-	if opts.ExcludeDBFile == "" {
-		if v := helper.GetStringFlagOrEnv(cmd, "exclude-file", ""); v != "" {
-			opts.ExcludeDBFile = v
-		}
-	}
-
 	if v := helper.GetStringArrayFlagOrEnv(cmd, "db", ""); len(v) > 0 {
 		opts.IncludeDatabases = v
 	}

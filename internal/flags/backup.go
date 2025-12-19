@@ -80,8 +80,6 @@ func AddBackupAllFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
 
 	// Exclude filters (tidak ada include)
 	cmd.Flags().Bool("exclude-system", opts.Filter.ExcludeSystem, "Kecualikan system databases (information_schema, mysql, dll)")
-	cmd.Flags().StringArray("exclude-db", opts.Filter.ExcludeDatabases, "Daftar database yang akan dikecualikan. Dapat dikombinasi dengan --exclude-db-file.")
-	cmd.Flags().String("exclude-db-file", opts.Filter.ExcludeDBFile, "File berisi daftar database yang akan dikecualikan (satu per baris). Dapat dikombinasi dengan --exclude-db.")
 
 	// Exclude options
 	cmd.Flags().Bool("exclude-data", opts.Filter.ExcludeData, "Exclude data, hanya backup struktur database")

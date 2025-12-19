@@ -13,9 +13,9 @@ func ProfileCreate(cmd *cobra.Command) {
 	defaultOptions := defaultVal.DefaultProfileCreateOptions()
 
 	// Tambahkan flag spesifik untuk pembuatan profil
-	cmd.Flags().StringP("profil", "n", defaultOptions.ProfileInfo.Name, "Nama profil yang akan dibuat")
+	cmd.Flags().StringP("profile", "n", defaultOptions.ProfileInfo.Name, "Nama profil yang akan dibuat")
 	cmd.Flags().StringP("output-dir", "o", defaultOptions.OutputDir, "Direktori output untuk menyimpan profil yang dibuat (opsional)")
-	cmd.Flags().StringP("key", "k", "", "Kunci enkripsi untuk mengenkripsi file profil")
+	cmd.Flags().StringP("profile-key", "k", "", "Kunci enkripsi untuk mengenkripsi file profil")
 	cmd.Flags().BoolP("interactive", "i", defaultOptions.Interactive, "Mode interaktif untuk memasukkan informasi profil")
 }
 
@@ -26,10 +26,10 @@ func ProfileEdit(cmd *cobra.Command) {
 	defaultOptions := defaultVal.DefaultProfileCreateOptions()
 
 	// Tambahkan flag spesifik untuk mengedit profil
-	cmd.Flags().StringP("file", "f", "", "Nama file profil yang akan diedit")
+	cmd.Flags().StringP("profile", "f", "", "Nama file profil yang akan diedit")
 	// new-name: apabila diberikan, lakukan rename saat menyimpan
 	cmd.Flags().StringP("new-name", "N", "", "Nama baru untuk file profil (akan merename file saat menyimpan)")
-	cmd.Flags().StringP("key", "k", "", "Kunci enkripsi untuk mendekripsi/enkripsi file profil")
+	cmd.Flags().StringP("profile-key", "k", "", "Kunci enkripsi untuk mendekripsi/enkripsi file profil")
 	cmd.Flags().BoolP("interactive", "i", defaultOptions.Interactive, "Mode interaktif untuk mengedit informasi profil")
 }
 
@@ -39,14 +39,14 @@ func ProfileShow(cmd *cobra.Command) {
 	defaultOptions := defaultVal.DefaultProfileShowOptions()
 
 	// Tambahkan flag spesifik untuk melihat profil
-	cmd.Flags().StringP("file", "f", "", "Nama file profil yang akan ditampilkan")
-	cmd.Flags().StringP("key", "k", "", "kunci enkripsi untuk mendekripsi file profil")
+	cmd.Flags().StringP("profile", "f", "", "Nama file profil yang akan ditampilkan")
+	cmd.Flags().StringP("profile-key", "k", "", "kunci enkripsi untuk mendekripsi file profil")
 	cmd.Flags().BoolP("reveal-password", "r", defaultOptions.RevealPassword, "Tampilkan password secara jelas saat menampilkan profil")
 }
 
 // ProfileDelete - Flag untuk menghapus profil yang ada
 func ProfileDelete(cmd *cobra.Command) {
 	// Tambahkan flag spesifik untuk menghapus profil
-	cmd.Flags().StringP("file", "f", "", "Nama file profil yang akan dihapus")
+	cmd.Flags().StringSliceP("profile", "f", []string{}, "Nama file profil yang akan dihapus (bisa multiple)")
 	cmd.Flags().BoolP("force", "F", false, "Hapus profil tanpa konfirmasi")
 }

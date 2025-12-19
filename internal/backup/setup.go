@@ -176,11 +176,9 @@ func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Cli
 	// Jika ini command filter (IsFilterCommand=true) dan tidak ada include/exclude yang di-set manual
 	// maka tampilkan multi-select
 	isFilterMode := s.BackupDBOptions.Filter.IsFilterCommand
-	hasAnyExcludeConfig := len(s.BackupDBOptions.Filter.ExcludeDatabases) > 0 ||
-		s.BackupDBOptions.Filter.ExcludeDBFile != ""
 
 	// Untuk command filter tanpa include dan exclude manual → multi-select
-	if isFilterMode && !hasAnyExcludeConfig {
+	if isFilterMode {
 		return s.getFilteredDatabasesWithMultiSelect(ctx, client)
 	}
 

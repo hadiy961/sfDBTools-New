@@ -210,14 +210,8 @@ func ParsingRestoreAllOptions(cmd *cobra.Command) (types.RestoreAllOptions, erro
 	if cmd.Flags().Changed("continue-on-error") {
 		opts.StopOnError = !helper.GetBoolFlagOrEnv(cmd, "continue-on-error", "")
 	}
-
-	// 3. Filtering Flags
-	if v, _ := cmd.Flags().GetStringSlice("exclude-dbs"); len(v) > 0 {
-		opts.ExcludeDBs = v
-	}
-	if cmd.Flags().Changed("include-system") {
-		// Jika user pass flag --include-system, maka SkipSystemDBs jadi false
-		opts.SkipSystemDBs = !helper.GetBoolFlagOrEnv(cmd, "include-system", "")
+	if cmd.Flags().Changed("drop-target") {
+		opts.DropTarget = helper.GetBoolFlagOrEnv(cmd, "drop-target", "")
 	}
 
 	// 4. Ticket & Backup Dir

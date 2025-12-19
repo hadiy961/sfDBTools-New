@@ -19,15 +19,27 @@ import (
 // CmdBackupAll adalah perintah untuk melakukan backup semua database dengan exclude filters
 var CmdBackupAll = &cobra.Command{
 	Use:   "all",
-	Short: "Backup semua database dalam satu file dengan exclude filters",
-	Long: `Perintah ini akan melakukan backup semua database dalam satu file (combined mode).
-Anda dapat menggunakan exclude filters untuk mengecualikan database tertentu dari backup.
+	Short: "Backup seluruh database instance (Full Instance Backup)",
+	Long: `Melakukan backup terhadap SEMUA database yang ada di server dalam satu operasi.
 
-Contoh penggunaan:
-  sfdbtools backup all                                    # Backup semua database
-  sfdbtools backup all --exclude-system                   # Exclude system databases
-  sfdbtools backup all --exclude-db test --exclude-db dev # Exclude specific databases
-  sfdbtools backup all --exclude-db-file exclude.txt      # Exclude dari file`,
+Command ini sangat berguna untuk full server backup. Hasil backup biasanya digabungkan menjadi satu file SQL (tergantung konfigurasi).
+Anda dapat mengecualikan database tertentu (misalnya schema sistem MySQL) menggunakan filter exclude.
+
+Fitur:
+  - Backup seluruh instance.
+  - Filter exclude untuk mengabaikan database sistem atau database tertentu.
+  - Dukungan kompresi output (gzip/bzip2/dll tergantung implementasi).`,
+	Example: `  # 1. Backup semua database (Default)
+  sfdbtools db-backup all
+
+  # 2. Backup semua kecuali database sistem (mysql, information_schema, performance_schema, sys)
+  sfdbtools db-backup all --exclude-system
+
+  # 3. Backup ke direktori tertentu dengan kompresi
+  sfdbtools db-backup all --output-dir "/backup/daily" --compress
+
+  # 4. Backup dengan mengecualikan list database tertentu
+  sfdbtools db-backup all --exclude-db "test_db,temp_db"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
 		if types.Deps == nil {

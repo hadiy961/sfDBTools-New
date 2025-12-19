@@ -14,12 +14,25 @@ import (
 // CmdBackupFilter adalah perintah untuk melakukan backup database dengan filter
 var CmdBackupFilter = &cobra.Command{
 	Use:   "filter",
-	Short: "Backup database dengan filter dan multi-select (single-file atau multi-file)",
-	Long: `Perintah ini akan melakukan backup database dengan metode filter.
-Mode single-file akan menggabungkan semua database dalam satu file (sebelumnya: combined).
-Mode multi-file akan memisahkan setiap database ke file terpisah (sebelumnya: separated).
+	Short: "Backup banyak database pilihan (Selective/Bulk Backup)",
+	Long: `Melakukan backup untuk beberapa database sekaligus yang dipilih berdasarkan nama atau pola.
 
-Jika tidak ada --db atau --db-file yang di-provide, akan muncul multi-select untuk memilih database.`,
+Command ini memiliki dua mode output utama:
+  1. Single-File (Combined): Menggabungkan semua database terpilih menjadi SATU file dump (.sql).
+  2. Multi-File (Separated): Membuat file dump TERPISAH untuk setiap database.
+
+Jika tidak ada database yang ditentukan lewat flag, mode interaktif (multi-select) akan muncul.`,
+	Example: `  # 1. Mode Interaktif (Pilih database dari list)
+  sfdbtools db-backup filter
+
+  # 2. Backup database spesifik ke file terpisah (Multi-file)
+  sfdbtools db-backup filter --db "db_satu,db_dua" --mode multi-file
+
+  # 3. Backup database spesifik digabung jadi satu file (Single-file)
+  sfdbtools db-backup filter --db "db_utama,db_pendukung" --mode single-file
+
+  # 4. Backup menggunakan pola nama (misal: semua yg berawalan 'shop_')
+  sfdbtools db-backup filter --pattern "shop_*" --mode multi-file`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
 		if types.Deps == nil {
