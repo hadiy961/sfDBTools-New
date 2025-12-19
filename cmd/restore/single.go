@@ -8,6 +8,7 @@ package restorecmd
 
 import (
 	"fmt"
+	"sfDBTools/internal/flags"
 	"sfDBTools/internal/restore"
 	"sfDBTools/internal/types"
 
@@ -54,29 +55,5 @@ Jika nama database target tidak ditentukan, sistem akan mencoba menebak dari nam
 }
 
 func init() {
-	// Profile flags
-	CmdRestoreSingle.Flags().StringP("profile", "p", "", "Profile database target untuk restore (ENV: SFDB_TARGET_PROFILE)")
-	CmdRestoreSingle.Flags().StringP("profile-key", "k", "", "Kunci enkripsi profile database target (ENV: SFDB_TARGET_PROFILE_KEY)")
-
-	// Encryption flag
-	CmdRestoreSingle.Flags().StringP("encryption-key", "K", "", "Kunci enkripsi untuk decrypt file backup (ENV: SFDB_BACKUP_ENCRYPTION_KEY)")
-
-	// Restore options
-	CmdRestoreSingle.Flags().Bool("drop-target", true, "Drop target database sebelum restore")
-	CmdRestoreSingle.Flags().Bool("skip-backup", false, "Skip backup database target sebelum restore")
-	CmdRestoreSingle.Flags().StringP("backup-dir", "b", "", "Direktori output untuk backup pre-restore (default: dari config)")
-
-	// File and database
-	CmdRestoreSingle.Flags().StringP("file", "f", "", "Lokasi file backup yang akan di-restore")
-	CmdRestoreSingle.Flags().StringP("target-db", "d", "", "Database target untuk restore")
-
-	// User grants
-	CmdRestoreSingle.Flags().StringP("grants-file", "g", "", "Lokasi file user grants untuk di-restore (optional)")
-	CmdRestoreSingle.Flags().Bool("skip-grants", false, "Skip restore user grants (tidak restore grants sama sekali)")
-
-	// Dry-run mode
-	CmdRestoreSingle.Flags().Bool("dry-run", false, "Dry-run mode: validasi file tanpa restore")
-
-	// Ticket (wajib)
-	CmdRestoreSingle.Flags().StringP("ticket", "t", "", "Ticket number untuk restore request (wajib)")
+	flags.AddRestoreSingleFlags(CmdRestoreSingle)
 }

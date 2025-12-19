@@ -27,6 +27,7 @@ type Service struct {
 	RestoreOpts        *types.RestoreSingleOptions
 	RestorePrimaryOpts *types.RestorePrimaryOptions
 	RestoreAllOpts     *types.RestoreAllOptions
+	RestoreSelOpts     *types.RestoreSelectionOptions
 	TargetClient       *database.Client
 
 	// Restore-specific state
@@ -34,52 +35,42 @@ type Service struct {
 	currentTargetDB   string
 }
 
-// NewRestoreService membuat instance baru Service untuk single mode
-func NewRestoreService(logs applog.Logger, cfg *appconfig.Config, opts *types.RestoreSingleOptions) *Service {
+// NewRestoreService membuat instance baru Service dengan generic options
+// Accepts: *types.RestoreSingleOptions, *types.RestorePrimaryOptions, *types.RestoreAllOptions, *types.RestoreSelectionOptions
+func NewRestoreService(logs applog.Logger, cfg *appconfig.Config, restore interface{}) *Service {
 	logDir := cfg.Log.Output.File.Dir
 	if logDir == "" {
 		logDir = "/var/log/sfDBTools"
 	}
 
-	return &Service{
-		Log:         logs,
-		Config:      cfg,
-		ErrorLog:    errorlog.NewErrorLogger(logs, logDir, "restore"),
-		RestoreOpts: opts,
-		Profile:     &opts.Profile,
-	}
-}
-
-// NewRestorePrimaryService membuat instance baru Service untuk primary mode
-func NewRestorePrimaryService(logs applog.Logger, cfg *appconfig.Config, opts *types.RestorePrimaryOptions) *Service {
-	logDir := cfg.Log.Output.File.Dir
-	if logDir == "" {
-		logDir = "/var/log/sfDBTools"
+	svc := &Service{
+		Log:      logs,
+		Config:   cfg,
+		ErrorLog: errorlog.NewErrorLogger(logs, logDir, "restore"),
 	}
 
-	return &Service{
-		Log:                logs,
-		Config:             cfg,
-		ErrorLog:           errorlog.NewErrorLogger(logs, logDir, "restore"),
-		RestorePrimaryOpts: opts,
-		Profile:            &opts.Profile,
+	if restore != nil {
+		switch v := restore.(type) {
+		case *types.RestoreSingleOptions:
+			svc.RestoreOpts = v
+			svc.Profile = &v.Profile
+		case *types.RestorePrimaryOptions:
+			svc.RestorePrimaryOpts = v
+			svc.Profile = &v.Profile
+		case *types.RestoreAllOptions:
+			svc.RestoreAllOpts = v
+			svc.Profile = &v.Profile
+		case *types.RestoreSelectionOptions:
+			svc.RestoreSelOpts = v
+			svc.Profile = &v.Profile
+		default:
+			logs.Warn("Tipe restore options tidak dikenali dalam Service")
+		}
+	} else {
+		logs.Warn("Restore options tidak diberikan ke Service")
 	}
-}
 
-// NewRestoreAllService membuat instance baru Service untuk all mode
-func NewRestoreAllService(logs applog.Logger, cfg *appconfig.Config, opts *types.RestoreAllOptions) *Service {
-	logDir := cfg.Log.Output.File.Dir
-	if logDir == "" {
-		logDir = "/var/log/sfDBTools"
-	}
-
-	return &Service{
-		Log:            logs,
-		Config:         cfg,
-		ErrorLog:       errorlog.NewErrorLogger(logs, logDir, "restore"),
-		RestoreAllOpts: opts,
-		Profile:        &opts.Profile,
-	}
+	return svc
 }
 
 // SetRestoreInProgress mencatat status restore yang sedang berjalan
@@ -132,34 +123,6 @@ func (s *Service) GetLogger() applog.Logger {
 	return s.Log
 }
 
-func (s *Service) LogInfo(msg string) {
-	s.Log.Info(msg)
-}
-
-func (s *Service) LogWarn(msg string) {
-	s.Log.Warn(msg)
-}
-
-func (s *Service) LogWarnf(format string, args ...interface{}) {
-	s.Log.Warnf(format, args...)
-}
-
-func (s *Service) LogInfof(format string, args ...interface{}) {
-	s.Log.Infof(format, args...)
-}
-
-func (s *Service) LogDebugf(format string, args ...interface{}) {
-	s.Log.Debugf(format, args...)
-}
-
-func (s *Service) LogError(msg string) {
-	s.Log.Error(msg)
-}
-
-func (s *Service) LogErrorf(format string, args ...interface{}) {
-	s.Log.Errorf(format, args...)
-}
-
 func (s *Service) GetTargetClient() *database.Client {
 	return s.TargetClient
 }
@@ -178,6 +141,10 @@ func (s *Service) GetPrimaryOptions() *types.RestorePrimaryOptions {
 
 func (s *Service) GetAllOptions() *types.RestoreAllOptions {
 	return s.RestoreAllOpts
+}
+
+func (s *Service) GetSelectionOptions() *types.RestoreSelectionOptions {
+	return s.RestoreSelOpts
 }
 
 // Ensure Service implements modes.RestoreService

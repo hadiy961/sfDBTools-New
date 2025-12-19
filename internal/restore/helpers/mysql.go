@@ -7,6 +7,7 @@
 package helpers
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -47,6 +48,7 @@ func ExecuteMySQLCommand(ctx context.Context, args []string, stdin io.Reader) er
 
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
+	cmd.Stdout = io.Discard
 
 	if err := cmd.Run(); err != nil {
 		stderrMsg := stderr.String()
@@ -91,7 +93,8 @@ func OpenAndPrepareReader(filePath string, encryptionKey string) (io.Reader, []i
 		return nil, nil, fmt.Errorf("gagal membuka file: %w", err)
 	}
 
-	reader := io.Reader(file)
+	// Buffer file reads to improve large sequential throughput
+	reader := io.Reader(bufio.NewReaderSize(file, 4*1024*1024))
 	closers := []io.Closer{file}
 
 	// Decrypt if encrypted

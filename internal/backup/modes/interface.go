@@ -33,7 +33,6 @@ type BackupService interface {
 
 	// Helper methods
 	GenerateFullBackupPath(dbName string, mode string) (string, error)
-	GetTotalDatabaseCount(ctx context.Context, dbFiltered []string) int
 	CaptureAndSaveGTID(ctx context.Context, backupFilePath string) error
 	ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) string
 	UpdateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string)

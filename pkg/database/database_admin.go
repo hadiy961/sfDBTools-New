@@ -9,18 +9,26 @@ import (
 
 // CheckDatabaseExists mengecek apakah database sudah ada
 func (c *Client) CheckDatabaseExists(ctx context.Context, dbName string) (bool, error) {
-	var schemaName string
-	query := "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?"
-	err := c.db.QueryRowContext(ctx, query, dbName).Scan(&schemaName)
-
-	if err == sql.ErrNoRows {
-		return false, nil
-	}
+	// Use retry-capable query to avoid transient invalid connection errors
+	query := "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ? LIMIT 1"
+	rows, err := c.QueryContextWithRetry(ctx, query, dbName)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
 		return false, fmt.Errorf("gagal mengecek database: %w", err)
 	}
+	defer rows.Close()
 
-	return schemaName != "", nil
+	if rows.Next() {
+		var schemaName string
+		if scanErr := rows.Scan(&schemaName); scanErr != nil {
+			return false, fmt.Errorf("gagal membaca hasil cek database: %w", scanErr)
+		}
+		return schemaName != "", nil
+	}
+
+	return false, nil
 }
 
 // DropDatabase menghapus database
@@ -49,8 +57,7 @@ func (c *Client) CreateDatabaseIfNotExists(ctx context.Context, dbName string) e
 
 	if !exists {
 		createQuery := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", dbName)
-		_, err := c.db.ExecContext(ctx, createQuery)
-		if err != nil {
+		if _, err := c.ExecContextWithRetry(ctx, createQuery); err != nil {
 			return fmt.Errorf("gagal membuat database: %w", err)
 		}
 	}

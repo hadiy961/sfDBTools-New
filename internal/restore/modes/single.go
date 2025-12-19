@@ -35,24 +35,25 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*types.RestoreResult, err
 		SourceFile: opts.File,
 	}
 
-	e.service.LogInfo("Memulai proses restore database")
+	logger := e.service.GetLogger()
+	logger.Info("Memulai proses restore database")
 	e.service.SetRestoreInProgress(opts.TargetDB)
 	defer e.service.ClearRestoreInProgress()
 
 	// Dry-run mode: validasi file tanpa restore
 	if opts.DryRun {
-		e.service.LogInfo("Mode DRY-RUN: Validasi file tanpa restore...")
+		logger.Info("Mode DRY-RUN: Validasi file tanpa restore...")
 		return e.executeDryRun(ctx, opts, result, startTime)
 	}
 
 	// 1. Check if database exists
-	e.service.LogDebugf("Mengecek apakah database %s sudah ada...", opts.TargetDB)
+	logger.Debugf("Mengecek apakah database %s sudah ada...", opts.TargetDB)
 	dbExists, err := e.service.GetTargetClient().CheckDatabaseExists(ctx, opts.TargetDB)
 	if err != nil {
 		result.Error = fmt.Errorf("gagal mengecek database target: %w", err)
 		return result, result.Error
 	}
-	e.service.LogDebugf("Database %s exists: %v", opts.TargetDB, dbExists)
+	logger.Debugf("Database %s exists: %v", opts.TargetDB, dbExists)
 
 	// 2. Backup database if needed
 	backupFile, err := e.service.BackupDatabaseIfNeeded(ctx, opts.TargetDB, dbExists, opts.SkipBackup, opts.BackupOptions)
@@ -81,7 +82,7 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*types.RestoreResult, err
 	result.GrantsFile = opts.GrantsFile
 	grantsRestored, err := e.service.RestoreUserGrantsIfAvailable(ctx, opts.GrantsFile)
 	if err != nil {
-		e.service.LogErrorf("Gagal restore user grants: %v", err)
+		logger.Errorf("Gagal restore user grants: %v", err)
 		ui.PrintWarning(fmt.Sprintf("⚠️  Database berhasil di-restore, tapi gagal restore user grants: %v", err))
 		result.GrantsRestored = false
 	} else {
@@ -90,14 +91,15 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*types.RestoreResult, err
 
 	result.Success = true
 	result.Duration = time.Since(startTime).Round(time.Second).String()
-	e.service.LogInfo("Restore database berhasil")
+	logger.Info("Restore database berhasil")
 
 	return result, nil
 }
 
 // executeDryRun melakukan validasi file backup tanpa restore
 func (e *SingleExecutor) executeDryRun(ctx context.Context, opts *types.RestoreSingleOptions, result *types.RestoreResult, startTime time.Time) (*types.RestoreResult, error) {
-	e.service.LogInfo("Validasi file backup...")
+	logger := e.service.GetLogger()
+	logger.Info("Validasi file backup...")
 
 	// Validasi file exist dan bisa dibaca
 	reader, closers, err := helpers.OpenAndPrepareReader(opts.File, opts.EncryptionKey)

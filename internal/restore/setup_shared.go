@@ -130,6 +130,21 @@ func (s *Service) connectToTargetDatabase(ctx context.Context) error {
 	}
 
 	s.TargetClient = client
+
+	// Konsisten dengan fitur backup: ambil hostname dari server (SELECT @@hostname)
+	// agar penamaan file memakai hostname (mis. dev12-dbdev-125) bukan IP.
+	serverHostname, err := client.GetServerHostname(ctx)
+	if err != nil {
+		s.Log.Warnf("gagal mendapatkan hostname dari server: %v, menggunakan dari config", err)
+		if s.Profile != nil && s.Profile.DBInfo.HostName == "" {
+			s.Profile.DBInfo.HostName = s.Profile.DBInfo.Host
+		}
+	} else {
+		if s.Profile != nil {
+			s.Profile.DBInfo.HostName = serverHostname
+		}
+		s.Log.Infof("menggunakan hostname dari server: %s", serverHostname)
+	}
 	s.Log.Info("Koneksi ke database target berhasil")
 
 	return nil
@@ -274,5 +289,3 @@ func (s *Service) setupBackupOptions(backupOpts *types.RestoreBackupOptions, enc
 		}
 	}
 }
-
-

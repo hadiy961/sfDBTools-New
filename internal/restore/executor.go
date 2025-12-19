@@ -38,3 +38,12 @@ func (s *Service) ExecuteRestoreAll(ctx context.Context) (*types.RestoreResult, 
 	}
 	return executor.Execute(ctx)
 }
+
+// ExecuteRestoreSelection menjalankan restore selection berbasis CSV
+func (s *Service) ExecuteRestoreSelection(ctx context.Context) (*types.RestoreResult, error) {
+	executor, err := modes.GetExecutor("selection", s)
+	if err != nil {
+		return nil, err
+	}
+	return executor.Execute(ctx)
+}

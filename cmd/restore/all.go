@@ -8,6 +8,7 @@ package restorecmd
 
 import (
 	"fmt"
+	"sfDBTools/internal/flags"
 	"sfDBTools/internal/restore"
 	"sfDBTools/internal/types"
 
@@ -55,26 +56,5 @@ PERINGATAN: Operasi ini bersifat DESTRUKTIF massal. Pastikan Anda memiliki backu
 }
 
 func init() {
-	// Profile flags
-	CmdRestoreAll.Flags().StringP("profile", "p", "", "Profile database target untuk restore (ENV: SFDB_TARGET_PROFILE)")
-	CmdRestoreAll.Flags().StringP("profile-key", "k", "", "Kunci enkripsi profile database target (ENV: SFDB_TARGET_PROFILE_KEY)")
-
-	// Encryption flag
-	CmdRestoreAll.Flags().StringP("encryption-key", "K", "", "Kunci enkripsi untuk decrypt file backup (ENV: SFDB_BACKUP_ENCRYPTION_KEY)")
-
-	// File
-	CmdRestoreAll.Flags().StringP("file", "f", "", "Lokasi file backup all-databases yang akan di-restore")
-
-	// Ticket (wajib)
-	CmdRestoreAll.Flags().StringP("ticket", "t", "", "Ticket number untuk restore request (wajib)")
-
-	// Safety & Behavior flags
-	CmdRestoreAll.Flags().Bool("skip-backup", false, "Skip backup sebelum restore")
-	CmdRestoreAll.Flags().StringP("backup-dir", "b", "", "Direktori output untuk backup pre-restore (default: dari config)")
-	CmdRestoreAll.Flags().Bool("dry-run", false, "Dry-run mode: analisis file tanpa restore")
-	CmdRestoreAll.Flags().Bool("force", false, "Force restore tanpa konfirmasi interaktif")
-	CmdRestoreAll.Flags().Bool("continue-on-error", false, "Lanjutkan restore meski ada error (default: stop on error)")
-	
-	// Drop Target
-	CmdRestoreAll.Flags().Bool("drop-target", false, "Drop semua database non-sistem sebelum restore")
+	flags.AddRestoreAllAllFlags(CmdRestoreAll)
 }

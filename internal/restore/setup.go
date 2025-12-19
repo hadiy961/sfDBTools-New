@@ -363,3 +363,59 @@ func (s *Service) SetupRestoreAllSession(ctx context.Context) error {
 
 	return nil
 }
+
+// SetupRestoreSelectionSession melakukan setup untuk restore selection (CSV)
+func (s *Service) SetupRestoreSelectionSession(ctx context.Context) error {
+	ui.Headers("Restore Selection (CSV)")
+
+	// 1. Pastikan CSV path terisi
+	if s.RestoreSelOpts == nil || strings.TrimSpace(s.RestoreSelOpts.CSV) == "" {
+		return fmt.Errorf("path CSV wajib diisi (--csv)")
+	}
+
+	// 2. Resolve target profile
+	if err := s.resolveTargetProfile(&s.RestoreSelOpts.Profile); err != nil {
+		return fmt.Errorf("gagal resolve target profile: %w", err)
+	}
+
+	// 3. Connect to target database
+	if err := s.connectToTargetDatabase(ctx); err != nil {
+		return fmt.Errorf("gagal koneksi ke database target: %w", err)
+	}
+
+	// 4. Resolve ticket number
+	if err := s.resolveTicketNumber(&s.RestoreSelOpts.Ticket); err != nil {
+		return fmt.Errorf("gagal resolve ticket number: %w", err)
+	}
+
+	// 5. Setup backup options if not skipped
+	if !s.RestoreSelOpts.SkipBackup {
+		if s.RestoreSelOpts.BackupOptions == nil {
+			s.RestoreSelOpts.BackupOptions = &types.RestoreBackupOptions{}
+		}
+		// In selection mode, encryption for backup uses profile's encryption by default (if any)
+		s.setupBackupOptions(s.RestoreSelOpts.BackupOptions, s.Profile.EncryptionKey)
+	}
+
+	// 6. Confirmation (concise)
+	confirmOpts := map[string]string{
+		"CSV File":          filepath.Base(s.RestoreSelOpts.CSV),
+		"Target Host":       fmt.Sprintf("%s:%d", s.Profile.DBInfo.Host, s.Profile.DBInfo.Port),
+		"Drop Target":       fmt.Sprintf("%v", s.RestoreSelOpts.DropTarget),
+		"Skip Backup":       fmt.Sprintf("%v", s.RestoreSelOpts.SkipBackup),
+		"Dry Run":           fmt.Sprintf("%v", s.RestoreSelOpts.DryRun),
+		"Continue on Error": fmt.Sprintf("%v", !s.RestoreSelOpts.StopOnError),
+		"Ticket Number":     s.RestoreSelOpts.Ticket,
+	}
+	if !s.RestoreSelOpts.SkipBackup && s.RestoreSelOpts.BackupOptions != nil {
+		confirmOpts["Backup Directory"] = s.RestoreSelOpts.BackupOptions.OutputDir
+	}
+
+	if !s.RestoreSelOpts.Force {
+		if err := display.DisplayConfirmation(confirmOpts); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

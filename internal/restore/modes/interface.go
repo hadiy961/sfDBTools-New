@@ -22,13 +22,6 @@ type RestoreExecutor interface {
 type RestoreService interface {
 	// Logging
 	GetLogger() applog.Logger
-	LogInfo(msg string)
-	LogWarn(msg string)
-	LogWarnf(format string, args ...interface{})
-	LogInfof(format string, args ...interface{})
-	LogDebugf(format string, args ...interface{})
-	LogError(msg string)
-	LogErrorf(format string, args ...interface{})
 
 	// Context & Clients
 	GetTargetClient() *database.Client
@@ -42,12 +35,11 @@ type RestoreService interface {
 	GetSingleOptions() *types.RestoreSingleOptions
 	GetPrimaryOptions() *types.RestorePrimaryOptions
 	GetAllOptions() *types.RestoreAllOptions
+	GetSelectionOptions() *types.RestoreSelectionOptions
 
 	// Restore Operations (Exposed from helpers)
 	BackupDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, skipBackup bool, backupOpts *types.RestoreBackupOptions) (string, error)
-	BackupAllDatabases(ctx context.Context, backupOpts *types.RestoreBackupOptions) (string, error)
 	DropDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, shouldDrop bool) error
-	DropAllDatabases(ctx context.Context) error
 	CreateAndRestoreDatabase(ctx context.Context, dbName string, filePath string, encryptionKey string) error
 	RestoreUserGrantsIfAvailable(ctx context.Context, grantsFile string) (bool, error)
 	DetectOrSelectCompanionFile() error

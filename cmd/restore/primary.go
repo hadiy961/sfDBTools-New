@@ -8,6 +8,7 @@ package restorecmd
 
 import (
 	"fmt"
+	"sfDBTools/internal/flags"
 	"sfDBTools/internal/restore"
 	"sfDBTools/internal/types"
 
@@ -55,35 +56,5 @@ Fitur:
 }
 
 func init() {
-	// Profile flags
-	CmdRestorePrimary.Flags().StringP("profile", "p", "", "Profile database target untuk restore (ENV: SFDB_TARGET_PROFILE)")
-	CmdRestorePrimary.Flags().StringP("profile-key", "k", "", "Kunci enkripsi profile database target (ENV: SFDB_TARGET_PROFILE_KEY)")
-
-	// Encryption flag
-	CmdRestorePrimary.Flags().StringP("encryption-key", "K", "", "Kunci enkripsi untuk decrypt file backup (ENV: SFDB_BACKUP_ENCRYPTION_KEY)")
-
-	// Restore options
-	CmdRestorePrimary.Flags().Bool("drop-target", true, "Drop target database sebelum restore")
-	CmdRestorePrimary.Flags().Bool("skip-backup", false, "Skip backup database target sebelum restore")
-	CmdRestorePrimary.Flags().StringP("backup-dir", "b", "", "Direktori output untuk backup pre-restore (default: dari config)")
-
-	// File and database
-	CmdRestorePrimary.Flags().StringP("file", "f", "", "Lokasi file backup primary yang akan di-restore")
-	CmdRestorePrimary.Flags().StringP("companion-file", "c", "", "Lokasi file backup companion (_dmart) - optional, auto-detect jika kosong")
-	CmdRestorePrimary.Flags().StringP("target-db", "d", "", "Database primary target untuk restore")
-
-	// Companion options
-	CmdRestorePrimary.Flags().Bool("include-dmart", true, "Include restore companion database (_dmart)")
-	CmdRestorePrimary.Flags().Bool("auto-detect-dmart", true, "Auto-detect file companion database (_dmart)")
-	CmdRestorePrimary.Flags().Bool("skip-confirm", false, "Skip konfirmasi jika database belum ada")
-
-	// User grants
-	CmdRestorePrimary.Flags().StringP("grants-file", "g", "", "Lokasi file user grants untuk di-restore (optional)")
-	CmdRestorePrimary.Flags().Bool("skip-grants", false, "Skip restore user grants (tidak restore grants sama sekali)")
-
-	// Dry-run mode
-	CmdRestorePrimary.Flags().Bool("dry-run", false, "Dry-run mode: validasi file tanpa restore")
-
-	// Ticket (wajib)
-	CmdRestorePrimary.Flags().StringP("ticket", "t", "", "Ticket number untuk restore request (wajib)")
+	flags.AddRestorePrimaryAllFlags(CmdRestorePrimary)
 }

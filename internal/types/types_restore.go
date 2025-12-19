@@ -6,6 +6,27 @@
 
 package types
 
+// RestoreSelectionEntry merepresentasikan satu baris dari CSV selection
+type RestoreSelectionEntry struct {
+	File       string // Path file backup
+	DBName     string // Nama database target (boleh kosong → infer dari filename)
+	EncKey     string // Kunci enkripsi file (wajib jika file terenkripsi)
+	GrantsFile string // Path grants file (opsional)
+}
+
+// RestoreSelectionOptions opsi konfigurasi untuk restore selection
+type RestoreSelectionOptions struct {
+	Profile       ProfileInfo           // Target profile
+	CSV           string                // Path CSV input
+	DropTarget    bool                  // Drop target db dahulu
+	SkipBackup    bool                  // Skip backup pre-restore
+	BackupOptions *RestoreBackupOptions // Opsi backup pre-restore
+	Ticket        string                // Ticket number (wajib)
+	Force         bool                  // Bypass confirmation
+	DryRun        bool                  // Analisis saja
+	StopOnError   bool                  // True = stop pada error pertama; False = lanjut (continue-on-error)
+}
+
 // RestoreSingleOptions menyimpan opsi konfigurasi untuk proses restore single database
 type RestoreSingleOptions struct {
 	Profile       ProfileInfo           // Profile database target untuk restore

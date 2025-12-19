@@ -19,6 +19,8 @@ func GetExecutor(mode string, svc RestoreService) (RestoreExecutor, error) {
 		return NewPrimaryExecutor(svc), nil
 	case "all":
 		return NewAllExecutor(svc), nil
+	case "selection":
+		return NewSelectionExecutor(svc), nil
 	default:
 		return nil, fmt.Errorf("mode restore tidak dikenali: %s", mode)
 	}

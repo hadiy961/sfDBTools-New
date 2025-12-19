@@ -94,7 +94,7 @@ func ExecuteRestorePrimaryCommand(cmd *cobra.Command, deps *types.Dependencies) 
 	}
 
 	// Inisialisasi service restore primary
-	svc := NewRestorePrimaryService(logger, deps.Config, &parsedOpts)
+	svc := NewRestoreService(logger, deps.Config, &parsedOpts)
 
 	// Setup signal handling untuk graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
@@ -156,7 +156,7 @@ func ExecuteRestoreAllCommand(cmd *cobra.Command, deps *types.Dependencies) erro
 	}
 
 	// Inisialisasi service restore all
-	svc := NewRestoreAllService(logger, deps.Config, &parsedOpts)
+	svc := NewRestoreService(logger, deps.Config, &parsedOpts)
 
 	// Setup signal handling untuk graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
@@ -201,6 +201,68 @@ func ExecuteRestoreAllCommand(cmd *cobra.Command, deps *types.Dependencies) erro
 
 	ui.PrintSuccess("Restore all databases berhasil diselesaikan")
 	logger.Info("Restore all databases berhasil diselesaikan")
+
+	return nil
+}
+
+// ExecuteRestoreSelectionCommand adalah entry point untuk restore selection (CSV)
+func ExecuteRestoreSelectionCommand(cmd *cobra.Command, deps *types.Dependencies) error {
+	logger := deps.Logger
+	logger.Info("Memulai proses restore selection (CSV)")
+
+	// Parse options dari command flags
+	parsedOpts, err := parsing.ParsingRestoreSelectionOptions(cmd)
+	if err != nil {
+		logger.Error("gagal parsing opsi: " + err.Error())
+		return err
+	}
+
+	// Inisialisasi service restore selection
+	svc := NewRestoreService(logger, deps.Config, &parsedOpts)
+
+	// Setup signal handling untuk graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		sig := <-sigChan
+		logger.Warnf("Menerima signal %v, menghentikan restore... (Tekan sekali lagi untuk force exit)", sig)
+		svc.HandleShutdown()
+		cancel()
+
+		<-sigChan
+		logger.Warn("Menerima signal kedua, memaksa berhenti (force exit)...")
+		os.Exit(1)
+	}()
+
+	// Setup restore session (koneksi database, validasi, dll)
+	if err := svc.SetupRestoreSelectionSession(ctx); err != nil {
+		return err
+	}
+	defer svc.Close()
+
+	// Execute restore selection
+	result, err := svc.ExecuteRestoreSelection(ctx)
+	if err != nil {
+		if ctx.Err() != nil {
+			logger.Warn("Proses restore selection dibatalkan.")
+			return nil
+		}
+		logger.Error("Restore selection gagal: " + err.Error())
+		svc.ErrorLog.Log(map[string]interface{}{
+			"function": "ExecuteRestoreSelection",
+			"error":    err.Error(),
+		}, err)
+		return err
+	}
+
+	// Tampilkan ringkas (gunakan ShowRestoreAllResult untuk format sederhana)
+	display.ShowRestoreAllResult(result)
+
+	ui.PrintSuccess("Restore selection selesai")
+	logger.Info("Restore selection selesai")
 
 	return nil
 }

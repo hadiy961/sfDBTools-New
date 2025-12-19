@@ -35,13 +35,14 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 		SourceFile: opts.File,
 	}
 
-	e.service.LogInfo("Memulai proses restore database primary")
+	logger := e.service.GetLogger()
+	logger.Info("Memulai proses restore database primary")
 	e.service.SetRestoreInProgress(opts.TargetDB)
 	defer e.service.ClearRestoreInProgress()
 
 	// Dry-run mode: validasi file tanpa restore
 	if opts.DryRun {
-		e.service.LogInfo("Mode DRY-RUN: Validasi file tanpa restore...")
+		logger.Info("Mode DRY-RUN: Validasi file tanpa restore...")
 		return e.executeDryRun(ctx, opts, result, startTime)
 	}
 
@@ -79,7 +80,7 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 		if err == nil && companionExists {
 			companionBackup, err := e.service.BackupDatabaseIfNeeded(ctx, companionDB, true, false, opts.BackupOptions)
 			if err != nil {
-				e.service.LogWarnf("Gagal backup companion database: %v", err)
+				logger.Warnf("Gagal backup companion database: %v", err)
 			} else if companionBackup != "" {
 				result.CompanionBackup = companionBackup
 			}
@@ -101,7 +102,7 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 		companionExists, err := e.service.GetTargetClient().CheckDatabaseExists(ctx, companionDB)
 		if err == nil && companionExists {
 			if err := e.service.DropDatabaseIfNeeded(ctx, companionDB, true, true); err != nil {
-				e.service.LogWarnf("Gagal drop companion database: %v", err)
+				logger.Warnf("Gagal drop companion database: %v", err)
 			} else {
 				result.DroppedCompanion = true
 			}
@@ -117,13 +118,13 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 	// 6. Restore companion database if available
 	if opts.IncludeDmart && opts.CompanionFile != "" {
 		companionDB := opts.TargetDB + "_dmart"
-		e.service.LogInfof("Restore companion database dari %s...", opts.CompanionFile)
+		logger.Infof("Restore companion database dari %s...", opts.CompanionFile)
 
 		if err := e.service.CreateAndRestoreDatabase(ctx, companionDB, opts.CompanionFile, opts.EncryptionKey); err != nil {
-			e.service.LogWarnf("Gagal restore companion database: %v", err)
+			logger.Warnf("Gagal restore companion database: %v", err)
 			ui.PrintWarning(fmt.Sprintf("⚠️  Gagal restore companion database %s: %v", companionDB, err))
 		} else {
-			e.service.LogInfof("Companion database %s berhasil di-restore", companionDB)
+			logger.Infof("Companion database %s berhasil di-restore", companionDB)
 		}
 	}
 
@@ -131,7 +132,7 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 	result.GrantsFile = opts.GrantsFile
 	grantsRestored, err := e.service.RestoreUserGrantsIfAvailable(ctx, opts.GrantsFile)
 	if err != nil {
-		e.service.LogErrorf("Gagal restore user grants: %v", err)
+		logger.Errorf("Gagal restore user grants: %v", err)
 		ui.PrintWarning(fmt.Sprintf("⚠️  Database berhasil di-restore, tapi gagal restore user grants: %v", err))
 		result.GrantsRestored = false
 	} else {
@@ -140,14 +141,15 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 
 	result.Success = true
 	result.Duration = time.Since(startTime).Round(time.Second).String()
-	e.service.LogInfo("Restore primary database berhasil")
+	logger.Info("Restore primary database berhasil")
 
 	return result, nil
 }
 
 // executeDryRun melakukan validasi file backup tanpa restore
 func (e *PrimaryExecutor) executeDryRun(ctx context.Context, opts *types.RestorePrimaryOptions, result *types.RestoreResult, startTime time.Time) (*types.RestoreResult, error) {
-	e.service.LogInfo("Validasi file backup primary...")
+	logger := e.service.GetLogger()
+	logger.Info("Validasi file backup primary...")
 
 	// Validasi primary file
 	reader, closers, err := helpers.OpenAndPrepareReader(opts.File, opts.EncryptionKey)

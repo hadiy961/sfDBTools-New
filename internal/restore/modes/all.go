@@ -42,7 +42,8 @@ func (e *AllExecutor) Execute(ctx context.Context) (*types.RestoreResult, error)
 		Success:    false,
 	}
 
-	e.service.LogInfo("Memulai proses restore all databases")
+	logger := e.service.GetLogger()
+	logger.Info("Memulai proses restore all databases")
 	e.service.SetRestoreInProgress("ALL_DATABASES")
 	defer e.service.ClearRestoreInProgress()
 
@@ -52,15 +53,15 @@ func (e *AllExecutor) Execute(ctx context.Context) (*types.RestoreResult, error)
 		ui.PrintWarning("    Database yang sudah ada akan ditimpa (jika drop-target aktif)")
 
 		if len(opts.ExcludeDBs) > 0 {
-			e.service.LogInfof("Database yang akan di-exclude: %v", opts.ExcludeDBs)
+			logger.Infof("Database yang akan di-exclude: %v", opts.ExcludeDBs)
 		}
 		if opts.SkipSystemDBs {
-			e.service.LogInfo("System databases (mysql, sys, information_schema, performance_schema) akan di-skip")
+			logger.Info("System databases (mysql, sys, information_schema, performance_schema) akan di-skip")
 		}
 
 		confirm, err := input.AskYesNo("\nLanjutkan proses restore?", false)
 		if err != nil || !confirm {
-			e.service.LogInfo("Restore dibatalkan oleh user")
+			logger.Info("Restore dibatalkan oleh user")
 			result.Error = fmt.Errorf("restore dibatalkan oleh user")
 			return result, result.Error
 		}
@@ -75,7 +76,7 @@ func (e *AllExecutor) Execute(ctx context.Context) (*types.RestoreResult, error)
 
 	// Dry run mode - hanya analisis file tanpa restore
 	if opts.DryRun {
-		e.service.LogInfo("Mode DRY-RUN: Analisis file dump tanpa restore...")
+		logger.Info("Mode DRY-RUN: Analisis file dump tanpa restore...")
 		return e.executeDryRun(ctx, opts, result)
 	}
 
@@ -87,15 +88,16 @@ func (e *AllExecutor) Execute(ctx context.Context) (*types.RestoreResult, error)
 
 	result.Success = true
 	result.Duration = time.Since(startTime).Round(time.Second).String()
-	e.service.LogInfo("Restore all databases berhasil")
+	logger.Info("Restore all databases berhasil")
 
 	return result, nil
 }
 
 // executeDryRun melakukan analisis file dump tanpa restore
 func (e *AllExecutor) executeDryRun(ctx context.Context, opts *types.RestoreAllOptions, result *types.RestoreResult) (*types.RestoreResult, error) {
+	logger := e.service.GetLogger()
 	start := time.Now()
-	e.service.LogInfo("Membuka dan menganalisis file dump...")
+	logger.Info("Membuka dan menganalisis file dump...")
 
 	reader, closers, err := helpers.OpenAndPrepareReader(opts.File, opts.EncryptionKey)
 	if err != nil {
@@ -152,8 +154,9 @@ func (e *AllExecutor) executeDryRun(ctx context.Context, opts *types.RestoreAllO
 
 // executeStreamingRestore melakukan restore dengan streaming processing
 func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.RestoreAllOptions) error {
+	logger := e.service.GetLogger()
 	// 1) Kumpulkan daftar DB target dari dump (pass-1)
-	e.service.LogInfo("Menganalisis file dump untuk mengumpulkan daftar database target...")
+	logger.Info("Menganalisis file dump untuk mengumpulkan daftar database target...")
 	targetDBs, err := e.collectDatabasesToRestore(ctx, opts)
 	if err != nil {
 		return err
@@ -168,10 +171,10 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.R
 		names = append(names, name)
 	}
 	sort.Strings(names)
-	e.service.LogInfof("Hasil analisis: %d database akan diproses untuk restore", len(names))
+	logger.Infof("Hasil analisis: %d database akan diproses untuk restore", len(names))
 	// Tampilkan daftar database hasil analisis dalam satu baris (comma-separated)
 	if len(names) > 0 {
-		e.service.LogInfof("Database ditemukan dari file dump (%d): %s", len(names), strings.Join(names, ", "))
+		logger.Infof("Database ditemukan dari file dump (%d): %s", len(names), strings.Join(names, ", "))
 	}
 
 	// 2) Cek keberadaan tiap DB dan drop jika diminta
@@ -180,7 +183,7 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.R
 		if client == nil {
 			return fmt.Errorf("client database tidak tersedia untuk operasi drop")
 		}
-		e.service.LogInfo("Memeriksa keberadaan database pada server target...")
+		logger.Info("Memeriksa keberadaan database pada server target...")
 		existsCount := 0
 		toDrop := make([]string, 0, len(names))
 		for _, dbName := range names {
@@ -189,7 +192,7 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.R
 				if opts.StopOnError {
 					return fmt.Errorf("gagal mengecek database %s: %w", dbName, chkErr)
 				}
-				e.service.LogWarnf("Gagal cek database %s: %v (lanjut)", dbName, chkErr)
+				logger.Warnf("Gagal cek database %s: %v (lanjut)", dbName, chkErr)
 				continue
 			}
 			if exists {
@@ -198,13 +201,13 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.R
 			}
 		}
 		notExists := len(names) - existsCount
-		e.service.LogInfof("Ringkasan pengecekan: %d dari %d database sudah ada; %d belum ada", existsCount, len(names), notExists)
+		logger.Infof("Ringkasan pengecekan: %d dari %d database sudah ada; %d belum ada", existsCount, len(names), notExists)
 
 		// Tampilkan daftar database yang akan di-drop pada satu baris (comma-separated)
 		if len(toDrop) > 0 {
-			e.service.LogInfof("Database yang akan di-drop (%d): %s", len(toDrop), strings.Join(toDrop, ", "))
+			logger.Infof("Database yang akan di-drop (%d): %s", len(toDrop), strings.Join(toDrop, ", "))
 		} else {
-			e.service.LogInfo("Tidak ada database yang perlu di-drop")
+			logger.Info("Tidak ada database yang perlu di-drop")
 		}
 
 		// Lanjutkan drop setelah ringkasan ditampilkan (tanpa spinner tambahan, tetap ukur durasi)
@@ -215,13 +218,13 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.R
 				if opts.StopOnError {
 					return fmt.Errorf("gagal drop database %s: %w", dbName, dropErr)
 				}
-				e.service.LogWarnf("Gagal drop database %s: %v (lanjut)", dbName, dropErr)
+				logger.Warnf("Gagal drop database %s: %v (lanjut)", dbName, dropErr)
 				continue
 			}
 			droppedCount++
 		}
 		dropDuration := time.Since(dropStart).Round(time.Millisecond)
-		e.service.LogInfof("Berhasil drop %d/%d database (durasi: %s)", droppedCount, len(toDrop), dropDuration)
+		logger.Infof("Berhasil drop %d/%d database (durasi: %s)", droppedCount, len(toDrop), dropDuration)
 	}
 
 	// 3) Mulai proses restore (pass-2)
@@ -315,7 +318,7 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.R
 	// Stop spinner sebelum print summary
 	spin.Stop()
 	restoreDuration := time.Since(restoreStart).Round(time.Millisecond)
-	e.service.LogInfof("Durasi restore: %s", restoreDuration)
+	logger.Infof("Durasi restore: %s", restoreDuration)
 
 	// Print summary stats
 	if stats := <-statsCh; stats != nil {
@@ -346,6 +349,10 @@ func (e *AllExecutor) processStreamWithFiltering(ctx context.Context, opts *type
 	restoredDBs := make(map[string]bool)
 	// tidak lagi melaporkan 'skipped' ke user; tetap gunakan flag internal untuk melewati system DB
 
+	// Buffer writes to reduce syscall overhead and speed up piping to mysql
+	bufWriter := bufio.NewWriterSize(output, 4*1024*1024) // 4MB buffer
+	defer bufWriter.Flush()
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -374,8 +381,8 @@ func (e *AllExecutor) processStreamWithFiltering(ctx context.Context, opts *type
 			continue
 		}
 
-		// Tulis baris ke MySQL stdin (dengan newline)
-		if _, err := io.WriteString(output, line+"\n"); err != nil {
+		// Tulis baris ke MySQL stdin (buffered) dengan newline
+		if _, err := bufWriter.WriteString(line + "\n"); err != nil {
 			return nil, fmt.Errorf("gagal menulis ke mysql stdin: %w", err)
 		}
 	}
@@ -392,7 +399,7 @@ func (e *AllExecutor) processStreamWithFiltering(ctx context.Context, opts *type
 // configureScanner mengkonfigurasi scanner dengan buffer besar untuk handle INSERT panjang
 func configureScanner(scanner *bufio.Scanner) {
 	const maxCapacity = 100 * 1024 * 1024 // 100MB max per line
-	buf := make([]byte, 0, 1024*1024)     // Initial 1MB
+	buf := make([]byte, 0, 4*1024*1024)   // Initial 4MB to reduce resizes
 	scanner.Buffer(buf, maxCapacity)
 }
 

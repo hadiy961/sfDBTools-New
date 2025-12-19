@@ -143,17 +143,6 @@ func (s *Service) CaptureAndSaveGTID(ctx context.Context, backupFilePath string)
 	return nil
 }
 
-// GetTotalDatabaseCount mengambil total database dari server
-func (s *Service) GetTotalDatabaseCount(ctx context.Context, dbFiltered []string) int {
-	allDatabases, err := s.Client.GetDatabaseList(ctx)
-	totalDBFound := len(allDatabases)
-	if err != nil {
-		s.Log.Warnf("Gagal mendapatkan total database: %v, menggunakan fallback", err)
-		totalDBFound = len(dbFiltered)
-	}
-	return totalDBFound
-}
-
 // ExportUserGrantsIfNeeded export user grants jika diperlukan
 // Delegates to metadata.ExportUserGrantsIfNeededWithLogging dengan BackupDBOptions.ExcludeUser
 func (s *Service) ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) string {

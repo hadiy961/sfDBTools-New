@@ -53,3 +53,33 @@ func StripAllBackupExtensions(filename string) string {
 
 	return base
 }
+
+// ExtractFileExtensions mengekstrak ekstensi dari filename dan mengembalikan nama tanpa ekstensi + list ekstensi
+// Contoh: "mydb.sql.gz.enc" -> ("mydb", [".sql", ".gz", ".enc"])
+func ExtractFileExtensions(filename string) (string, []string) {
+	nameWithoutExt := filename
+	extensions := []string{}
+
+	// Remove .enc
+	if strings.HasSuffix(strings.ToLower(nameWithoutExt), ".enc") {
+		nameWithoutExt = strings.TrimSuffix(nameWithoutExt, ".enc")
+		extensions = append([]string{".enc"}, extensions...)
+	}
+
+	// Remove compression extension
+	for _, ext := range []string{".gz", ".xz", ".zst", ".bz2"} {
+		if strings.HasSuffix(strings.ToLower(nameWithoutExt), ext) {
+			nameWithoutExt = nameWithoutExt[:len(nameWithoutExt)-len(ext)]
+			extensions = append([]string{ext}, extensions...)
+			break
+		}
+	}
+
+	// Remove .sql
+	if strings.HasSuffix(strings.ToLower(nameWithoutExt), ".sql") {
+		nameWithoutExt = strings.TrimSuffix(nameWithoutExt, ".sql")
+		extensions = append([]string{".sql"}, extensions...)
+	}
+
+	return nameWithoutExt, extensions
+}

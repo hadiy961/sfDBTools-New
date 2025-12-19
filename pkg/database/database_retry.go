@@ -17,7 +17,8 @@ func shouldRetry(err error) bool {
 	return strings.Contains(s, "broken pipe") ||
 		strings.Contains(s, "connection reset by peer") ||
 		strings.Contains(s, "invalid connection") ||
-		strings.Contains(s, "server has gone away")
+		strings.Contains(s, "server has gone away") ||
+		strings.Contains(s, "unexpected EOF")
 }
 
 // backoff returns a small exponential backoff duration for attempt i.

@@ -29,7 +29,7 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	var res types_backup.BackupResult
 	e.service.GetLog().Info("Melakukan backup database dalam mode combined")
 
-	totalDBFound := e.service.GetTotalDatabaseCount(ctx, dbFiltered)
+	totalDBFound := len(dbFiltered)
 
 	// Initialize result statistics
 	res.TotalDatabases = len(dbFiltered)
