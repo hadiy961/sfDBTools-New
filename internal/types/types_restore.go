@@ -19,6 +19,7 @@ type RestoreSingleOptions struct {
 	GrantsFile    string                // Lokasi file user grants (optional, jika ada)
 	SkipGrants    bool                  // Skip restore user grants (default false)
 	DryRun        bool                  // Dry-run mode: validasi tanpa restore (default false)
+	Force         bool                  // Bypass confirmations / force mode
 }
 
 // RestoreBackupOptions opsi untuk backup sebelum restore
@@ -58,6 +59,7 @@ type RestorePrimaryOptions struct {
 	AutoDetectDmart    bool                  // Auto-detect file companion database _dmart (default true)
 	ConfirmIfNotExists bool                  // Konfirmasi jika database belum ada (default true)
 	DryRun             bool                  // Dry-run mode: validasi tanpa restore (default false)
+	Force              bool                  // Bypass confirmations / force mode
 }
 
 // RestoreAllOptions opsi konfigurasi untuk restore all databases
@@ -73,7 +75,7 @@ type RestoreAllOptions struct {
 	DryRun        bool
 	Force         bool
 	StopOnError   bool
-	DropTarget    bool // Drop semua database non-sistem sebelum restore
+	DropTarget    bool
 
 	// Filtering
 	ExcludeDBs    []string // List DB yang akan di-skip

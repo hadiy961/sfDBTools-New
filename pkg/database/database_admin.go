@@ -30,7 +30,7 @@ func (c *Client) DropDatabase(ctx context.Context, dbName string) error {
 	defer spin.Stop()
 
 	query := fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", dbName)
-	_, err := c.db.ExecContext(ctx, query)
+	_, err := c.ExecContextWithRetry(ctx, query)
 	if err != nil {
 		return fmt.Errorf("gagal drop database: %w", err)
 	}
@@ -61,7 +61,7 @@ func (c *Client) CreateDatabaseIfNotExists(ctx context.Context, dbName string) e
 // GetNonSystemDatabases mendapatkan list database dari server mengecualikan system database
 func (c *Client) GetNonSystemDatabases(ctx context.Context) ([]string, error) {
 	query := "SHOW DATABASES"
-	rows, err := c.db.QueryContext(ctx, query)
+	rows, err := c.QueryContextWithRetry(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("gagal query databases: %w", err)
 	}

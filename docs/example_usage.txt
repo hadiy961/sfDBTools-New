@@ -16,3 +16,5 @@ go run main.go profile delete --profile localhost_tes2 --profile-key tes --inter
 - Profile Show Example
 go run main.go profile show --profile localhost_tes2 --force
 
+- Restore All Example
+go run main.go restore all --profile localhost_3333 --profile-key tes --ticket tes  --continue-on-error --force --drop-target --skip-backup --file /media/ArchiveDB/20251219/all_nodata_localhost_20251219_134328_7db.sql.gz

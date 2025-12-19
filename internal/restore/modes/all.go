@@ -16,6 +16,7 @@ import (
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
+	"sort"
 	"strings"
 	"time"
 )
@@ -50,10 +51,9 @@ func (e *AllExecutor) Execute(ctx context.Context) (*types.RestoreResult, error)
 		ui.PrintWarning("⚠️  PERINGATAN: Operasi ini akan restore SEMUA database dari file dump!")
 		ui.PrintWarning("    Database yang sudah ada akan ditimpa (jika drop-target aktif)")
 
-		if opts.DropTarget {
-			ui.PrintWarning("⚠️  DROP-TARGET AKTIF: Semua database non-sistem akan DIHAPUS sebelum restore!")
+		if len(opts.ExcludeDBs) > 0 {
+			e.service.LogInfof("Database yang akan di-exclude: %v", opts.ExcludeDBs)
 		}
-
 		if opts.SkipSystemDBs {
 			e.service.LogInfo("System databases (mysql, sys, information_schema, performance_schema) akan di-skip")
 		}
@@ -66,85 +66,17 @@ func (e *AllExecutor) Execute(ctx context.Context) (*types.RestoreResult, error)
 		}
 	}
 
-	// Close connection ke database target sebelum memulai operasi panjang (streaming)
-	// Hal ini untuk mencegah error "broken pipe" atau "server has gone away" pada koneksi idle
-	// yang dibuka saat setup session, karena proses restore bisa memakan waktu lama.
-	if client := e.service.GetTargetClient(); client != nil {
-		_ = client.Close()
-	}
+	// Note: do not close the target DB client here. Some helper operations
+	// (e.g., DropAllDatabases) may still need an active client. Closing the
+	// client prematurely causes "sql: database is closed" errors.
+
+	// Tidak melakukan bulk-drop di sini. Drop akan dilakukan selektif
+	// hanya untuk database yang memang akan di-restore.
 
 	// Dry run mode - hanya analisis file tanpa restore
 	if opts.DryRun {
 		e.service.LogInfo("Mode DRY-RUN: Analisis file dump tanpa restore...")
 		return e.executeDryRun(ctx, opts, result)
-	}
-
-	// Perform Safety Backup if requested
-	if !opts.SkipBackup {
-		e.service.LogInfo("Melakukan safety backup (all databases) sebelum restore...")
-		backupFile, err := e.service.BackupAllDatabases(ctx, opts.BackupOptions)
-		if err != nil {
-			result.Error = fmt.Errorf("gagal melakukan safety backup: %w", err)
-			return result, result.Error
-		}
-		result.BackupFile = backupFile
-		e.service.LogInfo(fmt.Sprintf("Safety backup berhasil: %s", backupFile))
-	}
-
-	// Drop Target Logic
-	if opts.DropTarget {
-		e.service.LogInfo("Drop target aktif: Menghapus semua database non-sistem...")
-		// Re-connect client karena sebelumnya di-close
-		// Note: Di implementasi asli, GetTargetClient mengembalikan cached client yang mungkin sudah closed.
-		// Namun service_helpers menggunakan TargetClient struct field directly.
-		// Kita perlu pastikan koneksi aktif. Tapi restore service manage koneksi.
-		// Helper DropAllDatabases menggunakan s.TargetClient which might be closed.
-		// Check implementation details later if needed. Assuming Service handles reconnection or we need to reopen.
-		
-		// Wait, we closed connection above: "if client := e.service.GetTargetClient(); client != nil { _ = client.Close() }"
-		// We need to re-open it if we want to use it for DropAllDatabases.
-		// But BackupAllDatabases also uses TargetClient.
-		// BackupAllDatabases uses backup service which creates its own connection usually?
-		// No, BackupAllDatabases uses s.TargetClient.GetDatabaseList(ctx).
-		
-		// Let's check logic order:
-		// 1. Ask Confirm
-		// 2. Close Connection (Wait, why close BEFORE Backup?)
-		// If BackupAllDatabases uses s.TargetClient, then closing it before Backup is a BUG in my previous step or existing code.
-		// Existing code closed it before dry-run and streaming restore.
-		// But I added BackupAllDatabases which uses TargetClient.
-		
-		// Let's look at `BackupAllDatabases` implementation I added:
-		// dbList, err := s.TargetClient.GetDatabaseList(ctx) -> This will fail if closed.
-		
-		// SO: The "Close connection" block should be moved AFTER Backup and Drop operations, right before Streaming Restore.
-		
-		// However, I am replacing a block that includes the Close logic.
-		// I will move the Close logic to be AFTER Backup and Drop.
-	}
-	
-	// RE-WRITING LOGIC FLOW CORRECTLY:
-	
-	// 1. Validasi & Confirm
-	// 2. Dry Run (if enabled)
-	// 3. Safety Backup (uses connection)
-	// 4. Drop Target (uses connection)
-	// 5. Close Connection (before streaming)
-	// 6. Streaming Restore
-
-	// Drop Target Logic implementation
-	if opts.DropTarget {
-		e.service.LogInfo("Drop target aktif: Menghapus semua database non-sistem...")
-		if err := e.service.DropAllDatabases(ctx); err != nil {
-			result.Error = fmt.Errorf("gagal drop all databases: %w", err)
-			return result, result.Error
-		}
-		result.DroppedDB = true
-	}
-
-	// Close connection ke database target sebelum memulai operasi panjang (streaming)
-	if client := e.service.GetTargetClient(); client != nil {
-		_ = client.Close()
 	}
 
 	// Execute actual restore dengan streaming
@@ -162,6 +94,7 @@ func (e *AllExecutor) Execute(ctx context.Context) (*types.RestoreResult, error)
 
 // executeDryRun melakukan analisis file dump tanpa restore
 func (e *AllExecutor) executeDryRun(ctx context.Context, opts *types.RestoreAllOptions, result *types.RestoreResult) (*types.RestoreResult, error) {
+	start := time.Now()
 	e.service.LogInfo("Membuka dan menganalisis file dump...")
 
 	reader, closers, err := helpers.OpenAndPrepareReader(opts.File, opts.EncryptionKey)
@@ -175,7 +108,7 @@ func (e *AllExecutor) executeDryRun(ctx context.Context, opts *types.RestoreAllO
 	configureScanner(scanner)
 
 	dbStats := make(map[string]int)
-	skippedDBs := make(map[string]string)
+	// tidak lagi menampilkan daftar database yang di-skip; filtering tetap berlaku secara internal
 	var currentDB string
 
 	for scanner.Scan() {
@@ -185,9 +118,7 @@ func (e *AllExecutor) executeDryRun(ctx context.Context, opts *types.RestoreAllO
 			currentDB = extractDBName(line)
 			if currentDB != "" {
 				skipReason := shouldSkipDatabase(currentDB, opts)
-				if skipReason != "" {
-					skippedDBs[currentDB] = skipReason
-				} else {
+				if skipReason == "" {
 					dbStats[currentDB] = 0
 				}
 			}
@@ -214,20 +145,87 @@ func (e *AllExecutor) executeDryRun(ctx context.Context, opts *types.RestoreAllO
 		}
 	}
 
-	if len(skippedDBs) > 0 {
-		ui.PrintWarning(fmt.Sprintf("\nTotal database yang di-skip: %d", len(skippedDBs)))
-		for db, reason := range skippedDBs {
-			ui.PrintWarning(fmt.Sprintf("  • %s (%s)", db, reason))
-		}
-	}
-
 	result.Success = true
-	result.Duration = time.Since(time.Now()).Round(time.Second).String()
+	result.Duration = time.Since(start).Round(time.Second).String()
 	return result, nil
 }
 
 // executeStreamingRestore melakukan restore dengan streaming processing
 func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.RestoreAllOptions) error {
+	// 1) Kumpulkan daftar DB target dari dump (pass-1)
+	e.service.LogInfo("Menganalisis file dump untuk mengumpulkan daftar database target...")
+	targetDBs, err := e.collectDatabasesToRestore(ctx, opts)
+	if err != nil {
+		return err
+	}
+	if len(targetDBs) == 0 {
+		return fmt.Errorf("tidak ada database yang akan di-restore (semua tersaring)")
+	}
+
+	// Siapkan daftar terurut untuk pemrosesan deterministik (tanpa menampilkan nama)
+	names := make([]string, 0, len(targetDBs))
+	for name := range targetDBs {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	e.service.LogInfof("Hasil analisis: %d database akan diproses untuk restore", len(names))
+	// Tampilkan daftar database hasil analisis dalam satu baris (comma-separated)
+	if len(names) > 0 {
+		e.service.LogInfof("Database ditemukan dari file dump (%d): %s", len(names), strings.Join(names, ", "))
+	}
+
+	// 2) Cek keberadaan tiap DB dan drop jika diminta
+	if opts.DropTarget {
+		client := e.service.GetTargetClient()
+		if client == nil {
+			return fmt.Errorf("client database tidak tersedia untuk operasi drop")
+		}
+		e.service.LogInfo("Memeriksa keberadaan database pada server target...")
+		existsCount := 0
+		toDrop := make([]string, 0, len(names))
+		for _, dbName := range names {
+			exists, chkErr := client.CheckDatabaseExists(ctx, dbName)
+			if chkErr != nil {
+				if opts.StopOnError {
+					return fmt.Errorf("gagal mengecek database %s: %w", dbName, chkErr)
+				}
+				e.service.LogWarnf("Gagal cek database %s: %v (lanjut)", dbName, chkErr)
+				continue
+			}
+			if exists {
+				existsCount++
+				toDrop = append(toDrop, dbName)
+			}
+		}
+		notExists := len(names) - existsCount
+		e.service.LogInfof("Ringkasan pengecekan: %d dari %d database sudah ada; %d belum ada", existsCount, len(names), notExists)
+
+		// Tampilkan daftar database yang akan di-drop pada satu baris (comma-separated)
+		if len(toDrop) > 0 {
+			e.service.LogInfof("Database yang akan di-drop (%d): %s", len(toDrop), strings.Join(toDrop, ", "))
+		} else {
+			e.service.LogInfo("Tidak ada database yang perlu di-drop")
+		}
+
+		// Lanjutkan drop setelah ringkasan ditampilkan (tanpa spinner tambahan, tetap ukur durasi)
+		dropStart := time.Now()
+		droppedCount := 0
+		for _, dbName := range toDrop {
+			if dropErr := client.DropDatabase(ctx, dbName); dropErr != nil {
+				if opts.StopOnError {
+					return fmt.Errorf("gagal drop database %s: %w", dbName, dropErr)
+				}
+				e.service.LogWarnf("Gagal drop database %s: %v (lanjut)", dbName, dropErr)
+				continue
+			}
+			droppedCount++
+		}
+		dropDuration := time.Since(dropStart).Round(time.Millisecond)
+		e.service.LogInfof("Berhasil drop %d/%d database (durasi: %s)", droppedCount, len(toDrop), dropDuration)
+	}
+
+	// 3) Mulai proses restore (pass-2)
+	restoreStart := time.Now()
 	spin := ui.NewSpinnerWithElapsed("Memulai proses restore...")
 	spin.Start()
 
@@ -244,7 +242,7 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.R
 	go func() {
 		defer pipeWriter.Close()
 		defer close(progressCh)
-		stats, err := e.processStreamWithFiltering(opts, pipeWriter, progressCh)
+		stats, err := e.processStreamWithFiltering(ctx, opts, pipeWriter, progressCh)
 		if err != nil {
 			pipeWriter.CloseWithError(err)
 			errCh <- err
@@ -292,10 +290,11 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.R
 	// Build mysql args
 	profile := e.service.GetProfile()
 
-	extraArgs := []string{}
-	if !opts.StopOnError {
-		extraArgs = append(extraArgs, "--force")
-	}
+	// Gunakan opsi yang meningkatkan ketahanan streaming terhadap error/koneksi.
+	// - --force: jangan keluar saat terjadi error per-statement (hindari broken pipe)
+	// - --reconnect: coba reconnect jika koneksi TCP terputus saat proses panjang
+	// - --max_allowed_packet: cegah error paket besar dari dump
+	extraArgs := []string{"--force", "--reconnect", "--max_allowed_packet=1073741824"}
 	args := helpers.BuildMySQLArgs(profile, "", extraArgs...)
 
 	// Execute mysql dengan streaming input
@@ -315,13 +314,12 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.R
 
 	// Stop spinner sebelum print summary
 	spin.Stop()
+	restoreDuration := time.Since(restoreStart).Round(time.Millisecond)
+	e.service.LogInfof("Durasi restore: %s", restoreDuration)
 
 	// Print summary stats
 	if stats := <-statsCh; stats != nil {
 		ui.PrintSuccess(fmt.Sprintf("✓ Total database restored: %d", stats.RestoredCount))
-		if stats.SkippedCount > 0 {
-			ui.PrintInfo(fmt.Sprintf("⏭️  Total database skipped: %d", stats.SkippedCount))
-		}
 	}
 
 	return nil
@@ -330,11 +328,10 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.R
 // restoreStats menyimpan statistik restore
 type restoreStats struct {
 	RestoredCount int
-	SkippedCount  int
 }
 
 // processStreamWithFiltering membaca file, filter, dan tulis ke MySQL stdin
-func (e *AllExecutor) processStreamWithFiltering(opts *types.RestoreAllOptions, output io.Writer, progressCh chan<- string) (*restoreStats, error) {
+func (e *AllExecutor) processStreamWithFiltering(ctx context.Context, opts *types.RestoreAllOptions, output io.Writer, progressCh chan<- string) (*restoreStats, error) {
 	reader, closers, err := helpers.OpenAndPrepareReader(opts.File, opts.EncryptionKey)
 	if err != nil {
 		return nil, err
@@ -347,7 +344,7 @@ func (e *AllExecutor) processStreamWithFiltering(opts *types.RestoreAllOptions, 
 	var currentDB string
 	skipCurrentDB := false
 	restoredDBs := make(map[string]bool)
-	skippedDBs := make(map[string]bool)
+	// tidak lagi melaporkan 'skipped' ke user; tetap gunakan flag internal untuk melewati system DB
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -362,11 +359,7 @@ func (e *AllExecutor) processStreamWithFiltering(opts *types.RestoreAllOptions, 
 				skipReason := shouldSkipDatabase(currentDB, opts)
 				skipCurrentDB = (skipReason != "")
 
-				if skipCurrentDB {
-					if !skippedDBs[currentDB] {
-						skippedDBs[currentDB] = true
-					}
-				} else {
+				if !skipCurrentDB {
 					if !restoredDBs[currentDB] {
 						restoredDBs[currentDB] = true
 						// Kirim update progress DB ke spinner
@@ -393,7 +386,6 @@ func (e *AllExecutor) processStreamWithFiltering(opts *types.RestoreAllOptions, 
 
 	return &restoreStats{
 		RestoredCount: len(restoredDBs),
-		SkippedCount:  len(skippedDBs),
 	}, nil
 }
 
@@ -419,11 +411,45 @@ func extractDBName(line string) string {
 	return ""
 }
 
-
 // shouldSkipDatabase checks apakah database harus di-skip (returns reason string or empty)
 func shouldSkipDatabase(dbName string, opts *types.RestoreAllOptions) string {
+	for _, excluded := range opts.ExcludeDBs {
+		if dbName == excluded {
+			return "excluded by user"
+		}
+	}
 	if opts.SkipSystemDBs && database.IsSystemDatabase(dbName) {
 		return "system database"
 	}
 	return ""
+}
+
+// collectDatabasesToRestore melakukan pass awal untuk mengumpulkan daftar DB target dari dump
+func (e *AllExecutor) collectDatabasesToRestore(ctx context.Context, opts *types.RestoreAllOptions) (map[string]struct{}, error) {
+	reader, closers, err := helpers.OpenAndPrepareReader(opts.File, opts.EncryptionKey)
+	if err != nil {
+		return nil, err
+	}
+	defer helpers.CloseReaders(closers)
+
+	scanner := bufio.NewScanner(reader)
+	configureScanner(scanner)
+
+	targets := make(map[string]struct{})
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "USE `") {
+			db := extractDBName(line)
+			if db == "" {
+				continue
+			}
+			if reason := shouldSkipDatabase(db, opts); reason == "" {
+				targets[db] = struct{}{}
+			}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error membaca file dump saat mengumpulkan DB: %w", err)
+	}
+	return targets, nil
 }

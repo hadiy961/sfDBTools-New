@@ -85,8 +85,10 @@ func (s *Service) SetupRestoreSession(ctx context.Context) error {
 		confirmOpts["Grants File"] = "Tidak ada"
 	}
 
-	if err := display.DisplayConfirmation(confirmOpts); err != nil {
-		return err
+	if !s.RestoreOpts.Force {
+		if err := display.DisplayConfirmation(confirmOpts); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -245,8 +247,10 @@ func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 		confirmOpts["Grants File"] = filepath.Base(s.RestorePrimaryOpts.GrantsFile)
 	}
 
-	if err := display.DisplayConfirmation(confirmOpts); err != nil {
-		return err
+	if !s.RestorePrimaryOpts.Force {
+		if err := display.DisplayConfirmation(confirmOpts); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -267,18 +271,20 @@ func (s *Service) resolveTargetDatabasePrimary(ctx context.Context) error {
 		s.RestorePrimaryOpts.TargetDB = dbName
 		s.Log.Infof("Target database (dari filename): %s", dbName)
 
-		// Confirm with user
-		confirm, err := input.PromptConfirm(fmt.Sprintf("Target database: %s. Lanjutkan?", dbName))
-		if err != nil {
-			return fmt.Errorf("gagal mendapatkan konfirmasi: %w", err)
-		}
-		if !confirm {
-			// Ask for manual input
-			dbName, err = input.PromptString("Masukkan nama target database")
+		// Confirm with user unless force is enabled
+		if !s.RestorePrimaryOpts.Force {
+			confirm, err := input.PromptConfirm(fmt.Sprintf("Target database: %s. Lanjutkan?", dbName))
 			if err != nil {
-				return fmt.Errorf("gagal mendapatkan nama database: %w", err)
+				return fmt.Errorf("gagal mendapatkan konfirmasi: %w", err)
 			}
-			s.RestorePrimaryOpts.TargetDB = dbName
+			if !confirm {
+				// Ask for manual input
+				dbName, err = input.PromptString("Masukkan nama target database")
+				if err != nil {
+					return fmt.Errorf("gagal mendapatkan nama database: %w", err)
+				}
+				s.RestorePrimaryOpts.TargetDB = dbName
+			}
 		}
 	} else {
 		// Manual input
@@ -295,7 +301,7 @@ func (s *Service) resolveTargetDatabasePrimary(ctx context.Context) error {
 
 // SetupRestoreAllSession melakukan setup untuk restore all databases session
 func (s *Service) SetupRestoreAllSession(ctx context.Context) error {
-	ui.PrintHeader("Restore All Databases")
+	ui.Headers("Restore All Databases")
 
 	// 1. Resolve backup file
 	if err := s.resolveBackupFile(&s.RestoreAllOpts.File); err != nil {
@@ -349,8 +355,10 @@ func (s *Service) SetupRestoreAllSession(ctx context.Context) error {
 		confirmOpts["Backup Directory"] = s.RestoreAllOpts.BackupOptions.OutputDir
 	}
 
-	if err := display.DisplayConfirmation(confirmOpts); err != nil {
-		return err
+	if !s.RestoreAllOpts.Force {
+		if err := display.DisplayConfirmation(confirmOpts); err != nil {
+			return err
+		}
 	}
 
 	return nil

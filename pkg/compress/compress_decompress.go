@@ -1,7 +1,6 @@
 package compress
 
 import (
-	"compress/gzip"
 	"compress/zlib"
 	"fmt"
 	"io"
@@ -17,16 +16,12 @@ import (
 // For zstd and pgzip, uses parallel decompression with all available CPU cores for optimal performance.
 func NewDecompressingReader(r io.Reader, ctype CompressionType) (io.ReadCloser, error) {
 	switch ctype {
-	case CompressionGzip:
-		// Standard gzip decompression (single-threaded)
-		return gzip.NewReader(r)
-	case CompressionPgzip:
-		// Parallel gzip decompression untuk performa lebih baik
+	case CompressionGzip, CompressionPgzip:
+		// Gunakan pgzip untuk semua .gz agar konsisten (ekstensi sama)
 		pr, err := pgzip.NewReader(r)
 		if err != nil {
 			return nil, fmt.Errorf("gagal create pgzip reader: %w", err)
 		}
-		// Pgzip reader sudah implement io.ReadCloser
 		return pr, nil
 	case CompressionZlib:
 		return zlib.NewReader(r)
@@ -63,7 +58,8 @@ func DetectCompressionTypeFromFile(path string) CompressionType {
 
 	switch {
 	case strings.HasSuffix(name, ".gz"):
-		return CompressionGzip
+		// Selalu gunakan pgzip untuk ekstensi .gz
+		return CompressionPgzip
 	case strings.HasSuffix(name, ".zst"):
 		return CompressionZstd
 	case strings.HasSuffix(name, ".xz"):

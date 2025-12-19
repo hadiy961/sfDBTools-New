@@ -74,6 +74,11 @@ func ParsingRestoreSingleOptions(cmd *cobra.Command) (types.RestoreSingleOptions
 		opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
 	}
 
+	// Force mode
+	if cmd.Flags().Changed("force") {
+		opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
+	}
+
 	// Backup options untuk pre-restore backup
 	opts.BackupOptions = &types.RestoreBackupOptions{}
 
@@ -149,6 +154,14 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptio
 	if cmd.Flags().Changed("dry-run") {
 		opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
 	}
+	// Force mode
+	if cmd.Flags().Changed("force") {
+		opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
+		if opts.Force {
+			opts.ConfirmIfNotExists = false
+		}
+	}
+
 	// Include dmart
 	if cmd.Flags().Changed("include-dmart") {
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
