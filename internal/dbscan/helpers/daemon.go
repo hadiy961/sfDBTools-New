@@ -1,10 +1,10 @@
-// File : pkg/dbscanhelper/daemon.go
+// File : internal/dbscan/helpers/daemon.go
 // Deskripsi : Helper untuk daemon/background process scanning
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
 // Last Modified : 16 Desember 2025
 
-package dbscanhelper
+package helpers
 
 import (
 	"fmt"

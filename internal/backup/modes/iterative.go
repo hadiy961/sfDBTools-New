@@ -13,10 +13,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/internal/backup/metadata"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
-	"sfDBTools/pkg/backuphelper"
 	"sfDBTools/pkg/consts"
 )
 
@@ -78,7 +78,7 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 	res.FailedBackups = loopResult.Failed
 
 	// Khusus Single Mode variant: Jika semua gagal, pastikan ada error eksplisit
-	if backuphelper.IsSingleModeVariant(e.mode) && loopResult.Success == 0 && len(res.Errors) == 0 && len(res.FailedDatabaseInfos) > 0 {
+	if helpers.IsSingleModeVariant(e.mode) && loopResult.Success == 0 && len(res.Errors) == 0 && len(res.FailedDatabaseInfos) > 0 {
 		res.Errors = append(res.Errors, errors.New("backup gagal untuk semua database").Error())
 	}
 
@@ -94,7 +94,7 @@ func (e *IterativeExecutor) createOutputPathFunc(dbList []string) func(string) (
 		// Logika khusus untuk Single Mode Variant (Single, Primary, Secondary):
 		// Database pertama (index 0) bisa menggunakan custom filename jika diset user.
 		// Companion databases (dmart, temp, archive) akan tetap digenerate namanya.
-		if backuphelper.IsSingleModeVariant(e.mode) && len(dbList) > 0 && dbList[0] == dbName && primaryFilename != "" {
+		if helpers.IsSingleModeVariant(e.mode) && len(dbList) > 0 && dbList[0] == dbName && primaryFilename != "" {
 			return filepath.Join(opts.OutputDir, primaryFilename), nil
 		}
 

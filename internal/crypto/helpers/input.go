@@ -1,10 +1,4 @@
-package cryptohelper
-
-// File : pkg/cryptohelper/cryptohelper_input.go
-// Deskripsi : Helper functions untuk membaca input dari flag atau stdin
-// Author : Hadiyatna Muflihun
-// Tanggal : 2025-11-11
-// Last Modified : 2025-11-11
+package helpers
 
 import (
 	"bufio"

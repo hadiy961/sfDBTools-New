@@ -1,10 +1,10 @@
-// File : pkg/dbscanhelper/executor.go
+// File : internal/dbscan/helpers/executor.go
 // Deskripsi : Helper functions untuk eksekusi scanning database (general purpose)
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
 // Last Modified : 16 Desember 2025
 
-package dbscanhelper
+package helpers
 
 import (
 	"context"

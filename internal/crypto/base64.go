@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	"sfDBTools/internal/applog"
+	"sfDBTools/internal/crypto/helpers"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/cryptohelper"
 	"sfDBTools/pkg/ui"
 )
 
 // ExecuteBase64Encode menangani logic base64 encode
 func ExecuteBase64Encode(logger applog.Logger, opts types.Base64EncodeOptions) error {
 	// Coba baca input dari flag atau pipe, fallback ke interactive
-	b, err := cryptohelper.GetInput(opts.InputText, true, "📝 Masukkan teks yang akan di-encode:")
+	b, err := helpers.GetInput(opts.InputText, true, "📝 Masukkan teks yang akan di-encode:")
 	if err != nil {
 		return fmt.Errorf("gagal membaca input: %v", err)
 	}
@@ -38,7 +38,7 @@ func ExecuteBase64Encode(logger applog.Logger, opts types.Base64EncodeOptions) e
 // ExecuteBase64Decode menangani logic base64 decode
 func ExecuteBase64Decode(logger applog.Logger, opts types.Base64DecodeOptions) error {
 	// Coba baca input dari flag atau pipe, fallback ke interactive
-	data, err := cryptohelper.GetInput(opts.InputData, true, "📝 Masukkan base64 yang akan di-decode:")
+	data, err := helpers.GetInput(opts.InputData, true, "📝 Masukkan base64 yang akan di-decode:")
 	if err != nil {
 		return fmt.Errorf("gagal membaca input: %v", err)
 	}

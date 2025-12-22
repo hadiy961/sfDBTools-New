@@ -8,8 +8,8 @@ package dbscan
 
 import (
 	"fmt"
+	"sfDBTools/internal/dbscan/helpers"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/dbscanhelper"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
@@ -63,13 +63,13 @@ func (s *Service) DisplayFilterStats(stats *types.FilterStats) {
 }
 
 func (s *Service) DisplayScanResult(result *types.ScanResult) {
-	dbscanhelper.DisplayScanResult(result)
+	helpers.DisplayScanResult(result)
 }
 
 func (s *Service) DisplayDetailResults(detailsMap map[string]types.DatabaseDetailInfo) {
-	dbscanhelper.DisplayDetailResults(detailsMap)
+	helpers.DisplayDetailResults(detailsMap)
 }
 
 func (s *Service) LogDetailResults(detailsMap map[string]types.DatabaseDetailInfo) {
-	dbscanhelper.LogDetailResults(detailsMap, s.Log)
+	helpers.LogDetailResults(detailsMap, s.Log)
 }

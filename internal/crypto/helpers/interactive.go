@@ -1,17 +1,18 @@
-// File : pkg/cryptohelper/cryptohelper_interactive.go
+// File : internal/crypto/helpers/interactive.go
 // Deskripsi : Helper functions untuk interactive mode input
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-11-11
 // Last Modified : 2025-11-11
 
-package cryptohelper
+package helpers
 
 import (
 	"bufio"
 	"fmt"
 	"os"
-	"sfDBTools/pkg/fsops"
 	"strings"
+
+	"sfDBTools/pkg/fsops"
 )
 
 // GetInteractiveInputBytes membaca input dari user secara interaktif (multi-line).

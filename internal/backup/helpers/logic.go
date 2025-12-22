@@ -1,10 +1,10 @@
-// File : pkg/backuphelper/logic.go
+// File : internal/backup/helpers/logic.go
 // Deskripsi : Pure logic helpers untuk backup operations yang independen dari service state
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-11
 // Last Modified : 2025-12-11
 
-package backuphelper
+package helpers
 
 import (
 	"sfDBTools/internal/types"

@@ -14,10 +14,10 @@ import (
 
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
+	"sfDBTools/internal/dbscan/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
-	"sfDBTools/pkg/dbscanhelper"
 	"sfDBTools/pkg/errorlog"
 	"sfDBTools/pkg/servicehelper"
 	"sfDBTools/pkg/ui"
@@ -80,9 +80,9 @@ func (s *Service) ExecuteScan(config types.ScanEntryConfig) error {
 
 	// Tampilkan hasil
 	if s.ScanOptions.DisplayResults {
-		dbscanhelper.DisplayScanResult(result)
+		helpers.DisplayScanResult(result)
 		if len(detailsMap) > 0 {
-			dbscanhelper.DisplayDetailResults(detailsMap)
+			helpers.DisplayDetailResults(detailsMap)
 		}
 	}
 
@@ -106,7 +106,7 @@ func (s *Service) handleBackgroundExecution(ctx context.Context, config types.Sc
 	}
 
 	// Spawn new process sebagai daemon
-	return dbscanhelper.SpawnScanDaemon(config)
+	return helpers.SpawnScanDaemon(config)
 }
 
 // executeScanWithClients melakukan scanning dengan koneksi yang sudah tersedia
@@ -148,7 +148,7 @@ func (s *Service) executeScanWithClients(
 	}
 
 	// Execute scan menggunakan helper
-	opts := dbscanhelper.ScanExecutorOptions{
+	opts := helpers.ScanExecutorOptions{
 		SaveToDB:      s.ScanOptions.SaveToDB,
 		LocalScan:     s.ScanOptions.LocalScan,
 		DisplayResult: s.ScanOptions.DisplayResults,
@@ -157,7 +157,7 @@ func (s *Service) executeScanWithClients(
 		LocalSizes:    localSizes,
 	}
 
-	result, detailsMap, err := dbscanhelper.ExecuteScanWithSave(
+	result, detailsMap, err := helpers.ExecuteScanWithSave(
 		ctx, sourceClient, targetClient, dbNames,
 		serverHost, serverPort, opts,
 	)

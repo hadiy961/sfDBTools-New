@@ -1,10 +1,10 @@
-// File : pkg/dbscanhelper/display.go
+// File : internal/dbscan/helpers/display.go
 // Deskripsi : Helper functions untuk menampilkan hasil scanning (general purpose)
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
 // Last Modified : 16 Desember 2025
 
-package dbscanhelper
+package helpers
 
 import (
 	"fmt"

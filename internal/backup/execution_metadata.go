@@ -3,9 +3,9 @@ package backup
 import (
 	"context"
 	"fmt"
+	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/internal/backup/metadata"
 	"sfDBTools/internal/types/types_backup"
-	"sfDBTools/pkg/backuphelper"
 	"sfDBTools/pkg/consts"
 	"time"
 )
@@ -64,7 +64,7 @@ func (s *Service) generateBackupMetadata(ctx context.Context, cfg types_backup.B
 		SourceHost:          s.BackupDBOptions.Profile.DBInfo.Host,
 		SourcePort:          s.BackupDBOptions.Profile.DBInfo.Port,
 		UserGrantsFile:      userGrantsPath,
-		MysqldumpVersion:    backuphelper.ExtractMysqldumpVersion(writeResult.StderrOutput),
+		MysqldumpVersion:    helpers.ExtractMysqldumpVersion(writeResult.StderrOutput),
 		MariaDBVersion:      dbVersion,
 		Ticket:              s.BackupDBOptions.Ticket,
 	})

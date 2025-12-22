@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/backup/display"
+	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/backuphelper"
 	"sfDBTools/pkg/consts"
 	pkghelper "sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
@@ -29,7 +29,7 @@ func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interfa
 
 	selectedDB := selectedDBName
 	if selectedDB == "" {
-		candidates := backuphelper.FilterCandidatesByMode(dbFiltered, mode)
+		candidates := helpers.FilterCandidatesByMode(dbFiltered, mode)
 
 		filteredCandidates, autoSelectedDB, filterErr := s.filterCandidatesByModeAndOptions(mode, candidates)
 		if filterErr != nil {

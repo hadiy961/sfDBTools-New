@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/internal/types/types_backup"
-	"sfDBTools/pkg/backuphelper"
 	"sfDBTools/pkg/ui"
 	"strings"
 )
@@ -117,7 +117,7 @@ func (s *Service) isFatalMysqldumpError(err error, stderrOutput string) bool {
 		return true
 	}
 
-	fatal := backuphelper.IsFatalMysqldumpError(err, stderrOutput)
+	fatal := helpers.IsFatalMysqldumpError(err, stderrOutput)
 
 	if !fatal {
 		s.Log.Debugf("mysqldump treated as non-fatal by helper: %s", stderrOutput)

@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
+	"sfDBTools/internal/dbscan/helpers"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/dbscanhelper"
 )
 
 // executeScanInBackground menjalankan scanning dalam mode background (tanpa UI).
@@ -57,9 +57,9 @@ func (s *Service) executeScanInBackground(ctx context.Context, config types.Scan
 	}
 
 	// Log results
-	dbscanhelper.LogScanResult(result, s.Log, scanID)
+	helpers.LogScanResult(result, s.Log, scanID)
 	if len(detailsMap) > 0 {
-		dbscanhelper.LogDetailResults(detailsMap, s.Log)
+		helpers.LogDetailResults(detailsMap, s.Log)
 	}
 
 	s.Log.Infof("[%s] === FINISHED BACKGROUND SCAN ===", scanID)

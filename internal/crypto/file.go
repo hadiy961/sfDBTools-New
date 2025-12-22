@@ -6,10 +6,9 @@ import (
 	"os"
 
 	"sfDBTools/internal/applog"
+	"sfDBTools/internal/crypto/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/cryptoauth"
-	"sfDBTools/pkg/cryptohelper"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
@@ -17,22 +16,22 @@ import (
 
 // ExecuteEncryptFile menangani logic encrypt file
 func ExecuteEncryptFile(logger applog.Logger, opts types.EncryptFileOptions) error {
-	quiet := cryptohelper.SetupQuietMode(logger)
+	quiet := helpers.SetupQuietMode(logger)
 
 	// Password authentication
-	cryptoauth.MustValidatePassword()
+	MustValidatePassword()
 
 	if !quiet {
 		ui.Headers("Encrypt File")
 	}
 
 	// Interactive mode untuk file paths jika tidak ada flag
-	inputPath, err := cryptohelper.GetFilePathOrInteractive(opts.InputPath, "📂 Masukkan path file yang akan dienkripsi:", true)
+	inputPath, err := helpers.GetFilePathOrInteractive(opts.InputPath, "📂 Masukkan path file yang akan dienkripsi:", true)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan input file: %v", err)
 	}
 
-	outputPath, err := cryptohelper.GetFilePathOrInteractive(opts.OutputPath, "💾 Masukkan path file output terenkripsi:", false)
+	outputPath, err := helpers.GetFilePathOrInteractive(opts.OutputPath, "💾 Masukkan path file output terenkripsi:", false)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan output file: %v", err)
 	}
@@ -91,22 +90,22 @@ func ExecuteEncryptFile(logger applog.Logger, opts types.EncryptFileOptions) err
 
 // ExecuteDecryptFile menangani logic decrypt file
 func ExecuteDecryptFile(logger applog.Logger, opts types.DecryptFileOptions) error {
-	quiet := cryptohelper.SetupQuietMode(logger)
+	quiet := helpers.SetupQuietMode(logger)
 
 	// Password authentication
-	cryptoauth.MustValidatePassword()
+	MustValidatePassword()
 
 	if !quiet {
 		ui.Headers("Decrypt File")
 	}
 
 	// Interactive mode untuk file paths jika tidak ada flag
-	inputPath, err := cryptohelper.GetFilePathOrInteractive(opts.InputPath, "📂 Masukkan path file terenkripsi yang akan didekripsi:", true)
+	inputPath, err := helpers.GetFilePathOrInteractive(opts.InputPath, "📂 Masukkan path file terenkripsi yang akan didekripsi:", true)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan input file: %v", err)
 	}
 
-	outputPath, err := cryptohelper.GetFilePathOrInteractive(opts.OutputPath, "💾 Masukkan path file output hasil dekripsi:", false)
+	outputPath, err := helpers.GetFilePathOrInteractive(opts.OutputPath, "💾 Masukkan path file output hasil dekripsi:", false)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan output file: %v", err)
 	}

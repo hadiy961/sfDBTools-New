@@ -1,16 +1,17 @@
-// File : pkg/cryptohelper/cryptohelper_quiet.go
+// File : internal/crypto/helpers/quiet.go
 // Deskripsi : Helper functions untuk quiet mode setup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-11-11
 // Last Modified : 2025-11-11
 
-package cryptohelper
+package helpers
 
 import (
 	"os"
+	"strings"
+
 	"sfDBTools/internal/applog"
 	"sfDBTools/pkg/consts"
-	"strings"
 )
 
 // SetupQuietMode memeriksa environment variable SFDB_QUIET dan mengkonfigurasi logger

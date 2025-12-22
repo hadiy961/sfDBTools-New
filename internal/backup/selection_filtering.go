@@ -2,8 +2,7 @@ package backup
 
 import (
 	"fmt"
-
-	"sfDBTools/pkg/backuphelper"
+	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/pkg/consts"
 )
 
@@ -23,7 +22,7 @@ func (s *Service) filterPrimaryCandidates(candidates []string) ([]string, string
 		return candidates, "", nil
 	}
 
-	filtered := backuphelper.FilterCandidatesByClientCode(candidates, s.BackupDBOptions.ClientCode)
+	filtered := helpers.FilterCandidatesByClientCode(candidates, s.BackupDBOptions.ClientCode)
 	if len(filtered) == 0 {
 		return nil, "", fmt.Errorf("tidak ada database primary dengan client code '%s' yang ditemukan", s.BackupDBOptions.ClientCode)
 	}
@@ -40,7 +39,7 @@ func (s *Service) filterSecondaryCandidates(candidates []string) ([]string, stri
 		return candidates, "", nil
 	}
 
-	filtered := backuphelper.FilterSecondaryByClientCodeAndInstance(
+	filtered := helpers.FilterSecondaryByClientCodeAndInstance(
 		candidates,
 		s.BackupDBOptions.ClientCode,
 		s.BackupDBOptions.Instance,

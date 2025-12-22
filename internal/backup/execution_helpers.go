@@ -3,10 +3,10 @@ package backup
 import (
 	"context"
 	"fmt"
+	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/internal/cleanup"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
-	"sfDBTools/pkg/backuphelper"
 	pkghelper "sfDBTools/pkg/helper"
 )
 
@@ -34,13 +34,13 @@ func (s *Service) ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.Ba
 	}
 
 	// Build mysqldump args inline
-	conn := backuphelper.DatabaseConn{
+	conn := helpers.DatabaseConn{
 		Host:     s.BackupDBOptions.Profile.DBInfo.Host,
 		Port:     s.BackupDBOptions.Profile.DBInfo.Port,
 		User:     s.BackupDBOptions.Profile.DBInfo.User,
 		Password: s.BackupDBOptions.Profile.DBInfo.Password,
 	}
-	filterOpts := backuphelper.FilterOptions{
+	filterOpts := helpers.FilterOptions{
 		ExcludeData:      s.BackupDBOptions.Filter.ExcludeData,
 		ExcludeDatabases: s.BackupDBOptions.Filter.ExcludeDatabases,
 		IncludeDatabases: s.BackupDBOptions.Filter.IncludeDatabases,
@@ -52,7 +52,7 @@ func (s *Service) ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.Ba
 	if cfg.IsMultiDB {
 		dbList = cfg.DBList
 	}
-	mysqldumpArgs := backuphelper.BuildMysqldumpArgs(s.Config.Backup.MysqlDumpArgs, conn, filterOpts, dbList, cfg.DBName, cfg.TotalDBFound)
+	mysqldumpArgs := helpers.BuildMysqldumpArgs(s.Config.Backup.MysqlDumpArgs, conn, filterOpts, dbList, cfg.DBName, cfg.TotalDBFound)
 
 	// DRY-RUN MODE: Skip actual backup execution
 	if s.BackupDBOptions.DryRun {

@@ -7,10 +7,9 @@ import (
 	"strings"
 
 	"sfDBTools/internal/applog"
+	"sfDBTools/internal/crypto/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/cryptoauth"
-	"sfDBTools/pkg/cryptohelper"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
@@ -18,13 +17,13 @@ import (
 
 // ExecuteEncryptText menangani logic encrypt text
 func ExecuteEncryptText(logger applog.Logger, opts types.EncryptTextOptions) error {
-	quiet := cryptohelper.SetupQuietMode(logger)
+	quiet := helpers.SetupQuietMode(logger)
 
 	// Password authentication
-	cryptoauth.MustValidatePassword()
+	MustValidatePassword()
 
 	// Ambil input
-	data, err := cryptohelper.GetInput(opts.InputText, true, "Masukkan teks yang akan dienkripsi:")
+	data, err := helpers.GetInput(opts.InputText, true, "Masukkan teks yang akan dienkripsi:")
 	if err != nil {
 		return fmt.Errorf("gagal membaca input: %v", err)
 	}
@@ -63,13 +62,13 @@ func ExecuteEncryptText(logger applog.Logger, opts types.EncryptTextOptions) err
 
 // ExecuteDecryptText menangani logic decrypt text
 func ExecuteDecryptText(logger applog.Logger, opts types.DecryptTextOptions) error {
-	quiet := cryptohelper.SetupQuietMode(logger)
+	quiet := helpers.SetupQuietMode(logger)
 
 	// Password authentication
-	cryptoauth.MustValidatePassword()
+	MustValidatePassword()
 
 	// Ambil input base64
-	data, err := cryptohelper.GetInput(opts.InputData, true, "Masukkan teks base64 terenkripsi:")
+	data, err := helpers.GetInput(opts.InputData, true, "Masukkan teks base64 terenkripsi:")
 	if err != nil {
 		return fmt.Errorf("gagal membaca input: %v", err)
 	}
