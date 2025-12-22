@@ -73,7 +73,9 @@ func (s *Service) printChangeSummary() {
 	idx := 1
 
 	pwState := func(pw string) string {
-		if pw == "" { return "(not set)" }
+		if pw == "" {
+			return "(not set)"
+		}
 		return "(set)"
 	}
 

@@ -10,11 +10,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sfDBTools/internal/applog"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/helper"
-
-	backuphelper "sfDBTools/internal/backup/filehelper"
 )
 
 // ExportAndSaveUserGrants mengambil user grants dari database dan menyimpannya ke file.
@@ -51,7 +51,7 @@ func ExportAndSaveUserGrants(ctx context.Context, client *database.Client, logge
 	}
 
 	// Generate nama file user grants berdasarkan nama backup file
-	userFilePath := backuphelper.GenerateUserFilePath(backupFilePath)
+	userFilePath := GenerateUserFilePath(backupFilePath)
 
 	// Tulis ke file
 	logger.Debugf("Menulis user grants ke file: %s", userFilePath)
@@ -79,13 +79,10 @@ func ExportUserGrantsIfNeededWithLogging(ctx context.Context, client *database.C
 		return ""
 	}
 
-	// Ping database connection untuk memastikan masih valid
-	// Jika koneksi invalid setelah backup lama, ini akan memicu reconnect otomatis
+	// Ping database untuk memastikan koneksi masih valid.
+	// Catatan: Ping kedua memanfaatkan mekanisme reconnect pada pool tanpa perlu jeda buatan.
 	if err := client.Ping(ctx); err != nil {
 		logger.Warnf("Koneksi database tidak valid, mencoba reconnect: %v", err)
-		// Ping akan trigger reconnect secara otomatis melalui connection pool
-		// Coba ping sekali lagi setelah jeda singkat
-		// time.Sleep(100 * time.Millisecond)
 		if err := client.Ping(ctx); err != nil {
 			logger.Errorf("Gagal reconnect ke database: %v", err)
 			return ""
@@ -100,4 +97,16 @@ func ExportUserGrantsIfNeededWithLogging(ctx context.Context, client *database.C
 		return ""
 	}
 	return filePath
+}
+
+// GenerateUserFilePath menghasilkan path file untuk user grants berdasarkan backup file path
+// Contoh: /backup/db_20250101.sql.gz -> /backup/db_20250101_users.sql
+func GenerateUserFilePath(backupFilePath string) string {
+	dir := filepath.Dir(backupFilePath)
+	base := filepath.Base(backupFilePath)
+
+	// Remove backup extensions (.sql + optional compression + optional .enc)
+	nameWithoutExt, _ := helper.ExtractFileExtensions(base)
+	userFileName := nameWithoutExt + consts.UsersSQLSuffix
+	return filepath.Join(dir, userFileName)
 }

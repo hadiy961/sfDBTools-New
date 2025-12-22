@@ -17,6 +17,7 @@ import (
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/backuphelper"
+	"sfDBTools/pkg/consts"
 )
 
 // IterativeExecutor menangani backup yang dilakukan per-database secara berurutan
@@ -58,7 +59,7 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 	// Export user grants dan generate metadata untuk primary/secondary:
 	// - Mode separated/single: sudah di-handle per database di executeBackupLoop
 	// - Mode primary/secondary: export satu file dan satu metadata untuk semua database
-	if len(loopResult.BackupInfos) > 0 && (e.mode == "primary" || e.mode == "secondary") {
+	if len(loopResult.BackupInfos) > 0 && (e.mode == consts.ModePrimary || e.mode == consts.ModeSecondary) {
 		// Untuk primary/secondary, export user grants yang punya akses ke database dalam list
 		actualUserGrantsPath := e.service.ExportUserGrantsIfNeeded(ctx, loopResult.BackupInfos[0].OutputFile, dbList)
 		// Update metadata dengan actual path (atau "none" jika gagal)
@@ -124,7 +125,7 @@ func (e *IterativeExecutor) aggregateBackupInfos(backupInfos []types.DatabaseBac
 	aggregated.FileSizeHuman = fmt.Sprintf("%.2f MB", float64(totalSize)/(1024*1024))
 
 	// Metadata file adalah dari database pertama (combined metadata)
-	aggregated.ManifestFile = backupInfos[0].OutputFile + ".meta.json"
+	aggregated.ManifestFile = backupInfos[0].OutputFile + consts.ExtMetaJSON
 
 	return []types.DatabaseBackupInfo{aggregated}
 }
@@ -155,7 +156,7 @@ func (e *IterativeExecutor) generateCombinedMetadata(ctx context.Context, loopRe
 			continue
 		}
 		// Companion databases: hapus metadata individual
-		metadataPath := info.OutputFile + ".meta.json"
+		metadataPath := info.OutputFile + consts.ExtMetaJSON
 		// e.service.LogDebug("Menghapus metadata companion: " + metadataPath)
 		os.Remove(metadataPath)
 	}

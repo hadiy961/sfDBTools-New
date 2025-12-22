@@ -17,16 +17,12 @@ import (
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
 
 	"github.com/bmatcuk/doublestar/v4"
-)
-
-const (
-	// timeFormat mendefinisikan format timestamp standar untuk logging.
-	timeFormat = "2006-01-02 15:04:05"
 )
 
 // cleanupCore adalah fungsi inti terpadu untuk semua logika pembersihan.
@@ -35,7 +31,7 @@ func (s *Service) cleanupCore(dryRun bool, pattern string) error {
 	if dryRun {
 		mode = "Menjalankan DRY-RUN"
 	}
-	
+
 	if pattern != "" {
 		s.Log.Infof("%s proses cleanup untuk pattern: %s", mode, pattern)
 	} else {
@@ -50,9 +46,9 @@ func (s *Service) cleanupCore(dryRun bool, pattern string) error {
 
 	s.Log.Info("Path backup base directory:", s.Config.Backup.Output.BaseDirectory)
 	s.Log.Infof("Cleanup policy: hapus file backup lebih dari %d hari", retentionDays)
-	
+
 	cutoffTime := time.Now().AddDate(0, 0, -retentionDays)
-	s.Log.Infof("Cutoff time: %s", cutoffTime.Format(timeFormat))
+	s.Log.Infof("Cutoff time: %s", cutoffTime.Format(consts.CleanupTimeFormat))
 
 	// Pindai file
 	filesToDelete, err := s.scanFiles(s.Config.Backup.Output.BaseDirectory, cutoffTime, pattern)
@@ -155,7 +151,7 @@ func CleanupOldBackupsFromBackup(config *appconfig.Config, logger applog.Logger)
 	cutoffTime := time.Now().AddDate(0, 0, -retentionDays)
 
 	logger.Infof("Melakukan cleanup backup files lebih dari %d hari (sebelum %s)",
-		retentionDays, cutoffTime.Format(timeFormat))
+		retentionDays, cutoffTime.Format(consts.CleanupTimeFormat))
 
 	opts := types.CleanupOptions{
 		Enabled: true,

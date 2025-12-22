@@ -9,6 +9,7 @@ package restore
 import (
 	"context"
 	"fmt"
+	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
@@ -46,19 +47,11 @@ func (s *Service) DropAllDatabases(ctx context.Context) error {
 		return fmt.Errorf("gagal mengambil daftar database: %w", err)
 	}
 
-	systemDBs := []string{"mysql", "sys", "information_schema", "performance_schema"}
 	droppedCount := 0
 
 	for _, dbName := range dbList {
 		// Skip system databases
-		isSystem := false
-		for _, sys := range systemDBs {
-			if strings.EqualFold(dbName, sys) {
-				isSystem = true
-				break
-			}
-		}
-		if isSystem {
+		if _, isSystem := types.SystemDatabases[strings.ToLower(dbName)]; isSystem {
 			continue
 		}
 

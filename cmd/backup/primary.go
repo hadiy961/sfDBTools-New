@@ -3,9 +3,10 @@ package backupcmd
 import (
 	"fmt"
 	"sfDBTools/internal/backup"
-	"sfDBTools/internal/types"
 	defaultVal "sfDBTools/internal/defaultval"
 	"sfDBTools/internal/flags"
+	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 
 	"github.com/spf13/cobra"
 )
@@ -37,7 +38,7 @@ Contoh:
 			return
 		}
 
-		if err := backup.ExecuteBackup(cmd, types.Deps, "primary"); err != nil {
+		if err := backup.ExecuteBackup(cmd, types.Deps, consts.ModePrimary); err != nil {
 			// Error has been logged by ExecuteBackup
 			return
 		}
@@ -45,6 +46,6 @@ Contoh:
 }
 
 func init() {
-	defaultOpts := defaultVal.DefaultBackupOptions("primary")
-	flags.AddBackupFlgs(CmdBackupPrimary, &defaultOpts, "primary")
+	defaultOpts := defaultVal.DefaultBackupOptions(consts.ModePrimary)
+	flags.AddBackupFlgs(CmdBackupPrimary, &defaultOpts, consts.ModePrimary)
 }

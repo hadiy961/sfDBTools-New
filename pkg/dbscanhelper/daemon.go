@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/process"
 	"sfDBTools/pkg/ui"
 )
@@ -40,10 +41,10 @@ func SpawnScanDaemon(config types.ScanEntryConfig) error {
 
 	ui.PrintHeader("DATABASE SCANNING - BACKGROUND MODE")
 	ui.PrintSuccess(fmt.Sprintf("Background process dimulai dengan PID: %d", pid))
-	ui.PrintInfo(fmt.Sprintf("Scan ID: %s", ui.ColorText(scanID, ui.ColorCyan)))
+	ui.PrintInfo(fmt.Sprintf("Scan ID: %s", ui.ColorText(scanID, consts.UIColorCyan)))
 	if logFile != "" {
-		ui.PrintInfo(fmt.Sprintf("Log file: %s", ui.ColorText(logFile, ui.ColorCyan)))
-		ui.PrintInfo(fmt.Sprintf("PID file: %s", ui.ColorText(pidFile, ui.ColorCyan)))
+		ui.PrintInfo(fmt.Sprintf("Log file: %s", ui.ColorText(logFile, consts.UIColorCyan)))
+		ui.PrintInfo(fmt.Sprintf("PID file: %s", ui.ColorText(pidFile, consts.UIColorCyan)))
 		ui.PrintInfo(fmt.Sprintf("Monitor dengan: tail -f %s", logFile))
 	} else {
 		ui.PrintInfo("Logs akan ditulis ke system logger")

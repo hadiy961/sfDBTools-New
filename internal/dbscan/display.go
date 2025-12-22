@@ -18,7 +18,7 @@ import (
 // DisplayScanOptions menampilkan opsi scanning aktif dan meminta konfirmasi
 func (s *Service) DisplayScanOptions() (bool, error) {
 	ui.PrintSubHeader("Opsi Scanning")
-	
+
 	targetConn := s.getTargetDBConfig()
 	targetInfo := fmt.Sprintf("%s@%s:%d/%s",
 		targetConn.User, targetConn.Host, targetConn.Port, targetConn.Database)
@@ -47,11 +47,11 @@ func (s *Service) DisplayScanOptions() (bool, error) {
 		s.Log.Error("User confirmation error: " + err.Error())
 		return false, err
 	}
-	
+
 	if !confirm {
 		return false, validation.ErrUserCancelled
 	}
-	
+
 	s.Log.Info("Proses scanning dilanjutkan.")
 	return true, nil
 }

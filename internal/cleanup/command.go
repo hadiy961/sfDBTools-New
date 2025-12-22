@@ -7,8 +7,8 @@
 package cleanup
 
 import (
-	"sfDBTools/internal/types"
 	"sfDBTools/internal/parsing"
+	"sfDBTools/internal/types"
 	"sfDBTools/pkg/ui"
 
 	"github.com/spf13/cobra"

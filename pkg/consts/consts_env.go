@@ -1,6 +1,9 @@
 package consts
 
 const (
+	// App Config
+	ENV_APPS_CONFIG = "SFDB_APPS_CONFIG"
+
 	// Database Connection
 	ENV_DB_HOST        = "SFDB_DB_HOST"
 	ENV_DB_PORT        = "SFDB_DB_PORT"

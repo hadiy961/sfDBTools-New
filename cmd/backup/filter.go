@@ -3,9 +3,9 @@ package backupcmd
 import (
 	"fmt"
 	"sfDBTools/internal/backup"
-	"sfDBTools/internal/types"
 	defaultVal "sfDBTools/internal/defaultval"
 	"sfDBTools/internal/flags"
+	"sfDBTools/internal/types"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"

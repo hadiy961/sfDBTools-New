@@ -88,23 +88,23 @@ func ShowRestorePrimaryResult(result *types.RestoreResult) {
 
 // ShowRestoreAllResult menampilkan hasil restore all databases
 func ShowRestoreAllResult(result *types.RestoreResult) {
-ui.PrintSubHeader("Hasil Restore All Databases")
-fmt.Println()
+	ui.PrintSubHeader("Hasil Restore All Databases")
+	fmt.Println()
 
-fmt.Printf("  %-20s: %s\n", "Source File", result.SourceFile)
+	fmt.Printf("  %-20s: %s\n", "Source File", result.SourceFile)
 
-if result.BackupFile != "" {
-fmt.Printf("  %-20s: %s\n", "Backup Pre-Restore", result.BackupFile)
-fmt.Printf("  %-20s: %s\n", "Backup Directory", filepath.Dir(result.BackupFile))
-}
+	if result.BackupFile != "" {
+		fmt.Printf("  %-20s: %s\n", "Backup Pre-Restore", result.BackupFile)
+		fmt.Printf("  %-20s: %s\n", "Backup Directory", filepath.Dir(result.BackupFile))
+	}
 
-fmt.Printf("  %-20s: %s\n", "Duration", result.Duration)
+	fmt.Printf("  %-20s: %s\n", "Duration", result.Duration)
 
-if result.Success {
-fmt.Printf("  %-20s: %s\n", "Status", "Berhasil")
-} else {
-fmt.Printf("  %-20s: %s\n", "Status", "Gagal")
-}
+	if result.Success {
+		fmt.Printf("  %-20s: %s\n", "Status", "Berhasil")
+	} else {
+		fmt.Printf("  %-20s: %s\n", "Status", "Gagal")
+	}
 
-fmt.Println()
+	fmt.Println()
 }

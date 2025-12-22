@@ -8,18 +8,19 @@ package modes
 
 import (
 	"fmt"
+	"sfDBTools/pkg/consts"
 )
 
 // GetExecutor mengembalikan implementasi RestoreExecutor yang sesuai berdasarkan mode string
 func GetExecutor(mode string, svc RestoreService) (RestoreExecutor, error) {
 	switch mode {
-	case "single":
+	case consts.ModeSingle:
 		return NewSingleExecutor(svc), nil
-	case "primary":
+	case consts.ModePrimary:
 		return NewPrimaryExecutor(svc), nil
-	case "all":
+	case consts.ModeAll:
 		return NewAllExecutor(svc), nil
-	case "selection":
+	case consts.ModeSelection:
 		return NewSelectionExecutor(svc), nil
 	default:
 		return nil, fmt.Errorf("mode restore tidak dikenali: %s", mode)

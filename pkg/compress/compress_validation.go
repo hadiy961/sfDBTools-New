@@ -2,6 +2,7 @@ package compress
 
 import (
 	"fmt"
+	"sfDBTools/pkg/consts"
 	"strings"
 )
 
@@ -9,17 +10,22 @@ import (
 func ValidateCompressionType(compressionType string) (CompressionType, error) {
 	ct := CompressionType(strings.ToLower(compressionType))
 	switch ct {
-	case CompressionNone, CompressionGzip, CompressionPgzip, CompressionZlib, CompressionZstd, CompressionXz:
+	case CompressionType(consts.CompressionTypeNone),
+		CompressionType(consts.CompressionTypeGzip),
+		CompressionType(consts.CompressionTypePgzip),
+		CompressionType(consts.CompressionTypeZlib),
+		CompressionType(consts.CompressionTypeZstd),
+		CompressionType(consts.CompressionTypeXz):
 		return ct, nil
 	default:
-		return CompressionNone, fmt.Errorf("unsupported compression type: %s. Supported types: none, gzip, pgzip, zlib, zstd, xz", compressionType)
+		return CompressionType(consts.CompressionTypeNone), fmt.Errorf("unsupported compression type: %s. Supported types: none, gzip, pgzip, zlib, zstd, xz", compressionType)
 	}
 }
 
 // ValidateCompressionLevel validates if the compression level is valid (1-9)
 func ValidateCompressionLevel(level int) (CompressionLevel, error) {
 	if level < 1 || level > 9 {
-		return LevelDefault, fmt.Errorf("unsupported compression level: %d. Supported levels: 1-9 (1=fastest, 9=best)", level)
+		return CompressionLevel(consts.CompressionLevelDefault), fmt.Errorf("unsupported compression level: %d. Supported levels: 1-9 (1=fastest, 9=best)", level)
 	}
 	return CompressionLevel(level), nil
 }

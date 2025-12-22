@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"runtime"
+	"sfDBTools/pkg/consts"
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
@@ -16,16 +17,16 @@ import (
 // For zstd and pgzip, uses parallel decompression with all available CPU cores for optimal performance.
 func NewDecompressingReader(r io.Reader, ctype CompressionType) (io.ReadCloser, error) {
 	switch ctype {
-	case CompressionGzip, CompressionPgzip:
+	case CompressionType(consts.CompressionTypeGzip), CompressionType(consts.CompressionTypePgzip):
 		// Gunakan pgzip untuk semua .gz agar konsisten (ekstensi sama)
 		pr, err := pgzip.NewReader(r)
 		if err != nil {
 			return nil, fmt.Errorf("gagal create pgzip reader: %w", err)
 		}
 		return pr, nil
-	case CompressionZlib:
+	case CompressionType(consts.CompressionTypeZlib):
 		return zlib.NewReader(r)
-	case CompressionZstd:
+	case CompressionType(consts.CompressionTypeZstd):
 		// Buat zstd decoder dengan concurrency untuk parallel decompression
 		zr, err := zstd.NewReader(r,
 			zstd.WithDecoderConcurrency(runtime.NumCPU()), // Parallel decoding
@@ -35,14 +36,14 @@ func NewDecompressingReader(r io.Reader, ctype CompressionType) (io.ReadCloser, 
 			return nil, err
 		}
 		return io.NopCloser(zr), nil
-	case CompressionXz:
+	case CompressionType(consts.CompressionTypeXz):
 		// XZ decompression support
 		xzReader, err := xz.NewReader(r)
 		if err != nil {
 			return nil, fmt.Errorf("gagal create xz reader: %w", err)
 		}
 		return io.NopCloser(xzReader), nil
-	case CompressionNone:
+	case CompressionType(consts.CompressionTypeNone):
 		return io.NopCloser(r), nil
 	default:
 		return nil, fmt.Errorf("unsupported compression type: %s", ctype)
@@ -54,19 +55,19 @@ func NewDecompressingReader(r io.Reader, ctype CompressionType) (io.ReadCloser, 
 func DetectCompressionTypeFromFile(path string) CompressionType {
 	name := strings.ToLower(path)
 	// Remove .enc extension first if exists
-	name = strings.TrimSuffix(name, ".enc")
+	name = strings.TrimSuffix(name, consts.ExtEnc)
 
 	switch {
-	case strings.HasSuffix(name, ".gz"):
+	case strings.HasSuffix(name, consts.ExtGzip):
 		// Selalu gunakan pgzip untuk ekstensi .gz
-		return CompressionPgzip
-	case strings.HasSuffix(name, ".zst"):
-		return CompressionZstd
-	case strings.HasSuffix(name, ".xz"):
-		return CompressionXz
-	case strings.HasSuffix(name, ".zlib"):
-		return CompressionZlib
+		return CompressionType(consts.CompressionTypePgzip)
+	case strings.HasSuffix(name, consts.ExtZstd):
+		return CompressionType(consts.CompressionTypeZstd)
+	case strings.HasSuffix(name, consts.ExtXz):
+		return CompressionType(consts.CompressionTypeXz)
+	case strings.HasSuffix(name, consts.ExtZlib):
+		return CompressionType(consts.CompressionTypeZlib)
 	default:
-		return CompressionNone
+		return CompressionType(consts.CompressionTypeNone)
 	}
 }

@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"sfDBTools/internal/backup/display"
 	"sfDBTools/internal/types"
-	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/backuphelper"
+	"sfDBTools/pkg/consts"
 	pkghelper "sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
-	"strings"
 )
 
 // =============================================================================
@@ -32,52 +31,13 @@ func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interfa
 	if selectedDB == "" {
 		candidates := backuphelper.FilterCandidatesByMode(dbFiltered, mode)
 
-		// Filter berdasarkan client-code dan instance jika diperlukan
-		if mode == "primary" && s.BackupDBOptions.ClientCode != "" {
-			candidates = backuphelper.FilterCandidatesByClientCode(candidates, s.BackupDBOptions.ClientCode)
-			if len(candidates) == 0 {
-				return nil, "", nil, fmt.Errorf("tidak ada database primary dengan client code '%s' yang ditemukan", s.BackupDBOptions.ClientCode)
-			}
-			// Jika hanya ada satu kandidat, langsung pilih
-			if len(candidates) == 1 {
-				selectedDB = candidates[0]
-			}
-		} else if mode == "secondary" {
-			// Untuk secondary, filter berdasarkan client-code dan/atau instance
-			if s.BackupDBOptions.ClientCode != "" || s.BackupDBOptions.Instance != "" {
-				candidates = backuphelper.FilterSecondaryByClientCodeAndInstance(
-					candidates,
-					s.BackupDBOptions.ClientCode,
-					s.BackupDBOptions.Instance,
-				)
-
-				if len(candidates) == 0 {
-					// Error message berbeda berdasarkan apa yang di-provide
-					if s.BackupDBOptions.ClientCode != "" && s.BackupDBOptions.Instance != "" {
-						return nil, "", nil, fmt.Errorf("tidak ada database secondary dengan client code '%s' dan instance '%s' yang ditemukan",
-							s.BackupDBOptions.ClientCode, s.BackupDBOptions.Instance)
-					} else if s.BackupDBOptions.ClientCode != "" {
-						return nil, "", nil, fmt.Errorf("tidak ada database secondary dengan client code '%s' yang ditemukan", s.BackupDBOptions.ClientCode)
-					} else {
-						return nil, "", nil, fmt.Errorf("tidak ada database secondary dengan instance '%s' yang ditemukan", s.BackupDBOptions.Instance)
-					}
-				}
-
-				// Jika instance juga di-provide dan hanya ada satu kandidat, langsung pilih
-				if s.BackupDBOptions.Instance != "" && len(candidates) == 1 {
-					selectedDB = candidates[0]
-				} else if s.BackupDBOptions.Instance != "" && s.BackupDBOptions.ClientCode != "" && len(candidates) == 0 {
-					// Instance di-provide tapi tidak ada yang match - tampilkan warning
-					s.Log.Warnf("Instance '%s' tidak ditemukan untuk client code '%s', menampilkan semua secondary database untuk client tersebut",
-						s.BackupDBOptions.Instance, s.BackupDBOptions.ClientCode)
-					// Re-filter hanya dengan client code
-					candidates = backuphelper.FilterSecondaryByClientCodeAndInstance(
-						backuphelper.FilterCandidatesByMode(dbFiltered, mode),
-						s.BackupDBOptions.ClientCode,
-						"", // tanpa instance
-					)
-				}
-			}
+		filteredCandidates, autoSelectedDB, filterErr := s.filterCandidatesByModeAndOptions(mode, candidates)
+		if filterErr != nil {
+			return nil, "", nil, filterErr
+		}
+		candidates = filteredCandidates
+		if selectedDB == "" {
+			selectedDB = autoSelectedDB
 		}
 
 		if len(candidates) == 0 {
@@ -102,12 +62,12 @@ func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interfa
 	companionStatus := map[string]bool{selectedDB: true}
 
 	// Add companion databases - hanya untuk mode primary dan secondary, bukan untuk single
-	if mode == "primary" || mode == "secondary" {
+	if mode == consts.ModePrimary || mode == consts.ModeSecondary {
 		// Consolidated loop for all suffixes
 		for suffix, enabled := range map[string]bool{
-			"_dmart":   s.BackupDBOptions.IncludeDmart,
-			"_temp":    s.BackupDBOptions.IncludeTemp,
-			"_archive": s.BackupDBOptions.IncludeArchive,
+			consts.SuffixDmart:   s.BackupDBOptions.IncludeDmart,
+			consts.SuffixTemp:    s.BackupDBOptions.IncludeTemp,
+			consts.SuffixArchive: s.BackupDBOptions.IncludeArchive,
 		} {
 			if !enabled {
 				continue
@@ -133,7 +93,8 @@ func (s *Service) selectDatabaseAndBuildList(ctx context.Context, client interfa
 // Returns companionDbs (database yang dipilih, + companion untuk primary/secondary) sebagai dbFiltered yang baru
 func (s *Service) handleSingleModeSetup(ctx context.Context, client interface {
 	GetDatabaseList(context.Context) ([]string, error)
-}, dbFiltered []string, compressionSettings types_backup.CompressionSettings) ([]string, error) {
+}, dbFiltered []string) ([]string, error) {
+	compressionSettings := s.buildCompressionSettings()
 	// Get all databases untuk menghitung statistik yang akurat
 	allDatabases, err := client.GetDatabaseList(ctx)
 	if err != nil {
@@ -168,7 +129,7 @@ func (s *Service) handleSingleModeSetup(ctx context.Context, client interface {
 	)
 	if err != nil {
 		s.Log.Warn("gagal generate filename: " + err.Error())
-		previewFilename = "error_generating_filename"
+		previewFilename = consts.FilenameGenerateErrorPlaceholder
 	}
 	s.BackupDBOptions.File.Path = previewFilename
 
@@ -176,36 +137,4 @@ func (s *Service) handleSingleModeSetup(ctx context.Context, client interface {
 	// Mode single: [database_yang_dipilih]
 	// Mode primary/secondary: [database_yang_dipilih, companion_dmart, companion_temp, companion_archive]
 	return companionDbs, nil
-}
-
-// selectMultipleDatabases menampilkan multi-select menu untuk memilih database
-func (s *Service) selectMultipleDatabases(databases []string) ([]string, error) {
-	if len(databases) == 0 {
-		return nil, fmt.Errorf("tidak ada database yang tersedia untuk dipilih")
-	}
-
-	s.Log.Info(fmt.Sprintf("Tersedia %d database non-system", len(databases)))
-	s.Log.Info("Gunakan [Space] untuk memilih/membatalkan, [Enter] untuk konfirmasi")
-
-	// Gunakan ShowMultiSelect dari input package
-	indices, err := input.ShowMultiSelect("Pilih database untuk backup:", databases)
-	if err != nil {
-		return nil, fmt.Errorf("pemilihan database dibatalkan: %w", err)
-	}
-
-	if len(indices) == 0 {
-		return nil, fmt.Errorf("tidak ada database yang dipilih")
-	}
-
-	// Convert indices to database names
-	selectedDBs := make([]string, 0, len(indices))
-	for _, idx := range indices {
-		if idx > 0 && idx <= len(databases) {
-			selectedDBs = append(selectedDBs, databases[idx-1])
-		}
-	}
-
-	s.Log.Info(fmt.Sprintf("Dipilih %d database: %s", len(selectedDBs), strings.Join(selectedDBs, ", ")))
-
-	return selectedDBs, nil
 }

@@ -2,8 +2,8 @@ package parsing
 
 import (
 	"sfDBTools/internal/appconfig"
-	"sfDBTools/internal/types"
 	defaultVal "sfDBTools/internal/defaultval"
+	"sfDBTools/internal/types"
 	"sfDBTools/pkg/helper"
 
 	"github.com/spf13/cobra"

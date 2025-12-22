@@ -30,14 +30,7 @@ func (s *Service) resolveBackupFile(filePath *string) error {
 			defaultDir = "."
 		}
 
-		validExtensions := []string{
-			".sql",
-			".sql.gz", ".sql.gz.enc",
-			".sql.xz", ".sql.xz.enc",
-			".sql.zst", ".sql.zst.enc",
-			".sql.zlib", ".sql.zlib.enc",
-			".enc",
-		}
+		validExtensions := helper.ValidBackupFileExtensionsForSelection()
 
 		selectedFile, err := input.SelectFileInteractive(defaultDir, "Masukkan path directory atau file backup", validExtensions)
 		if err != nil {
@@ -62,7 +55,7 @@ func (s *Service) resolveBackupFile(filePath *string) error {
 
 // resolveEncryptionKey resolve encryption key untuk decrypt file
 func (s *Service) resolveEncryptionKey(filePath string, encryptionKey *string) error {
-	isEncrypted := strings.HasSuffix(strings.ToLower(filePath), ".enc")
+	isEncrypted := helper.IsEncryptedFile(filePath)
 
 	if !isEncrypted {
 		s.Log.Debug("File backup tidak terenkripsi")
@@ -153,7 +146,7 @@ func (s *Service) connectToTargetDatabase(ctx context.Context) error {
 // resolveTicketNumber resolve ticket number
 func (s *Service) resolveTicketNumber(ticket *string) error {
 	if *ticket == "" {
-		result, err := input.AskTicket("restore")
+		result, err := input.AskTicket(consts.FeatureRestore)
 		if err != nil {
 			return fmt.Errorf("gagal mendapatkan ticket number: %w", err)
 		}
@@ -190,7 +183,7 @@ func (s *Service) resolveGrantsFile(skipGrants bool, grantsFile *string, backupF
 
 	// Not found
 	backupDir := filepath.Dir(backupFile)
-	matches, err := filepath.Glob(filepath.Join(backupDir, "*_users.sql"))
+	matches, err := filepath.Glob(filepath.Join(backupDir, "*"+consts.UsersSQLSuffix))
 	if err == nil && len(matches) > 0 {
 		s.Log.Infof("Ditemukan %d file user grants di folder: %s", len(matches), backupDir)
 		ui.PrintInfo(fmt.Sprintf("📁 Ditemukan %d file user grants di folder yang sama", len(matches)))
@@ -233,7 +226,7 @@ func (s *Service) resolveGrantsFile(skipGrants bool, grantsFile *string, backupF
 		return nil
 	}
 
-	validExtensions := []string{".sql"}
+	validExtensions := []string{consts.ExtSQL}
 	selectedFile, err := input.SelectFileInteractive(backupDir, "Masukkan path directory atau file user grants", validExtensions)
 	if err != nil {
 		s.Log.Warnf("Gagal memilih file grants: %v, skip restore grants", err)

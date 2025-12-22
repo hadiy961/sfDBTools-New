@@ -8,16 +8,17 @@ package modes
 
 import (
 	"fmt"
+	"sfDBTools/pkg/consts"
 )
 
 // GetExecutor mengembalikan implementasi ModeExecutor yang sesuai berdasarkan mode string
 func GetExecutor(mode string, svc BackupService) (ModeExecutor, error) {
 	switch mode {
-	case "combined", "all":
+	case consts.ModeCombined, consts.ModeAll:
 		// Combined dan all menggunakan executor yang sama (combined mode)
 		// Perbedaannya hanya di nama file output dan header display
 		return NewCombinedExecutor(svc), nil
-	case "single", "primary", "secondary", "separated", "separate":
+	case consts.ModeSingle, consts.ModePrimary, consts.ModeSecondary, consts.ModeSeparated, consts.ModeSeparate:
 		return NewIterativeExecutor(svc, mode), nil
 	default:
 		return nil, fmt.Errorf("mode backup tidak dikenali: %s", mode)

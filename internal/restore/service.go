@@ -11,6 +11,7 @@ import (
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/restore/modes"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
 	"sfDBTools/pkg/servicehelper"
@@ -40,13 +41,13 @@ type Service struct {
 func NewRestoreService(logs applog.Logger, cfg *appconfig.Config, restore interface{}) *Service {
 	logDir := cfg.Log.Output.File.Dir
 	if logDir == "" {
-		logDir = "/var/log/sfDBTools"
+		logDir = consts.DefaultLogDir
 	}
 
 	svc := &Service{
 		Log:      logs,
 		Config:   cfg,
-		ErrorLog: errorlog.NewErrorLogger(logs, logDir, "restore"),
+		ErrorLog: errorlog.NewErrorLogger(logs, logDir, consts.FeatureRestore),
 	}
 
 	if restore != nil {

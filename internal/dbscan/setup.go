@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
@@ -115,7 +116,7 @@ func (s *Service) prepareScanSession(ctx context.Context, headerTitle string, sh
 	}
 
 	// Connect ke Source Database
-	client, err := profilehelper.ConnectWithProfile(&s.ScanOptions.ProfileInfo, "mysql")
+	client, err := profilehelper.ConnectWithProfile(&s.ScanOptions.ProfileInfo, consts.DefaultInitialDatabase)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -200,7 +201,7 @@ func (s *Service) prepareRescanSession(ctx context.Context, headerTitle string, 
 	ui.PrintInfo(fmt.Sprintf("Ditemukan %d database yang gagal di-scan sebelumnya", len(failedDBNames)))
 
 	// Connect ke Source Database
-	sourceClient, err := profilehelper.ConnectWithProfile(&s.ScanOptions.ProfileInfo, "mysql")
+	sourceClient, err := profilehelper.ConnectWithProfile(&s.ScanOptions.ProfileInfo, consts.DefaultInitialDatabase)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("gagal koneksi ke source database: %w", err)
 	}
@@ -250,19 +251,19 @@ func (s *Service) ConnectToTargetDB(ctx context.Context) (*database.Client, erro
 	if err != nil {
 		return nil, fmt.Errorf("gagal koneksi ke target database: %w", err)
 	}
-	
+
 	if err := client.Ping(ctx); err != nil {
 		client.Close()
 		return nil, fmt.Errorf("gagal verifikasi koneksi target: %w", err)
 	}
-	
+
 	return client, nil
 }
 
 // getTargetDBConfig mengambil konfigurasi target database (untuk display options).
 func (s *Service) getTargetDBConfig() types.ServerDBConnection {
 	conn := s.ScanOptions.TargetDB
-	
+
 	// Fallback ke env defaults jika kosong
 	if conn.Host == "" {
 		conn.Host = helper.GetEnvOrDefault("SFDB_DB_HOST", "localhost")

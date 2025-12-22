@@ -117,7 +117,7 @@ func (s *Service) ShowProfile() error {
 	if s.OriginalProfileInfo != nil {
 		s.ProfileInfo.DBInfo = s.OriginalProfileInfo.DBInfo
 	}
-	
+
 	if err := database.ConnectionTest(&s.ProfileInfo.DBInfo, s.Log); err != nil {
 		return nil // Just return, error already logged/displayed
 	}
@@ -242,13 +242,15 @@ func (s *Service) PromptDeleteProfile() error {
 
 		// Validasi semua profil input
 		for _, p := range s.ProfileDelete.Profiles {
-			if p == "" { continue }
-			
+			if p == "" {
+				continue
+			}
+
 			absPath, name, err := helper.ResolveConfigPath(p)
 			if err != nil {
 				return err
 			}
-			
+
 			if !fsops.PathExists(absPath) {
 				return fmt.Errorf("file konfigurasi tidak ditemukan: %s (name: %s)", absPath, name)
 			}
@@ -281,7 +283,7 @@ func (s *Service) PromptDeleteProfile() error {
 		for _, d := range displayNames {
 			ui.PrintWarning(" - " + d)
 		}
-		
+
 		ok, err := input.AskYesNo(fmt.Sprintf("Anda yakin ingin menghapus %d profil ini?", len(validPaths)), false)
 		if err != nil {
 			return validation.HandleInputError(err)

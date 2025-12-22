@@ -25,7 +25,7 @@ import (
 // runWizard orchestrates the interactive profile creation/editing process
 func (s *Service) runWizard(mode string) error {
 	s.Log.Info("Wizard profil dimulai...")
-	
+
 	for {
 		// Edit Mode: Select Existing Config
 		if mode == "edit" {
@@ -90,7 +90,7 @@ func (s *Service) runWizard(mode string) error {
 func (s *Service) promptSelectExistingConfig() error {
 	info, err := profilehelper.ResolveAndLoadProfile(profilehelper.ProfileLoadOptions{
 		ConfigDir:         s.Config.ConfigDir.DatabaseProfile,
-		ProfilePath:       "", 
+		ProfilePath:       "",
 		AllowInteractive:  true,
 		InteractivePrompt: "Select Existing Configuration File",
 		RequireProfile:    true,
@@ -143,13 +143,19 @@ func (s *Service) promptProfileInfo() error {
 	var err error
 
 	s.ProfileInfo.DBInfo.Host, err = input.AskString("Database Host", s.ProfileInfo.DBInfo.Host, survey.Required)
-	if err != nil { return validation.HandleInputError(err) }
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
 
 	s.ProfileInfo.DBInfo.Port, err = input.AskInt("Database Port", s.ProfileInfo.DBInfo.Port, survey.Required)
-	if err != nil { return validation.HandleInputError(err) }
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
 
 	s.ProfileInfo.DBInfo.User, err = input.AskString("Database User", s.ProfileInfo.DBInfo.User, survey.Required)
-	if err != nil { return validation.HandleInputError(err) }
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
 
 	isEditFlow := s.OriginalProfileInfo != nil || s.OriginalProfileName != ""
 	var existingPassword string
@@ -169,7 +175,9 @@ func (s *Service) promptProfileInfo() error {
 	}
 
 	pw, err := input.AskPassword("Database Password", nil)
-	if err != nil { return validation.HandleInputError(err) }
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
 
 	if pw == "" {
 		if isEditFlow {
@@ -178,7 +186,9 @@ func (s *Service) promptProfileInfo() error {
 			}
 		} else {
 			pw, err = input.AskPassword("Database Password", survey.Required)
-			if err != nil { return validation.HandleInputError(err) }
+			if err != nil {
+				return validation.HandleInputError(err)
+			}
 			s.ProfileInfo.DBInfo.Password = pw
 		}
 	} else {
@@ -238,22 +248,38 @@ func (s *Service) CheckConfigurationNameUnique(mode string) error {
 
 // ValidateProfileInfo validates the given ProfileInfo struct
 func ValidateProfileInfo(p *types.ProfileInfo) error {
-	if p == nil { return fmt.Errorf("informasi profil tidak boleh kosong") }
-	if p.Name == "" { return fmt.Errorf("nama profil tidak boleh kosong") }
-	if err := ValidateDBInfo(&p.DBInfo); err != nil { return fmt.Errorf("validasi informasi database gagal: %w", err) }
+	if p == nil {
+		return fmt.Errorf("informasi profil tidak boleh kosong")
+	}
+	if p.Name == "" {
+		return fmt.Errorf("nama profil tidak boleh kosong")
+	}
+	if err := ValidateDBInfo(&p.DBInfo); err != nil {
+		return fmt.Errorf("validasi informasi database gagal: %w", err)
+	}
 	return nil
 }
 
 // ValidateDBInfo validates the given DBInfo struct
 func ValidateDBInfo(db *types.DBInfo) error {
-	if db == nil { return fmt.Errorf("informasi database tidak boleh kosong") }
-	if db.Host == "" { return fmt.Errorf("host database tidak boleh kosong") }
-	if db.Port <= 0 || db.Port > 65535 { return fmt.Errorf("port database tidak valid: %d", db.Port) }
-	if db.User == "" { return fmt.Errorf("user database tidak boleh kosong") }
+	if db == nil {
+		return fmt.Errorf("informasi database tidak boleh kosong")
+	}
+	if db.Host == "" {
+		return fmt.Errorf("host database tidak boleh kosong")
+	}
+	if db.Port <= 0 || db.Port > 65535 {
+		return fmt.Errorf("port database tidak valid: %d", db.Port)
+	}
+	if db.User == "" {
+		return fmt.Errorf("user database tidak boleh kosong")
+	}
 	if db.Password == "" {
 		ui.PrintWarning("Password database tidak diberikan lewat flag; meminta input password...")
 		pw, err := input.AskPassword("Password untuk user ("+db.User+") : ", survey.Required)
-		if err != nil { return validation.HandleInputError(err) }
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
 		db.Password = pw
 	}
 	return nil

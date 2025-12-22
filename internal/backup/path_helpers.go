@@ -5,9 +5,8 @@ import (
 	"path/filepath"
 	"sfDBTools/internal/backup/display"
 	"sfDBTools/internal/types"
-	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/backuphelper"
-	"sfDBTools/pkg/compress"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	pkghelper "sfDBTools/pkg/helper"
 )
@@ -18,20 +17,11 @@ import (
 
 // GenerateFullBackupPath membuat full path untuk backup file
 func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, error) {
-	// Build compression settings inline
-	compressionType := s.BackupDBOptions.Compression.Type
-	if !s.BackupDBOptions.Compression.Enabled {
-		compressionType = ""
-	}
-	compressionSettings := types_backup.CompressionSettings{
-		Type:    compress.CompressionType(compressionType),
-		Enabled: s.BackupDBOptions.Compression.Enabled,
-		Level:   s.BackupDBOptions.Compression.Level,
-	}
+	compressionSettings := s.buildCompressionSettings()
 
 	// Untuk mode separated, gunakan IP address instead of hostname
 	hostIdentifier := s.BackupDBOptions.Profile.DBInfo.HostName
-	if mode == "separated" || mode == "separate" {
+	if mode == consts.ModeSeparated || mode == consts.ModeSeparate {
 		hostIdentifier = s.BackupDBOptions.Profile.DBInfo.Host
 	}
 
@@ -54,17 +44,7 @@ func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, er
 // Returns updated dbFiltered untuk mode single/primary/secondary (database yang dipilih + companion)
 func (s *Service) generateBackupPaths(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error) {
 	dbHostname := s.BackupDBOptions.Profile.DBInfo.Host
-
-	// Build compression settings inline
-	compressionType := s.BackupDBOptions.Compression.Type
-	if !s.BackupDBOptions.Compression.Enabled {
-		compressionType = ""
-	}
-	compressionSettings := types_backup.CompressionSettings{
-		Type:    compress.CompressionType(compressionType),
-		Enabled: s.BackupDBOptions.Compression.Enabled,
-		Level:   s.BackupDBOptions.Compression.Level,
-	}
+	compressionSettings := s.buildCompressionSettings()
 
 	// Generate output directory
 	var err error
@@ -80,10 +60,10 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 	// Generate filename berdasarkan mode
 	exampleDBName := ""
 	dbCount := 0
-	if s.BackupDBOptions.Mode == "separated" || s.BackupDBOptions.Mode == "separate" ||
+	if s.BackupDBOptions.Mode == consts.ModeSeparated || s.BackupDBOptions.Mode == consts.ModeSeparate ||
 		backuphelper.IsSingleModeVariant(s.BackupDBOptions.Mode) {
 		exampleDBName = "database_name"
-	} else if s.BackupDBOptions.Mode == "combined" || s.BackupDBOptions.Mode == "all" {
+	} else if s.BackupDBOptions.Mode == consts.ModeCombined || s.BackupDBOptions.Mode == consts.ModeAll {
 		// Untuk combined/all, gunakan jumlah database yang akan di-backup
 		dbCount = len(dbFiltered)
 		// exampleDBName dibiarkan kosong, akan di-generate oleh GenerateBackupFilenameWithCount
@@ -101,12 +81,12 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 	)
 	if err != nil {
 		s.Log.Warn("gagal generate filename preview: " + err.Error())
-		s.BackupDBOptions.File.Path = "error_generating_filename"
+		s.BackupDBOptions.File.Path = consts.FilenameGenerateErrorPlaceholder
 	}
 
 	// Handle single/primary/secondary mode dengan database selection
 	if backuphelper.IsSingleModeVariant(s.BackupDBOptions.Mode) {
-		return s.handleSingleModeSetup(ctx, client, dbFiltered, compressionSettings)
+		return s.handleSingleModeSetup(ctx, client, dbFiltered)
 	}
 
 	// Untuk mode non-single (all, filter, combined), tampilkan statistik di sini

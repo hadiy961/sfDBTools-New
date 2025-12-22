@@ -16,7 +16,9 @@ import (
 	"path/filepath"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/compress"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
+	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
 	"strings"
 )
@@ -98,7 +100,7 @@ func OpenAndPrepareReader(filePath string, encryptionKey string) (io.Reader, []i
 	closers := []io.Closer{file}
 
 	// Decrypt if encrypted
-	isEncrypted := strings.HasSuffix(strings.ToLower(filePath), ".enc")
+	isEncrypted := helper.IsEncryptedFile(filePath)
 	if isEncrypted {
 		decReader, err := encrypt.NewDecryptingReader(reader, encryptionKey)
 		if err != nil {
@@ -111,7 +113,7 @@ func OpenAndPrepareReader(filePath string, encryptionKey string) (io.Reader, []i
 
 	// Decompress if compressed
 	compressionType := compress.DetectCompressionTypeFromFile(filePath)
-	if compressionType != compress.CompressionNone {
+	if compressionType != compress.CompressionType(consts.CompressionTypeNone) {
 		decompReader, err := compress.NewDecompressingReader(reader, compressionType)
 		if err != nil {
 			CloseReaders(closers)

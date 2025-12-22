@@ -9,6 +9,7 @@ package cleanup
 import (
 	"fmt"
 	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/ui"
 )
@@ -43,7 +44,7 @@ func (s *Service) logDryRunSummary(files []types_backup.BackupFileInfo) {
 		s.Log.Infof("  [%d] %s (modified: %s, size: %s)",
 			i+1,
 			file.Path,
-			file.ModTime.Format(timeFormat),
+			file.ModTime.Format(consts.CleanupTimeFormat),
 			global.FormatFileSize(file.Size))
 	}
 

@@ -9,9 +9,10 @@ package backupcmd
 import (
 	"fmt"
 	"sfDBTools/internal/backup"
-	"sfDBTools/internal/types"
 	defaultVal "sfDBTools/internal/defaultval"
 	"sfDBTools/internal/flags"
+	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 
 	"github.com/spf13/cobra"
 )
@@ -48,7 +49,7 @@ Fitur:
 		}
 
 		// Backup all menggunakan mode 'all'
-		if err := backup.ExecuteBackup(cmd, types.Deps, "all"); err != nil {
+		if err := backup.ExecuteBackup(cmd, types.Deps, consts.ModeAll); err != nil {
 			// Error has been logged by ExecuteBackup
 			return
 		}
@@ -56,6 +57,6 @@ Fitur:
 }
 
 func init() {
-	defaultOpts := defaultVal.DefaultBackupOptions("all")
+	defaultOpts := defaultVal.DefaultBackupOptions(consts.ModeAll)
 	flags.AddBackupAllFlags(CmdBackupAll, &defaultOpts)
 }

@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"path/filepath"
 	"sfDBTools/pkg/compress"
+	"sfDBTools/pkg/consts"
 	"strings"
 	"time"
 )
-
-// Fixed pattern yang digunakan untuk filename backup
-const FixedBackupPattern = "{database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}"
 
 // PathPatternReplacer menyimpan nilai-nilai untuk menggantikan pattern dalam path/filename
 type PathPatternReplacer struct {
@@ -38,13 +36,13 @@ func NewPathPatternReplacer(database string, hostname string, compressionType co
 
 	// Tentukan ekstensi kompresi
 	compressionExt := ""
-	if compressionType != compress.CompressionNone && compressionType != "" {
+	if compressionType != compress.CompressionType(consts.CompressionTypeNone) && compressionType != "" {
 		compressionExt = compress.GetFileExtension(compressionType)
 	}
 	// Tentukan ekstensi enkripsi
 	encryptionExt := ""
 	if encrypted {
-		encryptionExt = ".enc"
+		encryptionExt = consts.ExtEnc
 	}
 
 	return &PathPatternReplacer{
@@ -98,7 +96,7 @@ func (r *PathPatternReplacer) ReplacePattern(pattern string, excludeHostname ...
 	// Tambahkan ekstensi hanya jika ini untuk filename (bukan directory path)
 	if r.IsFilename {
 		// Selalu tambahkan .sql terlebih dahulu
-		result = result + ".sql"
+		result = result + consts.ExtSQL
 
 		// Kemudian tambahkan ekstensi kompresi (jika ada)
 		result = result + r.CompressionExt
@@ -159,11 +157,11 @@ func GenerateBackupFilenameWithCount(database string, mode string, hostname stri
 		filename = replacer.ReplacePattern("{database}")
 	} else {
 		// Gunakan fixed pattern
-		filename = replacer.ReplacePattern(FixedBackupPattern)
+		filename = replacer.ReplacePattern(consts.FixedBackupPattern)
 	}
 
 	// Validasi hasil tidak boleh kosong atau hanya ekstensi
-	if filename == "" || filename == ".sql" || strings.HasPrefix(filename, ".") {
+	if filename == "" || filename == consts.ExtSQL || strings.HasPrefix(filename, ".") {
 		return "", fmt.Errorf("hasil generate filename tidak valid: %s (database: %s)", filename, database)
 	}
 
@@ -180,7 +178,7 @@ func GenerateBackupFilenameWithCount(database string, mode string, hostname stri
 func GenerateBackupDirectory(baseDir string, structurePattern string, hostname string) (string, error) {
 	// Gunakan database kosong karena directory tidak butuh nama database
 	// Untuk directory tidak perlu ekstensi kompresi/enkripsi
-	replacer, err := NewPathPatternReplacer("", hostname, compress.CompressionNone, false, false)
+	replacer, err := NewPathPatternReplacer("", hostname, compress.CompressionType(consts.CompressionTypeNone), false, false)
 	if err != nil {
 		return "", fmt.Errorf("gagal membuat pattern replacer: %w", err)
 	}

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"sfDBTools/internal/restore/helpers"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 	"time"
 )
@@ -62,7 +63,7 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 		// Refresh opts after potential update in DetectOrSelectCompanionFile (pointer reflected)
 		// Note: DetectOrSelectCompanionFile modifies the struct inside service.
 		result.CompanionFile = opts.CompanionFile
-		result.CompanionDB = opts.TargetDB + "_dmart"
+		result.CompanionDB = opts.TargetDB + consts.SuffixDmart
 	}
 
 	// 3. Backup primary database if needed
@@ -75,7 +76,7 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 
 	// Backup companion if needed
 	if opts.IncludeDmart && !opts.SkipBackup {
-		companionDB := opts.TargetDB + "_dmart"
+		companionDB := opts.TargetDB + consts.SuffixDmart
 		companionExists, err := e.service.GetTargetClient().CheckDatabaseExists(ctx, companionDB)
 		if err == nil && companionExists {
 			companionBackup, err := e.service.BackupDatabaseIfNeeded(ctx, companionDB, true, false, opts.BackupOptions)
@@ -98,7 +99,7 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 
 	// Drop companion if needed
 	if opts.IncludeDmart && opts.DropTarget {
-		companionDB := opts.TargetDB + "_dmart"
+		companionDB := opts.TargetDB + consts.SuffixDmart
 		companionExists, err := e.service.GetTargetClient().CheckDatabaseExists(ctx, companionDB)
 		if err == nil && companionExists {
 			if err := e.service.DropDatabaseIfNeeded(ctx, companionDB, true, true); err != nil {
@@ -117,7 +118,7 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 
 	// 6. Restore companion database if available
 	if opts.IncludeDmart && opts.CompanionFile != "" {
-		companionDB := opts.TargetDB + "_dmart"
+		companionDB := opts.TargetDB + consts.SuffixDmart
 		logger.Infof("Restore companion database dari %s...", opts.CompanionFile)
 
 		if err := e.service.CreateAndRestoreDatabase(ctx, companionDB, opts.CompanionFile, opts.EncryptionKey); err != nil {
@@ -171,7 +172,7 @@ func (e *PrimaryExecutor) executeDryRun(ctx context.Context, opts *types.Restore
 				_ = reader
 				companionValid = true
 				result.CompanionFile = opts.CompanionFile
-				result.CompanionDB = opts.TargetDB + "_dmart"
+				result.CompanionDB = opts.TargetDB + consts.SuffixDmart
 			}
 		}
 	}
@@ -185,7 +186,7 @@ func (e *PrimaryExecutor) executeDryRun(ctx context.Context, opts *types.Restore
 
 	var companionExists bool
 	if opts.IncludeDmart {
-		companionDB := opts.TargetDB + "_dmart"
+		companionDB := opts.TargetDB + consts.SuffixDmart
 		companionExists, _ = e.service.GetTargetClient().CheckDatabaseExists(ctx, companionDB)
 	}
 

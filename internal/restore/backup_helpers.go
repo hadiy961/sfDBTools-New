@@ -15,6 +15,7 @@ import (
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/compress"
+	"sfDBTools/pkg/consts"
 	"time"
 )
 
@@ -43,20 +44,20 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 	}
 
 	var filename string
-	if mode == "all" {
+	if mode == consts.ModeAll {
 		filename = fmt.Sprintf("all-databases_%s_%s_pre_restore", timestamp, hostname)
 	} else {
 		filename = fmt.Sprintf("%s_%s_%s_pre_restore", dbName, timestamp, hostname)
 	}
 
-	fullFilename := filename + ".sql"
+	fullFilename := filename + consts.ExtSQL
 
 	if backupOpts.Compression.Enabled {
 		ext := compress.GetFileExtension(compress.CompressionType(backupOpts.Compression.Type))
 		fullFilename += ext
 	}
 	if backupOpts.Encryption.Enabled {
-		fullFilename += ".enc"
+		fullFilename += consts.ExtEnc
 	}
 
 	outputPath := filepath.Join(outputDir, fullFilename)
@@ -82,7 +83,7 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 	}
 
 	// Set filter based on mode
-	if mode == "single" {
+	if mode == consts.ModeSingle {
 		backupOptions.Filter.IncludeDatabases = []string{dbName}
 	}
 
@@ -101,7 +102,7 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 		OutputPath:   outputPath,
 		BackupType:   mode,
 		TotalDBFound: totalDBFound,
-		IsMultiDB:    mode == "all",
+		IsMultiDB:    mode == consts.ModeAll,
 	}
 
 	_, err := backupSvc.ExecuteAndBuildBackup(ctx, backupConfig)
@@ -114,7 +115,7 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 
 // BackupTargetDatabase melakukan backup database target menggunakan backup service
 func (s *Service) BackupTargetDatabase(ctx context.Context, dbName string, backupOpts *types.RestoreBackupOptions) (string, error) {
-	return s.backupDatabaseGeneric(ctx, "single", dbName, []string{dbName}, backupOpts)
+	return s.backupDatabaseGeneric(ctx, consts.ModeSingle, dbName, []string{dbName}, backupOpts)
 }
 
 // BackupAllDatabases melakukan backup semua database sebelum restore all
@@ -125,5 +126,5 @@ func (s *Service) BackupAllDatabases(ctx context.Context, backupOpts *types.Rest
 		return "", fmt.Errorf("gagal mendapatkan list database: %w", err)
 	}
 
-	return s.backupDatabaseGeneric(ctx, "all", "", dbList, backupOpts)
+	return s.backupDatabaseGeneric(ctx, consts.ModeAll, "", dbList, backupOpts)
 }

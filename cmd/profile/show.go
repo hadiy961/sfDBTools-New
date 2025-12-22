@@ -1,9 +1,9 @@
 package profilecmd
 
 import (
+	"sfDBTools/internal/flags"
 	"sfDBTools/internal/profile"
 	"sfDBTools/internal/types"
-	"sfDBTools/internal/flags"
 
 	"github.com/spf13/cobra"
 )

@@ -1,51 +1,53 @@
 package compress
 
+import "sfDBTools/pkg/consts"
+
 // --- Compression Ratio Data ---
 
 // CompressionRatios menyimpan data rasio kompresi berdasarkan pengalaman empiris.
 // Dipisahkan dari logika untuk kemudahan pembacaan dan pemeliharaan.
 var CompressionRatios = map[CompressionType]map[CompressionLevel]float64{
-	CompressionNone: {
-		LevelDefault: 1.0, // Tanpa kompresi, ukuran tetap 100%
+	CompressionType(consts.CompressionTypeNone): {
+		CompressionLevel(consts.CompressionLevelDefault): 1.0, // Tanpa kompresi, ukuran tetap 100%
 	},
-	CompressionGzip: {
+	CompressionType(consts.CompressionTypeGzip): {
 		// Standard gzip - pilihan seimbang yang umum [4]
-		LevelBestSpeed: 0.30, // Level 1
-		LevelFast:      0.28, // Level 3
-		LevelDefault:   0.25, // Level 6 [5]
-		LevelBetter:    0.245,
-		LevelBest:      0.243, // Level 9, pengembalian yang semakin berkurang [5]
+		CompressionLevel(consts.CompressionLevelBestSpeed): 0.30, // Level 1
+		CompressionLevel(consts.CompressionLevelFast):      0.28, // Level 3
+		CompressionLevel(consts.CompressionLevelDefault):   0.25, // Level 6 [5]
+		CompressionLevel(consts.CompressionLevelBetter):    0.245,
+		CompressionLevel(consts.CompressionLevelBest):      0.243, // Level 9, pengembalian yang semakin berkurang [5]
 	},
-	CompressionPgzip: {
+	CompressionType(consts.CompressionTypePgzip): {
 		// Parallel gzip - performa sama dengan gzip, tapi lebih cepat untuk file besar
-		LevelBestSpeed: 0.30,
-		LevelFast:      0.28,
-		LevelDefault:   0.25,
-		LevelBetter:    0.245,
-		LevelBest:      0.243,
+		CompressionLevel(consts.CompressionLevelBestSpeed): 0.30,
+		CompressionLevel(consts.CompressionLevelFast):      0.28,
+		CompressionLevel(consts.CompressionLevelDefault):   0.25,
+		CompressionLevel(consts.CompressionLevelBetter):    0.245,
+		CompressionLevel(consts.CompressionLevelBest):      0.243,
 	},
-	CompressionZlib: {
+	CompressionType(consts.CompressionTypeZlib): {
 		// Zlib/DEFLATE - sedikit lebih baik dari gzip
-		LevelBestSpeed: 0.29,
-		LevelFast:      0.27,
-		LevelDefault:   0.24,
-		LevelBetter:    0.235,
-		LevelBest:      0.23,
+		CompressionLevel(consts.CompressionLevelBestSpeed): 0.29,
+		CompressionLevel(consts.CompressionLevelFast):      0.27,
+		CompressionLevel(consts.CompressionLevelDefault):   0.24,
+		CompressionLevel(consts.CompressionLevelBetter):    0.235,
+		CompressionLevel(consts.CompressionLevelBest):      0.23,
 	},
-	CompressionZstd: {
+	CompressionType(consts.CompressionTypeZstd): {
 		// Zstandard - keseimbangan terbaik antara kecepatan dan rasio kompresi [6, 4]
-		LevelBestSpeed: 0.28, // Level 1
-		LevelFast:      0.25, // Level 3
-		LevelDefault:   0.22, // Level 5-6
-		LevelBetter:    0.20, // Level 7-9
-		LevelBest:      0.18, // Level 19+
+		CompressionLevel(consts.CompressionLevelBestSpeed): 0.28, // Level 1
+		CompressionLevel(consts.CompressionLevelFast):      0.25, // Level 3
+		CompressionLevel(consts.CompressionLevelDefault):   0.22, // Level 5-6
+		CompressionLevel(consts.CompressionLevelBetter):    0.20, // Level 7-9
+		CompressionLevel(consts.CompressionLevelBest):      0.18, // Level 19+
 	},
-	CompressionXz: {
+	CompressionType(consts.CompressionTypeXz): {
 		// XZ/LZMA - rasio kompresi terbaik, tetapi sangat lambat dan intensif CPU [7, 4, 5]
-		LevelBestSpeed: 0.24, // Level 0
-		LevelFast:      0.18, // Level 3
-		LevelDefault:   0.16, // Level 6 [5]
-		LevelBetter:    0.159,
-		LevelBest:      0.157, // Level 9
+		CompressionLevel(consts.CompressionLevelBestSpeed): 0.24, // Level 0
+		CompressionLevel(consts.CompressionLevelFast):      0.18, // Level 3
+		CompressionLevel(consts.CompressionLevelDefault):   0.16, // Level 6 [5]
+		CompressionLevel(consts.CompressionLevelBetter):    0.159,
+		CompressionLevel(consts.CompressionLevelBest):      0.157, // Level 9
 	},
 }

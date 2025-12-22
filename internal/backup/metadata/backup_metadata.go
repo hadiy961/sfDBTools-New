@@ -13,6 +13,7 @@ import (
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/global"
 	"time"
 )
@@ -48,7 +49,7 @@ func GenerateBackupMetadata(cfg types_backup.MetadataConfig) *types_backup.Backu
 
 	// GTID info dan replication info hanya disimpan untuk mode non-separated (combined, single, dll)
 	// Untuk mode separated/multi-file, informasi ini tidak relevan karena setiap database dibackup terpisah
-	if cfg.BackupType != "separated" {
+	if cfg.BackupType != consts.ModeSeparated {
 		meta.GTIDInfo = cfg.GTIDInfo
 		meta.ReplicationUser = cfg.ReplicationUser
 		meta.ReplicationPassword = cfg.ReplicationPassword
@@ -70,8 +71,8 @@ func SaveBackupMetadata(meta *types_backup.BackupMetadata, logger applog.Logger)
 		return "", fmt.Errorf("metadata is nil")
 	}
 
-	manifestPath := meta.BackupFile + ".meta.json"
-	tmpManifest := manifestPath + ".tmp"
+	manifestPath := meta.BackupFile + consts.ExtMetaJSON
+	tmpManifest := manifestPath + consts.ExtTmp
 
 	// Marshal metadata to JSON
 	manifestBytes, err := json.MarshalIndent(meta, "", "  ")
@@ -103,6 +104,7 @@ func SaveBackupMetadata(meta *types_backup.BackupMetadata, logger applog.Logger)
 // Berguna untuk metadata yang optional (tidak block backup jika gagal)
 func TrySaveBackupMetadata(meta *types_backup.BackupMetadata, logger applog.Logger) string {
 	if meta == nil {
+		logger.Debug("Skip save metadata: meta is nil")
 		return ""
 	}
 
@@ -117,7 +119,7 @@ func TrySaveBackupMetadata(meta *types_backup.BackupMetadata, logger applog.Logg
 
 // UpdateMetadataUserGrantsFile membaca metadata yang ada, update UserGrantsFile field, dan save kembali
 func UpdateMetadataUserGrantsFile(backupFilePath string, userGrantsPath string, logger applog.Logger) error {
-	manifestPath := backupFilePath + ".meta.json"
+	manifestPath := backupFilePath + consts.ExtMetaJSON
 
 	// Baca metadata yang ada
 	data, err := os.ReadFile(manifestPath)
@@ -145,7 +147,7 @@ func UpdateMetadataUserGrantsFile(backupFilePath string, userGrantsPath string, 
 
 // UpdateMetadataWithDatabaseDetails update metadata dengan detail lengkap per database
 func UpdateMetadataWithDatabaseDetails(backupFilePath string, databaseNames []string, backupInfos []types.DatabaseBackupInfo, logger applog.Logger) error {
-	metadataPath := backupFilePath + ".meta.json"
+	metadataPath := backupFilePath + consts.ExtMetaJSON
 
 	// Baca metadata file
 	data, err := os.ReadFile(metadataPath)

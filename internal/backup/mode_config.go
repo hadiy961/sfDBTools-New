@@ -9,44 +9,45 @@ package backup
 import (
 	"fmt"
 	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/consts"
 )
 
 // GetExecutionConfig returns the execution configuration for a given backup mode
 func GetExecutionConfig(mode string) (types_backup.ExecutionConfig, error) {
 	// Centralized map configuration
 	modeConfigs := map[string]types_backup.ExecutionConfig{
-		"single": {
-			Mode:        "single",
+		consts.ModeSingle: {
+			Mode:        consts.ModeSingle,
 			HeaderTitle: "Database Backup - Single",
 			LogPrefix:   "[Backup Single]",
 			SuccessMsg:  "Proses backup database single selesai.",
 		},
-		"separated": {
-			Mode:        "separated",
+		consts.ModeSeparated: {
+			Mode:        consts.ModeSeparated,
 			HeaderTitle: "Database Backup - Separated",
 			LogPrefix:   "[Backup Separated]",
 			SuccessMsg:  "Proses backup database separated selesai.",
 		},
-		"combined": {
-			Mode:        "combined",
+		consts.ModeCombined: {
+			Mode:        consts.ModeCombined,
 			HeaderTitle: "Database Backup - Filter (Single File)",
 			LogPrefix:   "[Backup Filter Single-File]",
 			SuccessMsg:  "Proses backup database filter (single file) selesai.",
 		},
-		"all": {
-			Mode:        "all",
+		consts.ModeAll: {
+			Mode:        consts.ModeAll,
 			HeaderTitle: "Database Backup - All (Exclude Filters)",
 			LogPrefix:   "[Backup All]",
 			SuccessMsg:  "Proses backup all databases selesai.",
 		},
-		"primary": {
-			Mode:        "primary",
+		consts.ModePrimary: {
+			Mode:        consts.ModePrimary,
 			HeaderTitle: "Database Backup - Primary",
 			LogPrefix:   "[Backup Primary]",
 			SuccessMsg:  "Proses backup database primary selesai.",
 		},
-		"secondary": {
-			Mode:        "secondary",
+		consts.ModeSecondary: {
+			Mode:        consts.ModeSecondary,
 			HeaderTitle: "Database Backup - Secondary",
 			LogPrefix:   "[Backup Secondary]",
 			SuccessMsg:  "Proses backup database secondary selesai.",

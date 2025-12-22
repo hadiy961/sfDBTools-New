@@ -25,7 +25,7 @@ func (s *Service) executeScanInBackground(ctx context.Context, config types.Scan
 	scanID := fmt.Sprintf("scan_%s", time.Now().Format("20060102_150405"))
 
 	s.Log.Infof("[%s] === START BACKGROUND SCAN ===", scanID)
-	
+
 	// Setup connections (silent mode)
 	sourceClient, targetClient, dbFiltered, cleanup, err := s.setupScanConnections(ctx, "", false)
 	if err != nil {
@@ -44,7 +44,7 @@ func (s *Service) executeScanInBackground(ctx context.Context, config types.Scan
 	// Setup graceful shutdown context
 	runCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	
+
 	s.setupSignalHandler(scanID, cancel)
 
 	// Execute Scan

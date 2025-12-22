@@ -9,6 +9,7 @@ package profilehelper
 import (
 	"fmt"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 )
 
@@ -20,7 +21,7 @@ func ConnectWithProfile(profile *types.ProfileInfo, initialDB string) (*database
 	}
 
 	if initialDB == "" {
-		initialDB = "mysql" // default ke system database
+		initialDB = consts.DefaultInitialDatabase // default ke system database
 	}
 
 	creds := types.SourceDBConnection{

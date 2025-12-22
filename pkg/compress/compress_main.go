@@ -3,15 +3,16 @@ package compress
 import (
 	"fmt"
 	"io"
+	"sfDBTools/pkg/consts"
 )
 
 // NewCompressingWriter creates a new compressing writer
 func NewCompressingWriter(baseWriter io.Writer, config CompressionConfig) (*CompressingWriter, error) {
-	if config.Type == CompressionNone {
+	if config.Type == CompressionType(consts.CompressionTypeNone) {
 		return &CompressingWriter{
 			baseWriter:      baseWriter,
 			compressor:      nil,
-			compressionType: CompressionNone,
+			compressionType: CompressionType(consts.CompressionTypeNone),
 		}, nil
 	}
 
@@ -19,15 +20,15 @@ func NewCompressingWriter(baseWriter io.Writer, config CompressionConfig) (*Comp
 	var err error
 
 	switch config.Type {
-	case CompressionGzip:
+	case CompressionType(consts.CompressionTypeGzip):
 		compressor, err = createGzipWriter(baseWriter, config.Level)
-	case CompressionPgzip:
+	case CompressionType(consts.CompressionTypePgzip):
 		compressor, err = createPgzipWriter(baseWriter, config.Level)
-	case CompressionZlib:
+	case CompressionType(consts.CompressionTypeZlib):
 		compressor, err = createZlibWriter(baseWriter, config.Level)
-	case CompressionZstd:
+	case CompressionType(consts.CompressionTypeZstd):
 		compressor, err = createZstdWriter(baseWriter, config.Level)
-	case CompressionXz:
+	case CompressionType(consts.CompressionTypeXz):
 		compressor, err = createXzWriter(baseWriter, config.Level)
 	default:
 		return nil, fmt.Errorf("unsupported compression type: %s", config.Type)
@@ -63,14 +64,14 @@ func (cw *CompressingWriter) Close() error {
 // GetFileExtension returns the appropriate file extension for the compression type
 func GetFileExtension(compressionType CompressionType) string {
 	switch compressionType {
-	case CompressionGzip, CompressionPgzip:
-		return ".gz"
-	case CompressionZlib:
-		return ".zlib"
-	case CompressionZstd:
-		return ".zst"
-	case CompressionXz:
-		return ".xz"
+	case CompressionType(consts.CompressionTypeGzip), CompressionType(consts.CompressionTypePgzip):
+		return consts.ExtGzip
+	case CompressionType(consts.CompressionTypeZlib):
+		return consts.ExtZlib
+	case CompressionType(consts.CompressionTypeZstd):
+		return consts.ExtZstd
+	case CompressionType(consts.CompressionTypeXz):
+		return consts.ExtXz
 	default:
 		return ""
 	}

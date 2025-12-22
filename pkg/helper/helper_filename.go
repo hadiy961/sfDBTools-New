@@ -3,6 +3,8 @@ package helper
 import (
 	"os"
 	"path/filepath"
+	"sfDBTools/pkg/compress"
+	"sfDBTools/pkg/consts"
 	"strings"
 )
 
@@ -15,12 +17,12 @@ func ExtractDatabaseNameFromFile(filePath string) string {
 	fileName := filepath.Base(filePath)
 
 	// Remove extensions
-	fileName = strings.TrimSuffix(fileName, ".enc")
-	fileName = strings.TrimSuffix(fileName, ".gz")
-	fileName = strings.TrimSuffix(fileName, ".xz")
-	fileName = strings.TrimSuffix(fileName, ".zst")
-	fileName = strings.TrimSuffix(fileName, ".zlib")
-	fileName = strings.TrimSuffix(fileName, ".sql")
+	fileName = strings.TrimSuffix(fileName, consts.ExtEnc)
+	fileName = strings.TrimSuffix(fileName, consts.ExtGzip)
+	fileName = strings.TrimSuffix(fileName, consts.ExtXz)
+	fileName = strings.TrimSuffix(fileName, consts.ExtZstd)
+	fileName = strings.TrimSuffix(fileName, consts.ExtZlib)
+	fileName = strings.TrimSuffix(fileName, consts.ExtSQL)
 
 	// Split by underscore
 	parts := strings.Split(fileName, "_")
@@ -108,7 +110,7 @@ func ListBackupFilesInDirectory(dir string) ([]string, error) {
 		}
 
 		name := entry.Name()
-		if strings.Contains(name, ".sql") {
+		if strings.Contains(name, consts.ExtSQL) {
 			files = append(files, name)
 		}
 	}
@@ -119,13 +121,13 @@ func ListBackupFilesInDirectory(dir string) ([]string, error) {
 // GenerateGrantsFilename generate expected grants filename dari backup filename
 func GenerateGrantsFilename(backupFilename string) string {
 	nameWithoutExt := backupFilename
-	nameWithoutExt = strings.TrimSuffix(nameWithoutExt, ".enc")
-	for _, ext := range []string{".gz", ".xz", ".zst", ".zlib"} {
+	nameWithoutExt = strings.TrimSuffix(nameWithoutExt, consts.ExtEnc)
+	for _, ext := range compress.SupportedCompressionExtensions() {
 		nameWithoutExt = strings.TrimSuffix(nameWithoutExt, ext)
 	}
-	nameWithoutExt = strings.TrimSuffix(nameWithoutExt, ".sql")
+	nameWithoutExt = strings.TrimSuffix(nameWithoutExt, consts.ExtSQL)
 
-	return nameWithoutExt + "_users.sql"
+	return nameWithoutExt + consts.UsersSQLSuffix
 }
 
 // AutoDetectGrantsFile auto-detect file grants berdasarkan backup file

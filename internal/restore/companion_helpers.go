@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
@@ -63,7 +64,7 @@ func (s *Service) DetectOrSelectCompanionFile() error {
 
 // detectCompanionFromMetadata mencoba mendapatkan companion file dari metadata
 func (s *Service) detectCompanionFromMetadata(primaryFile string) (string, error) {
-	metadataPath := primaryFile + ".meta.json"
+	metadataPath := primaryFile + consts.ExtMetaJSON
 
 	// Check if metadata exists
 	if _, err := os.Stat(metadataPath); err != nil {
@@ -85,8 +86,8 @@ func (s *Service) detectCompanionFromMetadata(primaryFile string) (string, error
 	// Cari companion database di DatabaseDetails
 	if len(meta.DatabaseDetails) > 0 {
 		for _, detail := range meta.DatabaseDetails {
-			// Cari yang mengandung "_dmart" di nama database
-			if strings.Contains(strings.ToLower(detail.DatabaseName), "_dmart") {
+			// Cari yang mengandung companion suffix di nama database
+			if strings.Contains(strings.ToLower(detail.DatabaseName), consts.SuffixDmart) {
 				// Validasi file exists
 				if _, err := os.Stat(detail.BackupFile); err == nil {
 					s.Log.Debugf("Found companion in metadata: %s", detail.DatabaseName)
@@ -127,7 +128,7 @@ func (s *Service) detectCompanionByPattern(primaryFile string, dir string) (stri
 	s.Log.Debugf("Parsed - DB: %s, Date: %s, Time: %s, Host: %s", dbName, dateStr, timeStr, hostname)
 
 	// Build companion database name
-	companionDBName := dbName + "_dmart"
+	companionDBName := dbName + consts.SuffixDmart
 
 	// List all files in directory dengan pattern yang sesuai
 	// Cari: {companionDBName}_{dateStr}_*_{hostname}.{extensions}

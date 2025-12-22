@@ -19,7 +19,7 @@ import (
 // ExecuteEncryptText menangani logic encrypt text
 func ExecuteEncryptText(logger applog.Logger, opts types.EncryptTextOptions) error {
 	quiet := cryptohelper.SetupQuietMode(logger)
-	
+
 	// Password authentication
 	cryptoauth.MustValidatePassword()
 
@@ -64,7 +64,7 @@ func ExecuteEncryptText(logger applog.Logger, opts types.EncryptTextOptions) err
 // ExecuteDecryptText menangani logic decrypt text
 func ExecuteDecryptText(logger applog.Logger, opts types.DecryptTextOptions) error {
 	quiet := cryptohelper.SetupQuietMode(logger)
-	
+
 	// Password authentication
 	cryptoauth.MustValidatePassword()
 

@@ -8,27 +8,15 @@ package ui
 import (
 	"fmt"
 	"os"
+	"sfDBTools/pkg/consts"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
 )
 
-// Colors for terminal output
-const (
-	ColorReset  = "\033[0m"
-	ColorRed    = "\033[31m"
-	ColorGreen  = "\033[32m"
-	ColorYellow = "\033[33m"
-	ColorBlue   = "\033[34m"
-	ColorPurple = "\033[35m"
-	ColorCyan   = "\033[36m"
-	ColorWhite  = "\033[37m"
-	ColorBold   = "\033[1m"
-)
-
 // ColorText applies color to text
 func ColorText(text, color string) string {
-	return color + text + ColorReset
+	return color + text + consts.UIColorReset
 }
 
 // PrintColoredLine prints a line with the specified color
@@ -40,17 +28,17 @@ func PrintColoredLine(text, color string) {
 
 // PrintSuccess prints success message in green
 func PrintSuccess(message string) {
-	PrintColoredLine("✅ "+message, ColorGreen)
+	PrintColoredLine("✅ "+message, consts.UIColorGreen)
 }
 
 // PrintWarning prints warning message in yellow
 func PrintWarning(message string) {
-	PrintColoredLine(message, ColorYellow)
+	PrintColoredLine(message, consts.UIColorYellow)
 }
 
 // PrintInfo prints info message in blue
 func PrintInfo(message string) {
-	PrintColoredLine(message, ColorBlue)
+	PrintColoredLine(message, consts.UIColorBlue)
 }
 
 // PrintHeader prints a header with border
@@ -72,21 +60,21 @@ func PrintHeader(title string) {
 	rightPad := strings.Repeat(" ", width-titleLen-2-padding)
 
 	fmt.Println()
-	PrintColoredLine(border, ColorCyan)
-	PrintColoredLine("|"+leftPad+title+rightPad+"|", ColorCyan)
-	PrintColoredLine(border, ColorCyan)
+	PrintColoredLine(border, consts.UIColorCyan)
+	PrintColoredLine("|"+leftPad+title+rightPad+"|", consts.UIColorCyan)
+	PrintColoredLine(border, consts.UIColorCyan)
 	fmt.Println()
 }
 
 // PrintError prints error message in red
 func PrintError(message string) {
-	PrintColoredLine("❌ "+message, ColorRed)
+	PrintColoredLine("❌ "+message, consts.UIColorRed)
 }
 
 // PrintSubHeader prints a sub-header
 func PrintSubHeader(title string) {
 	fmt.Println()
-	PrintColoredLine("📋 "+title, ColorBold)
+	PrintColoredLine("📋 "+title, consts.UIColorBold)
 	PrintDashedSeparator()
 }
 

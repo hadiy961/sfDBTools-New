@@ -3,6 +3,8 @@
 ## Project Overview
 **sfDBTools** is a production-grade CLI utility for MySQL/MariaDB database management, built in **Go (Golang)**. It follows **Clean Architecture** principles and prioritizes data safety, security (AES-256), and automation.
 
+**Core Features**: Backup (multi-mode with encryption/compression), Restore (with companion database handling), Profile management, DB scanning, Cleanup, and Crypto utilities.
+
 ## Go Design Philosophy (CRITICAL)
 Follow these specific principles when writing or refactoring code for this project:
 
@@ -30,25 +32,116 @@ Follow these specific principles when writing or refactoring code for this proje
 
 ## Architecture & Structural Patterns
 - **Clean Architecture Layers**:
-  - `cmd/`: Entry points (Cobra commands). Keep thin.
-  - `internal/`: Core business logic (Backup, Restore, Profile).
-  - `pkg/`: Reusable, domain-agnostic libraries.
+  - `cmd/`: Entry points (Cobra commands). Keep thin—only flag parsing and command setup.
+  - `internal/`: Core business logic (Backup, Restore, Profile, DBScan, Cleanup, Crypto).
+  - `pkg/`: Reusable, domain-agnostic libraries (encryption, compression, database, validation).
+
 - **Dependency Injection**:
-  - Dependencies (`Config`, `Logger`) are injected via `types.Dependencies`.
-  - Passed from `main.go` -> `cmd.Execute` -> `PersistentPreRunE`.
+  - Global dependencies (`Config`, `Logger`) injected via `types.Dependencies`.
+  - Flow: `main.go` → `cmd.Execute(deps)` → `types.Deps` (global) → `PersistentPreRunE` validation.
+  - Each module creates its own Service with injected dependencies (e.g., `backup.NewBackupService(logs, cfg, opts)`).
+
+- **Strategy Pattern (Backup/Restore Modes)**:
+  - **Location**: `internal/backup/modes/` and `internal/restore/modes/`
+  - **Pattern**: Factory (`GetExecutor(mode)`) returns `ModeExecutor` interface implementations.
+  - **Implementations**:
+    - **Backup**: `CombinedExecutor` (all/combined), `IterativeExecutor` (single/primary/secondary/separated)
+    - **Restore**: `SingleMode`, `PrimaryMode`, `AllMode`, `SelectionMode`
+  - **Key Interface** (`internal/backup/modes/interface.go`): `ModeExecutor.Execute(ctx, databases) Result`
+  - Add new modes by implementing interface + updating factory.
+
+- **Service Layer Pattern**:
+  - Each feature has a `Service` struct (e.g., `backup.Service`, `restore.Service`).
+  - Services embed `servicehelper.BaseService` for common operations (locking, context management).
+  - Services own feature-specific state and orchestrate business logic.
 
 ## Build & Development Workflows
-- **Build Script**: ALWAYS use the helper script.
+- **Build Script**: ALWAYS use the helper script at `./scripts/build_run.sh`.
   - **Build & Run**: `./scripts/build_run.sh -- [args]`
   - **Build Only**: `./scripts/build_run.sh --skip-run`
-  - **Example**: `./scripts/build_run.sh -- backup single --help`
+  - **With Race Detector**: `./scripts/build_run.sh --race -- [args]`
+  - **Examples**:
+    - `./scripts/build_run.sh -- backup single --help`
+    - `./scripts/build_run.sh -- profile show --file config/my.cnf.enc`
+  - **Output**: Binary compiled to `/usr/bin/sfDBTools`
+
+- **Environment Variables**:
+  - Defined in `pkg/consts/consts_env.go`
+  - **Key Variables**:
+    - `SFDB_QUIET=1`: Suppresses banners/spinners for pipeline usage (logs to stderr)
+    - `SFDB_SOURCE_PROFILE_KEY`: Encryption key for source profile
+    - `SFDB_TARGET_PROFILE_KEY`: Encryption key for target profile
+    - `SFDB_BACKUP_ENCRYPTION_KEY`: Key for backup file encryption
+
+## Data Flow & Streaming Architecture
+- **Streaming Pipeline Philosophy**: NO large memory buffers—use `io.Reader`/`io.Writer` chains.
+- **Backup Pipeline** (see `internal/backup/execution_helpers.go`):
+  ```
+  mysqldump → compress.Writer → encrypt.Writer → file.Writer
+  ```
+- **Restore Pipeline**:
+  ```
+  file.Reader → decrypt.Reader → decompress.Reader → mysql client stdin
+  ```
+- **Key Packages**:
+  - `pkg/compress/`: Compression writers (zstd, gzip, pgzip, xz, zlib)
+  - `pkg/encrypt/`: Streaming AES-256-GCM encryption (`EncryptingWriter`, `DecryptingReader`)
+  - `pkg/backuphelper/mysqldump.go`: Executes `mysqldump` with streaming stdout
+
+## Domain-Specific Patterns
+
+### Companion Database Handling
+- **Context**: Production DBs have "companion" databases (e.g., `dbsf_nbc_client` + `dbsf_nbc_client_dmart`)
+- **Suffixes**: `_dmart`, `_temp`, `_archive` are companions
+- **Restore Logic** (`internal/restore/companion_helpers.go`):
+  - Automatically detects and restores companions when restoring primary
+  - Controlled by flags: `--include-dmart`, `--auto-detect-dmart`, `--companion-file`
+- **Safety**: Primary databases (pattern: `dbsf_nbc_*` or `dbsf_biznet_*` WITHOUT suffix) cannot be restored if they already exist.
+
+### Validation & Safety (Fail-Fast)
+- **Restore Safety** (`internal/restore/validation_helpers.go`, `internal/restore/helpers/validation.go`):
+  - **Rule**: Cannot restore to existing primary database—prevents accidental data loss.
+  - **Validation**: `ValidateNotPrimaryDatabase()` checks DB existence and naming pattern.
+  - **Application Password**: `restore primary` requires app password (`consts.ENV_PASSWORD_APP`)
+- **Path Validation** (`pkg/validation/validation_backup_dir.go`):
+  - Validates directory patterns against path traversal (`..`), absolute paths
+  - Token validation for dynamic path generation (`{database}`, `{year}`, `{timestamp}`, etc.)
+
+### Path Pattern System
+- **Dynamic Paths** (`pkg/helper/helper_path.go`):
+  - **Tokens**: `{database}`, `{hostname}`, `{year}`, `{month}`, `{day}`, `{hour}`, `{minute}`, `{second}`, `{timestamp}`
+  - **Example Pattern**: `{year}/{month}/{database}_{timestamp}_{hostname}.sql`
+  - **Replacer**: `PathPatternReplacer.ReplacePattern(pattern, excludeHostname)`
+  - **Usage**: Backup file naming and directory structure generation
 
 ## Coding Conventions
 - **File Naming**:
-  - Explicit naming is preferred: `pkg/helper/encrypt.go` instead of `pkg/helper/helper_encrypt.go`.
+  - Explicit naming: `pkg/helper/encrypt.go` NOT `pkg/helper/helper_encrypt.go`
+  - Types split by domain: `internal/types/types_backup.go`, `types_restore.go`, etc.
+
 - **Logging**:
-  - Use `sfDBTools/internal/applog`.
-  - Respect `consts.ENV_QUIET` for pipeline usage.
-- **Safety**:
-  - **Fail-Fast**: Validate connections and paths immediately.
-  - **Streaming**: Prefer `io.Reader`/`io.Writer` pipelines over memory buffers.
+  - Use `sfDBTools/internal/applog.Logger` interface
+  - Respect `consts.ENV_QUIET` for pipeline usage (routes logs to stderr)
+  - **Error Logging**: Use `pkg/errorlog.ErrorLogger` for feature-specific error logs
+
+- **Error Handling**:
+  - **Fail-Fast**: Validate early (connections, file existence, safety rules) before heavy operations
+  - **Context Propagation**: Pass `context.Context` for cancellation support
+  - **Wrapped Errors**: Use `fmt.Errorf("descriptive msg: %w", err)` for error chains
+
+- **Concurrency & Safety**:
+  - Services use `servicehelper.BaseService.WithLock()` for state mutations
+  - Signal handling for graceful shutdown (CTRL+C cleanup)
+  - Context cancellation for long-running operations
+
+## Key Dependencies (go.mod)
+- **CLI**: `github.com/spf13/cobra` (commands), `github.com/AlecAivazis/survey/v2` (interactive prompts)
+- **Database**: `github.com/go-sql-driver/mysql`
+- **Compression**: `github.com/klauspost/compress` (zstd), `github.com/klauspost/pgzip`, `github.com/ulikunitz/xz`
+- **Logging**: `github.com/sirupsen/logrus`
+- **Display**: `github.com/olekukonko/tablewriter`, `github.com/dustin/go-humanize`
+
+## Testing & Debugging
+- **Manual Testing**: Use `./scripts/build_run.sh -- [command]`
+- **Race Detection**: `./scripts/build_run.sh --race -- [command]`
+- **Quiet Mode Testing**: `SFDB_QUIET=1 ./scripts/build_run.sh -- [command]`

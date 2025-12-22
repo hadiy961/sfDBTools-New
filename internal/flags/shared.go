@@ -32,10 +32,10 @@ func AddCompressionFlags(cmd *cobra.Command, opts *types_backup.CompressionOptio
 func AddFilterFlags(cmd *cobra.Command, opts *types.FilterOptions) {
 	cmd.Flags().StringArrayVar(&opts.IncludeDatabases, "db", opts.IncludeDatabases, "Daftar database yang akan di-include (comma-separated). Dapat dikombinasi dengan --db-file.")
 	cmd.Flags().StringVar(&opts.IncludeFile, "db-file", opts.IncludeFile, "File berisi daftar database yang akan di-include (satu per baris).")
-	
+
 	cmd.Flags().StringArrayVar(&opts.ExcludeDatabases, "exclude-db", opts.ExcludeDatabases, "Daftar database yang akan dikecualikan (comma-separated).")
 	cmd.Flags().StringVar(&opts.ExcludeDBFile, "excludeDBFile", opts.ExcludeDBFile, "File berisi daftar database yang akan dikecualikan.")
-	
+
 	// Alias flag agar kompatibel dengan berbagai penamaan di command yang berbeda jika perlu
 	// Namun standarisasi lebih baik: gunakan exclude-file di parsing jika ingin konsisten,
 	// atau kita tambahkan flag alias disini.

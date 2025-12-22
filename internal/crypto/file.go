@@ -18,7 +18,7 @@ import (
 // ExecuteEncryptFile menangani logic encrypt file
 func ExecuteEncryptFile(logger applog.Logger, opts types.EncryptFileOptions) error {
 	quiet := cryptohelper.SetupQuietMode(logger)
-	
+
 	// Password authentication
 	cryptoauth.MustValidatePassword()
 
@@ -92,7 +92,7 @@ func ExecuteEncryptFile(logger applog.Logger, opts types.EncryptFileOptions) err
 // ExecuteDecryptFile menangani logic decrypt file
 func ExecuteDecryptFile(logger applog.Logger, opts types.DecryptFileOptions) error {
 	quiet := cryptohelper.SetupQuietMode(logger)
-	
+
 	// Password authentication
 	cryptoauth.MustValidatePassword()
 

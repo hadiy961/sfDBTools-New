@@ -259,6 +259,5 @@ func (e *selectionExecutor) readCSV(path string) ([]types.RestoreSelectionEntry,
 }
 
 func (e *selectionExecutor) isEncryptedFile(path string) bool {
-	lower := strings.ToLower(path)
-	return strings.HasSuffix(lower, ".enc") || strings.Contains(lower, ".sql.gz.enc") || strings.Contains(lower, ".gz.enc")
+	return helper.IsEncryptedFile(path)
 }

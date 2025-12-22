@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 )
 
 // DisplayFilterStats menampilkan statistik hasil pemfilteran database secara reusable.
@@ -39,14 +40,14 @@ func DisplayFilterStats(stats *types.FilterStats, konteks string, logger applog.
 
 	data := [][]string{
 		{"Total Ditemukan", fmt.Sprintf("%d", stats.TotalFound)},
-		{actionLabel, ColorText(fmt.Sprintf("%d", stats.TotalIncluded), ColorGreen)},
-		{"Total Dikecualikan", ColorText(fmt.Sprintf("%d", totalExcluded), ColorYellow)},
+		{actionLabel, ColorText(fmt.Sprintf("%d", stats.TotalIncluded), consts.UIColorGreen)},
+		{"Total Dikecualikan", ColorText(fmt.Sprintf("%d", totalExcluded), consts.UIColorYellow)},
 	}
 
 	// Tampilkan detail exclusion jika ada yang dikecualikan
 	if totalExcluded > 0 {
 		data = append(data, []string{"", ""}) // Empty row for separation
-		data = append(data, []string{ColorText("Detail Exclusion:", ColorCyan), ""})
+		data = append(data, []string{ColorText("Detail Exclusion:", consts.UIColorCyan), ""})
 
 		if stats.ExcludedSystem > 0 {
 			data = append(data, []string{"  - Sistem Database", fmt.Sprintf("%d", stats.ExcludedSystem)})

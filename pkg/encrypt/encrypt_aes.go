@@ -13,25 +13,21 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"sfDBTools/pkg/consts"
 
 	"golang.org/x/crypto/pbkdf2"
 )
 
-const (
-	pbkdf2Iterations = 100000
-	saltSizeBytes    = 8
-)
-
 // deriveKey menggunakan PBKDF2 untuk membuat kunci dari password.
 func deriveKey(passphrase, salt []byte) []byte {
-	return pbkdf2.Key(passphrase, salt, pbkdf2Iterations, 32, sha256.New) // 32 byte untuk AES-256
+	return pbkdf2.Key(passphrase, salt, consts.PBKDF2Iterations, 32, sha256.New) // 32 byte untuk AES-256
 }
 
 // EncryptAES mengenkripsi data agar kompatibel dengan `openssl enc -pbkdf2`.
 func EncryptAES(plaintext []byte, passphrase []byte) ([]byte, error) {
 	// Hasil enkripsi akan dalam format:
 	// "Salted__" (8 byte) + salt (8 byte) + ciphertext (yang sudah mengandung nonce)
-	salt := make([]byte, saltSizeBytes)
+	salt := make([]byte, consts.SaltSizeBytes)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, err
 	}
@@ -63,7 +59,7 @@ func EncryptAES(plaintext []byte, passphrase []byte) ([]byte, error) {
 	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
 
 	// Format OpenSSL: "Salted__" (8 byte) + salt (8 byte) + ciphertext (yang sudah mengandung nonce)
-	opensslHeader := []byte("Salted__")
+	opensslHeader := []byte(consts.OpenSSLSaltedHeader)
 	// Gabungkan semuanya
 	encryptedPayload := append(opensslHeader, salt...)
 	encryptedPayload = append(encryptedPayload, ciphertext...)
@@ -75,7 +71,7 @@ func EncryptAES(plaintext []byte, passphrase []byte) ([]byte, error) {
 // DecryptAES mendekripsi data yang dienkripsi oleh `openssl enc -pbkdf2`.
 func DecryptAES(encryptedPayload []byte, passphrase []byte) ([]byte, error) {
 	// Cek header "Salted__" dan ekstrak salt
-	opensslHeader := []byte("Salted__")
+	opensslHeader := []byte(consts.OpenSSLSaltedHeader)
 
 	// Validasi panjang payload
 	if len(encryptedPayload) < 16 {

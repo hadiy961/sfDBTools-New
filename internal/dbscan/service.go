@@ -42,7 +42,7 @@ type Service struct {
 func NewDBScanService(config *appconfig.Config, logger applog.Logger, opts types.ScanOptions) *Service {
 	logDir := config.Log.Output.File.Dir
 	if logDir == "" {
-		logDir = "/var/log/sfDBTools"
+		logDir = consts.DefaultLogDir
 	}
 
 	return &Service{
@@ -186,7 +186,7 @@ func (s *Service) getDataDir(ctx context.Context, sourceClient, targetClient *da
 	if datadir == "" && targetClient != nil {
 		_ = targetClient.DB().QueryRowContext(ctx, "SELECT @@datadir").Scan(&datadir)
 	}
-	
+
 	if datadir == "" {
 		return "", fmt.Errorf("tidak dapat menentukan datadir dari source maupun target")
 	}

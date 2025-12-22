@@ -3,9 +3,10 @@ package backupcmd
 import (
 	"fmt"
 	"sfDBTools/internal/backup"
-	"sfDBTools/internal/types"
 	defaultVal "sfDBTools/internal/defaultval"
 	"sfDBTools/internal/flags"
+	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 
 	"github.com/spf13/cobra"
 )
@@ -36,7 +37,7 @@ Jika nama database tidak diberikan via flag, akan muncul menu interaktif untuk m
 			return
 		}
 
-		if err := backup.ExecuteBackup(cmd, types.Deps, "single"); err != nil {
+		if err := backup.ExecuteBackup(cmd, types.Deps, consts.ModeSingle); err != nil {
 			// Error has been logged by ExecuteBackup
 			return
 		}
@@ -44,6 +45,6 @@ Jika nama database tidak diberikan via flag, akan muncul menu interaktif untuk m
 }
 
 func init() {
-	defaultOpts := defaultVal.DefaultBackupOptions("single")
-	flags.AddBackupFlgs(CmdBackupSingle, &defaultOpts, "single")
+	defaultOpts := defaultVal.DefaultBackupOptions(consts.ModeSingle)
+	flags.AddBackupFlgs(CmdBackupSingle, &defaultOpts, consts.ModeSingle)
 }

@@ -11,6 +11,7 @@ import (
 
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 )
 
@@ -20,8 +21,8 @@ func DisplayScanResult(result *types.ScanResult) {
 
 	data := [][]string{
 		{"Total Database", fmt.Sprintf("%d", result.TotalDatabases)},
-		{"Berhasil", ui.ColorText(fmt.Sprintf("%d", result.SuccessCount), ui.ColorGreen)},
-		{"Gagal", ui.ColorText(fmt.Sprintf("%d", result.FailedCount), ui.ColorRed)},
+		{"Berhasil", ui.ColorText(fmt.Sprintf("%d", result.SuccessCount), consts.UIColorGreen)},
+		{"Gagal", ui.ColorText(fmt.Sprintf("%d", result.FailedCount), consts.UIColorRed)},
 		{"Durasi", result.Duration},
 	}
 
@@ -44,9 +45,9 @@ func DisplayDetailResults(detailsMap map[string]types.DatabaseDetailInfo) {
 	var rows [][]string
 
 	for _, detail := range detailsMap {
-		status := ui.ColorText("✓ OK", ui.ColorGreen)
+		status := ui.ColorText("✓ OK", consts.UIColorGreen)
 		if detail.Error != "" {
-			status = ui.ColorText("✗ Error", ui.ColorRed)
+			status = ui.ColorText("✗ Error", consts.UIColorRed)
 		}
 
 		rows = append(rows, []string{

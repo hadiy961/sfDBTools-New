@@ -14,13 +14,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"sfDBTools/pkg/consts"
 
 	"golang.org/x/crypto/pbkdf2"
-)
-
-const (
-	// chunkSize adalah ukuran chunk untuk enkripsi streaming (64KB)
-	chunkSize = 64 * 1024
 )
 
 // EncryptingWriter adalah writer yang mengenkripsi data secara streaming dengan chunking
@@ -37,13 +33,13 @@ type EncryptingWriter struct {
 // NewEncryptingWriter membuat writer baru untuk enkripsi streaming dengan chunking
 func NewEncryptingWriter(writer io.Writer, passphrase []byte) (*EncryptingWriter, error) {
 	// Generate salt acak
-	salt := make([]byte, saltSizeBytes)
+	salt := make([]byte, consts.SaltSizeBytes)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, fmt.Errorf("gagal generate salt: %w", err)
 	}
 
 	// Derive key dari passphrase dan salt
-	key := pbkdf2.Key(passphrase, salt, pbkdf2Iterations, 32, sha256.New)
+	key := pbkdf2.Key(passphrase, salt, consts.PBKDF2Iterations, 32, sha256.New)
 
 	// Inisialisasi AES-GCM
 	block, err := aes.NewCipher(key)
@@ -63,7 +59,7 @@ func NewEncryptingWriter(writer io.Writer, passphrase []byte) (*EncryptingWriter
 	}
 
 	// Tulis header OpenSSL dan salt
-	opensslHeader := []byte("Salted__")
+	opensslHeader := []byte(consts.OpenSSLSaltedHeader)
 	if _, err := writer.Write(opensslHeader); err != nil {
 		return nil, fmt.Errorf("gagal menulis header: %w", err)
 	}
@@ -80,7 +76,7 @@ func NewEncryptingWriter(writer io.Writer, passphrase []byte) (*EncryptingWriter
 		writer:        writer,
 		gcm:           gcm,
 		baseNonce:     baseNonce,
-		buffer:        bytes.NewBuffer(make([]byte, 0, chunkSize)),
+		buffer:        bytes.NewBuffer(make([]byte, 0, consts.EncryptStreamChunkSize)),
 		headerWritten: true,
 		chunkCounter:  0,
 	}, nil
@@ -96,7 +92,7 @@ func (ew *EncryptingWriter) Write(p []byte) (n int, err error) {
 	written := 0
 	for len(p) > 0 {
 		// Hitung berapa banyak yang bisa ditulis ke buffer
-		available := chunkSize - ew.buffer.Len()
+		available := consts.EncryptStreamChunkSize - ew.buffer.Len()
 		toWrite := len(p)
 		if toWrite > available {
 			toWrite = available
@@ -108,7 +104,7 @@ func (ew *EncryptingWriter) Write(p []byte) (n int, err error) {
 		p = p[toWrite:]
 
 		// Jika buffer penuh, flush chunk
-		if ew.buffer.Len() >= chunkSize {
+		if ew.buffer.Len() >= consts.EncryptStreamChunkSize {
 			if err := ew.flushChunk(); err != nil {
 				return written, err
 			}

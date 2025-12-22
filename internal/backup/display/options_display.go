@@ -11,6 +11,7 @@ import (
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
@@ -58,7 +59,7 @@ func (d *OptionsDisplayer) Display() (bool, error) {
 // buildGeneralSection builds general information section
 func (d *OptionsDisplayer) buildGeneralSection() [][]string {
 	data := [][]string{
-		{"Mode Backup", ui.ColorText(d.options.Mode, ui.ColorCyan)},
+		{"Mode Backup", ui.ColorText(d.options.Mode, consts.UIColorCyan)},
 		{"Output Directory", d.options.OutputDir},
 	}
 
@@ -67,17 +68,11 @@ func (d *OptionsDisplayer) buildGeneralSection() [][]string {
 	// - Mode separated dengan filter: tampilkan contoh filename
 	if d.isSeparatedMode() {
 		// Mode separated - tampilkan contoh
-		data = append(data, []string{"Filename Example", ui.ColorText(d.options.File.Path, ui.ColorCyan)})
-	} else if d.isSingleMode() || d.options.Mode == "combined" || d.options.Mode == "all" {
+		data = append(data, []string{"Filename Example", ui.ColorText(d.options.File.Path, consts.UIColorCyan)})
+	} else if d.isSingleMode() || d.options.Mode == consts.ModeCombined || d.options.Mode == consts.ModeAll {
 		// Mode single/primary/secondary/combined/all - tampilkan filename akurat
-		// Label berbeda untuk mode all vs combined
-		label := "Backup Filename"
-		if d.options.Mode == "all" {
-			label = "Output File (All)"
-		} else if d.options.Mode == "combined" {
-			label = "Output File (Filter)"
-		}
-		data = append(data, []string{label, ui.ColorText(d.options.File.Path, ui.ColorCyan)})
+		label := d.getFilenameLabel()
+		data = append(data, []string{label, ui.ColorText(d.options.File.Path, consts.UIColorCyan)})
 	}
 
 	data = append(data, []string{"Dry Run", fmt.Sprintf("%v", d.options.DryRun)})
@@ -92,13 +87,13 @@ func (d *OptionsDisplayer) buildModeSpecificSection() [][]string {
 		data := [][]string{}
 
 		// Tampilkan metode filter untuk combined vs all
-		if d.options.Mode == "all" {
-			data = append(data, []string{"Metode Filter", ui.ColorText("Exclude (semua kecuali yang dikecualikan)", ui.ColorYellow)})
-		} else if d.options.Mode == "combined" {
-			data = append(data, []string{"Metode Filter", ui.ColorText("Include (hanya yang dipilih)", ui.ColorYellow)})
+		if d.options.Mode == consts.ModeAll {
+			data = append(data, []string{"Metode Filter", ui.ColorText("Exclude (semua kecuali yang dikecualikan)", consts.UIColorYellow)})
+		} else if d.options.Mode == consts.ModeCombined {
+			data = append(data, []string{"Metode Filter", ui.ColorText("Include (hanya yang dipilih)", consts.UIColorYellow)})
 		}
 
-		if d.options.Mode == "combined" || d.options.Mode == "all" {
+		if d.options.Mode == consts.ModeCombined || d.options.Mode == consts.ModeAll {
 			data = append(data, []string{"Capture GTID", fmt.Sprintf("%v", d.options.CaptureGTID)})
 		}
 
@@ -113,14 +108,14 @@ func (d *OptionsDisplayer) buildModeSpecificSection() [][]string {
 	if dbName == "" {
 		dbName = "<belum dipilih>"
 	}
-	data = append(data, []string{"Database Utama", ui.ColorText(dbName, ui.ColorYellow)})
+	data = append(data, []string{"Database Utama", ui.ColorText(dbName, consts.UIColorYellow)})
 
 	if d.options.File.Filename != "" {
 		data = append(data, []string{"Custom Filename", d.options.File.Filename})
 	}
 
 	// Companion options hanya untuk primary/secondary, tidak untuk single
-	if d.options.Mode == "primary" || d.options.Mode == "secondary" {
+	if d.options.Mode == consts.ModePrimary || d.options.Mode == consts.ModeSecondary {
 		data = append(data, []string{"Include DMart", fmt.Sprintf("%v", d.options.IncludeDmart)})
 		data = append(data, []string{"Include Temp", fmt.Sprintf("%v", d.options.IncludeTemp)})
 		data = append(data, []string{"Include Archive", fmt.Sprintf("%v", d.options.IncludeArchive)})
@@ -148,10 +143,10 @@ func (d *OptionsDisplayer) buildCompanionStatus() [][]string {
 
 	for _, name := range keys {
 		status := "ditemukan"
-		color := ui.ColorGreen
+		color := consts.UIColorGreen
 		if !d.options.CompanionStatus[name] {
 			status = "tidak ditemukan"
-			color = ui.ColorRed
+			color = consts.UIColorRed
 		}
 		data = append(data, []string{"  - " + name, ui.ColorText(status, color)})
 	}
@@ -166,7 +161,7 @@ func (d *OptionsDisplayer) buildProfileSection() [][]string {
 	}
 
 	return [][]string{
-		{"Profile", ui.ColorText(d.options.Profile.Name, ui.ColorYellow)},
+		{"Profile", ui.ColorText(d.options.Profile.Name, consts.UIColorYellow)},
 		{"HostName", d.options.Profile.DBInfo.HostName},
 		{"Host", fmt.Sprintf("%s:%d", d.options.Profile.DBInfo.Host, d.options.Profile.DBInfo.Port)},
 		{"User", d.options.Profile.DBInfo.User},
@@ -177,7 +172,7 @@ func (d *OptionsDisplayer) buildProfileSection() [][]string {
 func (d *OptionsDisplayer) buildFilterSection() [][]string {
 	data := [][]string{
 		{"", ""}, // Separator
-		{ui.ColorText("Filter Options", ui.ColorPurple), ""},
+		{ui.ColorText("Filter Options", consts.UIColorPurple), ""},
 	}
 
 	// Exclude system/empty untuk non-single modes
@@ -232,7 +227,7 @@ func (d *OptionsDisplayer) buildDatabaseList(label string, databases []string) [
 func (d *OptionsDisplayer) buildCompressionSection() [][]string {
 	data := [][]string{
 		{"", ""}, // Separator
-		{ui.ColorText("Compression", ui.ColorPurple), ""},
+		{ui.ColorText("Compression", consts.UIColorPurple), ""},
 		{"Enabled", fmt.Sprintf("%v", d.options.Compression.Enabled)},
 	}
 
@@ -248,12 +243,12 @@ func (d *OptionsDisplayer) buildCompressionSection() [][]string {
 func (d *OptionsDisplayer) buildEncryptionSection() [][]string {
 	data := [][]string{
 		{"", ""}, // Separator
-		{ui.ColorText("Encryption", ui.ColorPurple), ""},
+		{ui.ColorText("Encryption", consts.UIColorPurple), ""},
 		{"Enabled", fmt.Sprintf("%v", d.options.Encryption.Enabled)},
 	}
 
 	if d.options.Encryption.Enabled {
-		data = append(data, []string{"Key Status", ui.ColorText("Configured", ui.ColorGreen)})
+		data = append(data, []string{"Key Status", ui.ColorText("Configured", consts.UIColorGreen)})
 	}
 
 	return data
@@ -263,7 +258,7 @@ func (d *OptionsDisplayer) buildEncryptionSection() [][]string {
 func (d *OptionsDisplayer) buildCleanupSection() [][]string {
 	data := [][]string{
 		{"", ""}, // Separator
-		{ui.ColorText("Cleanup", ui.ColorPurple), ""},
+		{ui.ColorText("Cleanup", consts.UIColorPurple), ""},
 		{"Enabled", fmt.Sprintf("%v", d.options.Cleanup.Enabled)},
 	}
 
@@ -283,21 +278,33 @@ func (d *OptionsDisplayer) buildCleanupSection() [][]string {
 
 // Helper methods
 func (d *OptionsDisplayer) isSingleMode() bool {
-	return d.options.Mode == "single" || d.options.Mode == "primary" || d.options.Mode == "secondary"
+	return d.options.Mode == consts.ModeSingle || d.options.Mode == consts.ModePrimary || d.options.Mode == consts.ModeSecondary
 }
 
 func (d *OptionsDisplayer) isSeparatedMode() bool {
-	return d.options.Mode == "separated" || d.options.Mode == "separate"
+	return d.options.Mode == consts.ModeSeparated || d.options.Mode == consts.ModeSeparate
 }
 
 func (d *OptionsDisplayer) getExportUserStatus() string {
 	if d.options.ExcludeUser {
 		return "No"
 	}
-	return ui.ColorText("Yes", ui.ColorGreen)
+	return ui.ColorText("Yes", consts.UIColorGreen)
+}
+
+// getFilenameLabel menentukan label filename berdasarkan mode
+func (d *OptionsDisplayer) getFilenameLabel() string {
+	switch d.options.Mode {
+	case consts.ModeAll:
+		return "Output File (All)"
+	case consts.ModeCombined:
+		return "Output File (Filter)"
+	default:
+		return "Backup Filename"
+	}
 }
 
 // DisplayFilterStats menampilkan statistik hasil pemfilteran database
 func DisplayFilterStats(stats *types.FilterStats, logger applog.Logger) {
-	ui.DisplayFilterStats(stats, "backup", logger)
+	ui.DisplayFilterStats(stats, consts.FeatureBackup, logger)
 }

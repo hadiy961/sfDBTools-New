@@ -2,21 +2,23 @@ package helper
 
 import (
 	"path/filepath"
+	"sfDBTools/pkg/compress"
+	"sfDBTools/pkg/consts"
 	"strings"
 )
 
 var (
 	// backupExtensions mendefinisikan ekstensi file yang dianggap sebagai file backup.
-	backupExtensions = []string{".sql", ".gz", ".zst", ".lz4", ".enc"}
+	backupExtensions = []string{consts.ExtSQL, consts.ExtGzip, consts.ExtZstd, consts.ExtXz, consts.ExtZlib, consts.ExtEnc}
 
 	// allBackupExtensions adalah list lengkap dari semua ekstensi backup yang perlu di-strip
 	// untuk ekstraksi nama database dari filename
-	allBackupExtensions = []string{".enc", ".gz", ".zst", ".xz", ".zlib", ".lz4", ".sql"}
+	allBackupExtensions = []string{consts.ExtEnc, consts.ExtGzip, consts.ExtZstd, consts.ExtXz, consts.ExtZlib, consts.ExtSQL}
 )
 
 // helper.TrimProfileSuffix menghapus suffix .cnf.enc dari nama jika ada.
 func TrimProfileSuffix(name string) string {
-	return strings.TrimSuffix(strings.TrimSuffix(name, ".enc"), ".cnf")
+	return strings.TrimSuffix(strings.TrimSuffix(name, consts.ExtEnc), consts.ExtCnf)
 }
 
 // IsBackupFile memeriksa apakah sebuah file dianggap sebagai file backup berdasarkan ekstensinya.
@@ -61,13 +63,13 @@ func ExtractFileExtensions(filename string) (string, []string) {
 	extensions := []string{}
 
 	// Remove .enc
-	if strings.HasSuffix(strings.ToLower(nameWithoutExt), ".enc") {
-		nameWithoutExt = strings.TrimSuffix(nameWithoutExt, ".enc")
-		extensions = append([]string{".enc"}, extensions...)
+	if strings.HasSuffix(strings.ToLower(nameWithoutExt), consts.ExtEnc) {
+		nameWithoutExt = strings.TrimSuffix(nameWithoutExt, consts.ExtEnc)
+		extensions = append([]string{consts.ExtEnc}, extensions...)
 	}
 
 	// Remove compression extension
-	for _, ext := range []string{".gz", ".xz", ".zst", ".bz2"} {
+	for _, ext := range compress.SupportedCompressionExtensions() {
 		if strings.HasSuffix(strings.ToLower(nameWithoutExt), ext) {
 			nameWithoutExt = nameWithoutExt[:len(nameWithoutExt)-len(ext)]
 			extensions = append([]string{ext}, extensions...)
@@ -76,9 +78,9 @@ func ExtractFileExtensions(filename string) (string, []string) {
 	}
 
 	// Remove .sql
-	if strings.HasSuffix(strings.ToLower(nameWithoutExt), ".sql") {
-		nameWithoutExt = strings.TrimSuffix(nameWithoutExt, ".sql")
-		extensions = append([]string{".sql"}, extensions...)
+	if strings.HasSuffix(strings.ToLower(nameWithoutExt), consts.ExtSQL) {
+		nameWithoutExt = strings.TrimSuffix(nameWithoutExt, consts.ExtSQL)
+		extensions = append([]string{consts.ExtSQL}, extensions...)
 	}
 
 	return nameWithoutExt, extensions

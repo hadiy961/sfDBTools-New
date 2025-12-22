@@ -8,6 +8,7 @@ package backuphelper
 
 import (
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"strings"
 )
 
@@ -43,32 +44,32 @@ func FilterCandidatesByMode(dbFiltered []string, mode string) []string {
 		}
 
 		switch mode {
-		case "primary":
+		case consts.ModePrimary:
 			// Primary: hanya database dengan pattern dbsf_nbc_{nama_database}
 			// Exclude: yang punya _secondary, _dmart, _temp, _archive
-			if strings.Contains(dbLower, "_secondary") || strings.HasSuffix(dbLower, "_dmart") ||
-				strings.HasSuffix(dbLower, "_temp") || strings.HasSuffix(dbLower, "_archive") {
+			if strings.Contains(dbLower, consts.SecondarySuffix) || strings.HasSuffix(dbLower, consts.SuffixDmart) ||
+				strings.HasSuffix(dbLower, consts.SuffixTemp) || strings.HasSuffix(dbLower, consts.SuffixArchive) {
 				continue
 			}
 			// Harus match pattern dbsf_nbc_
-			if !strings.HasPrefix(dbLower, "dbsf_nbc_") {
+			if !strings.HasPrefix(dbLower, consts.PrimaryPrefixNBC) {
 				continue
 			}
-		case "secondary":
+		case consts.ModeSecondary:
 			// Secondary: hanya database dengan pattern dbsf_nbc_{nama_database}_secondary_{instance}
 			// Exclude: _dmart, _temp, _archive
-			if strings.HasSuffix(dbLower, "_dmart") || strings.HasSuffix(dbLower, "_temp") ||
-				strings.HasSuffix(dbLower, "_archive") {
+			if strings.HasSuffix(dbLower, consts.SuffixDmart) || strings.HasSuffix(dbLower, consts.SuffixTemp) ||
+				strings.HasSuffix(dbLower, consts.SuffixArchive) {
 				continue
 			}
 			// Harus match pattern dbsf_nbc_ dan mengandung _secondary
-			if !strings.HasPrefix(dbLower, "dbsf_nbc_") || !strings.Contains(dbLower, "_secondary") {
+			if !strings.HasPrefix(dbLower, consts.PrimaryPrefixNBC) || !strings.Contains(dbLower, consts.SecondarySuffix) {
 				continue
 			}
-		case "single":
+		case consts.ModeSingle:
 			// Single: exclude companion databases
-			if strings.HasSuffix(dbLower, "_dmart") || strings.HasSuffix(dbLower, "_temp") ||
-				strings.HasSuffix(dbLower, "_archive") {
+			if strings.HasSuffix(dbLower, consts.SuffixDmart) || strings.HasSuffix(dbLower, consts.SuffixTemp) ||
+				strings.HasSuffix(dbLower, consts.SuffixArchive) {
 				continue
 			}
 		}
@@ -87,17 +88,17 @@ func FilterCandidatesByClientCode(databases []string, clientCode string) []strin
 	}
 
 	filtered := make([]string, 0)
-	targetPattern := "dbsf_nbc_" + strings.ToLower(clientCode)
+	targetPattern := consts.PrimaryPrefixNBC + strings.ToLower(clientCode)
 
 	for _, db := range databases {
 		dbLower := strings.ToLower(db)
 		// Database harus match dbsf_nbc_{client_code} atau dbsf_nbc_{client_code}_*
 		if dbLower == targetPattern || strings.HasPrefix(dbLower, targetPattern+"_") {
 			// Tapi exclude yang punya _secondary, _dmart, _temp, _archive
-			if !strings.Contains(dbLower, "_secondary") &&
-				!strings.HasSuffix(dbLower, "_dmart") &&
-				!strings.HasSuffix(dbLower, "_temp") &&
-				!strings.HasSuffix(dbLower, "_archive") {
+			if !strings.Contains(dbLower, consts.SecondarySuffix) &&
+				!strings.HasSuffix(dbLower, consts.SuffixDmart) &&
+				!strings.HasSuffix(dbLower, consts.SuffixTemp) &&
+				!strings.HasSuffix(dbLower, consts.SuffixArchive) {
 				filtered = append(filtered, db)
 			}
 		}
@@ -113,15 +114,15 @@ func FilterSecondaryByClientCodeAndInstance(databases []string, clientCode, inst
 
 	// Jika hanya instance (tanpa client code)
 	if clientCode == "" && instance != "" {
-		targetSuffix := "_secondary_" + strings.ToLower(instance)
+		targetSuffix := consts.SecondarySuffix + "_" + strings.ToLower(instance)
 		for _, db := range databases {
 			dbLower := strings.ToLower(db)
 			// Database harus mengandung _secondary_{instance}
 			if strings.Contains(dbLower, targetSuffix) {
 				// Exclude companion databases
-				if !strings.HasSuffix(dbLower, "_dmart") &&
-					!strings.HasSuffix(dbLower, "_temp") &&
-					!strings.HasSuffix(dbLower, "_archive") {
+				if !strings.HasSuffix(dbLower, consts.SuffixDmart) &&
+					!strings.HasSuffix(dbLower, consts.SuffixTemp) &&
+					!strings.HasSuffix(dbLower, consts.SuffixArchive) {
 					filtered = append(filtered, db)
 				}
 			}
@@ -131,14 +132,14 @@ func FilterSecondaryByClientCodeAndInstance(databases []string, clientCode, inst
 
 	// Jika hanya client code
 	if clientCode != "" && instance == "" {
-		targetPattern := "dbsf_nbc_" + strings.ToLower(clientCode) + "_secondary"
+		targetPattern := consts.PrimaryPrefixNBC + strings.ToLower(clientCode) + consts.SecondarySuffix
 		for _, db := range databases {
 			dbLower := strings.ToLower(db)
 			if strings.Contains(dbLower, targetPattern) {
 				// Exclude companion databases
-				if !strings.HasSuffix(dbLower, "_dmart") &&
-					!strings.HasSuffix(dbLower, "_temp") &&
-					!strings.HasSuffix(dbLower, "_archive") {
+				if !strings.HasSuffix(dbLower, consts.SuffixDmart) &&
+					!strings.HasSuffix(dbLower, consts.SuffixTemp) &&
+					!strings.HasSuffix(dbLower, consts.SuffixArchive) {
 					filtered = append(filtered, db)
 				}
 			}
@@ -148,15 +149,15 @@ func FilterSecondaryByClientCodeAndInstance(databases []string, clientCode, inst
 
 	// Jika client code dan instance
 	if clientCode != "" && instance != "" {
-		targetPattern := "dbsf_nbc_" + strings.ToLower(clientCode) + "_secondary_" + strings.ToLower(instance)
+		targetPattern := consts.PrimaryPrefixNBC + strings.ToLower(clientCode) + consts.SecondarySuffix + "_" + strings.ToLower(instance)
 		for _, db := range databases {
 			dbLower := strings.ToLower(db)
 			// Exact match atau dengan suffix lain (tapi bukan companion)
 			if dbLower == targetPattern || strings.HasPrefix(dbLower, targetPattern+"_") {
 				// Exclude companion databases
-				if !strings.HasSuffix(dbLower, "_dmart") &&
-					!strings.HasSuffix(dbLower, "_temp") &&
-					!strings.HasSuffix(dbLower, "_archive") {
+				if !strings.HasSuffix(dbLower, consts.SuffixDmart) &&
+					!strings.HasSuffix(dbLower, consts.SuffixTemp) &&
+					!strings.HasSuffix(dbLower, consts.SuffixArchive) {
 					filtered = append(filtered, db)
 				}
 			}
@@ -169,5 +170,5 @@ func FilterSecondaryByClientCodeAndInstance(databases []string, clientCode, inst
 
 // IsSingleModeVariant checks if mode is single/primary/secondary
 func IsSingleModeVariant(mode string) bool {
-	return mode == "single" || mode == "primary" || mode == "secondary"
+	return mode == consts.ModeSingle || mode == consts.ModePrimary || mode == consts.ModeSecondary
 }

@@ -27,7 +27,7 @@ type Service struct {
 	ProfileDelete *types.ProfileDeleteOptions
 	ProfileEdit   *types.ProfileEditOptions
 	DBInfo        *types.DBInfo
-	
+
 	// OriginalProfileName menyimpan nama file profil yang dibuka untuk mode edit.
 	OriginalProfileName string
 	// OriginalProfileInfo menyimpan salinan data profil sebelum diedit (jika tersedia)

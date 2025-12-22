@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"sfDBTools/internal/dbscan"
-	"sfDBTools/internal/types"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/parsing"
+	"sfDBTools/internal/types"
 	"sfDBTools/pkg/validation"
 
 	"github.com/spf13/cobra"

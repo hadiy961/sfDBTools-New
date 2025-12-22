@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 )
 
@@ -44,9 +45,9 @@ func (d *ResultDisplayer) Display() {
 func (d *ResultDisplayer) displaySummary() {
 	data := [][]string{
 		{"Total Database Ditemukan", fmt.Sprintf("%d", d.result.TotalDatabases)},
-		{"Total Database Dibackup", ui.ColorText(fmt.Sprintf("%d", d.result.SuccessfulBackups), ui.ColorGreen)},
-		{"Total Gagal Dibackup", ui.ColorText(fmt.Sprintf("%d", d.result.FailedBackups), ui.ColorRed)},
-		{"Total Waktu Proses", ui.ColorText(d.result.TotalTimeTaken.String(), ui.ColorCyan)},
+		{"Total Database Dibackup", ui.ColorText(fmt.Sprintf("%d", d.result.SuccessfulBackups), consts.UIColorGreen)},
+		{"Total Gagal Dibackup", ui.ColorText(fmt.Sprintf("%d", d.result.FailedBackups), consts.UIColorRed)},
+		{"Total Waktu Proses", ui.ColorText(d.result.TotalTimeTaken.String(), consts.UIColorCyan)},
 	}
 	ui.FormatTable([]string{"Kategori", "Jumlah"}, data)
 }
@@ -68,7 +69,7 @@ func (d *ResultDisplayer) displaySuccessDetails() {
 // displayBackupInfo menampilkan detail satu backup info
 func (d *ResultDisplayer) displayBackupInfo(info types.DatabaseBackupInfo) {
 	data := [][]string{
-		{"Database", ui.ColorText(info.DatabaseName, ui.ColorCyan)},
+		{"Database", ui.ColorText(info.DatabaseName, consts.UIColorCyan)},
 		{"Status", d.formatStatus(info.Status)},
 		{"File Output", info.OutputFile},
 		{"Ukuran File", info.FileSizeHuman},
@@ -87,7 +88,7 @@ func (d *ResultDisplayer) displayBackupInfo(info types.DatabaseBackupInfo) {
 	// Tampilkan warning jika ada
 	if info.Warnings != "" {
 		ui.PrintWarning("\n⚠ Warning dari mysqldump:")
-		fmt.Println(ui.ColorText(info.Warnings, ui.ColorYellow))
+		fmt.Println(ui.ColorText(info.Warnings, consts.UIColorYellow))
 	}
 }
 
@@ -96,19 +97,19 @@ func (d *ResultDisplayer) buildMetadataRows(info types.DatabaseBackupInfo) [][]s
 	rows := [][]string{}
 
 	if info.BackupID != "" {
-		rows = append(rows, []string{"Backup ID", ui.ColorText(info.BackupID, ui.ColorYellow)})
+		rows = append(rows, []string{"Backup ID", ui.ColorText(info.BackupID, consts.UIColorYellow)})
 	}
 	if !info.StartTime.IsZero() {
-		rows = append(rows, []string{"Start Time", ui.ColorText(info.StartTime.String(), ui.ColorCyan)})
+		rows = append(rows, []string{"Start Time", ui.ColorText(info.StartTime.String(), consts.UIColorCyan)})
 	}
 	if !info.EndTime.IsZero() {
-		rows = append(rows, []string{"End Time", ui.ColorText(info.EndTime.String(), ui.ColorCyan)})
+		rows = append(rows, []string{"End Time", ui.ColorText(info.EndTime.String(), consts.UIColorCyan)})
 	}
 	if info.ThroughputMBps > 0 {
-		rows = append(rows, []string{"Throughput", ui.ColorText(fmt.Sprintf("%.2f MB/s", info.ThroughputMBps), ui.ColorGreen)})
+		rows = append(rows, []string{"Throughput", ui.ColorText(fmt.Sprintf("%.2f MB/s", info.ThroughputMBps), consts.UIColorGreen)})
 	}
 	if info.ManifestFile != "" {
-		rows = append(rows, []string{"Manifest", ui.ColorText(info.ManifestFile, ui.ColorPurple)})
+		rows = append(rows, []string{"Manifest", ui.ColorText(info.ManifestFile, consts.UIColorPurple)})
 	}
 
 	return rows
@@ -117,17 +118,17 @@ func (d *ResultDisplayer) buildMetadataRows(info types.DatabaseBackupInfo) [][]s
 // buildCompressionRow builds compression info row
 func (d *ResultDisplayer) buildCompressionRow() []string {
 	if d.compressionEnabled {
-		return []string{"Kompresi", ui.ColorText("Enabled ("+d.compressionType+")", ui.ColorGreen)}
+		return []string{"Kompresi", ui.ColorText("Enabled ("+d.compressionType+")", consts.UIColorGreen)}
 	}
-	return []string{"Kompresi", ui.ColorText("Disabled", ui.ColorYellow)}
+	return []string{"Kompresi", ui.ColorText("Disabled", consts.UIColorYellow)}
 }
 
 // buildEncryptionRow builds encryption info row
 func (d *ResultDisplayer) buildEncryptionRow() []string {
 	if d.encryptionEnabled {
-		return []string{"Enkripsi", ui.ColorText("Enabled", ui.ColorGreen)}
+		return []string{"Enkripsi", ui.ColorText("Enabled", consts.UIColorGreen)}
 	}
-	return []string{"Enkripsi", ui.ColorText("Disabled", ui.ColorYellow)}
+	return []string{"Enkripsi", ui.ColorText("Disabled", consts.UIColorYellow)}
 }
 
 // displayFailures menampilkan daftar database yang gagal
@@ -140,7 +141,7 @@ func (d *ResultDisplayer) displayFailures() {
 
 	if len(d.result.FailedDatabaseInfos) > 0 {
 		for i, failedInfo := range d.result.FailedDatabaseInfos {
-			fmt.Printf("%d. %s\n", i+1, ui.ColorText(failedInfo.DatabaseName, ui.ColorRed))
+			fmt.Printf("%d. %s\n", i+1, ui.ColorText(failedInfo.DatabaseName, consts.UIColorRed))
 			fmt.Printf("   Error: %s\n", failedInfo.Error)
 			fmt.Println()
 		}
@@ -153,8 +154,8 @@ func (d *ResultDisplayer) displayFailures() {
 
 // formatStatus formats backup status dengan warna
 func (d *ResultDisplayer) formatStatus(status string) string {
-	if status == "success_with_warnings" {
-		return ui.ColorText("Sukses dengan Warning", ui.ColorYellow)
+	if status == consts.BackupStatusSuccessWithWarnings {
+		return ui.ColorText("Sukses dengan Warning", consts.UIColorYellow)
 	}
-	return ui.ColorText(status, ui.ColorGreen)
+	return ui.ColorText(status, consts.UIColorGreen)
 }

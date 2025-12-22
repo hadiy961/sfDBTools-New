@@ -10,11 +10,12 @@ import (
 	"context"
 	"sfDBTools/internal/restore/modes"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 )
 
 // ExecuteRestoreSingle menjalankan restore single database
 func (s *Service) ExecuteRestoreSingle(ctx context.Context) (*types.RestoreResult, error) {
-	executor, err := modes.GetExecutor("single", s)
+	executor, err := modes.GetExecutor(consts.ModeSingle, s)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +24,7 @@ func (s *Service) ExecuteRestoreSingle(ctx context.Context) (*types.RestoreResul
 
 // ExecuteRestorePrimary menjalankan restore primary database
 func (s *Service) ExecuteRestorePrimary(ctx context.Context) (*types.RestoreResult, error) {
-	executor, err := modes.GetExecutor("primary", s)
+	executor, err := modes.GetExecutor(consts.ModePrimary, s)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +33,7 @@ func (s *Service) ExecuteRestorePrimary(ctx context.Context) (*types.RestoreResu
 
 // ExecuteRestoreAll menjalankan restore all databases dengan streaming filtering
 func (s *Service) ExecuteRestoreAll(ctx context.Context) (*types.RestoreResult, error) {
-	executor, err := modes.GetExecutor("all", s)
+	executor, err := modes.GetExecutor(consts.ModeAll, s)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +42,7 @@ func (s *Service) ExecuteRestoreAll(ctx context.Context) (*types.RestoreResult, 
 
 // ExecuteRestoreSelection menjalankan restore selection berbasis CSV
 func (s *Service) ExecuteRestoreSelection(ctx context.Context) (*types.RestoreResult, error) {
-	executor, err := modes.GetExecutor("selection", s)
+	executor, err := modes.GetExecutor(consts.ModeSelection, s)
 	if err != nil {
 		return nil, err
 	}

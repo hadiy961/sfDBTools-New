@@ -9,6 +9,7 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/ui"
 	"strings"
@@ -19,16 +20,16 @@ func ValidateNotPrimaryDatabase(ctx context.Context, client *database.Client, db
 	dbLower := strings.ToLower(dbName)
 
 	// Check prefix
-	hasPrimaryPrefix := strings.HasPrefix(dbLower, "dbsf_nbc_") || strings.HasPrefix(dbLower, "dbsf_biznet_")
+	hasPrimaryPrefix := strings.HasPrefix(dbLower, consts.PrimaryPrefixNBC) || strings.HasPrefix(dbLower, consts.PrimaryPrefixBiznet)
 	if !hasPrimaryPrefix {
 		return nil
 	}
 
 	// Check suffix
-	hasNonPrimarySuffix := strings.Contains(dbLower, "_secondary") ||
-		strings.HasSuffix(dbLower, "_dmart") ||
-		strings.HasSuffix(dbLower, "_temp") ||
-		strings.HasSuffix(dbLower, "_archive")
+	hasNonPrimarySuffix := strings.Contains(dbLower, consts.SecondarySuffix) ||
+		strings.HasSuffix(dbLower, consts.SuffixDmart) ||
+		strings.HasSuffix(dbLower, consts.SuffixTemp) ||
+		strings.HasSuffix(dbLower, consts.SuffixArchive)
 
 	if hasNonPrimarySuffix {
 		return nil

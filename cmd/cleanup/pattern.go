@@ -2,9 +2,9 @@ package cleanupcmd
 
 import (
 	"sfDBTools/internal/cleanup"
-	"sfDBTools/internal/types"
 	defaultVal "sfDBTools/internal/defaultval"
 	"sfDBTools/internal/flags"
+	"sfDBTools/internal/types"
 
 	"github.com/spf13/cobra"
 )
