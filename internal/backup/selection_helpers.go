@@ -3,12 +3,12 @@ package backup
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/backup/display"
 	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	pkghelper "sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
+	"sfDBTools/pkg/ui"
 )
 
 // =============================================================================
@@ -113,7 +113,7 @@ func (s *Service) handleSingleModeSetup(ctx context.Context, client interface {
 		TotalIncluded: len(companionDbs),
 		TotalExcluded: len(allDatabases) - len(companionDbs),
 	}
-	display.DisplayFilterStats(stats, s.Log)
+	ui.DisplayFilterStats(stats, consts.FeatureBackup, s.Log)
 
 	s.BackupDBOptions.DBName = selectedDB
 	s.BackupDBOptions.CompanionStatus = companionStatus

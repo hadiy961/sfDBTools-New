@@ -1,0 +1,43 @@
+package display
+
+import (
+	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/input"
+	"sfDBTools/pkg/ui"
+	"sfDBTools/pkg/validation"
+)
+
+// OptionsDisplayer handles display of backup options.
+type OptionsDisplayer struct {
+	options *types_backup.BackupDBOptions
+}
+
+// NewOptionsDisplayer creates new options displayer.
+func NewOptionsDisplayer(options *types_backup.BackupDBOptions) *OptionsDisplayer {
+	return &OptionsDisplayer{options: options}
+}
+
+// Display menampilkan backup options dan meminta konfirmasi.
+func (d *OptionsDisplayer) Display() (bool, error) {
+	ui.PrintSubHeader("Opsi Backup")
+
+	data := [][]string{}
+	data = append(data, d.buildGeneralSection()...)
+	data = append(data, d.buildModeSpecificSection()...)
+	data = append(data, d.buildProfileSection()...)
+	data = append(data, d.buildFilterSection()...)
+	data = append(data, d.buildCompressionSection()...)
+	data = append(data, d.buildEncryptionSection()...)
+	data = append(data, d.buildCleanupSection()...)
+
+	ui.FormatTable([]string{"Parameter", "Value"}, data)
+
+	confirm, err := input.AskYesNo("Apakah Anda ingin melanjutkan?", true)
+	if err != nil {
+		return false, err
+	}
+	if !confirm {
+		return false, validation.ErrUserCancelled
+	}
+	return true, nil
+}

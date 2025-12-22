@@ -3,12 +3,12 @@ package backup
 import (
 	"context"
 	"path/filepath"
-	"sfDBTools/internal/backup/display"
 	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	pkghelper "sfDBTools/pkg/helper"
+	"sfDBTools/pkg/ui"
 )
 
 // =============================================================================
@@ -100,7 +100,7 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 			TotalExcluded:     len(allDatabases) - len(dbFiltered),
 			ExcludedDatabases: s.excludedDatabases,
 		}
-		display.DisplayFilterStats(stats, s.Log)
+		ui.DisplayFilterStats(stats, consts.FeatureBackup, s.Log)
 	}
 
 	return dbFiltered, nil

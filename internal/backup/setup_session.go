@@ -50,7 +50,7 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 	dbFiltered, stats, err = s.GetFilteredDatabases(ctx, client)
 	if err != nil {
 		if stats != nil {
-			display.DisplayFilterStats(stats, s.Log)
+			ui.DisplayFilterStats(stats, consts.FeatureBackup, s.Log)
 		}
 		return nil, nil, fmt.Errorf("gagal mendapatkan daftar database: %w", err)
 	}
@@ -65,7 +65,7 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 	}
 
 	if len(dbFiltered) == 0 {
-		display.DisplayFilterStats(stats, s.Log)
+		ui.DisplayFilterStats(stats, consts.FeatureBackup, s.Log)
 		ui.PrintError("Tidak ada database yang tersedia setelah filtering!")
 		s.displayFilterWarnings(stats)
 		return nil, nil, fmt.Errorf("tidak ada database tersedia untuk backup setelah filtering")
