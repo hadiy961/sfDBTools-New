@@ -8,7 +8,6 @@ package types_backup
 
 import (
 	"encoding/json"
-	"sfDBTools/internal/types"
 	"time"
 )
 
@@ -17,7 +16,7 @@ type BackupResult struct {
 	TotalDatabases      int
 	SuccessfulBackups   int
 	FailedBackups       int
-	BackupInfo          []types.DatabaseBackupInfo
+	BackupInfo          []DatabaseBackupInfo
 	FailedDatabases     map[string]string // map[databaseName]errorMessage
 	FailedDatabaseInfos []FailedDatabaseInfo
 	Errors              []string

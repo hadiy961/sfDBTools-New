@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/internal/backup/metadata"
-	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
 )
@@ -105,7 +104,7 @@ func (e *IterativeExecutor) createOutputPathFunc(dbList []string) func(string) (
 
 // aggregateBackupInfos menggabungkan multiple backup infos menjadi satu entry
 // Digunakan untuk primary/secondary yang backup multiple databases tapi display sebagai satu
-func (e *IterativeExecutor) aggregateBackupInfos(backupInfos []types.DatabaseBackupInfo, dbList []string) []types.DatabaseBackupInfo {
+func (e *IterativeExecutor) aggregateBackupInfos(backupInfos []types_backup.DatabaseBackupInfo, dbList []string) []types_backup.DatabaseBackupInfo {
 	if len(backupInfos) == 0 {
 		return backupInfos
 	}
@@ -127,7 +126,7 @@ func (e *IterativeExecutor) aggregateBackupInfos(backupInfos []types.DatabaseBac
 	// Metadata file adalah dari database pertama (combined metadata)
 	aggregated.ManifestFile = backupInfos[0].OutputFile + consts.ExtMetaJSON
 
-	return []types.DatabaseBackupInfo{aggregated}
+	return []types_backup.DatabaseBackupInfo{aggregated}
 }
 
 // generateCombinedMetadata membuat satu metadata file untuk semua database yang berhasil di-backup

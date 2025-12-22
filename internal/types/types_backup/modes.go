@@ -8,7 +8,6 @@ package types_backup
 
 import (
 	"context"
-	"sfDBTools/internal/types"
 )
 
 // ModeExecutor interface untuk semua mode backup
@@ -26,7 +25,7 @@ type BackupService interface {
 	LogError(msg string)
 
 	// Backup execution
-	ExecuteAndBuildBackup(ctx context.Context, cfg BackupExecutionConfig) (types.DatabaseBackupInfo, error)
+	ExecuteAndBuildBackup(ctx context.Context, cfg BackupExecutionConfig) (DatabaseBackupInfo, error)
 	ExecuteBackupLoop(ctx context.Context, databases []string, config BackupLoopConfig, outputPathFunc func(dbName string) (string, error)) BackupLoopResult
 
 	// Helper methods
@@ -49,7 +48,7 @@ type BackupLoopConfig struct {
 type BackupLoopResult struct {
 	Success     int
 	Failed      int
-	BackupInfos []types.DatabaseBackupInfo
+	BackupInfos []DatabaseBackupInfo
 	FailedDBs   []FailedDatabaseInfo
 	Errors      []string
 }

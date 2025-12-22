@@ -9,7 +9,6 @@ package modes
 import (
 	"context"
 	"sfDBTools/internal/applog"
-	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 )
 
@@ -28,7 +27,7 @@ type BackupService interface {
 	GetOptions() *types_backup.BackupDBOptions
 
 	// Core backup execution methods (di execution_helpers.go)
-	ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.BackupExecutionConfig) (types.DatabaseBackupInfo, error)
+	ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.BackupExecutionConfig) (types_backup.DatabaseBackupInfo, error)
 	ExecuteBackupLoop(ctx context.Context, databases []string, config types_backup.BackupLoopConfig, outputPathFunc func(dbName string) (string, error)) types_backup.BackupLoopResult
 
 	// Helper methods

@@ -3,7 +3,6 @@ package backup
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
 )
@@ -11,7 +10,7 @@ import (
 // ExecuteBackupLoop menjalankan backup untuk multiple databases dengan pattern yang sama
 func (s *Service) ExecuteBackupLoop(ctx context.Context, databases []string, config types_backup.BackupLoopConfig, outputPathFunc func(dbName string) (string, error)) types_backup.BackupLoopResult {
 	result := types_backup.BackupLoopResult{
-		BackupInfos: make([]types.DatabaseBackupInfo, 0),
+		BackupInfos: make([]types_backup.DatabaseBackupInfo, 0),
 		FailedDBs:   make([]types_backup.FailedDatabaseInfo, 0),
 		Errors:      make([]string, 0),
 	}

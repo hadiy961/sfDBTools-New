@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"os"
 	"sfDBTools/internal/applog"
-	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/global"
@@ -146,7 +145,7 @@ func UpdateMetadataUserGrantsFile(backupFilePath string, userGrantsPath string, 
 }
 
 // UpdateMetadataWithDatabaseDetails update metadata dengan detail lengkap per database
-func UpdateMetadataWithDatabaseDetails(backupFilePath string, databaseNames []string, backupInfos []types.DatabaseBackupInfo, logger applog.Logger) error {
+func UpdateMetadataWithDatabaseDetails(backupFilePath string, databaseNames []string, backupInfos []types_backup.DatabaseBackupInfo, logger applog.Logger) error {
 	metadataPath := backupFilePath + consts.ExtMetaJSON
 
 	// Baca metadata file
@@ -204,7 +203,7 @@ type DatabaseBackupInfoBuilder struct {
 }
 
 // Build membuat DatabaseBackupInfo dari builder
-func (b *DatabaseBackupInfoBuilder) Build() types.DatabaseBackupInfo {
+func (b *DatabaseBackupInfoBuilder) Build() types_backup.DatabaseBackupInfo {
 	// Calculate throughput
 	var throughputMBs float64
 	if b.Duration.Seconds() > 0 {
@@ -214,7 +213,7 @@ func (b *DatabaseBackupInfoBuilder) Build() types.DatabaseBackupInfo {
 	// Generate backup ID
 	backupID := fmt.Sprintf("bk-%d", time.Now().UnixNano())
 
-	return types.DatabaseBackupInfo{
+	return types_backup.DatabaseBackupInfo{
 		DatabaseName:   b.DatabaseName,
 		OutputFile:     b.OutputFile,
 		FileSize:       b.FileSize,

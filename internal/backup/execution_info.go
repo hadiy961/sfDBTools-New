@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/backup/metadata"
-	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
 	pkghelper "sfDBTools/pkg/helper"
@@ -13,7 +12,7 @@ import (
 )
 
 // buildDryRunBackupInfo membangun dummy DatabaseBackupInfo untuk dry-run mode
-func (s *Service) buildDryRunBackupInfo(cfg types_backup.BackupExecutionConfig, mysqldumpArgs []string, timer *pkghelper.Timer, startTime time.Time) types.DatabaseBackupInfo {
+func (s *Service) buildDryRunBackupInfo(cfg types_backup.BackupExecutionConfig, mysqldumpArgs []string, timer *pkghelper.Timer, startTime time.Time) types_backup.DatabaseBackupInfo {
 	backupDuration := timer.Elapsed()
 	endTime := time.Now()
 
@@ -30,7 +29,7 @@ func (s *Service) buildDryRunBackupInfo(cfg types_backup.BackupExecutionConfig, 
 	// Format display name
 	displayName := formatBackupDisplayName(cfg)
 
-	return types.DatabaseBackupInfo{
+	return types_backup.DatabaseBackupInfo{
 		DatabaseName:  displayName,
 		OutputFile:    cfg.OutputPath,
 		FileSize:      0,
@@ -45,7 +44,7 @@ func (s *Service) buildDryRunBackupInfo(cfg types_backup.BackupExecutionConfig, 
 }
 
 // buildBackupInfoFromResult membangun DatabaseBackupInfo dari result
-func (s *Service) buildBackupInfoFromResult(ctx context.Context, cfg types_backup.BackupExecutionConfig, writeResult *types_backup.BackupWriteResult, timer *pkghelper.Timer, startTime time.Time, dbVersion string) types.DatabaseBackupInfo {
+func (s *Service) buildBackupInfoFromResult(ctx context.Context, cfg types_backup.BackupExecutionConfig, writeResult *types_backup.BackupWriteResult, timer *pkghelper.Timer, startTime time.Time, dbVersion string) types_backup.DatabaseBackupInfo {
 	fileSize := writeResult.FileSize
 	stderrOutput := writeResult.StderrOutput
 	backupDuration := timer.Elapsed()

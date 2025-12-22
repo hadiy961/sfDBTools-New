@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/internal/cleanup"
-	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	pkghelper "sfDBTools/pkg/helper"
 )
@@ -15,7 +14,7 @@ import (
 // =============================================================================
 
 // ExecuteAndBuildBackup menjalankan backup dan generate metadata + backup info
-func (s *Service) ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.BackupExecutionConfig) (types.DatabaseBackupInfo, error) {
+func (s *Service) ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.BackupExecutionConfig) (types_backup.DatabaseBackupInfo, error) {
 	timer := pkghelper.NewTimer()
 	startTime := timer.StartTime()
 
@@ -66,10 +65,10 @@ func (s *Service) ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.Ba
 		if ctx.Err() != nil {
 			s.Log.Warnf("Backup database %s dibatalkan", cfg.DBName)
 			cleanup.CleanupFailedBackup(cfg.OutputPath, s.Log)
-			return types.DatabaseBackupInfo{}, err
+			return types_backup.DatabaseBackupInfo{}, err
 		}
 		s.handleBackupError(err, cfg, writeResult)
-		return types.DatabaseBackupInfo{}, err
+		return types_backup.DatabaseBackupInfo{}, err
 	}
 
 	return s.buildBackupInfoFromResult(ctx, cfg, writeResult, timer, startTime, dbVersion), nil

@@ -8,7 +8,6 @@ package display
 
 import (
 	"fmt"
-	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
@@ -67,7 +66,7 @@ func (d *ResultDisplayer) displaySuccessDetails() {
 }
 
 // displayBackupInfo menampilkan detail satu backup info
-func (d *ResultDisplayer) displayBackupInfo(info types.DatabaseBackupInfo) {
+func (d *ResultDisplayer) displayBackupInfo(info types_backup.DatabaseBackupInfo) {
 	data := [][]string{
 		{"Database", ui.ColorText(info.DatabaseName, consts.UIColorCyan)},
 		{"Status", d.formatStatus(info.Status)},
@@ -93,7 +92,7 @@ func (d *ResultDisplayer) displayBackupInfo(info types.DatabaseBackupInfo) {
 }
 
 // buildMetadataRows builds metadata rows jika tersedia
-func (d *ResultDisplayer) buildMetadataRows(info types.DatabaseBackupInfo) [][]string {
+func (d *ResultDisplayer) buildMetadataRows(info types_backup.DatabaseBackupInfo) [][]string {
 	rows := [][]string{}
 
 	if info.BackupID != "" {
