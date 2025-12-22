@@ -8,9 +8,9 @@ package restorecmd
 
 import (
 	"fmt"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/restore"
-	"sfDBTools/internal/types"
 
 	"github.com/spf13/cobra"
 )
@@ -44,13 +44,13 @@ PERINGATAN: Operasi ini bersifat DESTRUKTIF massal. Pastikan Anda memiliki backu
   sfdbtools db-restore all --file "full_backup.sql" --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
-		if types.Deps == nil {
+		if appdeps.Deps == nil {
 			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
 			return
 		}
 
-		if err := restore.ExecuteRestoreAllCommand(cmd, types.Deps); err != nil {
-			types.Deps.Logger.Error("restore all gagal: " + err.Error())
+		if err := restore.ExecuteRestoreAllCommand(cmd, appdeps.Deps); err != nil {
+			appdeps.Deps.Logger.Error("restore all gagal: " + err.Error())
 		}
 	},
 }

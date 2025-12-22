@@ -7,6 +7,7 @@
 package profile
 
 import (
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/parsing"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/ui"
@@ -19,7 +20,7 @@ import (
 // =============================================================================
 
 // ExecuteProfile adalah unified function untuk menjalankan profile operations dengan mode apapun
-func ExecuteProfile(cmd *cobra.Command, deps *types.Dependencies, mode string) error {
+func ExecuteProfile(cmd *cobra.Command, deps *appdeps.Dependencies, mode string) error {
 	// Dapatkan konfigurasi execution berdasarkan mode
 	config, err := GetExecutionConfig(mode)
 	if err != nil {
@@ -32,9 +33,8 @@ func ExecuteProfile(cmd *cobra.Command, deps *types.Dependencies, mode string) e
 // =============================================================================
 // Internal Helpers
 // =============================================================================
-
 // executeProfileWithConfig adalah helper function yang menjalankan profile dengan configuration
-func executeProfileWithConfig(cmd *cobra.Command, deps *types.Dependencies, config types.ProfileEntryConfig) error {
+func executeProfileWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, config types.ProfileEntryConfig) error {
 	logger := deps.Logger
 	logger.Info("Memulai proses profile - " + config.Mode)
 

@@ -2,9 +2,9 @@ package cryptocmd
 
 import (
 	"sfDBTools/internal/crypto"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/parsing"
-	"sfDBTools/internal/types"
 
 	"github.com/spf13/cobra"
 )
@@ -17,8 +17,8 @@ var CmdBase64Decode = &cobra.Command{
 	Long:    "Decode data dari format base64. Bisa dari flag --data, pipe stdin, atau mode interaktif (paste & Ctrl+D).",
 	Run: func(cmd *cobra.Command, args []string) {
 		opts := parsing.ParsingBase64DecodeOptions(cmd)
-		if err := crypto.ExecuteBase64Decode(types.Deps.Logger, opts); err != nil {
-			types.Deps.Logger.Error(err.Error())
+		if err := crypto.ExecuteBase64Decode(appdeps.Deps.Logger, opts); err != nil {
+			appdeps.Deps.Logger.Error(err.Error())
 		}
 	},
 }

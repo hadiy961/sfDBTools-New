@@ -1,9 +1,9 @@
 package profilecmd
 
 import (
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/profile"
-	"sfDBTools/internal/types"
 
 	"github.com/spf13/cobra"
 )
@@ -47,8 +47,8 @@ Fitur:
     --profile "local-dev" \
     --output-dir "./configs"`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := profile.ExecuteProfile(cmd, types.Deps, "create"); err != nil {
-			types.Deps.Logger.Error("profile create gagal: " + err.Error())
+		if err := profile.ExecuteProfile(cmd, appdeps.Deps, "create"); err != nil {
+			appdeps.Deps.Logger.Error("profile create gagal: " + err.Error())
 		}
 	},
 }

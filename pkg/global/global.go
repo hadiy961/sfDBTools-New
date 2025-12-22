@@ -3,21 +3,21 @@ package global
 import (
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
-	"sfDBTools/internal/types"
+	appdeps "sfDBTools/internal/deps"
 )
 
 // GetLogger adalah helper untuk mengakses logger dari package lain
 func GetLogger() applog.Logger {
-	if types.Deps == nil {
+	if appdeps.Deps == nil {
 		return nil
 	}
-	return types.Deps.Logger
+	return appdeps.Deps.Logger
 }
 
 // GetConfig adalah helper untuk mengakses config dari package lain
 func GetConfig() *appconfig.Config {
-	if types.Deps == nil {
+	if appdeps.Deps == nil {
 		return nil
 	}
-	return types.Deps.Config
+	return appdeps.Deps.Config
 }

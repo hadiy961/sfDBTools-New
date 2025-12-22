@@ -13,8 +13,8 @@ import (
 	"os"
 	"os/signal"
 	"sfDBTools/internal/backup/display"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/parsing"
-	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
@@ -29,7 +29,7 @@ import (
 
 // ExecuteBackup adalah unified function untuk menjalankan backup dengan mode apapun
 // Menggantikan 5 fungsi Execute* yang duplikat (Single, Separated, Combined, Primary, Secondary)
-func ExecuteBackup(cmd *cobra.Command, deps *types.Dependencies, mode string) error {
+func ExecuteBackup(cmd *cobra.Command, deps *appdeps.Dependencies, mode string) error {
 	// Dapatkan konfigurasi execution berdasarkan mode
 	config, err := GetExecutionConfig(mode)
 	if err != nil {
@@ -83,9 +83,8 @@ func (s *Service) ExecuteBackupCommand(ctx context.Context, config types_backup.
 // =============================================================================
 // Internal Helpers
 // =============================================================================
-
 // executeBackupWithConfig adalah helper function yang menjalankan backup dengan configuration
-func executeBackupWithConfig(cmd *cobra.Command, deps *types.Dependencies, config types_backup.ExecutionConfig) error {
+func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, config types_backup.ExecutionConfig) error {
 	logger := deps.Logger
 	logger.Info("Memulai proses backup database - " + config.Mode)
 

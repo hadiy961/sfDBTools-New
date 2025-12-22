@@ -10,9 +10,9 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/parsing"
 	"sfDBTools/internal/restore/display"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/ui"
 	"syscall"
 
@@ -20,7 +20,7 @@ import (
 )
 
 // ExecuteRestoreSingleCommand adalah entry point untuk restore single command
-func ExecuteRestoreSingleCommand(cmd *cobra.Command, deps *types.Dependencies) error {
+func ExecuteRestoreSingleCommand(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 	logger := deps.Logger
 	logger.Info("Memulai proses restore single database")
 
@@ -82,7 +82,7 @@ func ExecuteRestoreSingleCommand(cmd *cobra.Command, deps *types.Dependencies) e
 }
 
 // ExecuteRestorePrimaryCommand adalah entry point untuk restore primary command
-func ExecuteRestorePrimaryCommand(cmd *cobra.Command, deps *types.Dependencies) error {
+func ExecuteRestorePrimaryCommand(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 	logger := deps.Logger
 	logger.Info("Memulai proses restore primary database")
 
@@ -144,7 +144,7 @@ func ExecuteRestorePrimaryCommand(cmd *cobra.Command, deps *types.Dependencies) 
 }
 
 // ExecuteRestoreAllCommand adalah entry point untuk restore all databases command
-func ExecuteRestoreAllCommand(cmd *cobra.Command, deps *types.Dependencies) error {
+func ExecuteRestoreAllCommand(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 	logger := deps.Logger
 	logger.Info("Memulai proses restore all databases")
 
@@ -206,7 +206,7 @@ func ExecuteRestoreAllCommand(cmd *cobra.Command, deps *types.Dependencies) erro
 }
 
 // ExecuteRestoreSelectionCommand adalah entry point untuk restore selection (CSV)
-func ExecuteRestoreSelectionCommand(cmd *cobra.Command, deps *types.Dependencies) error {
+func ExecuteRestoreSelectionCommand(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 	logger := deps.Logger
 	logger.Info("Memulai proses restore selection (CSV)")
 

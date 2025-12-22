@@ -3,8 +3,8 @@ package cleanupcmd
 import (
 	"sfDBTools/internal/cleanup"
 	defaultVal "sfDBTools/internal/defaultval"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
-	"sfDBTools/internal/types"
 
 	"github.com/spf13/cobra"
 )
@@ -16,8 +16,8 @@ var CmdCleanupPattern = &cobra.Command{
 	Long: `Membersihkan file backup lama yang cocok dengan pola glob tertentu (contoh: "**/*.sql.gz").
 Hanya file yang lebih tua dari kebijakan retensi yang akan dipertimbangkan.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := cleanup.ExecuteCleanup(cmd, types.Deps, "pattern"); err != nil {
-			types.Deps.Logger.Error("cleanup by pattern gagal: " + err.Error())
+		if err := cleanup.ExecuteCleanup(cmd, appdeps.Deps, "pattern"); err != nil {
+			appdeps.Deps.Logger.Error("cleanup by pattern gagal: " + err.Error())
 		}
 	},
 }

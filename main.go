@@ -5,7 +5,7 @@ import (
 	"os"
 	"sfDBTools/cmd"
 	config "sfDBTools/internal/appconfig"
-	"sfDBTools/internal/types"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 
@@ -44,7 +44,7 @@ func main() {
 	}
 
 	// 2. Inisialisasi Logger Kustom
-	appLogger = applog.NewLogger()
+	appLogger = applog.NewLogger(cfg)
 	if quiet {
 		// Route logs to stderr so stdout can be used for data piping
 		appLogger.SetOutput(os.Stderr)
@@ -72,7 +72,7 @@ func main() {
 	// }
 
 	// 4. Buat objek dependensi untuk di-inject
-	deps := &types.Dependencies{
+	deps := &appdeps.Dependencies{
 		Config: cfg, // bisa nil saat completion, akan di-skip oleh PersistentPreRunE
 		Logger: appLogger,
 	}

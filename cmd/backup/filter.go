@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sfDBTools/internal/backup"
 	defaultVal "sfDBTools/internal/defaultval"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
-	"sfDBTools/internal/types"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
@@ -35,19 +35,19 @@ Jika tidak ada database yang ditentukan lewat flag, mode interaktif (multi-selec
   sfdbtools db-backup filter --pattern "shop_*" --mode multi-file`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
-		if types.Deps == nil {
+		if appdeps.Deps == nil {
 			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
 			return
 		}
 
 		backupMode, err := getBackupMode(cmd)
 		if err != nil {
-			types.Deps.Logger.Error(err.Error())
+			appdeps.Deps.Logger.Error(err.Error())
 			return
 		}
 
-		if err := backup.ExecuteBackup(cmd, types.Deps, backupMode); err != nil {
-			types.Deps.Logger.Error("db-backup filter gagal: " + err.Error())
+		if err := backup.ExecuteBackup(cmd, appdeps.Deps, backupMode); err != nil {
+			appdeps.Deps.Logger.Error("db-backup filter gagal: " + err.Error())
 		}
 	},
 }

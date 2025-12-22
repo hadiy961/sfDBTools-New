@@ -2,9 +2,9 @@ package cryptocmd
 
 import (
 	"sfDBTools/internal/crypto"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/parsing"
-	"sfDBTools/internal/types"
 
 	"github.com/spf13/cobra"
 )
@@ -23,8 +23,8 @@ var CmdDecryptText = &cobra.Command{
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		opts := parsing.ParsingDecryptTextOptions(cmd)
-		if err := crypto.ExecuteDecryptText(types.Deps.Logger, opts); err != nil {
-			types.Deps.Logger.Error(err.Error())
+		if err := crypto.ExecuteDecryptText(appdeps.Deps.Logger, opts); err != nil {
+			appdeps.Deps.Logger.Error(err.Error())
 		}
 	},
 }

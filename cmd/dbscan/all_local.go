@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sfDBTools/internal/dbscan"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/parsing"
 	"sfDBTools/internal/types"
@@ -26,13 +27,13 @@ Contoh penggunaan:
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
-		if types.Deps == nil {
+		if appdeps.Deps == nil {
 			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
 			return
 		}
 
 		// Akses config dan logger dari dependency injection
-		logger := types.Deps.Logger
+		logger := appdeps.Deps.Logger
 
 		// Log dimulainya proses scan all database
 		logger.Info("Memulai scanning semua database")
@@ -45,7 +46,7 @@ Contoh penggunaan:
 		}
 
 		// Inisialisasi service dbscan dengan pattern baru
-		svc := dbscan.NewDBScanService(types.Deps.Config, logger, parsedOpts)
+		svc := dbscan.NewDBScanService(appdeps.Deps.Config, logger, parsedOpts)
 
 		// Execute scan
 		scanConfig := types.ScanEntryConfig{

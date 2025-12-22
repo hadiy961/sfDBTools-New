@@ -14,7 +14,7 @@ import (
 	dbscancmd "sfDBTools/cmd/dbscan"
 	profilecmd "sfDBTools/cmd/profile"
 	restorecmd "sfDBTools/cmd/restore"
-	"sfDBTools/internal/types"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/pkg/ui"
 
 	"github.com/spf13/cobra"
@@ -34,12 +34,12 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 		if cmd.Name() == "completion" || cmd.HasParent() && cmd.Parent().Name() == "completion" {
 			return nil
 		}
-		if types.Deps == nil || types.Deps.Config == nil || types.Deps.Logger == nil {
+		if appdeps.Deps == nil || appdeps.Deps.Config == nil || appdeps.Deps.Logger == nil {
 			return fmt.Errorf("dependensi belum di-inject. Pastikan untuk memanggil Execute(deps) dari main.go")
 		}
 
 		// Log bahwa perintah akan dieksekusi
-		types.Deps.Logger.Infof("Memulai perintah: %s", cmd.Name())
+		appdeps.Deps.Logger.Infof("Memulai perintah: %s", cmd.Name())
 
 		return nil
 	},
@@ -52,14 +52,14 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 }
 
 // Execute adalah fungsi eksekusi utama yang dipanggil dari main.go.
-func Execute(deps *types.Dependencies) {
+func Execute(deps *appdeps.Dependencies) {
 	// 1. INJEKSI DEPENDENSI
-	types.Deps = deps
+	appdeps.Deps = deps
 
 	// 2. Eksekusi perintah Cobra
 	if err := rootCmd.Execute(); err != nil {
-		if types.Deps != nil && types.Deps.Logger != nil {
-			types.Deps.Logger.Fatalf("Gagal menjalankan perintah: %v", err)
+		if appdeps.Deps != nil && appdeps.Deps.Logger != nil {
+			appdeps.Deps.Logger.Fatalf("Gagal menjalankan perintah: %v", err)
 		} else {
 			fmt.Fprintf(os.Stderr, "Gagal menjalankan perintah: %v\n", err)
 			os.Exit(1)

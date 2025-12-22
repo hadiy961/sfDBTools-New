@@ -1,9 +1,9 @@
 package profilecmd
 
 import (
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/profile"
-	"sfDBTools/internal/types"
 
 	"github.com/spf13/cobra"
 )
@@ -27,7 +27,7 @@ Gunakan flag --force untuk melewati konfirmasi (berguna untuk scripting).`,
   # 4. Hapus profil dari direktori khusus
   sfdbtools profile delete --profile "local-conf" --output-dir "./configs"`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return profile.ExecuteProfile(cmd, types.Deps, "delete")
+		return profile.ExecuteProfile(cmd, appdeps.Deps, "delete")
 	},
 }
 

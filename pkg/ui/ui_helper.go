@@ -7,12 +7,16 @@ import (
 	"runtime"
 	"sfDBTools/internal/appconfig"
 	app_log "sfDBTools/internal/applog"
+	appdeps "sfDBTools/internal/deps"
 	"strings"
 )
 
 // ClearScreen clears the terminal screen using platform-specific commands
 func ClearScreen() error {
-	lg := app_log.NewLogger()
+	lg := app_log.NewLogger(nil)
+	if appdeps.Deps != nil && appdeps.Deps.Logger != nil {
+		lg = appdeps.Deps.Logger
+	}
 
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
@@ -35,7 +39,10 @@ func ClearScreen() error {
 
 // ClearScreenANSI clears the terminal screen using ANSI escape sequences
 func ClearScreenANSI() error {
-	lg := app_log.NewLogger()
+	lg := app_log.NewLogger(nil)
+	if appdeps.Deps != nil && appdeps.Deps.Logger != nil {
+		lg = appdeps.Deps.Logger
+	}
 
 	// ANSI escape sequence to clear screen and move cursor to top-left
 	_, err := fmt.Print("\033[2J\033[H")

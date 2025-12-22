@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sfDBTools/internal/dbscan"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/parsing"
 	"sfDBTools/internal/types"
@@ -32,12 +33,12 @@ Catatan:
   - Flag --db dan --db-file dapat dikombinasikan (hasil akan di-merge).
   - Jika kedua include dan exclude digunakan, proses scan akan dilakukan pada database yang ada di include namun tidak ada di exclude.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if types.Deps == nil {
+		if appdeps.Deps == nil {
 			return fmt.Errorf("dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar")
 		}
 
-		logger := types.Deps.Logger
-		cfg := types.Deps.Config
+		logger := appdeps.Deps.Logger
+		cfg := appdeps.Deps.Config
 
 		// Parsing terpisah untuk merapikan command
 		scanOpts, err := parsing.ParsingScanFilterOptions(cmd, cfg)

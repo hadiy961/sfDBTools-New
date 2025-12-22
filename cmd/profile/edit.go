@@ -1,9 +1,9 @@
 package profilecmd
 
 import (
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/profile"
-	"sfDBTools/internal/types"
 
 	"github.com/spf13/cobra"
 )
@@ -30,8 +30,8 @@ Command ini juga mendukung penggantian nama profil (rename) menggunakan flag --n
   # 5. Mengubah profil yang terenkripsi (memerlukan key lama jika ada)
   sfdbtools profile edit --profile "secure-db" --host "1.2.3.4" --profile-key "my-key"`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := profile.ExecuteProfile(cmd, types.Deps, "edit"); err != nil {
-			types.Deps.Logger.Error("profile edit gagal: " + err.Error())
+		if err := profile.ExecuteProfile(cmd, appdeps.Deps, "edit"); err != nil {
+			appdeps.Deps.Logger.Error("profile edit gagal: " + err.Error())
 		}
 	},
 }

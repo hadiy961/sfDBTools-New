@@ -10,7 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	config "sfDBTools/internal/appconfig"
+	"sfDBTools/internal/types"
 	"strings"
 	"time"
 
@@ -51,14 +51,19 @@ func Time(key string, t time.Time) Field {
 }
 
 // NewLogger menginisialisasi dan mengembalikan logger yang sudah dikonfigurasi.
-func NewLogger() Logger {
-	// inisiasi configurasi logger
-	LoadConfig, err := config.LoadConfigFromEnv()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "FATAL: Gagal memuat konfigurasi: %v\n", err)
-		os.Exit(1)
+//
+// NOTE: Logger tidak lagi me-load konfigurasi sendiri untuk menghindari import cycle.
+// Caller bertanggung jawab mengirimkan config (boleh nil).
+func NewLogger(appCfg *types.Config) Logger {
+	// Default config (aman untuk mode completion / tanpa config)
+	cfg := types.LogConfig{
+		Format:   "text",
+		Level:    "info",
+		Timezone: "Local",
 	}
-	cfg := LoadConfig.Log
+	if appCfg != nil {
+		cfg = appCfg.Log
+	}
 
 	// 0. Inisialisasi dasar logrus
 	log := logrus.New()

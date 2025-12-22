@@ -7,6 +7,7 @@
 package cleanup
 
 import (
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/parsing"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/ui"
@@ -19,7 +20,7 @@ import (
 // =============================================================================
 
 // ExecuteCleanup adalah unified function untuk menjalankan cleanup dengan mode apapun
-func ExecuteCleanup(cmd *cobra.Command, deps *types.Dependencies, mode string) error {
+func ExecuteCleanup(cmd *cobra.Command, deps *appdeps.Dependencies, mode string) error {
 	// Dapatkan konfigurasi execution berdasarkan mode
 	config, err := GetExecutionConfig(mode)
 	if err != nil {
@@ -34,7 +35,7 @@ func ExecuteCleanup(cmd *cobra.Command, deps *types.Dependencies, mode string) e
 // =============================================================================
 
 // executeCleanupWithConfig adalah helper function yang menjalankan cleanup dengan configuration
-func executeCleanupWithConfig(cmd *cobra.Command, deps *types.Dependencies, config types.CleanupEntryConfig) error {
+func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, config types.CleanupEntryConfig) error {
 	logger := deps.Logger
 	logger.Info("Memulai proses cleanup - " + config.Mode)
 

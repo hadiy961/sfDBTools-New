@@ -67,7 +67,7 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 				msg := fmt.Sprintf("[%d/%d] %s: gagal infer nama database dari filename", idx+1, total, filepath.Base(ent.File))
 				logger.Warn(msg)
 				if opts.StopOnError {
-					return nil, fmt.Errorf(msg)
+					return nil, errors.New(msg)
 				}
 				continue
 			}
@@ -79,7 +79,7 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 			msg := fmt.Sprintf("[%d/%d] %s: file terenkripsi, enc_key wajib diisi", idx+1, total, filepath.Base(ent.File))
 			logger.Warn(msg)
 			if opts.StopOnError {
-				return nil, fmt.Errorf(msg)
+				return nil, errors.New(msg)
 			}
 			continue
 		}
@@ -94,7 +94,7 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 				msg := fmt.Sprintf("file tidak ditemukan: %s", ent.File)
 				logger.Warn(msg)
 				if opts.StopOnError {
-					return nil, fmt.Errorf(msg)
+					return nil, errors.New(msg)
 				}
 				continue
 			}

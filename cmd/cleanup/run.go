@@ -3,8 +3,8 @@ package cleanupcmd
 import (
 	"sfDBTools/internal/cleanup"
 	defaultVal "sfDBTools/internal/defaultval"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
-	"sfDBTools/internal/types"
 
 	"github.com/spf13/cobra"
 )
@@ -16,8 +16,8 @@ var CmdCleanupRun = &cobra.Command{
 	Long: `Menjalankan pembersihan file backup lama sesuai konfigurasi retensi (backup.retention.days).
 File yang lebih tua dari jumlah hari retensi akan dihapus.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := cleanup.ExecuteCleanup(cmd, types.Deps, "run"); err != nil {
-			types.Deps.Logger.Error("cleanup gagal: " + err.Error())
+		if err := cleanup.ExecuteCleanup(cmd, appdeps.Deps, "run"); err != nil {
+			appdeps.Deps.Logger.Error("cleanup gagal: " + err.Error())
 		}
 	},
 }

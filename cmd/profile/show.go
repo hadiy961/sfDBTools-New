@@ -1,9 +1,9 @@
 package profilecmd
 
 import (
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/profile"
-	"sfDBTools/internal/types"
 
 	"github.com/spf13/cobra"
 )
@@ -28,7 +28,7 @@ Jika profil terenkripsi, Anda mungkin perlu memasukkan kunci enkripsi profil.`,
   # 4. Tampilkan profil yang berada di direktori khusus
   sfdbtools profile show --profile "custom-conf" --output-dir "./configs"`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return profile.ExecuteProfile(cmd, types.Deps, "show")
+		return profile.ExecuteProfile(cmd, appdeps.Deps, "show")
 	},
 }
 

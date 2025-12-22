@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sfDBTools/internal/backup"
 	defaultVal "sfDBTools/internal/defaultval"
+	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 
 	"github.com/spf13/cobra"
@@ -32,12 +32,12 @@ Jika nama database tidak diberikan via flag, akan muncul menu interaktif untuk m
   sfdbtools db-backup single --db "target_db" --compress`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
-		if types.Deps == nil {
+		if appdeps.Deps == nil {
 			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
 			return
 		}
 
-		if err := backup.ExecuteBackup(cmd, types.Deps, consts.ModeSingle); err != nil {
+		if err := backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModeSingle); err != nil {
 			// Error has been logged by ExecuteBackup
 			return
 		}
