@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"fmt"
+	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/ui"
@@ -16,7 +17,7 @@ func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Cli
 
 	// Jika ada include flags, selalu gunakan filter biasa (tidak perlu multi-select)
 	if hasIncludeFlags {
-		return database.FilterFromBackupOptions(ctx, client, s.BackupDBOptions)
+		return helpers.FilterFromBackupOptions(ctx, client, s.BackupDBOptions)
 	}
 
 	// Jika ini command filter (IsFilterCommand=true) dan tidak ada include/exclude yang di-set manual
@@ -29,7 +30,7 @@ func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Cli
 	}
 
 	// Untuk command all atau filter dengan flags → gunakan filter biasa dengan nilai default
-	return database.FilterFromBackupOptions(ctx, client, s.BackupDBOptions)
+	return helpers.FilterFromBackupOptions(ctx, client, s.BackupDBOptions)
 }
 
 // displayFilterWarnings menampilkan warning messages untuk filter stats

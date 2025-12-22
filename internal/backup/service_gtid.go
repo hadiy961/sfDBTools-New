@@ -1,6 +1,9 @@
 package backup
 
-import "context"
+import (
+	"context"
+	"sfDBTools/internal/backup/helpers"
+)
 
 // CaptureAndSaveGTID mengambil dan menyimpan GTID info jika diperlukan
 func (s *Service) CaptureAndSaveGTID(ctx context.Context, backupFilePath string) error {
@@ -9,7 +12,7 @@ func (s *Service) CaptureAndSaveGTID(ctx context.Context, backupFilePath string)
 	}
 
 	s.Log.Info("Mengambil informasi GTID sebelum backup...")
-	gtidInfo, err := s.Client.GetFullGTIDInfo(ctx)
+	gtidInfo, err := helpers.GetFullGTIDInfo(ctx, s.Client)
 	if err != nil {
 		s.Log.Warnf("Gagal mendapatkan GTID: %v", err)
 		return nil

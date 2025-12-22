@@ -1,29 +1,28 @@
-package database
+package helpers
 
 import (
 	"context"
-	"sfDBTools/internal/types"
 	"time"
+
+	"sfDBTools/internal/types"
+	"sfDBTools/pkg/database"
 )
 
-// SaveDatabaseDetail menyimpan detail database ke tabel database_details menggunakan stored procedure
-func (s *Client) SaveDatabaseDetail(ctx context.Context, detail types.DatabaseDetailInfo, serverHost string, serverPort int) error {
-	// Parse collection time
+// SaveDatabaseDetail menyimpan detail database ke tabel database_details menggunakan stored procedure.
+func SaveDatabaseDetail(ctx context.Context, client *database.Client, detail types.DatabaseDetailInfo, serverHost string, serverPort int) error {
 	collectionTime, err := time.Parse("2006-01-02 15:04:05", detail.CollectionTime)
 	if err != nil {
 		collectionTime = time.Now()
 	}
 
-	// Prepare error message (NULL if no error)
 	var errorMsg *string
 	if detail.Error != "" {
 		errorMsg = &detail.Error
 	}
 
-	// Call stored procedure
 	query := `CALL sp_insert_database_detail(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err = s.DB().ExecContext(ctx, query,
+	_, err = client.DB().ExecContext(ctx, query,
 		detail.DatabaseName,
 		serverHost,
 		serverPort,

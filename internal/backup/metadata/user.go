@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sfDBTools/internal/applog"
+	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/helper"
@@ -38,11 +39,11 @@ func ExportAndSaveUserGrants(ctx context.Context, client *database.Client, logge
 	if len(databases) == 0 {
 		// Export semua user grants (mode all)
 		logger.Debug("Mengambil semua user grants dari database...")
-		userGrantsSQL, err = client.ExportAllUserGrants(ctx)
+		userGrantsSQL, err = helpers.ExportAllUserGrants(ctx, client)
 	} else {
 		// Export hanya user dengan grants ke database tertentu (mode filter, primary, secondary)
 		logger.Debugf("Mengambil user grants untuk database: %v", databases)
-		userGrantsSQL, err = client.ExportUserGrantsForDatabases(ctx, databases)
+		userGrantsSQL, err = helpers.ExportUserGrantsForDatabases(ctx, client, databases)
 	}
 
 	if err != nil {

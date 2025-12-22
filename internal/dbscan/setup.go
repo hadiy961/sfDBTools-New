@@ -9,6 +9,7 @@ package dbscan
 import (
 	"context"
 	"fmt"
+	"sfDBTools/internal/dbscan/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
@@ -188,7 +189,7 @@ func (s *Service) prepareRescanSession(ctx context.Context, headerTitle string, 
 	}()
 
 	// Ambil list failed databases
-	failedDBNames, err := database.GetFailedDatabaseNames(ctx, targetClient)
+	failedDBNames, err := helpers.GetFailedDatabaseNames(ctx, targetClient)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("gagal mendapatkan list database yang gagal: %w", err)
 	}
@@ -290,5 +291,5 @@ func (s *Service) getTargetDBConfig() types.ServerDBConnection {
 
 // GetFilteredDatabases mengambil dan memfilter daftar database.
 func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Client) ([]string, *types.FilterStats, error) {
-	return database.FilterFromScanOptions(ctx, client, &s.ScanOptions)
+	return helpers.FilterFromScanOptions(ctx, client, &s.ScanOptions)
 }

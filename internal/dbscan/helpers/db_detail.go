@@ -1,15 +1,17 @@
-package database
+package helpers
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/database"
 )
 
 // GetSingleDatabaseDetail mengambil detail database dari tabel database_details
-// berdasarkan database_name, server_host, dan server_port
-func (c *Client) GetSingleDatabaseDetail(ctx context.Context, databaseName, serverHost string, serverPort int) (*types.DatabaseDetail, error) {
+// berdasarkan database_name, server_host, dan server_port.
+func GetSingleDatabaseDetail(ctx context.Context, client *database.Client, databaseName, serverHost string, serverPort int) (*types.DatabaseDetail, error) {
 	query := `
 		SELECT 
 			database_name,
@@ -35,7 +37,7 @@ func (c *Client) GetSingleDatabaseDetail(ctx context.Context, databaseName, serv
 	var detail types.DatabaseDetail
 	var errorMessage sql.NullString
 
-	err := c.db.QueryRowContext(ctx, query, databaseName, serverHost, serverPort).Scan(
+	err := client.DB().QueryRowContext(ctx, query, databaseName, serverHost, serverPort).Scan(
 		&detail.DatabaseName,
 		&detail.SizeBytes,
 		&detail.SizeHuman,
@@ -49,7 +51,6 @@ func (c *Client) GetSingleDatabaseDetail(ctx context.Context, databaseName, serv
 		&detail.CreatedAt,
 		&detail.UpdatedAt,
 	)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("detail database tidak ditemukan untuk database '%s'", databaseName)
@@ -57,7 +58,6 @@ func (c *Client) GetSingleDatabaseDetail(ctx context.Context, databaseName, serv
 		return nil, fmt.Errorf("gagal mengambil detail database: %w", err)
 	}
 
-	// Handle nullable error_message
 	if errorMessage.Valid {
 		detail.ErrorMessage = &errorMessage.String
 	}

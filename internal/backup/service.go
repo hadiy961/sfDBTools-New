@@ -9,6 +9,7 @@ package backup
 import (
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
+	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/internal/backup/modes"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
@@ -34,7 +35,7 @@ type Service struct {
 	// Backup-specific state
 	currentBackupFile string
 	backupInProgress  bool
-	gtidInfo          *database.GTIDInfo
+	gtidInfo          *helpers.GTIDInfo
 	excludedDatabases []string // List database yang dikecualikan (untuk mode 'all')
 }
 

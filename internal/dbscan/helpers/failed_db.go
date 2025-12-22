@@ -1,21 +1,17 @@
-// File : pkg/database/database_failed.go
-// Deskripsi : Fungsi untuk mendapatkan list database yang gagal di-scan
-// Author : Hadiyatna Muflihun
-// Tanggal : 16 Oktober 2025
-// Last Modified : 16 Oktober 2025
-
-package database
+package helpers
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/database"
 )
 
 // GetFailedDatabases mengambil list database yang gagal di-scan (error_message IS NOT NULL)
-// dari table database_details
-func GetFailedDatabases(ctx context.Context, client *Client) ([]types.FailedDatabaseScanInfo, error) {
+// dari table database_details.
+func GetFailedDatabases(ctx context.Context, client *database.Client) ([]types.FailedDatabaseScanInfo, error) {
 	query := `
 		SELECT 
 			database_name,
@@ -64,8 +60,8 @@ func GetFailedDatabases(ctx context.Context, client *Client) ([]types.FailedData
 	return failedDatabases, nil
 }
 
-// GetFailedDatabaseNames mengambil hanya nama database yang gagal
-func GetFailedDatabaseNames(ctx context.Context, client *Client) ([]string, error) {
+// GetFailedDatabaseNames mengambil hanya nama database yang gagal.
+func GetFailedDatabaseNames(ctx context.Context, client *database.Client) ([]string, error) {
 	failedDatabases, err := GetFailedDatabases(ctx, client)
 	if err != nil {
 		return nil, err
@@ -79,8 +75,8 @@ func GetFailedDatabaseNames(ctx context.Context, client *Client) ([]string, erro
 	return names, nil
 }
 
-// GetFailedDatabaseCount menghitung jumlah database yang gagal
-func GetFailedDatabaseCount(ctx context.Context, client *Client) (int, error) {
+// GetFailedDatabaseCount menghitung jumlah database yang gagal.
+func GetFailedDatabaseCount(ctx context.Context, client *database.Client) (int, error) {
 	query := `
 		SELECT COUNT(*) 
 		FROM database_details

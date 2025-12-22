@@ -78,7 +78,7 @@ func ExecuteScanWithSave(
 	saveEnabled := opts.SaveToDB && targetClient != nil
 
 	// Siapkan opsi untuk override size menggunakan hasil local scan (jika ada)
-	var collectOpts *database.DetailCollectOptions
+	var collectOpts *DetailCollectOptions
 	if opts.LocalScan && opts.LocalSizes != nil {
 		sizeProvider := func(ctx context.Context, dbName string) (int64, error) {
 			if sz, ok := opts.LocalSizes[dbName]; ok {
@@ -86,10 +86,10 @@ func ExecuteScanWithSave(
 			}
 			return 0, nil
 		}
-		collectOpts = &database.DetailCollectOptions{SizeProvider: sizeProvider}
+		collectOpts = &DetailCollectOptions{SizeProvider: sizeProvider}
 	}
 
-	detailsMap, collectErr := sourceClient.CollectDatabaseDetailsWithOptions(ctx, dbNames, opts.Logger, collectOpts, func(detail types.DatabaseDetailInfo) error {
+	detailsMap, collectErr := CollectDatabaseDetailsWithOptions(ctx, sourceClient, dbNames, opts.Logger, collectOpts, func(detail types.DatabaseDetailInfo) error {
 		detailsMap[detail.DatabaseName] = detail
 
 		// Jika LocalScan aktif dan ada ukuran lokal, pastikan nilai size sudah sesuai
@@ -106,7 +106,7 @@ func ExecuteScanWithSave(
 		}
 
 		// Lakukan penyimpanan segera
-		if err := targetClient.SaveDatabaseDetail(ctx, detail, serverHost, serverPort); err != nil {
+		if err := SaveDatabaseDetail(ctx, targetClient, detail, serverHost, serverPort); err != nil {
 			failedCount++
 			errors = append(errors, fmt.Sprintf("%s: %v", detail.DatabaseName, err))
 			opts.Logger.Errorf("Gagal menyimpan database %s: %v", detail.DatabaseName, err)
