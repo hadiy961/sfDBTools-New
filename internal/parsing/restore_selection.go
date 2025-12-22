@@ -7,7 +7,6 @@ package parsing
 
 import (
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 
 	"github.com/spf13/cobra"
@@ -21,13 +20,8 @@ func ParsingRestoreSelectionOptions(cmd *cobra.Command) (types.RestoreSelectionO
 		StopOnError: true, // default stop pada error pertama
 	}
 
-	// Profile & key
-	if v := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_TARGET_PROFILE); v != "" {
-		opts.Profile.Path = v
-	}
-	if v := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY); v != "" {
-		opts.Profile.EncryptionKey = v
-	}
+	// Profile & key (target)
+	PopulateTargetProfileFlags(cmd, &opts.Profile)
 
 	// CSV source
 	if v := helper.GetStringFlagOrEnv(cmd, "csv", ""); v != "" {
@@ -35,32 +29,15 @@ func ParsingRestoreSelectionOptions(cmd *cobra.Command) (types.RestoreSelectionO
 	}
 
 	// Safety flags
-	if cmd.Flags().Changed("drop-target") {
-		opts.DropTarget = helper.GetBoolFlagOrEnv(cmd, "drop-target", "")
-	}
-	if cmd.Flags().Changed("skip-backup") {
-		opts.SkipBackup = helper.GetBoolFlagOrEnv(cmd, "skip-backup", "")
-	}
-	if cmd.Flags().Changed("dry-run") {
-		opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
-	}
-	if cmd.Flags().Changed("force") {
-		opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
-	}
-	if cmd.Flags().Changed("continue-on-error") {
-		opts.StopOnError = !helper.GetBoolFlagOrEnv(cmd, "continue-on-error", "")
-	}
+	PopulateRestoreSafetyFlags(cmd, &opts.DropTarget, &opts.SkipBackup, &opts.DryRun, &opts.Force)
+	PopulateStopOnErrorFromContinueFlag(cmd, &opts.StopOnError)
 
 	// Ticket
-	if v := helper.GetStringFlagOrEnv(cmd, "ticket", ""); v != "" {
-		opts.Ticket = v
-	}
+	PopulateRestoreTicket(cmd, &opts.Ticket)
 
 	// Backup options
 	opts.BackupOptions = &types.RestoreBackupOptions{}
-	if v := helper.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {
-		opts.BackupOptions.OutputDir = v
-	}
+	PopulateRestoreBackupDir(cmd, opts.BackupOptions)
 
 	return opts, nil
 }

@@ -2,7 +2,6 @@ package parsing
 
 import (
 	"sfDBTools/internal/types"
-	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 
@@ -20,7 +19,7 @@ func PopulateProfileFlags(cmd *cobra.Command, opts *types.ProfileInfo) {
 }
 
 // PopulateEncryptionFlags membaca flag encryption dan mengupdate struct.
-func PopulateEncryptionFlags(cmd *cobra.Command, opts *types_backup.EncryptionOptions) {
+func PopulateEncryptionFlags(cmd *cobra.Command, opts *types.EncryptionOptions) {
 	if v := helper.GetStringFlagOrEnv(cmd, "encryption-key", consts.ENV_BACKUP_ENCRYPTION_KEY); v != "" {
 		opts.Key = v
 		opts.Enabled = true
@@ -28,7 +27,7 @@ func PopulateEncryptionFlags(cmd *cobra.Command, opts *types_backup.EncryptionOp
 }
 
 // PopulateCompressionFlags membaca flag compression dan mengupdate struct.
-func PopulateCompressionFlags(cmd *cobra.Command, opts *types_backup.CompressionOptions) {
+func PopulateCompressionFlags(cmd *cobra.Command, opts *types.CompressionOptions) {
 	if v := helper.GetStringFlagOrEnv(cmd, "compress-type", ""); v != "" {
 		if v == "none" {
 			opts.Type = v
@@ -62,5 +61,71 @@ func PopulateFilterFlags(cmd *cobra.Command, opts *types.FilterOptions) {
 	}
 	if cmd.Flags().Changed("exclude-empty") {
 		opts.ExcludeEmpty = helper.GetBoolFlagOrEnv(cmd, "exclude-empty", "")
+	}
+}
+
+// -------------------- restore helpers --------------------
+
+// PopulateTargetProfileFlags membaca flag profile target (restore) dan mengupdate struct.
+func PopulateTargetProfileFlags(cmd *cobra.Command, opts *types.ProfileInfo) {
+	if v := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_TARGET_PROFILE); v != "" {
+		opts.Path = v
+	}
+	if v := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY); v != "" {
+		opts.EncryptionKey = v
+	}
+}
+
+// PopulateRestoreEncryptionKey membaca encryption key untuk decrypt backup file.
+func PopulateRestoreEncryptionKey(cmd *cobra.Command, key *string) {
+	if v := helper.GetStringFlagOrEnv(cmd, "encryption-key", consts.ENV_BACKUP_ENCRYPTION_KEY); v != "" {
+		*key = v
+	}
+}
+
+// PopulateRestoreSafetyFlags membaca flag safety umum untuk restore.
+func PopulateRestoreSafetyFlags(cmd *cobra.Command, dropTarget, skipBackup, dryRun, force *bool) {
+	if cmd.Flags().Changed("drop-target") {
+		*dropTarget = helper.GetBoolFlagOrEnv(cmd, "drop-target", "")
+	}
+	if cmd.Flags().Changed("skip-backup") {
+		*skipBackup = helper.GetBoolFlagOrEnv(cmd, "skip-backup", "")
+	}
+	if cmd.Flags().Changed("dry-run") {
+		*dryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
+	}
+	if cmd.Flags().Changed("force") {
+		*force = helper.GetBoolFlagOrEnv(cmd, "force", "")
+	}
+}
+
+// PopulateRestoreTicket membaca flag ticket.
+func PopulateRestoreTicket(cmd *cobra.Command, ticket *string) {
+	if v := helper.GetStringFlagOrEnv(cmd, "ticket", ""); v != "" {
+		*ticket = v
+	}
+}
+
+// PopulateRestoreBackupDir membaca flag backup-dir ke RestoreBackupOptions.
+func PopulateRestoreBackupDir(cmd *cobra.Command, opts *types.RestoreBackupOptions) {
+	if v := helper.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {
+		opts.OutputDir = v
+	}
+}
+
+// PopulateRestoreGrantsFlags membaca flag grants-file dan skip-grants.
+func PopulateRestoreGrantsFlags(cmd *cobra.Command, grantsFile *string, skipGrants *bool) {
+	if v := helper.GetStringFlagOrEnv(cmd, "grants-file", ""); v != "" {
+		*grantsFile = v
+	}
+	if cmd.Flags().Changed("skip-grants") {
+		*skipGrants = helper.GetBoolFlagOrEnv(cmd, "skip-grants", "")
+	}
+}
+
+// PopulateStopOnErrorFromContinueFlag mengatur StopOnError berbasis flag continue-on-error.
+func PopulateStopOnErrorFromContinueFlag(cmd *cobra.Command, stopOnError *bool) {
+	if cmd.Flags().Changed("continue-on-error") {
+		*stopOnError = !helper.GetBoolFlagOrEnv(cmd, "continue-on-error", "")
 	}
 }

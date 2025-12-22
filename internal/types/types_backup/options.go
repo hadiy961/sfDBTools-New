@@ -11,19 +11,6 @@ import (
 	"time"
 )
 
-// CompressionOptions menyimpan opsi kompresi untuk backup.
-type CompressionOptions struct {
-	Enabled bool
-	Type    string
-	Level   int
-}
-
-// EncryptionOptions menyimpan opsi enkripsi untuk backup.
-type EncryptionOptions struct {
-	Enabled bool
-	Key     string
-}
-
 // BackupExecutionConfig konfigurasi untuk backup execution
 type BackupExecutionConfig struct {
 	DBName       string
@@ -39,8 +26,8 @@ type BackupExecutionConfig struct {
 type BackupDBOptions struct {
 	Filter          types.FilterOptions
 	Profile         types.ProfileInfo
-	Compression     CompressionOptions
-	Encryption      EncryptionOptions
+	Compression     types.CompressionOptions
+	Encryption      types.EncryptionOptions
 	Cleanup         types.CleanupOptions
 	DryRun          bool
 	OutputDir       string

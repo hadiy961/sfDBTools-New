@@ -8,7 +8,6 @@ package parsing
 
 import (
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 
 	"github.com/spf13/cobra"
@@ -21,28 +20,14 @@ func ParsingRestoreSingleOptions(cmd *cobra.Command) (types.RestoreSingleOptions
 		SkipBackup: false, // Default false
 	}
 
-	// Profile & key
-	if v := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_TARGET_PROFILE); v != "" {
-		opts.Profile.Path = v
-	}
-	if v := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY); v != "" {
-		opts.Profile.EncryptionKey = v
-	}
+	// Profile & key (target)
+	PopulateTargetProfileFlags(cmd, &opts.Profile)
 
 	// Encryption key untuk decrypt backup file
-	if v := helper.GetStringFlagOrEnv(cmd, "encryption-key", consts.ENV_BACKUP_ENCRYPTION_KEY); v != "" {
-		opts.EncryptionKey = v
-	}
+	PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey)
 
-	// Drop target database
-	if cmd.Flags().Changed("drop-target") {
-		opts.DropTarget = helper.GetBoolFlagOrEnv(cmd, "drop-target", "")
-	}
-
-	// Skip backup
-	if cmd.Flags().Changed("skip-backup") {
-		opts.SkipBackup = helper.GetBoolFlagOrEnv(cmd, "skip-backup", "")
-	}
+	// Safety flags
+	PopulateRestoreSafetyFlags(cmd, &opts.DropTarget, &opts.SkipBackup, &opts.DryRun, &opts.Force)
 
 	// File backup
 	if v := helper.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
@@ -50,42 +35,21 @@ func ParsingRestoreSingleOptions(cmd *cobra.Command) (types.RestoreSingleOptions
 	}
 
 	// Ticket number
-	if v := helper.GetStringFlagOrEnv(cmd, "ticket", ""); v != "" {
-		opts.Ticket = v
-	}
+	PopulateRestoreTicket(cmd, &opts.Ticket)
 
 	// Target database
 	if v := helper.GetStringFlagOrEnv(cmd, "target-db", ""); v != "" {
 		opts.TargetDB = v
 	}
 
-	// User grants file
-	if v := helper.GetStringFlagOrEnv(cmd, "grants-file", ""); v != "" {
-		opts.GrantsFile = v
-	}
-
-	// Skip grants
-	if cmd.Flags().Changed("skip-grants") {
-		opts.SkipGrants = helper.GetBoolFlagOrEnv(cmd, "skip-grants", "")
-	}
-
-	// Dry-run mode
-	if cmd.Flags().Changed("dry-run") {
-		opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
-	}
-
-	// Force mode
-	if cmd.Flags().Changed("force") {
-		opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
-	}
+	// Grants
+	PopulateRestoreGrantsFlags(cmd, &opts.GrantsFile, &opts.SkipGrants)
 
 	// Backup options untuk pre-restore backup
 	opts.BackupOptions = &types.RestoreBackupOptions{}
 
 	// Backup directory
-	if v := helper.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {
-		opts.BackupOptions.OutputDir = v
-	}
+	PopulateRestoreBackupDir(cmd, opts.BackupOptions)
 
 	return opts, nil
 }
@@ -100,28 +64,14 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptio
 		ConfirmIfNotExists: true,  // Default true
 	}
 
-	// Profile & key
-	if v := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_TARGET_PROFILE); v != "" {
-		opts.Profile.Path = v
-	}
-	if v := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY); v != "" {
-		opts.Profile.EncryptionKey = v
-	}
+	// Profile & key (target)
+	PopulateTargetProfileFlags(cmd, &opts.Profile)
 
 	// Encryption key untuk decrypt backup file
-	if v := helper.GetStringFlagOrEnv(cmd, "encryption-key", consts.ENV_BACKUP_ENCRYPTION_KEY); v != "" {
-		opts.EncryptionKey = v
-	}
+	PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey)
 
-	// Drop target database
-	if cmd.Flags().Changed("drop-target") {
-		opts.DropTarget = helper.GetBoolFlagOrEnv(cmd, "drop-target", "")
-	}
-
-	// Skip backup
-	if cmd.Flags().Changed("skip-backup") {
-		opts.SkipBackup = helper.GetBoolFlagOrEnv(cmd, "skip-backup", "")
-	}
+	// Safety flags (force handled khusus di bawah)
+	PopulateRestoreSafetyFlags(cmd, &opts.DropTarget, &opts.SkipBackup, &opts.DryRun, &opts.Force)
 
 	// File backup primary
 	if v := helper.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
@@ -134,32 +84,19 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptio
 	}
 
 	// Ticket number
-	if v := helper.GetStringFlagOrEnv(cmd, "ticket", ""); v != "" {
-		opts.Ticket = v
-	}
+	PopulateRestoreTicket(cmd, &opts.Ticket)
 
 	// Target database
 	if v := helper.GetStringFlagOrEnv(cmd, "target-db", ""); v != "" {
 		opts.TargetDB = v
 	}
 
-	// User grants file
-	if v := helper.GetStringFlagOrEnv(cmd, "grants-file", ""); v != "" {
-		opts.GrantsFile = v
-	} // Skip grants
-	if cmd.Flags().Changed("skip-grants") {
-		opts.SkipGrants = helper.GetBoolFlagOrEnv(cmd, "skip-grants", "")
-	}
-	// Dry-run mode
-	if cmd.Flags().Changed("dry-run") {
-		opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
-	}
-	// Force mode
-	if cmd.Flags().Changed("force") {
-		opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
-		if opts.Force {
-			opts.ConfirmIfNotExists = false
-		}
+	// Grants
+	PopulateRestoreGrantsFlags(cmd, &opts.GrantsFile, &opts.SkipGrants)
+
+	// Force mode special: jika force, maka skip konfirmasi.
+	if opts.Force {
+		opts.ConfirmIfNotExists = false
 	}
 
 	// Include dmart
@@ -181,9 +118,7 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptio
 	opts.BackupOptions = &types.RestoreBackupOptions{}
 
 	// Backup directory
-	if v := helper.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {
-		opts.BackupOptions.OutputDir = v
-	}
+	PopulateRestoreBackupDir(cmd, opts.BackupOptions)
 
 	return opts, nil
 }
@@ -197,44 +132,20 @@ func ParsingRestoreAllOptions(cmd *cobra.Command) (types.RestoreAllOptions, erro
 	}
 
 	// 1. Basic configs (Profile, Keys, File)
-	if v := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_TARGET_PROFILE); v != "" {
-		opts.Profile.Path = v
-	}
-	if v := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY); v != "" {
-		opts.Profile.EncryptionKey = v
-	}
+	PopulateTargetProfileFlags(cmd, &opts.Profile)
 	if v := helper.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
 		opts.File = v
 	}
-	if v := helper.GetStringFlagOrEnv(cmd, "encryption-key", consts.ENV_BACKUP_ENCRYPTION_KEY); v != "" {
-		opts.EncryptionKey = v
-	}
+	PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey)
 
 	// 2. Safety Flags
-	if cmd.Flags().Changed("skip-backup") {
-		opts.SkipBackup = helper.GetBoolFlagOrEnv(cmd, "skip-backup", "")
-	}
-	if cmd.Flags().Changed("dry-run") {
-		opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
-	}
-	if cmd.Flags().Changed("force") {
-		opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
-	}
-	if cmd.Flags().Changed("continue-on-error") {
-		opts.StopOnError = !helper.GetBoolFlagOrEnv(cmd, "continue-on-error", "")
-	}
-	if cmd.Flags().Changed("drop-target") {
-		opts.DropTarget = helper.GetBoolFlagOrEnv(cmd, "drop-target", "")
-	}
+	PopulateRestoreSafetyFlags(cmd, &opts.DropTarget, &opts.SkipBackup, &opts.DryRun, &opts.Force)
+	PopulateStopOnErrorFromContinueFlag(cmd, &opts.StopOnError)
 
 	// 4. Ticket & Backup Dir
-	if v := helper.GetStringFlagOrEnv(cmd, "ticket", ""); v != "" {
-		opts.Ticket = v
-	}
+	PopulateRestoreTicket(cmd, &opts.Ticket)
 	opts.BackupOptions = &types.RestoreBackupOptions{}
-	if v := helper.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {
-		opts.BackupOptions.OutputDir = v
-	}
+	PopulateRestoreBackupDir(cmd, opts.BackupOptions)
 
 	return opts, nil
 }

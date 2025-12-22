@@ -2,7 +2,6 @@ package flags
 
 import (
 	"sfDBTools/internal/types"
-	"sfDBTools/internal/types/types_backup"
 
 	"github.com/spf13/cobra"
 )
@@ -16,13 +15,13 @@ func AddProfileFlags(cmd *cobra.Command, opts *types.ProfileInfo) {
 
 // AddEncryptionFlags mendaftarkan flag untuk opsi enkripsi output.
 // Flag: --encryption-key
-func AddEncryptionFlags(cmd *cobra.Command, opts *types_backup.EncryptionOptions) {
+func AddEncryptionFlags(cmd *cobra.Command, opts *types.EncryptionOptions) {
 	cmd.Flags().StringVarP(&opts.Key, "encryption-key", "K", opts.Key, "Kunci enkripsi yang digunakan")
 }
 
 // AddCompressionFlags mendaftarkan flag untuk opsi kompresi.
 // Flag: --compress-type, --compress-level
-func AddCompressionFlags(cmd *cobra.Command, opts *types_backup.CompressionOptions) {
+func AddCompressionFlags(cmd *cobra.Command, opts *types.CompressionOptions) {
 	cmd.Flags().StringVarP(&opts.Type, "compress-type", "C", opts.Type, "Tipe kompresi (gzip, zstd, xz, pgzip, zlib, none)")
 	cmd.Flags().IntVar(&opts.Level, "compress-level", opts.Level, "Tingkat kompresi (1-9)")
 }

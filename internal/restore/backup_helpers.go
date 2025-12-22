@@ -70,12 +70,12 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 		File: types_backup.BackupFileInfo{
 			Filename: filename,
 		},
-		Compression: types_backup.CompressionOptions{
+		Compression: types.CompressionOptions{
 			Enabled: backupOpts.Compression.Enabled,
 			Type:    backupOpts.Compression.Type,
 			Level:   backupOpts.Compression.Level,
 		},
-		Encryption: types_backup.EncryptionOptions{
+		Encryption: types.EncryptionOptions{
 			Enabled: backupOpts.Encryption.Enabled,
 			Key:     backupOpts.Encryption.Key,
 		},

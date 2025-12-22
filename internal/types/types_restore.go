@@ -50,19 +50,6 @@ type RestoreBackupOptions struct {
 	Encryption  EncryptionOptions
 }
 
-// CompressionOptions menyimpan opsi kompresi
-type CompressionOptions struct {
-	Enabled bool
-	Type    string
-	Level   int
-}
-
-// EncryptionOptions menyimpan opsi enkripsi
-type EncryptionOptions struct {
-	Enabled bool
-	Key     string
-}
-
 // RestorePrimaryOptions menyimpan opsi konfigurasi untuk proses restore primary database
 type RestorePrimaryOptions struct {
 	Profile            ProfileInfo           // Profile database target untuk restore

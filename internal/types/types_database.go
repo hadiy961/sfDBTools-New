@@ -101,3 +101,16 @@ type DatabaseDetail struct {
 	CreatedAt      time.Time `db:"created_at"`
 	UpdatedAt      time.Time `db:"updated_at"`
 }
+
+// CompressionOptions menyimpan opsi kompresi (shared across backup/restore)
+type CompressionOptions struct {
+	Enabled bool
+	Type    string
+	Level   int
+}
+
+// EncryptionOptions menyimpan opsi enkripsi (shared across backup/restore)
+type EncryptionOptions struct {
+	Enabled bool
+	Key     string
+}
