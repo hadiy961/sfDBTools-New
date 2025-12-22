@@ -1,10 +1,19 @@
+// File : pkg/validation/validation.go
+// Deskripsi : Fungsi fungsi untuk validasi ada disini
+// Author : Hadiyatna Muflihun
+// Tanggal : 11 November 2025
+// Last Modified : 11 November 2025
 package validation
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
+	"sfDBTools/pkg/consts"
 	"strings"
+
+	"github.com/AlecAivazis/survey/v2/terminal"
 )
 
 // ValidateSubdirPattern memastikan pola valid:
@@ -52,4 +61,26 @@ func ValidateSubdirPattern(pattern string, vars map[string]string) error {
 		}
 	}
 	return nil
+}
+
+var ErrUserCancelled = errors.New("user_cancelled")
+var ErrConnectionFailedRetry = errors.New("connection_failed_retry")
+
+// HandleInputError menangani error dari input/survey dan mengubahnya menjadi ErrUserCancelled jika perlu.
+func HandleInputError(err error) error {
+	if err == terminal.InterruptErr {
+		return ErrUserCancelled
+	}
+	return err
+}
+
+// ProfileExt memastikan nama memiliki suffix .cnf.enc
+func ProfileExt(name string) string {
+	if strings.HasSuffix(name, consts.ExtCnfEnc) {
+		return name
+	}
+	if strings.HasSuffix(name, consts.ExtCnf) {
+		return name + consts.ExtEnc
+	}
+	return name + consts.ExtCnfEnc
 }

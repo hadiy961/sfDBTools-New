@@ -9,8 +9,8 @@ package profile
 import (
 	"fmt"
 	"sfDBTools/internal/types"
+	profilehelper "sfDBTools/pkg/helper/profile"
 	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
 
 	"github.com/AlecAivazis/survey/v2"

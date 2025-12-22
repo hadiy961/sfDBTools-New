@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
+	profilehelper "sfDBTools/pkg/helper/profile"
 	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/profilehelper"
 	"sfDBTools/pkg/ui"
 )
 

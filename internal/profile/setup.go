@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/profilehelper"
+	profilehelper "sfDBTools/pkg/helper/profile"
 	"sfDBTools/pkg/validation"
 	"strings"
 )

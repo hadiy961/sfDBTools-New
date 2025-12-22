@@ -1,9 +1,10 @@
-package helper
+package crypto
 
 import (
 	"fmt"
-	"sfDBTools/pkg/encrypt"
 	"strings"
+
+	"sfDBTools/pkg/encrypt"
 )
 
 // ResolveEncryptionKey mengembalikan kunci enkripsi final dan sumbernya.

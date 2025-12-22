@@ -1,10 +1,10 @@
-package servicehelper
-
 // File : pkg/servicehelper/servicehelper_base.go
 // Deskripsi : Base helper untuk service operations dengan graceful shutdown support
 // Author : Hadiyatna Muflihun
 // Tanggal : 11 November 2025
 // Last Modified : 11 November 2025
+
+package servicehelper
 
 import (
 	"context"

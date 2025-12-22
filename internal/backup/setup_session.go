@@ -7,7 +7,7 @@ import (
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
-	"sfDBTools/pkg/profilehelper"
+	profilehelper "sfDBTools/pkg/helper/profile"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )

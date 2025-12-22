@@ -1,27 +1,21 @@
-// File : pkg/profilehelper/profilehelper_connection.go
-// Deskripsi : Helper functions untuk database connection menggunakan ProfileInfo
-// Author : Hadiyatna Muflihun
-// Tanggal : 11 November 2025
-// Last Modified : 11 November 2025
-
-package profilehelper
+package profile
 
 import (
 	"fmt"
+
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 )
 
-// ConnectWithProfile membuat koneksi database menggunakan ProfileInfo
-// Ini adalah wrapper untuk ConnectToSourceDatabase yang lebih sederhana
+// ConnectWithProfile membuat koneksi database menggunakan ProfileInfo.
 func ConnectWithProfile(profile *types.ProfileInfo, initialDB string) (*database.Client, error) {
 	if profile == nil {
 		return nil, fmt.Errorf("profile tidak boleh nil")
 	}
 
 	if initialDB == "" {
-		initialDB = consts.DefaultInitialDatabase // default ke system database
+		initialDB = consts.DefaultInitialDatabase
 	}
 
 	creds := types.SourceDBConnection{

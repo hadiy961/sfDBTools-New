@@ -14,7 +14,7 @@ import (
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/profilehelper"
+	profilehelper "sfDBTools/pkg/helper/profile"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )

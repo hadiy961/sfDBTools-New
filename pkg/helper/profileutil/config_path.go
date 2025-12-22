@@ -1,22 +1,31 @@
-package helper
+package profileutil
 
 import (
 	"fmt"
 	"path/filepath"
-	"sfDBTools/internal/appconfig"
-	"sfDBTools/pkg/validation"
 	"strings"
+
+	"sfDBTools/internal/appconfig"
+	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/validation"
 )
 
-// ResolveConfigPath mengubah name/path menjadi absolute path di config dir dan nama normalized tanpa suffix
+// TrimProfileSuffix menghapus suffix .cnf.enc dari nama jika ada.
+func TrimProfileSuffix(name string) string {
+	return strings.TrimSuffix(strings.TrimSuffix(name, consts.ExtEnc), consts.ExtCnf)
+}
+
+// ResolveConfigPath mengubah name/path menjadi absolute path di config dir dan nama normalized tanpa suffix.
 func ResolveConfigPath(spec string) (string, string, error) {
 	if strings.TrimSpace(spec) == "" {
 		return "", "", fmt.Errorf("nama atau path file konfigurasi kosong")
 	}
+
 	cfg, err := appconfig.LoadConfigFromEnv()
 	if err != nil {
 		return "", "", fmt.Errorf("gagal memuat konfigurasi aplikasi: %w", err)
 	}
+
 	cfgDir := cfg.ConfigDir.DatabaseProfile
 	var absPath string
 	if filepath.IsAbs(spec) {
@@ -26,7 +35,6 @@ func ResolveConfigPath(spec string) (string, string, error) {
 	}
 	absPath = validation.ProfileExt(absPath)
 
-	// Nama normalized
 	name := TrimProfileSuffix(filepath.Base(absPath))
 	return absPath, name, nil
 }
