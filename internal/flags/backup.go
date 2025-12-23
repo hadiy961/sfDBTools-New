@@ -83,6 +83,9 @@ func AddBackupFilterFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions
 
 	// Hanya include filters (tidak ada exclude)
 	addBackupIncludeFilterFlags(cmd, opts)
+
+	// Exclude Data (schema-only)
+	cmd.Flags().Bool("exclude-data", opts.Filter.ExcludeData, "Backup hanya struktur database tanpa data")
 }
 
 // AddBackupAllFlags menambahkan flags untuk backup all (dengan exclude flags, tanpa include)

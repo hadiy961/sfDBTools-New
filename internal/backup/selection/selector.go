@@ -219,9 +219,9 @@ func (s *Selector) SelectDatabaseAndBuildList(ctx context.Context, client Databa
 
 			dbName := selectedDB + suffix
 			exists := pkghelper.StringSliceContainsFold(allDatabases, dbName)
-
+			s.Log.Infof("Memeriksa keberadaan database companion: %s ...", dbName)
 			if exists {
-				s.Log.Infof("Menambahkan database companion: %s", dbName)
+				s.Log.Infof("Database %s ditemukan, menambahkan sebagai database companion", dbName)
 				companionDbs = append(companionDbs, dbName)
 			} else {
 				s.Log.Warnf("Database %s tidak ditemukan, melewati", dbName)
