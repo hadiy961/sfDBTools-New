@@ -7,16 +7,20 @@
 package backup
 
 import (
+	"fmt"
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
-	"sfDBTools/internal/backup/helpers"
+	"sfDBTools/internal/backup/gtid"
 	"sfDBTools/internal/backup/modes"
+	"sfDBTools/internal/cleanup"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/backuphelper"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
 	"sfDBTools/pkg/servicehelper"
+	"sfDBTools/pkg/ui"
 )
 
 // Service adalah service utama untuk backup operations
@@ -32,10 +36,9 @@ type Service struct {
 	BackupEntry     *types_backup.BackupEntryConfig
 	Client          *database.Client
 
-	// Backup-specific state
+	gtidInfo          *gtid.GTIDInfo
 	currentBackupFile string
 	backupInProgress  bool
-	gtidInfo          *helpers.GTIDInfo
 	excludedDatabases []string // List database yang dikecualikan (untuk mode 'all')
 }
 
@@ -72,3 +75,81 @@ func NewBackupService(logs applog.Logger, cfg *appconfig.Config, backup interfac
 
 // Verify interface implementation at compile time
 var _ modes.BackupService = (*Service)(nil)
+
+// buildCompressionSettings delegates ke shared helper
+func (s *Service) buildCompressionSettings() types_backup.CompressionSettings {
+	return backuphelper.BuildCompressionSettings(s.BackupDBOptions)
+}
+
+// =============================================================================
+// Interface helpers (used by modes.BackupService)
+// =============================================================================
+
+// GetLog returns logger instance
+func (s *Service) GetLog() applog.Logger { return s.Log }
+
+// GetOptions returns backup options
+func (s *Service) GetOptions() *types_backup.BackupDBOptions { return s.BackupDBOptions }
+
+// ToBackupResult konversi BackupLoopResult ke BackupResult
+func (s *Service) ToBackupResult(loopResult types_backup.BackupLoopResult) types_backup.BackupResult {
+	return types_backup.BackupResult{
+		BackupInfo:          loopResult.BackupInfos,
+		FailedDatabaseInfos: loopResult.FailedDBs,
+		Errors:              loopResult.Errors,
+	}
+}
+
+// =============================================================================
+// Service state / shutdown
+// =============================================================================
+
+// SetCurrentBackupFile mencatat file backup yang sedang dibuat
+func (s *Service) SetCurrentBackupFile(filePath string) {
+	s.WithLock(func() {
+		s.currentBackupFile = filePath
+		s.backupInProgress = true
+	})
+}
+
+// ClearCurrentBackupFile menghapus catatan file backup setelah selesai
+func (s *Service) ClearCurrentBackupFile() {
+	s.WithLock(func() {
+		s.currentBackupFile = ""
+		s.backupInProgress = false
+	})
+}
+
+// HandleShutdown menangani graceful shutdown saat CTRL+C atau interrupt
+func (s *Service) HandleShutdown() {
+	var shouldRemoveFile bool
+	var fileToRemove string
+
+	s.WithLock(func() {
+		if s.backupInProgress && s.currentBackupFile != "" {
+			shouldRemoveFile = true
+			fileToRemove = s.currentBackupFile
+			s.currentBackupFile = ""
+			s.backupInProgress = false
+		}
+	})
+
+	if shouldRemoveFile {
+		ui.RunWithSpinnerSuspended(func() {
+			s.Log.Warn("Proses backup dihentikan, melakukan rollback...")
+			if err := cleanup.CleanupPartialBackup(fileToRemove, s.Log); err != nil {
+				s.Log.Errorf("Gagal menghapus file backup: %v", err)
+				ui.PrintError(fmt.Sprintf("⚠ WARNING: File backup partial mungkin masih tersisa: %s", fileToRemove))
+				ui.PrintError("Silakan hapus manual jika diperlukan.")
+			} else {
+				s.Log.Info("File backup partial berhasil dihapus")
+			}
+		})
+	} else {
+		ui.RunWithSpinnerSuspended(func() {
+			s.Log.Warn("Menerima signal interrupt, tidak ada proses backup aktif")
+		})
+	}
+
+	s.Cancel()
+}

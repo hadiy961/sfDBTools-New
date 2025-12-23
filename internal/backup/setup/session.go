@@ -1,8 +1,9 @@
-package backup
+package setup
 
 import (
 	"context"
 	"fmt"
+
 	"sfDBTools/internal/backup/display"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
@@ -12,8 +13,10 @@ import (
 	"sfDBTools/pkg/validation"
 )
 
-// PrepareBackupSession mengatur seluruh alur persiapan sebelum proses backup dimulai
-func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, showOptions bool) (client *database.Client, dbFiltered []string, err error) {
+type PathGenerator func(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error)
+
+// PrepareBackupSession runs the whole pre-backup preparation flow.
+func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, showOptions bool, genPaths PathGenerator) (client *database.Client, dbFiltered []string, err error) {
 	if headerTitle != "" {
 		ui.Headers(headerTitle)
 	}
@@ -22,13 +25,11 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 		return nil, nil, err
 	}
 
-	// Gunakan profilehelper untuk koneksi yang konsisten
-	client, err = profilehelper.ConnectWithProfile(&s.BackupDBOptions.Profile, consts.DefaultInitialDatabase)
+	client, err = profilehelper.ConnectWithProfile(&s.Options.Profile, consts.DefaultInitialDatabase)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Defer cleanup jika gagal
 	var success bool
 	defer func() {
 		if !success && client != nil {
@@ -36,13 +37,12 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 		}
 	}()
 
-	// Ambil hostname dari MySQL server
 	serverHostname, err := client.GetServerHostname(ctx)
 	if err != nil {
 		s.Log.Warnf("gagal mendapatkan hostname dari server: %v, menggunakan dari config", err)
-		serverHostname = s.BackupDBOptions.Profile.DBInfo.Host
+		serverHostname = s.Options.Profile.DBInfo.Host
 	} else {
-		s.BackupDBOptions.Profile.DBInfo.HostName = serverHostname
+		s.Options.Profile.DBInfo.HostName = serverHostname
 		s.Log.Infof("menggunakan hostname dari server: %s", serverHostname)
 	}
 
@@ -55,32 +55,39 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 		return nil, nil, fmt.Errorf("gagal mendapatkan daftar database: %w", err)
 	}
 
-	// Simpan excluded databases untuk metadata (khusus untuk mode 'all')
-	if s.BackupDBOptions.Mode == consts.ModeAll && stats != nil {
-		s.excludedDatabases = stats.ExcludedDatabases
-		s.Log.Infof("Menyimpan %d excluded databases untuk metadata", len(s.excludedDatabases))
-		if len(s.excludedDatabases) > 0 {
-			s.Log.Debugf("Excluded databases: %v", s.excludedDatabases)
+	if s.Options.Mode == consts.ModeAll && stats != nil && s.ExcludedDatabases != nil {
+		*s.ExcludedDatabases = stats.ExcludedDatabases
+		s.Log.Infof("Menyimpan %d excluded databases untuk metadata", len(*s.ExcludedDatabases))
+		if len(*s.ExcludedDatabases) > 0 {
+			s.Log.Debugf("Excluded databases: %v", *s.ExcludedDatabases)
 		}
 	}
 
 	if len(dbFiltered) == 0 {
 		ui.DisplayFilterStats(stats, consts.FeatureBackup, s.Log)
 		ui.PrintError("Tidak ada database yang tersedia setelah filtering!")
-		s.displayFilterWarnings(stats)
+		if stats != nil {
+			s.DisplayFilterWarnings(stats)
+		}
 		return nil, nil, fmt.Errorf("tidak ada database tersedia untuk backup setelah filtering")
 	}
 
-	// Generate output directory dan filename
-	// Untuk mode single: dbFiltered = [database_yang_dipilih]
-	// Untuk mode primary/secondary: dbFiltered = [database_yang_dipilih, companion databases]
-	dbFiltered, err = s.generateBackupPaths(ctx, client, dbFiltered)
+	if genPaths == nil {
+		return nil, nil, fmt.Errorf("path generator tidak tersedia")
+	}
+	// Generate output directory and filename (and expand dbFiltered for single/primary/secondary).
+	dbFiltered, err = genPaths(ctx, client, dbFiltered)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// Validate hasil path generation - dbFiltered tidak boleh empty
+	if len(dbFiltered) == 0 {
+		return nil, nil, fmt.Errorf("path generation menghasilkan daftar database kosong")
+	}
+
 	if !showOptions {
-		if proceed, askErr := display.NewOptionsDisplayer(s.BackupDBOptions).Display(); askErr != nil {
+		if proceed, askErr := display.NewOptionsDisplayer(s.Options).Display(); askErr != nil {
 			return nil, nil, askErr
 		} else if !proceed {
 			return nil, nil, validation.ErrUserCancelled

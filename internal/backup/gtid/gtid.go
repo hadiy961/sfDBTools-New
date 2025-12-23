@@ -1,20 +1,14 @@
-// File : internal/backup/helpers/gtid.go
-// Deskripsi : Fungsi untuk mengambil informasi GTID dari MariaDB/MySQL (Backup-specific)
-// Author : Hadiyatna Muflihun
-// Tanggal : 22 Desember 2024
-// Last Modified : 22 Desember 2024
-// Moved from: pkg/database/database_gtid.go
-
-package helpers
+package gtid
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"sfDBTools/pkg/database"
 )
 
-// GTIDInfo menyimpan informasi GTID dari database server
+// GTIDInfo menyimpan informasi GTID dari database server.
 type GTIDInfo struct {
 	MasterLogFile string // Nama file binlog master
 	MasterLogPos  int64  // Posisi di dalam binlog
@@ -36,25 +30,21 @@ func GetMasterStatus(ctx context.Context, client *database.Client) (*GTIDInfo, e
 		return nil, fmt.Errorf("SHOW MASTER STATUS tidak mengembalikan hasil. Pastikan binary logging diaktifkan")
 	}
 
-	// Get column names to determine structure
 	columns, err := rows.Columns()
 	if err != nil {
 		return nil, fmt.Errorf("gagal mendapatkan kolom: %w", err)
 	}
 
-	// Prepare slice for scanning based on column count
 	values := make([]interface{}, len(columns))
 	valuePtrs := make([]interface{}, len(columns))
 	for i := range values {
 		valuePtrs[i] = &values[i]
 	}
 
-	err = rows.Scan(valuePtrs...)
-	if err != nil {
+	if err := rows.Scan(valuePtrs...); err != nil {
 		return nil, fmt.Errorf("gagal scan hasil: %w", err)
 	}
 
-	// First two columns are always File and Position
 	var binlogFile string
 	var binlogPos int64
 
@@ -62,7 +52,6 @@ func GetMasterStatus(ctx context.Context, client *database.Client) (*GTIDInfo, e
 		binlogFile = string(values[0].([]byte))
 	}
 	if values[1] != nil {
-		// Handle both int64 and uint64 types (depends on MySQL/MariaDB version)
 		switch v := values[1].(type) {
 		case int64:
 			binlogPos = v
@@ -73,12 +62,7 @@ func GetMasterStatus(ctx context.Context, client *database.Client) (*GTIDInfo, e
 		}
 	}
 
-	gtidInfo := &GTIDInfo{
-		MasterLogFile: binlogFile,
-		MasterLogPos:  binlogPos,
-	}
-
-	return gtidInfo, nil
+	return &GTIDInfo{MasterLogFile: binlogFile, MasterLogPos: binlogPos}, nil
 }
 
 // GetBinlogGTIDPos mengambil GTID position dari binlog file dan position.
@@ -87,9 +71,7 @@ func GetBinlogGTIDPos(ctx context.Context, client *database.Client, binlogFile s
 	query := fmt.Sprintf("SELECT BINLOG_GTID_POS('%s', %d)", binlogFile, binlogPos)
 
 	var gtidPos sql.NullString
-	err := client.DB().QueryRowContext(ctx, query).Scan(&gtidPos)
-
-	if err != nil {
+	if err := client.DB().QueryRowContext(ctx, query).Scan(&gtidPos); err != nil {
 		return "", fmt.Errorf("gagal mendapatkan BINLOG_GTID_POS: %w", err)
 	}
 
@@ -103,17 +85,14 @@ func GetBinlogGTIDPos(ctx context.Context, client *database.Client, binlogFile s
 // GetFullGTIDInfo mengambil informasi GTID lengkap termasuk GTID position.
 // Fungsi ini adalah kombinasi dari GetMasterStatus dan GetBinlogGTIDPos.
 func GetFullGTIDInfo(ctx context.Context, client *database.Client) (*GTIDInfo, error) {
-	// Dapatkan master status terlebih dahulu
 	gtidInfo, err := GetMasterStatus(ctx, client)
 	if err != nil {
 		return nil, err
 	}
 
-	// Dapatkan GTID position dari binlog
 	gtidPos, err := GetBinlogGTIDPos(ctx, client, gtidInfo.MasterLogFile, gtidInfo.MasterLogPos)
 	if err != nil {
-		// Jika gagal mendapatkan GTID position, kembalikan info tanpa GTID
-		// (ini bisa terjadi di MySQL yang tidak support BINLOG_GTID_POS)
+		// Jika gagal mendapatkan GTID position, kembalikan info tanpa GTID.
 		return gtidInfo, nil
 	}
 

@@ -3,7 +3,7 @@ package backup
 import (
 	"context"
 	"path/filepath"
-	"sfDBTools/internal/backup/helpers"
+	"sfDBTools/internal/backup/modes"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
@@ -40,9 +40,9 @@ func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, er
 	return filepath.Join(s.BackupDBOptions.OutputDir, filename), nil
 }
 
-// generateBackupPaths generate output directory dan filename untuk backup
-// Returns updated dbFiltered untuk mode single/primary/secondary (database yang dipilih + companion)
-func (s *Service) generateBackupPaths(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error) {
+// GenerateBackupPaths generates output directory and filename for backup
+// Returns updated dbFiltered for single/primary/secondary mode (selected database + companions)
+func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error) {
 	dbHostname := s.BackupDBOptions.Profile.DBInfo.Host
 	compressionSettings := s.buildCompressionSettings()
 
@@ -61,7 +61,7 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 	exampleDBName := ""
 	dbCount := 0
 	if s.BackupDBOptions.Mode == consts.ModeSeparated || s.BackupDBOptions.Mode == consts.ModeSeparate ||
-		helpers.IsSingleModeVariant(s.BackupDBOptions.Mode) {
+		modes.IsSingleModeVariant(s.BackupDBOptions.Mode) {
 		exampleDBName = "database_name"
 	} else if s.BackupDBOptions.Mode == consts.ModeCombined || s.BackupDBOptions.Mode == consts.ModeAll {
 		// Untuk combined/all, gunakan jumlah database yang akan di-backup
@@ -85,7 +85,7 @@ func (s *Service) generateBackupPaths(ctx context.Context, client *database.Clie
 	}
 
 	// Handle single/primary/secondary mode dengan database selection
-	if helpers.IsSingleModeVariant(s.BackupDBOptions.Mode) {
+	if modes.IsSingleModeVariant(s.BackupDBOptions.Mode) {
 		return s.handleSingleModeSetup(ctx, client, dbFiltered)
 	}
 

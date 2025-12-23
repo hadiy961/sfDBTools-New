@@ -67,6 +67,10 @@ func (s *Service) handleBackupErrors(result types_backup.BackupResult) (types_ba
 		errorMsg := "backup gagal"
 		if len(result.Errors) > 0 {
 			errorMsg = result.Errors[0]
+			// Aggregate multiple errors untuk visibility
+			if len(result.Errors) > 1 {
+				errorMsg = fmt.Sprintf("%s (dan %d error lainnya)", result.Errors[0], len(result.Errors)-1)
+			}
 		}
 		return result, fmt.Errorf("%s", errorMsg)
 	}

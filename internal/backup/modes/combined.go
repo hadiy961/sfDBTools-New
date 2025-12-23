@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/consts"
 	"strings"
 )
 
@@ -92,7 +93,7 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 
 // formatCombinedBackupDisplayName memformat nama display untuk combined backup
 func (e *CombinedExecutor) formatCombinedBackupDisplayName(databases []string) string {
-	if len(databases) <= 10 {
+	if len(databases) <= consts.MaxDisplayDatabases {
 		dbList := make([]string, len(databases))
 		for i, db := range databases {
 			dbList[i] = fmt.Sprintf("- %s", db)

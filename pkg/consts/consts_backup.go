@@ -14,3 +14,6 @@ const BackupWriterBufferSize = 256 * 1024
 
 // FilenameGenerateErrorPlaceholder digunakan saat preview filename gagal dibuat.
 const FilenameGenerateErrorPlaceholder = "error_generating_filename"
+
+// MaxDisplayDatabases adalah jumlah maksimal database yang ditampilkan secara detail dalam output combined backup.
+const MaxDisplayDatabases = 10

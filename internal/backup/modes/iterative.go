@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/backup/helpers"
 	"sfDBTools/internal/backup/metadata"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
@@ -77,7 +76,7 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 	res.FailedBackups = loopResult.Failed
 
 	// Khusus Single Mode variant: Jika semua gagal, pastikan ada error eksplisit
-	if helpers.IsSingleModeVariant(e.mode) && loopResult.Success == 0 && len(res.Errors) == 0 && len(res.FailedDatabaseInfos) > 0 {
+	if IsSingleModeVariant(e.mode) && loopResult.Success == 0 && len(res.Errors) == 0 && len(res.FailedDatabaseInfos) > 0 {
 		res.Errors = append(res.Errors, errors.New("backup gagal untuk semua database").Error())
 	}
 
@@ -93,7 +92,7 @@ func (e *IterativeExecutor) createOutputPathFunc(dbList []string) func(string) (
 		// Logika khusus untuk Single Mode Variant (Single, Primary, Secondary):
 		// Database pertama (index 0) bisa menggunakan custom filename jika diset user.
 		// Companion databases (dmart, temp, archive) akan tetap digenerate namanya.
-		if helpers.IsSingleModeVariant(e.mode) && len(dbList) > 0 && dbList[0] == dbName && primaryFilename != "" {
+		if IsSingleModeVariant(e.mode) && len(dbList) > 0 && dbList[0] == dbName && primaryFilename != "" {
 			return filepath.Join(opts.OutputDir, primaryFilename), nil
 		}
 
@@ -137,7 +136,7 @@ func (e *IterativeExecutor) generateCombinedMetadata(ctx context.Context, loopRe
 		return
 	}
 
-	// e.service.LogInfo(fmt.Sprintf("Generating combined metadata untuk %d databases", len(dbList)))
+	e.service.GetLog().Debug(fmt.Sprintf("Generating combined metadata untuk %d databases", len(dbList)))
 
 	// Untuk primary/secondary:
 	// 1. Update metadata pertama dengan DatabaseNames dan DatabaseDetails (info lengkap per database)
@@ -146,7 +145,7 @@ func (e *IterativeExecutor) generateCombinedMetadata(ctx context.Context, loopRe
 	// Update metadata pertama dengan full database list dan details
 	primaryBackupFile := loopResult.BackupInfos[0].OutputFile
 	if err := metadata.UpdateMetadataWithDatabaseDetails(primaryBackupFile, dbList, loopResult.BackupInfos, e.service.GetLog()); err != nil {
-		// e.service.GetLog().Warn("Gagal update combined metadata: " + err.Error())
+		e.service.GetLog().Warn("Gagal update combined metadata: " + err.Error())
 	}
 
 	// Hapus metadata individual untuk companion databases (index 1+)
@@ -156,7 +155,7 @@ func (e *IterativeExecutor) generateCombinedMetadata(ctx context.Context, loopRe
 		}
 		// Companion databases: hapus metadata individual
 		metadataPath := info.OutputFile + consts.ExtMetaJSON
-		// e.service.LogDebug("Menghapus metadata companion: " + metadataPath)
+		e.service.GetLog().Debug("Menghapus metadata companion: " + metadataPath)
 		os.Remove(metadataPath)
 	}
 }
