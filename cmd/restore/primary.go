@@ -34,11 +34,11 @@ Fitur:
   # 2. Restore primary dengan menunjuk file companion secara eksplisit
   sfdbtools db-restore primary \
     --file "app_db.sql" \
-    --companion-file "app_db_dmart.sql" \
+		--dmart-file "app_db_dmart.sql" \
     --ticket "TICKET-123"
 
   # 3. Restore primary saja (abaikan dmart)
-  sfdbtools db-restore primary --file "app_db.sql" --include-dmart=false --ticket "TICKET-123"
+	sfdbtools db-restore primary --file "app_db.sql" --dmart-include=false --ticket "TICKET-123"
 
   # 4. Restore dan apply user grants dari file
   sfdbtools db-restore primary --file "app_db.sql" --grants-file "users.sql" --ticket "TICKET-123"`,

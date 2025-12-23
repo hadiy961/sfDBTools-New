@@ -41,6 +41,7 @@ type RestoreSingleOptions struct {
 	SkipGrants    bool                  // Skip restore user grants (default false)
 	DryRun        bool                  // Dry-run mode: validasi tanpa restore (default false)
 	Force         bool                  // Bypass confirmations / force mode
+	StopOnError   bool                  // True = stop pada error pertama; False = lanjut (continue-on-error)
 }
 
 // RestoreBackupOptions opsi untuk backup sebelum restore
@@ -68,6 +69,7 @@ type RestorePrimaryOptions struct {
 	ConfirmIfNotExists bool                  // Konfirmasi jika database belum ada (default true)
 	DryRun             bool                  // Dry-run mode: validasi tanpa restore (default false)
 	Force              bool                  // Bypass confirmations / force mode
+	StopOnError        bool                  // True = stop pada error pertama; False = lanjut (continue-on-error)
 }
 
 // RestoreAllOptions opsi konfigurasi untuk restore all databases

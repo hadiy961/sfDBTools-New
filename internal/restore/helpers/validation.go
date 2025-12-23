@@ -15,47 +15,64 @@ import (
 	"strings"
 )
 
-// ValidateNotPrimaryDatabase memvalidasi bahwa target database bukan database primary yang sudah ada
-func ValidateNotPrimaryDatabase(ctx context.Context, client *database.Client, dbName string) error {
-	dbLower := strings.ToLower(dbName)
+func IsPrimaryDatabaseName(dbName string) bool {
+	dbLower := strings.ToLower(strings.TrimSpace(dbName))
+	if dbLower == "" {
+		return false
+	}
 
-	// Check prefix
 	hasPrimaryPrefix := strings.HasPrefix(dbLower, consts.PrimaryPrefixNBC) || strings.HasPrefix(dbLower, consts.PrimaryPrefixBiznet)
 	if !hasPrimaryPrefix {
-		return nil
+		return false
 	}
 
-	// Check suffix
-	hasNonPrimarySuffix := strings.Contains(dbLower, consts.SecondarySuffix) ||
+	// Primary harus TANPA suffix non-primary.
+	if strings.Contains(dbLower, consts.SecondarySuffix) ||
 		strings.HasSuffix(dbLower, consts.SuffixDmart) ||
 		strings.HasSuffix(dbLower, consts.SuffixTemp) ||
-		strings.HasSuffix(dbLower, consts.SuffixArchive)
+		strings.HasSuffix(dbLower, consts.SuffixArchive) {
+		return false
+	}
 
-	if hasNonPrimarySuffix {
+	// Harus ada client-code setelah prefix.
+	if strings.HasPrefix(dbLower, consts.PrimaryPrefixNBC) {
+		return len(dbLower) > len(consts.PrimaryPrefixNBC)
+	}
+	return len(dbLower) > len(consts.PrimaryPrefixBiznet)
+}
+
+// ValidatePrimaryDatabaseName memvalidasi bahwa nama database adalah primary:
+// dbsf_nbc_{client-code} atau dbsf_biznet_{client-code} (tanpa suffix non-primary).
+func ValidatePrimaryDatabaseName(dbName string) error {
+	if IsPrimaryDatabaseName(dbName) {
 		return nil
 	}
 
-	// Check if database exists
-	dbExists, err := client.CheckDatabaseExists(ctx, dbName)
-	if err != nil {
-		// Assume exists for safety
-	} else if !dbExists {
-		// Database doesn't exist yet, OK to create
-		return nil
-	}
-
-	// Database exists and is primary - REJECT
-	ui.PrintError("⛔ Restore ke database primary yang sudah ada tidak diizinkan!")
+	ui.PrintError("⛔ Restore primary hanya diizinkan ke database primary!")
 	ui.PrintError(fmt.Sprintf("   Database: %s", dbName))
-	ui.PrintError("   Status: Database sudah ada di server")
-	ui.PrintError("   Pattern: Database dengan awalan 'dbsf_nbc_' atau 'dbsf_biznet_'")
-	ui.PrintError("   tanpa suffix '_secondary', '_dmart', '_temp', atau '_archive'")
-	ui.PrintError("   dianggap sebagai database primary dan tidak boleh di-restore.")
-	ui.PrintError("")
-	ui.PrintInfo("💡 Saran:")
-	ui.PrintInfo("   - Restore ke database secondary, temp, atau archive")
-	ui.PrintInfo("   - Atau gunakan nama database yang berbeda")
-	ui.PrintInfo("   - Database primary baru yang belum ada diperbolehkan untuk dibuat")
+	ui.PrintError("   Pattern: dbsf_nbc_{client-code} atau dbsf_biznet_{client-code}")
+	ui.PrintError("   Catatan: tanpa suffix '_secondary', '_dmart', '_temp', atau '_archive'")
+	return fmt.Errorf("target database '%s' bukan database primary yang valid", dbName)
+}
 
-	return fmt.Errorf("restore ke database primary '%s' yang sudah ada tidak diizinkan", dbName)
+// ValidateNotPrimaryDatabaseName memvalidasi bahwa nama database BUKAN primary.
+// Digunakan untuk mode restore single: tidak boleh sama sekali ke database primary.
+func ValidateNotPrimaryDatabaseName(dbName string) error {
+	if !IsPrimaryDatabaseName(dbName) {
+		return nil
+	}
+
+	ui.PrintError("⛔ Restore single ke database primary tidak diizinkan!")
+	ui.PrintError(fmt.Sprintf("   Database: %s", dbName))
+	ui.PrintError("   Pattern primary: dbsf_nbc_{client-code} atau dbsf_biznet_{client-code}")
+	ui.PrintInfo("💡 Saran: gunakan mode 'restore primary' atau restore ke database non-primary (mis: _secondary/_temp/_archive)")
+	return fmt.Errorf("restore single ke database primary '%s' tidak diizinkan", dbName)
+}
+
+// ValidateNotPrimaryDatabase memvalidasi bahwa target database bukan database primary.
+// NOTE: Sesuai aturan safety terbaru, restore single tidak boleh sama sekali ke database primary.
+func ValidateNotPrimaryDatabase(ctx context.Context, client *database.Client, dbName string) error {
+	_ = ctx
+	_ = client
+	return ValidateNotPrimaryDatabaseName(dbName)
 }

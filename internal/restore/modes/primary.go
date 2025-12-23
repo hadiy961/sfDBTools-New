@@ -60,10 +60,11 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 			result.Error = fmt.Errorf("gagal deteksi companion database: %w", err)
 			return result, result.Error
 		}
-		// Refresh opts after potential update in DetectOrSelectCompanionFile (pointer reflected)
-		// Note: DetectOrSelectCompanionFile modifies the struct inside service.
-		result.CompanionFile = opts.CompanionFile
-		result.CompanionDB = opts.TargetDB + consts.SuffixDmart
+		// DetectOrSelectCompanionFile bisa memutuskan untuk skip dmart (IncludeDmart=false)
+		if opts.IncludeDmart {
+			result.CompanionFile = opts.CompanionFile
+			result.CompanionDB = opts.TargetDB + consts.SuffixDmart
+		}
 	}
 
 	// 3. Backup primary database if needed
@@ -122,6 +123,10 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 		logger.Infof("Restore companion database dari %s...", opts.CompanionFile)
 
 		if err := e.service.CreateAndRestoreDatabase(ctx, companionDB, opts.CompanionFile, opts.EncryptionKey); err != nil {
+			if opts.StopOnError {
+				result.Error = fmt.Errorf("gagal restore companion database %s: %w", companionDB, err)
+				return result, result.Error
+			}
 			logger.Warnf("Gagal restore companion database: %v", err)
 			ui.PrintWarning(fmt.Sprintf("⚠️  Gagal restore companion database %s: %v", companionDB, err))
 		} else {

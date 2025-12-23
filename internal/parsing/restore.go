@@ -16,8 +16,9 @@ import (
 // ParsingRestoreSingleOptions melakukan parsing opsi untuk restore single
 func ParsingRestoreSingleOptions(cmd *cobra.Command) (types.RestoreSingleOptions, error) {
 	opts := types.RestoreSingleOptions{
-		DropTarget: true,  // Default true
-		SkipBackup: false, // Default false
+		DropTarget:  true,  // Default true
+		SkipBackup:  false, // Default false
+		StopOnError: true,  // Default: stop pada error pertama
 	}
 
 	// Profile & key (target)
@@ -28,6 +29,7 @@ func ParsingRestoreSingleOptions(cmd *cobra.Command) (types.RestoreSingleOptions
 
 	// Safety flags
 	PopulateRestoreSafetyFlags(cmd, &opts.DropTarget, &opts.SkipBackup, &opts.DryRun, &opts.Force)
+	PopulateStopOnErrorFromContinueFlag(cmd, &opts.StopOnError)
 
 	// File backup
 	if v := helper.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
@@ -62,6 +64,7 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptio
 		IncludeDmart:       true,  // Default true
 		AutoDetectDmart:    true,  // Default true
 		ConfirmIfNotExists: true,  // Default true
+		StopOnError:        true,  // Default: stop pada error pertama
 	}
 
 	// Profile & key (target)
@@ -72,6 +75,7 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptio
 
 	// Safety flags (force handled khusus di bawah)
 	PopulateRestoreSafetyFlags(cmd, &opts.DropTarget, &opts.SkipBackup, &opts.DryRun, &opts.Force)
+	PopulateStopOnErrorFromContinueFlag(cmd, &opts.StopOnError)
 
 	// File backup primary
 	if v := helper.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
@@ -79,7 +83,9 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptio
 	}
 
 	// Companion file (dmart)
-	if v := helper.GetStringFlagOrEnv(cmd, "companion-file", ""); v != "" {
+	if v := helper.GetStringFlagOrEnv(cmd, "dmart-file", ""); v != "" {
+		opts.CompanionFile = v
+	} else if v := helper.GetStringFlagOrEnv(cmd, "companion-file", ""); v != "" {
 		opts.CompanionFile = v
 	}
 
@@ -100,12 +106,16 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptio
 	}
 
 	// Include dmart
-	if cmd.Flags().Changed("include-dmart") {
+	if cmd.Flags().Changed("dmart-include") {
+		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "dmart-include", "")
+	} else if cmd.Flags().Changed("include-dmart") {
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
 	}
 
 	// Auto-detect dmart
-	if cmd.Flags().Changed("auto-detect-dmart") {
+	if cmd.Flags().Changed("dmart-detect") {
+		opts.AutoDetectDmart = helper.GetBoolFlagOrEnv(cmd, "dmart-detect", "")
+	} else if cmd.Flags().Changed("auto-detect-dmart") {
 		opts.AutoDetectDmart = helper.GetBoolFlagOrEnv(cmd, "auto-detect-dmart", "")
 	}
 

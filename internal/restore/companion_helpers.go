@@ -27,6 +27,20 @@ func (s *Service) DetectOrSelectCompanionFile() error {
 		return nil
 	}
 
+	// Non-interactive mode: jangan pernah prompt.
+	// Jika companion tidak bisa ditentukan otomatis, maka:
+	// - StopOnError=true  => return error
+	// - StopOnError=false => skip companion restore (IncludeDmart=false) dan lanjut
+	if s.RestorePrimaryOpts.Force && !s.RestorePrimaryOpts.AutoDetectDmart {
+		if s.RestorePrimaryOpts.StopOnError {
+			return fmt.Errorf("auto-detect dmart dimatikan (dmart-detect=false) dan mode non-interaktif (--force) aktif; tentukan dmart via --dmart-file atau set --dmart-include=false")
+		}
+		s.Log.Warn("Auto-detect companion dimatikan dan mode non-interaktif aktif; skip restore companion database")
+		ui.PrintWarning("⚠️  Skip restore companion database (non-interaktif, companion tidak ditentukan)")
+		s.RestorePrimaryOpts.IncludeDmart = false
+		return nil
+	}
+
 	if !s.RestorePrimaryOpts.AutoDetectDmart {
 		return s.selectCompanionFileInteractive()
 	}
@@ -59,6 +73,15 @@ func (s *Service) DetectOrSelectCompanionFile() error {
 
 	// Not found, ask user
 	ui.PrintWarning("⚠️  Companion file tidak ditemukan secara otomatis")
+	if s.RestorePrimaryOpts.Force {
+		if s.RestorePrimaryOpts.StopOnError {
+			return fmt.Errorf("dmart file (_dmart) tidak ditemukan secara otomatis dan mode non-interaktif (--force) aktif; gunakan --dmart-file untuk set file dmart, atau set --dmart-include=false, atau gunakan --continue-on-error untuk skip dmart")
+		}
+		s.Log.Warn("Companion file tidak ditemukan; skip restore companion database karena continue-on-error")
+		ui.PrintWarning("⚠️  Skip restore companion database (companion tidak ditemukan)")
+		s.RestorePrimaryOpts.IncludeDmart = false
+		return nil
+	}
 	return s.selectCompanionFileInteractive()
 }
 
@@ -121,14 +144,21 @@ func (s *Service) detectCompanionByPattern(primaryFile string, dir string) (stri
 	timeStr := parts[len(parts)-2]
 	dateStr := parts[len(parts)-3]
 
-	// Sisanya adalah database name
+	// Sisanya adalah database name (token {database} pada backup filename)
 	dbNameParts := parts[:len(parts)-3]
 	dbName := strings.Join(dbNameParts, "_")
 
 	s.Log.Debugf("Parsed - DB: %s, Date: %s, Time: %s, Host: %s", dbName, dateStr, timeStr, hostname)
 
-	// Build companion database name
+	// Build companion database name.
+	// Jika backup dibuat dengan excludeData, generator akan menambahkan suffix "_nodata" ke token {database}.
+	// Untuk companion, suffix _dmart harus berada sebelum _nodata.
 	companionDBName := dbName + consts.SuffixDmart
+	lowerDBName := strings.ToLower(dbName)
+	if strings.HasSuffix(lowerDBName, "_nodata") {
+		base := dbName[:len(dbName)-len("_nodata")]
+		companionDBName = base + consts.SuffixDmart + "_nodata"
+	}
 
 	// List all files in directory dengan pattern yang sesuai
 	// Cari: {companionDBName}_{dateStr}_*_{hostname}.{extensions}

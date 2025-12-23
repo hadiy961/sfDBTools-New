@@ -201,6 +201,11 @@ func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 		return fmt.Errorf("gagal resolve target database: %w", err)
 	}
 
+	// Restore primary hanya boleh ke database primary (dbsf_nbc_{client} / dbsf_biznet_{client}).
+	if err := helpers.ValidatePrimaryDatabaseName(s.RestorePrimaryOpts.TargetDB); err != nil {
+		return err
+	}
+
 	// 6. Resolve ticket number
 	if err := s.resolveTicketNumber(&s.RestorePrimaryOpts.Ticket); err != nil {
 		return fmt.Errorf("gagal resolve ticket number: %w", err)
