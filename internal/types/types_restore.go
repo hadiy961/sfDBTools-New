@@ -78,6 +78,7 @@ type RestoreAllOptions struct {
 	EncryptionKey string
 	File          string
 	Ticket        string
+	GrantsFile    string // Optional: path file user grants (_users.sql)
 
 	// Safety & Behavior
 	BackupOptions *RestoreBackupOptions
@@ -91,6 +92,34 @@ type RestoreAllOptions struct {
 	ExcludeDBs    []string // List DB yang akan di-skip
 	SkipSystemDBs bool     // Skip mysql, sys, performance_schema, information_schema
 	SkipGrants    bool     // Opsi tambahan jika ingin skip user grants (biasanya di DB mysql)
+}
+
+// RestoreCustomOptions opsi konfigurasi untuk restore custom (SFCola account detail → provision db+users+restore db+dmart)
+// Catatan: field password disimpan hanya untuk eksekusi, jangan pernah di-log.
+type RestoreCustomOptions struct {
+	Profile       ProfileInfo           // Target profile
+	DropTarget    bool                  // Drop target db & dmart jika sudah ada
+	SkipBackup    bool                  // Skip backup pre-restore
+	BackupOptions *RestoreBackupOptions // Opsi backup pre-restore
+	EncryptionKey string                // Kunci enkripsi untuk decrypt file backup
+	Ticket        string                // Ticket number (wajib)
+	Force         bool                  // Bypass confirmation
+	DryRun        bool                  // Analisis saja
+	StopOnError   bool                  // True = stop pada error pertama; False = lanjut (continue-on-error)
+
+	// Extracted from pasted SFCola account detail
+	Database      string
+	DatabaseDmart string
+	UserAdmin     string
+	PassAdmin     string
+	UserFin       string
+	PassFin       string
+	UserUser      string
+	PassUser      string
+
+	// Selected backup files
+	DatabaseFile      string
+	DatabaseDmartFile string
 }
 
 // RestoreResult menyimpan hasil restore operation

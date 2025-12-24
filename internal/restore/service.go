@@ -29,6 +29,7 @@ type Service struct {
 	RestorePrimaryOpts *types.RestorePrimaryOptions
 	RestoreAllOpts     *types.RestoreAllOptions
 	RestoreSelOpts     *types.RestoreSelectionOptions
+	RestoreCustomOpts  *types.RestoreCustomOptions
 	TargetClient       *database.Client
 
 	// Restore-specific state
@@ -63,6 +64,9 @@ func NewRestoreService(logs applog.Logger, cfg *appconfig.Config, restore interf
 			svc.Profile = &v.Profile
 		case *types.RestoreSelectionOptions:
 			svc.RestoreSelOpts = v
+			svc.Profile = &v.Profile
+		case *types.RestoreCustomOptions:
+			svc.RestoreCustomOpts = v
 			svc.Profile = &v.Profile
 		default:
 			logs.Warn("Tipe restore options tidak dikenali dalam Service")
@@ -146,6 +150,10 @@ func (s *Service) GetAllOptions() *types.RestoreAllOptions {
 
 func (s *Service) GetSelectionOptions() *types.RestoreSelectionOptions {
 	return s.RestoreSelOpts
+}
+
+func (s *Service) GetCustomOptions() *types.RestoreCustomOptions {
+	return s.RestoreCustomOpts
 }
 
 // Ensure Service implements modes.RestoreService

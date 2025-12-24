@@ -21,6 +21,10 @@ func ListBackupFilesInDirectory(dir string) ([]string, error) {
 		}
 
 		name := entry.Name()
+		// Hanya tampilkan dump backup, bukan file user grants.
+		if strings.HasSuffix(name, consts.UsersSQLSuffix) {
+			continue
+		}
 		if strings.Contains(name, consts.ExtSQL) {
 			files = append(files, name)
 		}

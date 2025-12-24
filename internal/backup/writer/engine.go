@@ -19,6 +19,21 @@ import (
 	"sfDBTools/pkg/ui"
 )
 
+func summarizeStderr(stderr string, maxLines int, maxChars int) string {
+	if stderr == "" {
+		return ""
+	}
+	lines := strings.Split(stderr, "\n")
+	if maxLines > 0 && len(lines) > maxLines {
+		lines = lines[:maxLines]
+	}
+	s := strings.TrimSpace(strings.Join(lines, "\n"))
+	if maxChars > 0 && len(s) > maxChars {
+		s = s[:maxChars] + "..."
+	}
+	return s
+}
+
 type Engine struct {
 	Log      applog.Logger
 	ErrorLog *errorlog.ErrorLogger
@@ -192,7 +207,12 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 			}
 			return result, fmt.Errorf("mysqldump gagal: %w", runErr)
 		}
-		e.Log.Warn("mysqldump exit with non-fatal error, treated as warning")
+		excerpt := summarizeStderr(stderrOutput, 12, 1200)
+		if excerpt != "" {
+			e.Log.Warnf("mysqldump exit with non-fatal error, treated as warning. stderr (excerpt):\n%s", excerpt)
+		} else {
+			e.Log.Warn("mysqldump exit with non-fatal error, treated as warning")
+		}
 	}
 
 	fileInfo, statErr := os.Stat(outputPath)

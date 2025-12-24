@@ -19,11 +19,49 @@ import (
 	"time"
 )
 
+// BackupDatabasesSingleFileIfNeeded membuat backup gabungan (single-file/combined)
+// untuk sekumpulan database sebelum restore (dipakai oleh restore all).
+// Konsepnya mengikuti backup filter --mode single-file.
+func (s *Service) BackupDatabasesSingleFileIfNeeded(ctx context.Context, dbNames []string, skipBackup bool, backupOpts *types.RestoreBackupOptions) (string, error) {
+	if skipBackup {
+		return "", nil
+	}
+	if len(dbNames) == 0 {
+		return "", nil
+	}
+
+	backupFile, err := s.backupDatabaseGeneric(ctx, consts.ModeCombined, "", dbNames, backupOpts)
+	if err != nil {
+		return "", err
+	}
+	return backupFile, nil
+}
+
 // backupDatabaseGeneric melakukan backup database menggunakan backup service (generic version)
 // mode: "single" atau "all"
 // dbName: nama database (untuk single mode)
 // dbList: list of databases (untuk all mode)
 func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName string, dbList []string, backupOpts *types.RestoreBackupOptions) (string, error) {
+	// Defensive defaulting: backupOpts can be nil if caller didn't run restore setup.
+	// Use config defaults in that case.
+	if backupOpts == nil {
+		backupOpts = &types.RestoreBackupOptions{}
+	}
+	if backupOpts.Compression.Type == "" {
+		backupOpts.Compression = types.CompressionOptions{
+			Enabled: s.Config.Backup.Compression.Enabled,
+			Type:    s.Config.Backup.Compression.Type,
+			Level:   s.Config.Backup.Compression.Level,
+		}
+	}
+	if backupOpts.Encryption.Key == "" {
+		// For pre-restore backups, default to backup encryption settings.
+		backupOpts.Encryption = types.EncryptionOptions{
+			Enabled: s.Config.Backup.Encryption.Enabled,
+			Key:     s.Config.Backup.Encryption.Key,
+		}
+	}
+
 	// Determine output directory
 	outputDir := ""
 	if backupOpts != nil && backupOpts.OutputDir != "" {
@@ -45,7 +83,9 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 
 	var filename string
 	if mode == consts.ModeAll {
-		filename = fmt.Sprintf("all-databases_%s_%s_pre_restore", timestamp, hostname)
+		filename = fmt.Sprintf("all_%s_%s_pre_restore", timestamp, hostname)
+	} else if mode == consts.ModeCombined {
+		filename = fmt.Sprintf("combined_%d_%s_%s_pre_restore", len(dbList), timestamp, hostname)
 	} else {
 		filename = fmt.Sprintf("%s_%s_%s_pre_restore", dbName, timestamp, hostname)
 	}
@@ -63,6 +103,18 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 	outputPath := filepath.Join(outputDir, fullFilename)
 
 	// Prepare backup options
+	ticket := ""
+	// gunakan ticket restore (jika tersedia) untuk metadata/audit
+	if s.RestoreAllOpts != nil && s.RestoreAllOpts.Ticket != "" {
+		ticket = s.RestoreAllOpts.Ticket
+	} else if s.RestorePrimaryOpts != nil && s.RestorePrimaryOpts.Ticket != "" {
+		ticket = s.RestorePrimaryOpts.Ticket
+	} else if s.RestoreOpts != nil && s.RestoreOpts.Ticket != "" {
+		ticket = s.RestoreOpts.Ticket
+	} else if s.RestoreSelOpts != nil && s.RestoreSelOpts.Ticket != "" {
+		ticket = s.RestoreSelOpts.Ticket
+	}
+
 	backupOptions := &types_backup.BackupDBOptions{
 		Profile:   *s.Profile,
 		OutputDir: outputDir,
@@ -80,15 +132,26 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 			Key:     backupOpts.Encryption.Key,
 		},
 		Filter: types.FilterOptions{},
+		Ticket: ticket,
 	}
 
 	// Set filter based on mode
 	if mode == consts.ModeSingle {
 		backupOptions.Filter.IncludeDatabases = []string{dbName}
+	} else if mode == consts.ModeCombined {
+		backupOptions.Filter.IncludeDatabases = dbList
+		backupOptions.Filter.IsFilterCommand = true
 	}
 
 	// Create backup service and execute
 	backupSvc := backup.NewBackupService(s.Log, s.Config, backupOptions)
+	// Reuse current target connection for grants/GTID helpers.
+	backupSvc.Client = s.TargetClient
+
+	// Capture GTID (best-effort; follow behavior in combined mode executor)
+	if capErr := backupSvc.CaptureAndSaveGTID(ctx, outputPath); capErr != nil {
+		s.Log.Warnf("GTID handling error: %v", capErr)
+	}
 
 	// Prepare backup config
 	totalDBFound := len(dbList)
@@ -102,12 +165,18 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 		OutputPath:   outputPath,
 		BackupType:   mode,
 		TotalDBFound: totalDBFound,
-		IsMultiDB:    mode == consts.ModeAll,
+		IsMultiDB:    mode == consts.ModeAll || mode == consts.ModeCombined,
 	}
 
 	_, err := backupSvc.ExecuteAndBuildBackup(ctx, backupConfig)
 	if err != nil {
 		return "", fmt.Errorf("gagal backup database: %w", err)
+	}
+
+	// Export user grants untuk combined (single-file) agar konsisten dengan backup filter --mode single-file
+	if mode == consts.ModeCombined {
+		actualUserGrantsPath := backupSvc.ExportUserGrantsIfNeeded(ctx, outputPath, dbList)
+		backupSvc.UpdateMetadataUserGrantsPath(outputPath, actualUserGrantsPath)
 	}
 
 	return outputPath, nil

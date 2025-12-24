@@ -23,19 +23,20 @@ import (
 // SetupRestoreSession melakukan setup untuk restore single session
 func (s *Service) SetupRestoreSession(ctx context.Context) error {
 	ui.PrintHeader("Restore Single Database")
+	allowInteractive := !s.RestoreOpts.Force
 
 	// 1. Resolve backup file
-	if err := s.resolveBackupFile(&s.RestoreOpts.File); err != nil {
+	if err := s.resolveBackupFile(&s.RestoreOpts.File, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve file backup: %w", err)
 	}
 
 	// 2. Resolve encryption key if needed
-	if err := s.resolveEncryptionKey(s.RestoreOpts.File, &s.RestoreOpts.EncryptionKey); err != nil {
+	if err := s.resolveEncryptionKey(s.RestoreOpts.File, &s.RestoreOpts.EncryptionKey, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve encryption key: %w", err)
 	}
 
 	// 3. Resolve target profile
-	if err := s.resolveTargetProfile(&s.RestoreOpts.Profile); err != nil {
+	if err := s.resolveTargetProfile(&s.RestoreOpts.Profile, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve target profile: %w", err)
 	}
 
@@ -50,36 +51,44 @@ func (s *Service) SetupRestoreSession(ctx context.Context) error {
 	}
 
 	// 6. Resolve ticket number
-	if err := s.resolveTicketNumber(&s.RestoreOpts.Ticket); err != nil {
+	if err := s.resolveTicketNumber(&s.RestoreOpts.Ticket, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve ticket number: %w", err)
 	}
 
-	// 7. Resolve grants file
-	if err := s.resolveGrantsFile(s.RestoreOpts.SkipGrants, &s.RestoreOpts.GrantsFile, s.RestoreOpts.File); err != nil {
+	// 7. Interaktif: pilih backup pre-restore & drop target
+	if err := s.resolveInteractiveSafetyOptions(&s.RestoreOpts.DropTarget, &s.RestoreOpts.SkipBackup, allowInteractive); err != nil {
+		return err
+	}
+
+	// 8. Resolve grants file
+	if err := s.resolveGrantsFile(&s.RestoreOpts.SkipGrants, &s.RestoreOpts.GrantsFile, s.RestoreOpts.File, allowInteractive, s.RestoreOpts.StopOnError); err != nil {
 		return fmt.Errorf("gagal resolve grants file: %w", err)
 	}
 
-	// 8. Setup backup options if not skipped
+	// 9. Setup backup options if not skipped
 	if !s.RestoreOpts.SkipBackup {
 		if s.RestoreOpts.BackupOptions == nil {
 			s.RestoreOpts.BackupOptions = &types.RestoreBackupOptions{}
 		}
-		s.setupBackupOptions(s.RestoreOpts.BackupOptions, s.RestoreOpts.EncryptionKey)
+		s.setupBackupOptions(s.RestoreOpts.BackupOptions, s.RestoreOpts.EncryptionKey, allowInteractive)
 	}
 
-	// 9. Display confirmation
+	// 10. Display confirmation
 	confirmOpts := map[string]string{
 		"Source File":     s.RestoreOpts.File,
 		"Target Database": s.RestoreOpts.TargetDB,
 		"Target Host":     fmt.Sprintf("%s:%d", s.Profile.DBInfo.Host, s.Profile.DBInfo.Port),
 		"Drop Target":     fmt.Sprintf("%v", s.RestoreOpts.DropTarget),
 		"Skip Backup":     fmt.Sprintf("%v", s.RestoreOpts.SkipBackup),
+		"Skip Grants":     fmt.Sprintf("%v", s.RestoreOpts.SkipGrants),
 		"Ticket Number":   s.RestoreOpts.Ticket,
 	}
 	if !s.RestoreOpts.SkipBackup && s.RestoreOpts.BackupOptions != nil {
 		confirmOpts["Backup Directory"] = s.RestoreOpts.BackupOptions.OutputDir
 	}
-	if s.RestoreOpts.GrantsFile != "" {
+	if s.RestoreOpts.SkipGrants {
+		confirmOpts["Grants File"] = "Skipped"
+	} else if s.RestoreOpts.GrantsFile != "" {
 		confirmOpts["Grants File"] = filepath.Base(s.RestoreOpts.GrantsFile)
 	} else {
 		confirmOpts["Grants File"] = "Tidak ada"
@@ -103,6 +112,10 @@ func (s *Service) resolveTargetDatabaseSingle(ctx context.Context) error {
 		}
 		s.Log.Infof("Target database: %s", s.RestoreOpts.TargetDB)
 		return nil
+	}
+
+	if s.RestoreOpts.Force {
+		return fmt.Errorf("target database wajib diisi (--target-db) pada mode non-interaktif (--force)")
 	}
 
 	// Get list of databases
@@ -175,19 +188,20 @@ func (s *Service) resolveTargetDatabaseSingle(ctx context.Context) error {
 // SetupRestorePrimarySession melakukan setup untuk restore primary session
 func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 	ui.PrintHeader("Restore Primary Database")
+	allowInteractive := !s.RestorePrimaryOpts.Force
 
 	// 1. Resolve backup file
-	if err := s.resolveBackupFile(&s.RestorePrimaryOpts.File); err != nil {
+	if err := s.resolveBackupFile(&s.RestorePrimaryOpts.File, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve file backup: %w", err)
 	}
 
 	// 2. Resolve encryption key if needed
-	if err := s.resolveEncryptionKey(s.RestorePrimaryOpts.File, &s.RestorePrimaryOpts.EncryptionKey); err != nil {
+	if err := s.resolveEncryptionKey(s.RestorePrimaryOpts.File, &s.RestorePrimaryOpts.EncryptionKey, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve encryption key: %w", err)
 	}
 
 	// 3. Resolve target profile
-	if err := s.resolveTargetProfile(&s.RestorePrimaryOpts.Profile); err != nil {
+	if err := s.resolveTargetProfile(&s.RestorePrimaryOpts.Profile, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve target profile: %w", err)
 	}
 
@@ -203,33 +217,88 @@ func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 
 	// Restore primary hanya boleh ke database primary (dbsf_nbc_{client} / dbsf_biznet_{client}).
 	if err := helpers.ValidatePrimaryDatabaseName(s.RestorePrimaryOpts.TargetDB); err != nil {
-		return err
+		if s.RestorePrimaryOpts.Force {
+			return err
+		}
+
+		// Mode interaktif: beri kesempatan user untuk input ulang sampai valid.
+		for {
+			retry, askErr := input.AskYesNo("Nama target database tidak valid. Input ulang?", true)
+			if askErr != nil {
+				return err
+			}
+			if !retry {
+				return err
+			}
+
+			newName, inErr := input.AskString(
+				"Masukkan nama target database primary (dbsf_nbc_{client-code} / dbsf_biznet_{client-code})",
+				s.RestorePrimaryOpts.TargetDB,
+				func(ans interface{}) error {
+					str, ok := ans.(string)
+					if !ok {
+						return fmt.Errorf("input tidak valid")
+					}
+					str = strings.TrimSpace(str)
+					if str == "" {
+						return fmt.Errorf("nama database tidak boleh kosong")
+					}
+					if !helpers.IsPrimaryDatabaseName(str) {
+						return fmt.Errorf("nama database bukan primary yang valid")
+					}
+					return nil
+				},
+			)
+			if inErr != nil {
+				return fmt.Errorf("gagal mendapatkan nama database: %w", inErr)
+			}
+			s.RestorePrimaryOpts.TargetDB = strings.TrimSpace(newName)
+			s.Log.Infof("Target database: %s", s.RestorePrimaryOpts.TargetDB)
+
+			if vErr := helpers.ValidatePrimaryDatabaseName(s.RestorePrimaryOpts.TargetDB); vErr == nil {
+				break
+			} else {
+				err = vErr
+			}
+		}
 	}
 
 	// 6. Resolve ticket number
-	if err := s.resolveTicketNumber(&s.RestorePrimaryOpts.Ticket); err != nil {
+	if err := s.resolveTicketNumber(&s.RestorePrimaryOpts.Ticket, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve ticket number: %w", err)
 	}
 
-	// 7. Resolve grants file
-	if err := s.resolveGrantsFile(s.RestorePrimaryOpts.SkipGrants, &s.RestorePrimaryOpts.GrantsFile, s.RestorePrimaryOpts.File); err != nil {
+	// 7. Interaktif: pilih backup pre-restore & drop target
+	if err := s.resolveInteractiveSafetyOptions(&s.RestorePrimaryOpts.DropTarget, &s.RestorePrimaryOpts.SkipBackup, allowInteractive); err != nil {
+		return err
+	}
+
+	// 8. Resolve grants file
+	if err := s.resolveGrantsFile(&s.RestorePrimaryOpts.SkipGrants, &s.RestorePrimaryOpts.GrantsFile, s.RestorePrimaryOpts.File, allowInteractive, s.RestorePrimaryOpts.StopOnError); err != nil {
 		return fmt.Errorf("gagal resolve grants file: %w", err)
 	}
 
-	// 8. Validasi password aplikasi
-	if err := s.validateApplicationPassword(); err != nil {
-		return fmt.Errorf("validasi password aplikasi gagal: %w", err)
+	// 9. Resolve companion (dmart) sebelum password/konfirmasi (agar setelah password tidak ada prompt lagi)
+	if s.RestorePrimaryOpts.IncludeDmart {
+		if err := s.DetectOrSelectCompanionFile(); err != nil {
+			return fmt.Errorf("gagal deteksi companion database: %w", err)
+		}
 	}
 
-	// 9. Setup backup options if not skipped
+	// 10. Setup backup options if not skipped
 	if !s.RestorePrimaryOpts.SkipBackup {
 		if s.RestorePrimaryOpts.BackupOptions == nil {
 			s.RestorePrimaryOpts.BackupOptions = &types.RestoreBackupOptions{}
 		}
-		s.setupBackupOptions(s.RestorePrimaryOpts.BackupOptions, s.RestorePrimaryOpts.EncryptionKey)
+		s.setupBackupOptions(s.RestorePrimaryOpts.BackupOptions, s.RestorePrimaryOpts.EncryptionKey, allowInteractive)
 	}
 
-	// 10. Display confirmation
+	// 11. Validasi password aplikasi (setelah semua pemilihan interaktif)
+	if err := s.validateApplicationPassword(); err != nil {
+		return fmt.Errorf("validasi password aplikasi gagal: %w", err)
+	}
+
+	// 12. Display confirmation
 	confirmOpts := map[string]string{
 		"Target Profile":  filepath.Base(s.RestorePrimaryOpts.Profile.Path),
 		"Database Server": fmt.Sprintf("%s:%d", s.Profile.DBInfo.Host, s.Profile.DBInfo.Port),
@@ -238,6 +307,7 @@ func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 		"Ticket Number":   s.RestorePrimaryOpts.Ticket,
 		"Drop Target":     fmt.Sprintf("%v", s.RestorePrimaryOpts.DropTarget),
 		"Skip Backup":     fmt.Sprintf("%v", s.RestorePrimaryOpts.SkipBackup),
+		"Skip Grants":     fmt.Sprintf("%v", s.RestorePrimaryOpts.SkipGrants),
 	}
 
 	if s.RestorePrimaryOpts.IncludeDmart {
@@ -248,7 +318,9 @@ func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 		confirmOpts["Companion (dmart)"] = companionStatus
 	}
 
-	if s.RestorePrimaryOpts.GrantsFile != "" {
+	if s.RestorePrimaryOpts.SkipGrants {
+		confirmOpts["Grants File"] = "Skipped"
+	} else if s.RestorePrimaryOpts.GrantsFile != "" {
 		confirmOpts["Grants File"] = filepath.Base(s.RestorePrimaryOpts.GrantsFile)
 	}
 
@@ -293,6 +365,9 @@ func (s *Service) resolveTargetDatabasePrimary(ctx context.Context) error {
 		}
 	} else {
 		// Manual input
+		if s.RestorePrimaryOpts.Force {
+			return fmt.Errorf("target database tidak bisa diinfer dari filename; wajib diisi (--target-db) pada mode non-interaktif (--force)")
+		}
 		dbName, err := input.PromptString("Masukkan nama target database")
 		if err != nil {
 			return fmt.Errorf("gagal mendapatkan nama database: %w", err)
@@ -307,19 +382,20 @@ func (s *Service) resolveTargetDatabasePrimary(ctx context.Context) error {
 // SetupRestoreAllSession melakukan setup untuk restore all databases session
 func (s *Service) SetupRestoreAllSession(ctx context.Context) error {
 	ui.Headers("Restore All Databases")
+	allowInteractive := !s.RestoreAllOpts.Force
 
 	// 1. Resolve backup file
-	if err := s.resolveBackupFile(&s.RestoreAllOpts.File); err != nil {
+	if err := s.resolveBackupFile(&s.RestoreAllOpts.File, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve file backup: %w", err)
 	}
 
 	// 2. Resolve encryption key if needed
-	if err := s.resolveEncryptionKey(s.RestoreAllOpts.File, &s.RestoreAllOpts.EncryptionKey); err != nil {
+	if err := s.resolveEncryptionKey(s.RestoreAllOpts.File, &s.RestoreAllOpts.EncryptionKey, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve encryption key: %w", err)
 	}
 
 	// 3. Resolve target profile
-	if err := s.resolveTargetProfile(&s.RestoreAllOpts.Profile); err != nil {
+	if err := s.resolveTargetProfile(&s.RestoreAllOpts.Profile, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve target profile: %w", err)
 	}
 
@@ -329,27 +405,57 @@ func (s *Service) SetupRestoreAllSession(ctx context.Context) error {
 	}
 
 	// 5. Resolve ticket number
-	if err := s.resolveTicketNumber(&s.RestoreAllOpts.Ticket); err != nil {
+	if err := s.resolveTicketNumber(&s.RestoreAllOpts.Ticket, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve ticket number: %w", err)
 	}
 
-	// 6. Setup backup options if not skipped
+	// 6. Interaktif: pilih backup pre-restore & drop target
+	if err := s.resolveInteractiveSafetyOptions(&s.RestoreAllOpts.DropTarget, &s.RestoreAllOpts.SkipBackup, allowInteractive); err != nil {
+		return err
+	}
+
+	// 7. Resolve grants file
+	if err := s.resolveGrantsFile(&s.RestoreAllOpts.SkipGrants, &s.RestoreAllOpts.GrantsFile, s.RestoreAllOpts.File, allowInteractive, s.RestoreAllOpts.StopOnError); err != nil {
+		return fmt.Errorf("gagal resolve grants file: %w", err)
+	}
+
+	// 8. Setup backup options if not skipped
 	if !s.RestoreAllOpts.SkipBackup {
 		if s.RestoreAllOpts.BackupOptions == nil {
 			s.RestoreAllOpts.BackupOptions = &types.RestoreBackupOptions{}
 		}
-		s.setupBackupOptions(s.RestoreAllOpts.BackupOptions, s.RestoreAllOpts.EncryptionKey)
+		s.setupBackupOptions(s.RestoreAllOpts.BackupOptions, s.RestoreAllOpts.EncryptionKey, allowInteractive)
 	}
 
-	// 7. Display confirmation
+	// 9. Display confirmation
+	if !s.RestoreAllOpts.Force && !s.RestoreAllOpts.DryRun {
+		ui.PrintWarning("⚠️  PERINGATAN: Operasi ini akan restore SEMUA database dari file dump!")
+		ui.PrintWarning("    Database yang sudah ada akan ditimpa (jika drop-target aktif)")
+		if len(s.RestoreAllOpts.ExcludeDBs) > 0 {
+			s.Log.Infof("Database yang akan di-exclude: %v", s.RestoreAllOpts.ExcludeDBs)
+		}
+		if s.RestoreAllOpts.SkipSystemDBs {
+			s.Log.Info("System databases (mysql, sys, information_schema, performance_schema) akan di-skip")
+		}
+	}
+
 	confirmOpts := map[string]string{
 		"Source File":       filepath.Base(s.RestoreAllOpts.File),
 		"Target Host":       fmt.Sprintf("%s:%d", s.Profile.DBInfo.Host, s.Profile.DBInfo.Port),
 		"Skip System DBs":   fmt.Sprintf("%v", s.RestoreAllOpts.SkipSystemDBs),
+		"Drop Target":       fmt.Sprintf("%v", s.RestoreAllOpts.DropTarget),
 		"Skip Backup":       fmt.Sprintf("%v", s.RestoreAllOpts.SkipBackup),
+		"Skip Grants":       fmt.Sprintf("%v", s.RestoreAllOpts.SkipGrants),
 		"Dry Run":           fmt.Sprintf("%v", s.RestoreAllOpts.DryRun),
 		"Continue on Error": fmt.Sprintf("%v", !s.RestoreAllOpts.StopOnError),
 		"Ticket Number":     s.RestoreAllOpts.Ticket,
+	}
+	if s.RestoreAllOpts.SkipGrants {
+		confirmOpts["Grants File"] = "Skipped"
+	} else if s.RestoreAllOpts.GrantsFile != "" {
+		confirmOpts["Grants File"] = filepath.Base(s.RestoreAllOpts.GrantsFile)
+	} else {
+		confirmOpts["Grants File"] = "Tidak ada"
 	}
 
 	if len(s.RestoreAllOpts.ExcludeDBs) > 0 {
@@ -372,14 +478,18 @@ func (s *Service) SetupRestoreAllSession(ctx context.Context) error {
 // SetupRestoreSelectionSession melakukan setup untuk restore selection (CSV)
 func (s *Service) SetupRestoreSelectionSession(ctx context.Context) error {
 	ui.Headers("Restore Selection (CSV)")
+	allowInteractive := !s.RestoreSelOpts.Force
 
-	// 1. Pastikan CSV path terisi
-	if s.RestoreSelOpts == nil || strings.TrimSpace(s.RestoreSelOpts.CSV) == "" {
-		return fmt.Errorf("path CSV wajib diisi (--csv)")
+	// 1. Resolve CSV path (interaktif jika kosong, kecuali --force)
+	if s.RestoreSelOpts == nil {
+		return fmt.Errorf("opsi selection tidak tersedia")
+	}
+	if err := s.resolveSelectionCSV(&s.RestoreSelOpts.CSV, allowInteractive); err != nil {
+		return err
 	}
 
 	// 2. Resolve target profile
-	if err := s.resolveTargetProfile(&s.RestoreSelOpts.Profile); err != nil {
+	if err := s.resolveTargetProfile(&s.RestoreSelOpts.Profile, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve target profile: %w", err)
 	}
 
@@ -389,20 +499,25 @@ func (s *Service) SetupRestoreSelectionSession(ctx context.Context) error {
 	}
 
 	// 4. Resolve ticket number
-	if err := s.resolveTicketNumber(&s.RestoreSelOpts.Ticket); err != nil {
+	if err := s.resolveTicketNumber(&s.RestoreSelOpts.Ticket, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve ticket number: %w", err)
 	}
 
-	// 5. Setup backup options if not skipped
+	// 5. Interaktif: pilih backup pre-restore & drop target
+	if err := s.resolveInteractiveSafetyOptions(&s.RestoreSelOpts.DropTarget, &s.RestoreSelOpts.SkipBackup, allowInteractive); err != nil {
+		return err
+	}
+
+	// 6. Setup backup options if not skipped
 	if !s.RestoreSelOpts.SkipBackup {
 		if s.RestoreSelOpts.BackupOptions == nil {
 			s.RestoreSelOpts.BackupOptions = &types.RestoreBackupOptions{}
 		}
 		// In selection mode, encryption for backup uses profile's encryption by default (if any)
-		s.setupBackupOptions(s.RestoreSelOpts.BackupOptions, s.Profile.EncryptionKey)
+		s.setupBackupOptions(s.RestoreSelOpts.BackupOptions, s.Profile.EncryptionKey, allowInteractive)
 	}
 
-	// 6. Confirmation (concise)
+	// 7. Confirmation (concise)
 	confirmOpts := map[string]string{
 		"CSV File":          filepath.Base(s.RestoreSelOpts.CSV),
 		"Target Host":       fmt.Sprintf("%s:%d", s.Profile.DBInfo.Host, s.Profile.DBInfo.Port),

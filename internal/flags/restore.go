@@ -22,14 +22,12 @@ func AddRestoreCommonFlags(cmd *cobra.Command) {
 
 	// Ticket (wajib untuk audit)
 	cmd.Flags().StringP("ticket", "t", "", "Ticket number untuk restore request (wajib)")
-	cmd.MarkFlagRequired("ticket")
 }
 
 // AddRestoreFileFlags menambahkan flags untuk file input
 // Flags: --file
 func AddRestoreFileFlags(cmd *cobra.Command) {
 	cmd.Flags().StringP("file", "f", "", "Lokasi file backup yang akan di-restore")
-	cmd.MarkFlagRequired("file")
 }
 
 // AddRestoreTargetFlags menambahkan flags untuk target database
@@ -95,8 +93,7 @@ func AddRestoreAllFlags(cmd *cobra.Command) {
 // AddRestoreSelectionFlags menambahkan flags khusus untuk restore selection (CSV-based)
 // Flags: --csv, --force, --continue-on-error
 func AddRestoreSelectionFlags(cmd *cobra.Command) {
-	cmd.Flags().String("csv", "", "Path CSV: filename,db_name,enc_key,grants_file (wajib)")
-	cmd.MarkFlagRequired("csv")
+	cmd.Flags().String("csv", "", "Path CSV: filename,db_name,enc_key,grants_file (kosong = pilih interaktif, wajib saat --force)")
 
 	cmd.Flags().Bool("force", false, "Bypass konfirmasi")
 	cmd.Flags().Bool("continue-on-error", false, "Lanjutkan meskipun terjadi error pada salah satu file")
@@ -133,6 +130,7 @@ func AddRestorePrimaryAllFlags(cmd *cobra.Command) {
 func AddRestoreAllAllFlags(cmd *cobra.Command) {
 	AddRestoreCommonFlags(cmd)
 	AddRestoreFileFlags(cmd)
+	AddRestoreGrantsFlags(cmd)
 
 	// Restore all tidak pakai target-db, tapi butuh backup-dir
 	cmd.Flags().Bool("skip-backup", false, "Skip backup sebelum restore")
@@ -153,5 +151,18 @@ func AddRestoreSelectionAllFlags(cmd *cobra.Command) {
 	cmd.Flags().Bool("skip-backup", false, "Skip backup database target sebelum restore")
 	cmd.Flags().String("backup-dir", "", "Direktori output untuk backup pre-restore (default: dari config)")
 
+	AddRestoreDryRunFlag(cmd)
+}
+
+// AddRestoreCustomFlags menambahkan flags untuk restore custom.
+// Flags yang digunakan mengikuti daftar permintaan:
+// --profile, --profile-key, --skip-backup, --drop-target, --force, --continue-on-error, --ticket, --dry-run, --encryption-key
+func AddRestoreCustomFlags(cmd *cobra.Command) {
+	AddRestoreCommonFlags(cmd)
+	// Custom does not use --target-db, only safety toggles
+	cmd.Flags().Bool("drop-target", true, "Drop target database sebelum restore")
+	cmd.Flags().Bool("skip-backup", false, "Skip backup database target sebelum restore")
+	cmd.Flags().Bool("force", false, "Bypass konfirmasi")
+	cmd.Flags().Bool("continue-on-error", false, "Lanjutkan restore meski ada error (default: stop on error)")
 	AddRestoreDryRunFlag(cmd)
 }

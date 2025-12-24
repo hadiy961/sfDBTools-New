@@ -15,6 +15,7 @@ import (
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/helper"
+	"strings"
 )
 
 // ExportAndSaveUserGrants mengambil user grants dari database dan menyimpannya ke file.
@@ -46,6 +47,12 @@ func ExportAndSaveUserGrants(ctx context.Context, client *database.Client, logge
 	}
 
 	if err != nil {
+		// Filtered mode: if no users match, treat as non-fatal and simply skip user grants.
+		// This is common in environments where grants are centralized or not per-database.
+		if len(databases) > 0 && strings.Contains(err.Error(), "tidak ada user dengan grants") {
+			logger.Infof("Tidak ada user grants yang relevan untuk database terpilih, skip export user grants")
+			return "", nil
+		}
 		logger.Errorf("Gagal mendapatkan user grants: %v", err)
 		return "", fmt.Errorf("gagal mendapatkan user grants: %w", err)
 	}

@@ -156,6 +156,7 @@ func ParsingRestoreAllOptions(cmd *cobra.Command) (types.RestoreAllOptions, erro
 	PopulateRestoreTicket(cmd, &opts.Ticket)
 	opts.BackupOptions = &types.RestoreBackupOptions{}
 	PopulateRestoreBackupDir(cmd, opts.BackupOptions)
+	PopulateRestoreGrantsFlags(cmd, &opts.GrantsFile, &opts.SkipGrants)
 
 	return opts, nil
 }

@@ -21,10 +21,31 @@ import (
 
 // DetectOrSelectCompanionFile mendeteksi atau meminta user memilih file companion database
 func (s *Service) DetectOrSelectCompanionFile() error {
-	// Jika companion file sudah di-set, skip
+	// Jika companion file sudah di-set, gunakan dulu.
+	// Jika ternyata file tidak ada (mis. flag salah), fallback ke auto-detect / pemilihan interaktif.
 	if s.RestorePrimaryOpts.CompanionFile != "" {
-		s.Log.Infof("Menggunakan companion file yang sudah ditentukan: %s", s.RestorePrimaryOpts.CompanionFile)
-		return nil
+		if _, err := os.Stat(s.RestorePrimaryOpts.CompanionFile); err == nil {
+			s.Log.Infof("Menggunakan companion file yang sudah ditentukan: %s", s.RestorePrimaryOpts.CompanionFile)
+			return nil
+		}
+
+		missing := s.RestorePrimaryOpts.CompanionFile
+		s.Log.Warnf("Companion file dari flag tidak ditemukan: %s", missing)
+		ui.PrintWarning(fmt.Sprintf("⚠️  Companion file tidak ditemukan: %s", missing))
+
+		// Mode non-interaktif: jangan prompt, ikuti StopOnError.
+		if s.RestorePrimaryOpts.Force {
+			if s.RestorePrimaryOpts.StopOnError {
+				return fmt.Errorf("companion file (_dmart) tidak ditemukan: %s", missing)
+			}
+			s.Log.Warn("Companion file tidak ditemukan; skip restore companion database karena continue-on-error")
+			ui.PrintWarning("⚠️  Skip restore companion database (companion file tidak ditemukan)")
+			s.RestorePrimaryOpts.IncludeDmart = false
+			return nil
+		}
+
+		// Interactive fallback
+		s.RestorePrimaryOpts.CompanionFile = ""
 	}
 
 	// Non-interactive mode: jangan pernah prompt.
@@ -49,6 +70,8 @@ func (s *Service) DetectOrSelectCompanionFile() error {
 	primaryFile := s.RestorePrimaryOpts.File
 	dir := filepath.Dir(primaryFile)
 
+	s.Log.Infof("Auto-detect companion (_dmart) rule: 1) baca metadata '%s', 2) jika gagal, cari di folder yang sama dengan pattern nama file", filepath.Base(primaryFile)+consts.ExtMetaJSON)
+	s.Log.Info("Pattern matching butuh format filename standar: {database}_{YYYYMMDD}_{HHMMSS}_{hostname}.sql[.gz][.enc] (dan companion {database}_dmart...) ")
 	s.Log.Debugf("Mencari companion file dari primary: %s", filepath.Base(primaryFile))
 
 	// Strategi 1: Coba baca dari metadata file (.meta.json)

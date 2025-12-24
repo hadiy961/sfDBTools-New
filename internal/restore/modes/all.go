@@ -14,7 +14,6 @@ import (
 	"sfDBTools/internal/restore/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
-	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"sort"
 	"strings"
@@ -47,25 +46,7 @@ func (e *AllExecutor) Execute(ctx context.Context) (*types.RestoreResult, error)
 	e.service.SetRestoreInProgress("ALL_DATABASES")
 	defer e.service.ClearRestoreInProgress()
 
-	// Validasi: konfirmasi user jika bukan force mode atau dry-run
-	if !opts.Force && !opts.DryRun {
-		ui.PrintWarning("⚠️  PERINGATAN: Operasi ini akan restore SEMUA database dari file dump!")
-		ui.PrintWarning("    Database yang sudah ada akan ditimpa (jika drop-target aktif)")
-
-		if len(opts.ExcludeDBs) > 0 {
-			logger.Infof("Database yang akan di-exclude: %v", opts.ExcludeDBs)
-		}
-		if opts.SkipSystemDBs {
-			logger.Info("System databases (mysql, sys, information_schema, performance_schema) akan di-skip")
-		}
-
-		confirm, err := input.AskYesNo("\nLanjutkan proses restore?", false)
-		if err != nil || !confirm {
-			logger.Info("Restore dibatalkan oleh user")
-			result.Error = fmt.Errorf("restore dibatalkan oleh user")
-			return result, result.Error
-		}
-	}
+	// Konfirmasi sudah dilakukan di setup (DisplayConfirmation).
 
 	// Note: do not close the target DB client here. Some helper operations
 	// (e.g., DropAllDatabases) may still need an active client. Closing the
@@ -84,6 +65,18 @@ func (e *AllExecutor) Execute(ctx context.Context) (*types.RestoreResult, error)
 	if err := e.executeStreamingRestore(ctx, opts); err != nil {
 		result.Error = err
 		return result, err
+	}
+
+	// Restore user grants if available (optional)
+	if !opts.SkipGrants {
+		result.GrantsFile = opts.GrantsFile
+		grantsRestored, err := e.service.RestoreUserGrantsIfAvailable(ctx, opts.GrantsFile)
+		if err != nil {
+			logger.Errorf("Gagal restore user grants: %v", err)
+			result.GrantsRestored = false
+		} else {
+			result.GrantsRestored = grantsRestored
+		}
 	}
 
 	result.Success = true
@@ -177,31 +170,70 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.R
 		logger.Infof("Database ditemukan dari file dump (%d): %s", len(names), strings.Join(names, ", "))
 	}
 
-	// 2) Cek keberadaan tiap DB dan drop jika diminta
-	if opts.DropTarget {
-		client := e.service.GetTargetClient()
-		if client == nil {
-			return fmt.Errorf("client database tidak tersedia untuk operasi drop")
-		}
-		logger.Info("Memeriksa keberadaan database pada server target...")
-		existsCount := 0
-		toDrop := make([]string, 0, len(names))
-		for _, dbName := range names {
-			exists, chkErr := client.CheckDatabaseExists(ctx, dbName)
-			if chkErr != nil {
-				if opts.StopOnError {
-					return fmt.Errorf("gagal mengecek database %s: %w", dbName, chkErr)
-				}
-				logger.Warnf("Gagal cek database %s: %v (lanjut)", dbName, chkErr)
-				continue
+	// 2) Pre-restore backup (opsional) dan/atau drop target.
+	// Untuk safety, backup harus dilakukan SEBELUM drop.
+	client := e.service.GetTargetClient()
+	if client == nil {
+		return fmt.Errorf("client database tidak tersedia")
+	}
+
+	// Kumpulkan info existence sekali (dipakai untuk backup dan drop)
+	toBackup := make([]string, 0, len(names))
+	toDrop := make([]string, 0, len(names))
+	existsCount := 0
+	logger.Info("Memeriksa keberadaan database pada server target...")
+	for _, dbName := range names {
+		exists, chkErr := client.CheckDatabaseExists(ctx, dbName)
+		if chkErr != nil {
+			if opts.StopOnError {
+				return fmt.Errorf("gagal mengecek database %s: %w", dbName, chkErr)
 			}
-			if exists {
-				existsCount++
+			logger.Warnf("Gagal cek database %s: %v (lanjut)", dbName, chkErr)
+			continue
+		}
+		if exists {
+			existsCount++
+			if !opts.SkipBackup {
+				toBackup = append(toBackup, dbName)
+			}
+			if opts.DropTarget {
 				toDrop = append(toDrop, dbName)
 			}
 		}
+	}
+	logger.Infof("Ringkasan pengecekan: %d dari %d database sudah ada", existsCount, len(names))
+
+	if !opts.SkipBackup {
+		if len(toBackup) == 0 {
+			logger.Info("Pre-restore backup: tidak ada database existing untuk dibackup")
+		} else {
+			outDir := ""
+			if opts.BackupOptions != nil {
+				outDir = opts.BackupOptions.OutputDir
+			}
+			if outDir == "" {
+				outDir = "(default dari config)"
+			}
+			logger.Infof("Pre-restore backup (single-file): membackup %d database ke %s", len(toBackup), outDir)
+			backupStart := time.Now()
+			backupFile, bErr := e.service.BackupDatabasesSingleFileIfNeeded(ctx, toBackup, false, opts.BackupOptions)
+			backupDuration := time.Since(backupStart).Round(time.Millisecond)
+			if bErr != nil {
+				if opts.StopOnError {
+					return fmt.Errorf("backup pre-restore gagal: %w", bErr)
+				}
+				logger.Warnf("backup pre-restore gagal (durasi: %s): %v (lanjut)", backupDuration, bErr)
+			} else if backupFile != "" {
+				logger.Infof("Pre-restore backup selesai (durasi: %s): %s", backupDuration, backupFile)
+			} else {
+				logger.Infof("Pre-restore backup selesai (durasi: %s)", backupDuration)
+			}
+		}
+	}
+
+	if opts.DropTarget {
 		notExists := len(names) - existsCount
-		logger.Infof("Ringkasan pengecekan: %d dari %d database sudah ada; %d belum ada", existsCount, len(names), notExists)
+		logger.Infof("Ringkasan drop: %d dari %d database akan di-drop; %d belum ada", len(toDrop), len(names), notExists)
 
 		// Tampilkan daftar database yang akan di-drop pada satu baris (comma-separated)
 		if len(toDrop) > 0 {

@@ -68,9 +68,15 @@ func NewClient(ctx context.Context, cfg Config, timeout time.Duration, maxOpenCo
 	db.SetMaxOpenConns(maxOpenConns)
 	db.SetMaxIdleConns(maxIdleConns)
 	db.SetConnMaxLifetime(connMaxLifetime)
-	// Set idle timeout to 0 (unlimited) untuk avoid premature connection closure
-	// pada long-running operations seperti backup
-	db.SetConnMaxIdleTime(0)
+	// IMPORTANT: Avoid unlimited idle time.
+	// Unlimited idle connections are often dropped by server/proxy/NAT, which then
+	// shows up as "unexpected EOF" / "invalid connection" on next use.
+	// Idle timeout does NOT affect active long-running operations.
+	idle := 30 * time.Second
+	if connMaxLifetime > 0 && connMaxLifetime < idle {
+		idle = connMaxLifetime
+	}
+	db.SetConnMaxIdleTime(idle)
 
 	// Gunakan context dengan timeout untuk ping awal
 	pingCtx, cancel := context.WithTimeout(ctx, timeout)

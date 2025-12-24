@@ -36,9 +36,13 @@ type RestoreService interface {
 	GetPrimaryOptions() *types.RestorePrimaryOptions
 	GetAllOptions() *types.RestoreAllOptions
 	GetSelectionOptions() *types.RestoreSelectionOptions
+	GetCustomOptions() *types.RestoreCustomOptions
 
 	// Restore Operations (Exposed from helpers)
 	BackupDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, skipBackup bool, backupOpts *types.RestoreBackupOptions) (string, error)
+	// BackupDatabasesSingleFileIfNeeded melakukan backup gabungan (single-file/combined)
+	// untuk sekumpulan database sebelum restore all (konsep: backup filter --mode single-file).
+	BackupDatabasesSingleFileIfNeeded(ctx context.Context, dbNames []string, skipBackup bool, backupOpts *types.RestoreBackupOptions) (string, error)
 	DropDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, shouldDrop bool) error
 	CreateAndRestoreDatabase(ctx context.Context, dbName string, filePath string, encryptionKey string) error
 	RestoreUserGrantsIfAvailable(ctx context.Context, grantsFile string) (bool, error)

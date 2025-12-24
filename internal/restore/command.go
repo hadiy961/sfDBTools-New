@@ -19,6 +19,61 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ExecuteRestoreCustomCommand adalah entry point untuk restore custom (SFCola account detail)
+func ExecuteRestoreCustomCommand(cmd *cobra.Command, deps *appdeps.Dependencies) error {
+	logger := deps.Logger
+	logger.Info("Memulai proses restore custom")
+
+	parsedOpts, err := parsing.ParsingRestoreCustomOptions(cmd)
+	if err != nil {
+		logger.Error("gagal parsing opsi: " + err.Error())
+		return err
+	}
+
+	svc := NewRestoreService(logger, deps.Config, &parsedOpts)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		sig := <-sigChan
+		logger.Warnf("Menerima signal %v, menghentikan restore... (Tekan sekali lagi untuk force exit)", sig)
+		svc.HandleShutdown()
+		cancel()
+
+		<-sigChan
+		logger.Warn("Menerima signal kedua, memaksa berhenti (force exit)...")
+		os.Exit(1)
+	}()
+
+	if err := svc.SetupRestoreCustomSession(ctx); err != nil {
+		return err
+	}
+	defer svc.Close()
+
+	result, err := svc.ExecuteRestoreCustom(ctx)
+	if err != nil {
+		if ctx.Err() != nil {
+			logger.Warn("Proses restore custom dibatalkan.")
+			return nil
+		}
+		logger.Error("Restore custom gagal: " + err.Error())
+		svc.ErrorLog.Log(map[string]interface{}{
+			"function": "ExecuteRestoreCustom",
+			"error":    err.Error(),
+		}, err)
+		return err
+	}
+
+	display.ShowRestoreCustomResult(result)
+
+	ui.PrintSuccess("Restore custom berhasil diselesaikan")
+	logger.Info("Restore custom berhasil diselesaikan")
+	return nil
+}
+
 // ExecuteRestoreSingleCommand adalah entry point untuk restore single command
 func ExecuteRestoreSingleCommand(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 	logger := deps.Logger

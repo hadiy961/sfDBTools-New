@@ -38,4 +38,5 @@ func init() {
 	CmdRestore.AddCommand(CmdRestorePrimary)
 	CmdRestore.AddCommand(CmdRestoreAll)
 	CmdRestore.AddCommand(CmdRestoreSelection)
+	CmdRestore.AddCommand(CmdRestoreCustom)
 }

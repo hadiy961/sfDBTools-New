@@ -11,4 +11,5 @@ const (
 	ModeCombined  = "combined"
 	ModeAll       = "all"
 	ModeSelection = "selection"
+	ModeCustom    = "custom"
 )

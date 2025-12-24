@@ -56,14 +56,14 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 
 	// 2. Detect companion file if needed
 	if opts.IncludeDmart {
-		if err := e.service.DetectOrSelectCompanionFile(); err != nil {
-			result.Error = fmt.Errorf("gagal deteksi companion database: %w", err)
-			return result, result.Error
-		}
-		// DetectOrSelectCompanionFile bisa memutuskan untuk skip dmart (IncludeDmart=false)
-		if opts.IncludeDmart {
+		// Companion file sudah harus di-resolve saat setup (sebelum konfirmasi).
+		// Executor tidak boleh prompt interaktif.
+		if opts.CompanionFile != "" {
 			result.CompanionFile = opts.CompanionFile
 			result.CompanionDB = opts.TargetDB + consts.SuffixDmart
+		} else {
+			logger.Warn("Companion (dmart) diaktifkan tapi file tidak tersedia; skip restore companion")
+			ui.PrintWarning("⚠️  Companion (dmart) diaktifkan tapi file tidak tersedia; skip restore companion")
 		}
 	}
 
@@ -168,17 +168,14 @@ func (e *PrimaryExecutor) executeDryRun(ctx context.Context, opts *types.Restore
 
 	// Validasi companion file jika ada
 	var companionValid bool
-	if opts.IncludeDmart {
-		// Try detect companion file
-		if err := e.service.DetectOrSelectCompanionFile(); err == nil && opts.CompanionFile != "" {
-			reader, closers, err := helpers.OpenAndPrepareReader(opts.CompanionFile, opts.EncryptionKey)
-			if err == nil {
-				helpers.CloseReaders(closers)
-				_ = reader
-				companionValid = true
-				result.CompanionFile = opts.CompanionFile
-				result.CompanionDB = opts.TargetDB + consts.SuffixDmart
-			}
+	if opts.IncludeDmart && opts.CompanionFile != "" {
+		reader, closers, err := helpers.OpenAndPrepareReader(opts.CompanionFile, opts.EncryptionKey)
+		if err == nil {
+			helpers.CloseReaders(closers)
+			_ = reader
+			companionValid = true
+			result.CompanionFile = opts.CompanionFile
+			result.CompanionDB = opts.TargetDB + consts.SuffixDmart
 		}
 	}
 

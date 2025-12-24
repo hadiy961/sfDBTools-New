@@ -184,6 +184,7 @@ func (e *selectionExecutor) readCSV(path string) ([]types.RestoreSelectionEntry,
 	if strings.TrimSpace(path) == "" {
 		return nil, errors.New("path CSV wajib diisi (--csv)")
 	}
+	csvDir := filepath.Dir(path)
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("gagal membuka CSV: %w", err)
@@ -236,6 +237,9 @@ func (e *selectionExecutor) readCSV(path string) ([]types.RestoreSelectionEntry,
 			// Skip if file path missing
 			continue
 		}
+		if !filepath.IsAbs(file) {
+			file = filepath.Join(csvDir, file)
+		}
 
 		dbName := get(1)
 		encKey := get(2)
@@ -243,6 +247,9 @@ func (e *selectionExecutor) readCSV(path string) ([]types.RestoreSelectionEntry,
 		if len(rec) >= 4 {
 			// Take the last field as grants_file to tolerate extra empty columns
 			grants = strings.Trim(strings.TrimSpace(rec[len(rec)-1]), " '")
+		}
+		if grants != "" && !filepath.IsAbs(grants) {
+			grants = filepath.Join(csvDir, grants)
 		}
 
 		entry := types.RestoreSelectionEntry{

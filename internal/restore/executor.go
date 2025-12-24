@@ -48,3 +48,12 @@ func (s *Service) ExecuteRestoreSelection(ctx context.Context) (*types.RestoreRe
 	}
 	return executor.Execute(ctx)
 }
+
+// ExecuteRestoreCustom menjalankan restore custom (SFCola account detail)
+func (s *Service) ExecuteRestoreCustom(ctx context.Context) (*types.RestoreResult, error) {
+	executor, err := modes.GetExecutor(consts.ModeCustom, s)
+	if err != nil {
+		return nil, err
+	}
+	return executor.Execute(ctx)
+}
