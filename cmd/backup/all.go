@@ -29,15 +29,15 @@ Anda dapat mengecualikan database tertentu (misalnya schema sistem MySQL) menggu
 Fitur:
   - Backup seluruh instance.
   - Filter exclude untuk mengabaikan database sistem atau database tertentu.
-  - Dukungan kompresi output (gzip/bzip2/dll tergantung implementasi).`,
+`,
 	Example: `  # 1. Backup semua database (Default)
   sfdbtools db-backup all
 
-  # 2. Backup semua kecuali database sistem (mysql, information_schema, performance_schema, sys)
-  sfdbtools db-backup all --exclude-system
+	# 2. Backup ke direktori tertentu
+	sfdbtools db-backup all --output-dir "/backup/daily"
 
-  # 3. Backup ke direktori tertentu dengan kompresi
-  sfdbtools db-backup all --output-dir "/backup/daily" --compress
+	# 3. Backup dengan custom nama file output
+	sfdbtools db-backup all --output-dir "/backup/daily" --filename "all_backup_20251224"
 
   # 4. Backup dengan mengecualikan list database tertentu
   sfdbtools db-backup all --exclude-db "test_db,temp_db"`,

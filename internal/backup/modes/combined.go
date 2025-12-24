@@ -37,6 +37,23 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 
 	opts := e.service.GetOptions()
 	filename := opts.File.Path
+	// Mode all bisa override lewat --filename (base name tanpa ekstensi).
+	if opts.Mode == consts.ModeAll && opts.File.Filename != "" {
+		customBase := opts.File.Filename
+		if strings.Contains(customBase, ".sql") {
+			filename = customBase
+		} else {
+			ext := ""
+			if filename != "" && filename != consts.FilenameGenerateErrorPlaceholder {
+				if idx := strings.Index(filename, ".sql"); idx >= 0 {
+					ext = filename[idx:]
+				} else {
+					ext = filepath.Ext(filename)
+				}
+			}
+			filename = customBase + ext
+		}
+	}
 	fullOutputPath := filepath.Join(opts.OutputDir, filename)
 	e.service.GetLog().Debug("Backup file: " + fullOutputPath)
 

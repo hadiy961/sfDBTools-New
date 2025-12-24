@@ -10,17 +10,8 @@ func addBackupCommonFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions
 	// Profile flags (shared)
 	AddProfileFlags(cmd, &opts.Profile)
 
-	// Compression (shared)
-	AddCompressionFlags(cmd, &opts.Compression)
-
 	// Encryption (shared)
 	AddEncryptionFlags(cmd, &opts.Encryption)
-
-	// Capture GTID
-	cmd.Flags().Bool("capture-gtid", opts.CaptureGTID, "Tangkap informasi GTID saat melakukan backup")
-
-	// Exclude User
-	cmd.Flags().Bool("exclude-user", opts.ExcludeUser, "Exclude user grants dari export (default: false = export user)")
 
 	// Dry Run
 	cmd.Flags().Bool("dry-run", opts.DryRun, "Jalankan backup dalam mode dry-run (tidak benar-benar membuat file backup)")
@@ -39,14 +30,11 @@ func addBackupIncludeFilterFlags(cmd *cobra.Command, opts *types_backup.BackupDB
 }
 
 func addBackupExcludeFilterFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
-	cmd.Flags().Bool("exclude-system", opts.Filter.ExcludeSystem, "Kecualikan system databases (information_schema, mysql, dll)")
 	cmd.Flags().StringArray("exclude-db", opts.Filter.ExcludeDatabases, "Daftar database yang akan dikecualikan. Dapat dikombinasi dengan --exclude-db-file.")
 	cmd.Flags().String("exclude-db-file", opts.Filter.ExcludeDBFile, "File berisi daftar database yang akan dikecualikan (satu per baris). Dapat dikombinasi dengan --exclude-db.")
 }
 
 func addBackupAllModeExcludeFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
-	cmd.Flags().Bool("exclude-data", opts.Filter.ExcludeData, "Exclude data, hanya backup struktur database")
-	cmd.Flags().Bool("exclude-empty", opts.Filter.ExcludeEmpty, "Exclude database yang kosong (tidak ada tabel)")
 }
 
 func addBackupCompanionFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
@@ -56,8 +44,6 @@ func addBackupCompanionFlags(cmd *cobra.Command, opts *types_backup.BackupDBOpti
 func addBackupCommonModeFlags(cmd *cobra.Command, defaultOpts *types_backup.BackupDBOptions) {
 	cmd.Flags().StringVarP(&defaultOpts.OutputDir, "output-dir", "o", defaultOpts.OutputDir, "Direktori output untuk menyimpan file backup")
 	cmd.Flags().StringVarP(&defaultOpts.File.Filename, "filename", "f", "", "Nama file backup")
-	cmd.Flags().BoolVarP(&defaultOpts.ExcludeUser, "exclude-user", "e", defaultOpts.ExcludeUser, "Exclude user grants dari export")
-	cmd.Flags().BoolVar(&defaultOpts.Filter.ExcludeData, "exclude-data", defaultOpts.Filter.ExcludeData, "Backup hanya struktur database tanpa data")
 	cmd.Flags().StringVar(&defaultOpts.Ticket, "ticket", defaultOpts.Ticket, "Ticket number untuk request backup")
 	cmd.Flags().BoolVar(&defaultOpts.Force, "force", defaultOpts.Force, "Tampilkan opsi backup sebelum eksekusi")
 }
@@ -81,34 +67,30 @@ func AddBackupFilterFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions
 
 	// Hanya include filters (tidak ada exclude)
 	addBackupIncludeFilterFlags(cmd, opts)
-
-	// Exclude Data (schema-only)
-	cmd.Flags().Bool("exclude-data", opts.Filter.ExcludeData, "Backup hanya struktur database tanpa data")
 }
 
 // AddBackupAllFlags menambahkan flags untuk backup all (dengan exclude flags, tanpa include)
 func AddBackupAllFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
 	addBackupCommonFlags(cmd, opts)
 
+	// Custom filename untuk output file (mode all menghasilkan satu file)
+	cmd.Flags().StringVar(&opts.File.Filename, "filename", opts.File.Filename, "Nama file backup (custom, tanpa ekstensi)")
+
 	// Exclude filters (tidak ada include)
-	cmd.Flags().Bool("exclude-system", opts.Filter.ExcludeSystem, "Kecualikan system databases (information_schema, mysql, dll)")
 	addBackupAllModeExcludeFlags(cmd, opts)
 }
 
 func AddBackupFlgs(cmd *cobra.Command, opts *types_backup.BackupDBOptions, mode string) {
 	if mode == "single" {
 		AddProfileFlags(cmd, &opts.Profile)
-		AddCompressionFlags(cmd, &opts.Compression)
 		AddEncryptionFlags(cmd, &opts.Encryption)
 		SingleBackupFlags(cmd, opts)
 	} else if mode == "primary" {
 		AddProfileFlags(cmd, &opts.Profile)
-		AddCompressionFlags(cmd, &opts.Compression)
 		AddEncryptionFlags(cmd, &opts.Encryption)
 		PrimaryBackupFlags(cmd, opts)
 	} else if mode == "secondary" {
 		AddProfileFlags(cmd, &opts.Profile)
-		AddCompressionFlags(cmd, &opts.Compression)
 		AddEncryptionFlags(cmd, &opts.Encryption)
 		SecondaryBackupFlags(cmd, opts)
 	} else {

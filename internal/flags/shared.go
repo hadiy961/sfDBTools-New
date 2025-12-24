@@ -14,16 +14,9 @@ func AddProfileFlags(cmd *cobra.Command, opts *types.ProfileInfo) {
 }
 
 // AddEncryptionFlags mendaftarkan flag untuk opsi enkripsi output.
-// Flag: --encryption-key
+// Flag: --backup-key
 func AddEncryptionFlags(cmd *cobra.Command, opts *types.EncryptionOptions) {
-	cmd.Flags().StringVarP(&opts.Key, "encryption-key", "K", opts.Key, "Kunci enkripsi yang digunakan")
-}
-
-// AddCompressionFlags mendaftarkan flag untuk opsi kompresi.
-// Flag: --compress-type, --compress-level
-func AddCompressionFlags(cmd *cobra.Command, opts *types.CompressionOptions) {
-	cmd.Flags().StringVarP(&opts.Type, "compress-type", "C", opts.Type, "Tipe kompresi (gzip, zstd, xz, pgzip, zlib, none)")
-	cmd.Flags().IntVar(&opts.Level, "compress-level", opts.Level, "Tingkat kompresi (1-9)")
+	cmd.Flags().StringVarP(&opts.Key, "backup-key", "K", opts.Key, "Kunci enkripsi untuk backup (ENV: SFDB_BACKUP_ENCRYPTION_KEY)")
 }
 
 // AddFilterFlags mendaftarkan flag untuk filtering database (Include/Exclude).

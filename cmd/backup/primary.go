@@ -26,10 +26,7 @@ Contoh:
 	Example: `  # 1. Backup semua database primary
   sfdbtools db-backup primary
 
-  # 2. Backup primary dengan kompresi
-  sfdbtools db-backup primary --compress
-
-  # 3. Backup primary ke direktori khusus
+  # 2. Backup primary ke direktori khusus
   sfdbtools db-backup primary --output-dir "/backups/prod"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia

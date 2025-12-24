@@ -27,9 +27,7 @@ Jika nama database tidak diberikan via flag, akan muncul menu interaktif untuk m
 
   # 3. Backup ke output file spesifik
   sfdbtools db-backup single --db "target_db" --output-file "backup_target_v1.sql"
-
-  # 4. Backup dengan kompresi
-  sfdbtools db-backup single --db "target_db" --compress`,
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
 		if appdeps.Deps == nil {

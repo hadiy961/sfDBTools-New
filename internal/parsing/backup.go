@@ -29,25 +29,10 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 		opts.Filter.IsFilterCommand = true
 	}
 
-	// Compression (Shared Helper)
-	PopulateCompressionFlags(cmd, &opts.Compression)
-
 	// Encryption (Shared Helper)
 	PopulateEncryptionFlags(cmd, &opts.Encryption)
 
-	// Capture GTID (untuk combined dan all)
-	if mode == "combined" || mode == "all" {
-		if cmd.Flags().Changed("capture-gtid") {
-			opts.CaptureGTID = helper.GetBoolFlagOrEnv(cmd, "capture-gtid", "")
-		}
-	} else {
-		opts.CaptureGTID = false
-	}
-
-	// Exclude User
-	if cmd.Flags().Changed("exclude-user") {
-		opts.ExcludeUser = helper.GetBoolFlagOrEnv(cmd, "exclude-user", "")
-	}
+	// CaptureGTID & ExcludeUser berasal dari config file (defaultval), tidak di-override via flag.
 
 	// Dry Run
 	opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
@@ -58,6 +43,13 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	}
 	opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
 
+	// Custom filename untuk mode all (single file)
+	if mode == "all" {
+		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
+			opts.File.Filename = v
+		}
+	}
+
 	// Mode-specific options
 	if mode == "single" {
 		if v := helper.GetStringFlagOrEnv(cmd, "database", ""); v != "" {
@@ -66,14 +58,12 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
 			opts.File.Filename = v
 		}
-		opts.Filter.ExcludeData = helper.GetBoolFlagOrEnv(cmd, "exclude-data", "")
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
 	} else if mode == "primary" {
 		// Mode primary sama seperti single, hanya tanpa --database flag
 		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
 			opts.File.Filename = v
 		}
-		opts.Filter.ExcludeData = helper.GetBoolFlagOrEnv(cmd, "exclude-data", "")
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
 		if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
 			opts.ClientCode = v
@@ -83,7 +73,6 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
 			opts.File.Filename = v
 		}
-		opts.Filter.ExcludeData = helper.GetBoolFlagOrEnv(cmd, "exclude-data", "")
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
 		if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
 			opts.ClientCode = v

@@ -9,6 +9,7 @@ import (
 	"sfDBTools/pkg/database"
 	pkghelper "sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
+	"strings"
 )
 
 // =============================================================================
@@ -101,6 +102,28 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Clie
 			ExcludedDatabases: s.excludedDatabases,
 		}
 		ui.DisplayFilterStats(stats, consts.FeatureBackup, s.Log)
+	}
+
+	// Jika user set custom filename untuk mode all, treat sebagai base name tanpa ekstensi.
+	// Ekstensi mengikuti default generated filename (mis. .sql.gz.enc / .sql / .sql.enc).
+	if s.BackupDBOptions.Mode == consts.ModeAll && s.BackupDBOptions.File.Filename != "" {
+		defaultName := s.BackupDBOptions.File.Path
+		customBase := s.BackupDBOptions.File.Filename
+
+		// Jika user sudah memasukkan .sql (atau full filename), biarkan apa adanya.
+		if !strings.Contains(customBase, ".sql") {
+			ext := ""
+			if defaultName != "" && defaultName != consts.FilenameGenerateErrorPlaceholder {
+				if idx := strings.Index(defaultName, ".sql"); idx >= 0 {
+					ext = defaultName[idx:]
+				} else {
+					ext = filepath.Ext(defaultName)
+				}
+			}
+			s.BackupDBOptions.File.Path = customBase + ext
+		} else {
+			s.BackupDBOptions.File.Path = customBase
+		}
 	}
 
 	return dbFiltered, nil
