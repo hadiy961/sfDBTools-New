@@ -2,6 +2,8 @@
 #Created by Muhammad Naufal Saniar
 #set -x
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 #main_menu
 clear
 echo "MAIN MENU"
@@ -26,28 +28,28 @@ case "$option_0" in
         exit;
         ;;
     1)
-        sh /home/bin/main_menu/restore_from_production_live.sh
+        bash "$SCRIPT_DIR/restore_from_production_live.sh"
         ;;
     2)
-        sh /home/bin/main_menu/restore_from_production_custom_date_and_time.sh
+        bash "$SCRIPT_DIR/restore_from_production_custom_date_and_time.sh"
         ;;
     3)
-        sh /home/bin/main_menu/check_and_restore_from_daily_backup.sh
+        bash "$SCRIPT_DIR/check_and_restore_from_daily_backup.sh"
         ;;
     4)
-        sh /home/bin/main_menu/check_and_restore_from_last_backup.sh
+        bash "$SCRIPT_DIR/check_and_restore_from_last_backup.sh"
         ;;
     5)
-        sh /home/bin/main_menu/check_and_restore_from_archive.sh
+        bash "$SCRIPT_DIR/check_and_restore_from_archive.sh"
         ;;
     6)
-        sh /home/bin/main_menu/backup_to_development.sh
+        bash "$SCRIPT_DIR/backup_to_development.sh"
         ;;
     7)
-        sh /home/bin/main_menu/backup_to_custom.sh
+        bash "$SCRIPT_DIR/backup_to_custom.sh"
         ;;
     8)
-        sh /home/bin/main_menu/archive.sh
+        bash "$SCRIPT_DIR/archive.sh"
         ;;
     *)
         echo "Please select a valid option";

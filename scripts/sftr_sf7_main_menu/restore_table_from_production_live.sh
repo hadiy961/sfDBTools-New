@@ -2,6 +2,8 @@
 #Created by Muhammad Naufal Saniar
 #set -x
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 #global_variables
 year=`date +%Y`; month=`date +%m`; day=`date +%d`; hour=`date +%H`; minute=`date +%M`; second=`date +%S`;
 user="sst_user"
@@ -9,7 +11,9 @@ password="demo"
 host="172.17.71.139"
 port="33304"
 path="/media/dbtosecondary-nbc/last_backup"
-log="/home/bin/main_menu/log/log_${year}${month}${day}"
+log_dir="${SCRIPT_DIR}/log"
+mkdir -p "$log_dir"
+log="${log_dir}/log_${year}${month}${day}"
 
 restore() {
     database_find="$(find /media/dbtosecondary-nbc/sf7/production/${year}${month}${day} -maxdepth 1 -type f -name "dbsf_*_${account_code}_*_${year}${month}${day}_[0-9]*.sql.gz" | sort -n | tail -n 1 2>/dev/null)"

@@ -2,6 +2,8 @@
 #Created by Muhammad Naufal Saniar
 #set -x
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 #global_variables
 year=`date +%Y`; month=`date +%m`; day=`date +%d`; hour=`date +%H`; minute=`date +%M`; second=`date +%S`;
 user="sst_user"
@@ -10,7 +12,9 @@ host="172.17.71.139"
 port="33304"
 daily_backup_path="/media/daily_backup"
 last_backup_path="/media/dbtosecondary-nbc/last_backup"
-log="/home/bin/main_menu/log/log_${year}${month}${day}"
+log_dir="${SCRIPT_DIR}/log"
+mkdir -p "$log_dir"
+log="${log_dir}/log_${year}${month}${day}"
 
 restore() {
     echo ""

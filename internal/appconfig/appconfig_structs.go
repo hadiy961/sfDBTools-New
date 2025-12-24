@@ -24,5 +24,6 @@ type (
 	GeneralConfig      = types.GeneralConfig
 	LogConfig          = types.LogConfig
 	MariadbConfig      = types.MariadbConfig
+	ScriptConfig       = types.ScriptConfig
 	SystemUsersConfig  = types.SystemUsersConfig
 )

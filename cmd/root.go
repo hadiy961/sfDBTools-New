@@ -14,6 +14,7 @@ import (
 	dbscancmd "sfDBTools/cmd/dbscan"
 	profilecmd "sfDBTools/cmd/profile"
 	restorecmd "sfDBTools/cmd/restore"
+	scriptcmd "sfDBTools/cmd/script"
 	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/pkg/ui"
 
@@ -74,6 +75,7 @@ func init() {
 	rootCmd.AddCommand(profilecmd.CmdProfileMain)
 	rootCmd.AddCommand(dbscancmd.CmdDBScanMain)
 	rootCmd.AddCommand(cryptocmd.CmdCryptoMain)
+	rootCmd.AddCommand(scriptcmd.CmdScriptMain)
 	rootCmd.AddCommand(cleanupcmd.CmdCleanupMain)
 	rootCmd.AddCommand(backupcmd.CmdBackupMain)
 	rootCmd.AddCommand(restorecmd.CmdRestore)

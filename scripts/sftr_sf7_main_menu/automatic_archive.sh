@@ -2,6 +2,8 @@
 #Created by Muhammad Naufal Saniar
 #set -x
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 #global_variables
 year=`date +%Y`; month=`date +%m`; day=`date +%d`; hour=`date +%H`; minute=`date +%M`; second=`date +%S`;
 user="sst_user"
@@ -10,13 +12,14 @@ host="172.17.71.139"
 port="33304"
 day_threshold="45"
 path="/media/secondary/archive_backup/${year}${month}${day}"
-log="/home/bin/main_menu/log/log_${year}${month}${day}"
+log_dir="${SCRIPT_DIR}/log"
+mkdir -p "$log_dir"
+log="${log_dir}/log_${year}${month}${day}"
 
 archive() {
     mkdir -p "$path"
     for database in ${databases[@]}
     do
-        file_name="${path}/${database}_${year}${month}${day}_${hour}${minute}${second}.sql.gz"
         echo ""
         echo "Backup $database started  at $(date)"
 #        mysql -u"$user" -p"$password" -h"$host" -P"$port" -sNe "SET GLOBAL max_statement_time=0;" && mysqldump -u"$user" -p"$password" -h"$host" -P"$port" -CfQq --max-allowed-packet=1G --hex-blob --order-by-primary --opt --single-transaction --routines=true --triggers=true --no-data=false "$database" | gzip -c > "$file_name" && mysql -u"$user" -p"$password" -h"$host" -P"$port" -sNe "SET GLOBAL max_statement_time=60;"

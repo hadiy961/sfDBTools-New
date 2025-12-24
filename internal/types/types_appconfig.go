@@ -9,6 +9,15 @@ type Config struct {
 	Log         LogConfig         `yaml:"log"`
 	Mariadb     MariadbConfig     `yaml:"mariadb"`
 	SystemUsers SystemUsersConfig `yaml:"system_users"`
+	Script      ScriptConfig      `yaml:"script"`
+}
+
+// Struct untuk bagian 'script'
+// Digunakan untuk mengatur output bundle .sftools (mis. hasil sfdbtools script encrypt).
+type ScriptConfig struct {
+	// BundleOutputDir jika diisi, output .sftools akan ditaruh di folder ini.
+	// Jika kosong, default: satu folder dengan entrypoint.
+	BundleOutputDir string `yaml:"bundle_output_dir"`
 }
 
 // Struct untuk bagian 'backup'

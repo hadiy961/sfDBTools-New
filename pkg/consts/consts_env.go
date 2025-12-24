@@ -21,6 +21,8 @@ const (
 	ENV_QUIET = "SFDB_QUIET"
 	// Generic encryption key for utility commands
 	ENV_ENCRYPTION_KEY = "SFDB_ENCRYPTION_KEY"
+	// Script bundle encryption key
+	ENV_SCRIPT_KEY = "SFDB_SCRIPT_KEY"
 	// Backup encryption key
 	ENV_BACKUP_ENCRYPTION_KEY = "SFDB_BACKUP_ENCRYPTION_KEY"
 
