@@ -22,6 +22,16 @@ import (
 	"time"
 )
 
+func hasAnySuffix(path string, suffixes []string) bool {
+	lower := strings.ToLower(strings.TrimSpace(path))
+	for _, s := range suffixes {
+		if strings.HasSuffix(lower, strings.ToLower(s)) {
+			return true
+		}
+	}
+	return false
+}
+
 // resolveBackupFile resolve lokasi file backup
 func (s *Service) resolveBackupFile(filePath *string, allowInteractive bool) error {
 	if strings.TrimSpace(*filePath) == "" {
@@ -42,8 +52,45 @@ func (s *Service) resolveBackupFile(filePath *string, allowInteractive bool) err
 		*filePath = selectedFile
 	}
 
-	if _, err := os.Stat(*filePath); os.IsNotExist(err) {
+	fi, err := os.Stat(*filePath)
+	if os.IsNotExist(err) {
 		return fmt.Errorf("file backup tidak ditemukan: %s", *filePath)
+	}
+	if err != nil {
+		return fmt.Errorf("gagal membaca file backup: %w", err)
+	}
+	validExtensions := helper.ValidBackupFileExtensionsForSelection()
+	if fi.IsDir() {
+		if !allowInteractive {
+			return fmt.Errorf("file backup tidak valid (path adalah direktori): %s", *filePath)
+		}
+
+		selectedFile, selErr := input.SelectFileInteractive(*filePath, "Masukkan path directory atau file backup", validExtensions)
+		if selErr != nil {
+			return fmt.Errorf("gagal memilih file backup: %w", selErr)
+		}
+		*filePath = selectedFile
+
+		// Re-stat setelah user memilih file.
+		fi, err = os.Stat(*filePath)
+		if err != nil {
+			return fmt.Errorf("gagal membaca file backup: %w", err)
+		}
+		if fi.IsDir() {
+			return fmt.Errorf("file backup tidak valid (path adalah direktori): %s", *filePath)
+		}
+	}
+
+	if !hasAnySuffix(*filePath, validExtensions) {
+		if !allowInteractive {
+			return fmt.Errorf("file backup tidak valid (ekstensi tidak didukung): %s", *filePath)
+		}
+		ui.PrintWarning(fmt.Sprintf("⚠️  File backup ekstensi tidak didukung: %s", *filePath))
+		selectedFile, selErr := input.SelectFileInteractive(filepath.Dir(*filePath), "Masukkan path directory atau file backup", validExtensions)
+		if selErr != nil {
+			return fmt.Errorf("gagal memilih file backup: %w", selErr)
+		}
+		*filePath = selectedFile
 	}
 
 	absPath, err := filepath.Abs(*filePath)
@@ -80,8 +127,22 @@ func (s *Service) resolveSelectionCSV(csvPath *string, allowInteractive bool) er
 		*csvPath = selectedFile
 	}
 
-	if _, err := os.Stat(*csvPath); os.IsNotExist(err) {
+	fi, err := os.Stat(*csvPath)
+	if os.IsNotExist(err) {
 		return fmt.Errorf("file CSV tidak ditemukan: %s", *csvPath)
+	}
+	if err != nil {
+		return fmt.Errorf("gagal membaca file CSV: %w", err)
+	}
+	if fi.IsDir() {
+		if !allowInteractive {
+			return fmt.Errorf("file CSV tidak valid (path adalah direktori): %s", *csvPath)
+		}
+		selectedFile, selErr := input.SelectFileInteractive(*csvPath, "Masukkan path CSV selection", []string{".csv"})
+		if selErr != nil {
+			return fmt.Errorf("gagal memilih file CSV: %w", selErr)
+		}
+		*csvPath = selectedFile
 	}
 
 	absPath, err := filepath.Abs(*csvPath)
@@ -264,7 +325,8 @@ func (s *Service) resolveGrantsFile(skipGrants *bool, grantsFile *string, backup
 	s.Log.Infof("Mencari file user grants untuk source: %s", filepath.Base(backupFile))
 
 	if *grantsFile != "" {
-		if _, err := os.Stat(*grantsFile); os.IsNotExist(err) {
+		fi, err := os.Stat(*grantsFile)
+		if os.IsNotExist(err) {
 			missing := *grantsFile
 			s.Log.Warnf("File grants dari flag tidak ditemukan: %s", missing)
 			ui.PrintWarning(fmt.Sprintf("⚠️  File grants tidak ditemukan: %s", missing))
@@ -279,9 +341,45 @@ func (s *Service) resolveGrantsFile(skipGrants *bool, grantsFile *string, backup
 
 			// interactive fallback
 			*grantsFile = ""
+		} else if err != nil {
+			if !allowInteractive {
+				if stopOnError {
+					return fmt.Errorf("gagal membaca file grants: %w", err)
+				}
+				s.Log.Warn("Mode non-interaktif: skip restore user grants (gagal baca file grants)")
+				return nil
+			}
+			*grantsFile = ""
+		} else if fi.IsDir() {
+			invalid := *grantsFile
+			s.Log.Warnf("File grants dari flag adalah direktori (tidak valid): %s", invalid)
+			ui.PrintWarning(fmt.Sprintf("⚠️  File grants tidak valid (path adalah direktori): %s", invalid))
+			if !allowInteractive {
+				if stopOnError {
+					return fmt.Errorf("file grants tidak valid (path adalah direktori): %s", invalid)
+				}
+				s.Log.Warn("Mode non-interaktif: skip restore user grants (file grants invalid)")
+				return nil
+			}
+			*grantsFile = ""
 		} else {
-			s.Log.Infof("File grants (user-specified): %s", *grantsFile)
-			return nil
+			// Ekstensi grants yang valid adalah *_users.sql
+			if !strings.HasSuffix(strings.ToLower(*grantsFile), strings.ToLower(consts.UsersSQLSuffix)) {
+				invalid := *grantsFile
+				s.Log.Warnf("File grants dari flag tidak valid (ekstensi): %s", invalid)
+				ui.PrintWarning(fmt.Sprintf("⚠️  File grants tidak valid (harus berakhiran '%s'): %s", consts.UsersSQLSuffix, invalid))
+				if !allowInteractive {
+					if stopOnError {
+						return fmt.Errorf("file grants tidak valid (ekstensi tidak didukung): %s", invalid)
+					}
+					s.Log.Warn("Mode non-interaktif: skip restore user grants (ekstensi grants invalid)")
+					return nil
+				}
+				*grantsFile = ""
+			} else {
+				s.Log.Infof("File grants (user-specified): %s", *grantsFile)
+				return nil
+			}
 		}
 	}
 

@@ -14,15 +14,46 @@ import (
 	"sfDBTools/internal/restore/display"
 	"sfDBTools/internal/restore/helpers"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"strings"
 )
 
+func inferPrimaryPrefixFromTargetOrFile(targetDB string, filePath string) string {
+	targetLower := strings.ToLower(strings.TrimSpace(targetDB))
+	if strings.HasPrefix(targetLower, consts.PrimaryPrefixBiznet) {
+		return consts.PrimaryPrefixBiznet
+	}
+	if strings.HasPrefix(targetLower, consts.PrimaryPrefixNBC) {
+		return consts.PrimaryPrefixNBC
+	}
+
+	inferred := helper.ExtractDatabaseNameFromFile(filepath.Base(filePath))
+	inferredLower := strings.ToLower(strings.TrimSpace(inferred))
+	if strings.HasPrefix(inferredLower, consts.PrimaryPrefixBiznet) {
+		return consts.PrimaryPrefixBiznet
+	}
+	if strings.HasPrefix(inferredLower, consts.PrimaryPrefixNBC) {
+		return consts.PrimaryPrefixNBC
+	}
+
+	return consts.PrimaryPrefixNBC
+}
+
+func buildPrimaryTargetDBFromClientCode(prefix string, clientCode string) string {
+	cc := strings.TrimSpace(clientCode)
+	ccLower := strings.ToLower(cc)
+	if strings.HasPrefix(ccLower, consts.PrimaryPrefixNBC) || strings.HasPrefix(ccLower, consts.PrimaryPrefixBiznet) {
+		return cc
+	}
+	return prefix + cc
+}
+
 // SetupRestoreSession melakukan setup untuk restore single session
 func (s *Service) SetupRestoreSession(ctx context.Context) error {
-	ui.PrintHeader("Restore Single Database")
+	ui.Headers("Restore Single Database")
 	allowInteractive := !s.RestoreOpts.Force
 
 	// 1. Resolve backup file
@@ -187,7 +218,7 @@ func (s *Service) resolveTargetDatabaseSingle(ctx context.Context) error {
 
 // SetupRestorePrimarySession melakukan setup untuk restore primary session
 func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
-	ui.PrintHeader("Restore Primary Database")
+	ui.Headers("Restore Primary Database")
 	allowInteractive := !s.RestorePrimaryOpts.Force
 
 	// 1. Resolve backup file
@@ -231,9 +262,17 @@ func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 				return err
 			}
 
+			prefix := inferPrimaryPrefixFromTargetOrFile(s.RestorePrimaryOpts.TargetDB, s.RestorePrimaryOpts.File)
+			defaultClientCode := strings.ToLower(strings.TrimSpace(s.RestorePrimaryOpts.TargetDB))
+			if strings.HasPrefix(defaultClientCode, consts.PrimaryPrefixNBC) {
+				defaultClientCode = strings.TrimPrefix(defaultClientCode, consts.PrimaryPrefixNBC)
+			} else if strings.HasPrefix(defaultClientCode, consts.PrimaryPrefixBiznet) {
+				defaultClientCode = strings.TrimPrefix(defaultClientCode, consts.PrimaryPrefixBiznet)
+			}
+
 			newName, inErr := input.AskString(
-				"Masukkan nama target database primary (dbsf_nbc_{client-code} / dbsf_biznet_{client-code})",
-				s.RestorePrimaryOpts.TargetDB,
+				"Masukkan client-code target (contoh: tes123_tes)",
+				defaultClientCode,
 				func(ans interface{}) error {
 					str, ok := ans.(string)
 					if !ok {
@@ -241,10 +280,12 @@ func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 					}
 					str = strings.TrimSpace(str)
 					if str == "" {
-						return fmt.Errorf("nama database tidak boleh kosong")
+						return fmt.Errorf("client-code tidak boleh kosong")
 					}
-					if !helpers.IsPrimaryDatabaseName(str) {
-						return fmt.Errorf("nama database bukan primary yang valid")
+
+					candidate := buildPrimaryTargetDBFromClientCode(prefix, str)
+					if !helpers.IsPrimaryDatabaseName(candidate) {
+						return fmt.Errorf("client-code menghasilkan nama database primary yang tidak valid")
 					}
 					return nil
 				},
@@ -252,7 +293,7 @@ func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 			if inErr != nil {
 				return fmt.Errorf("gagal mendapatkan nama database: %w", inErr)
 			}
-			s.RestorePrimaryOpts.TargetDB = strings.TrimSpace(newName)
+			s.RestorePrimaryOpts.TargetDB = buildPrimaryTargetDBFromClientCode(prefix, newName)
 			s.Log.Infof("Target database: %s", s.RestorePrimaryOpts.TargetDB)
 
 			if vErr := helpers.ValidatePrimaryDatabaseName(s.RestorePrimaryOpts.TargetDB); vErr == nil {
@@ -340,40 +381,47 @@ func (s *Service) resolveTargetDatabasePrimary(ctx context.Context) error {
 		return nil
 	}
 
-	// Extract from filename
-	basename := filepath.Base(s.RestorePrimaryOpts.File)
-	dbName := helper.ExtractDatabaseNameFromFile(basename)
-
-	if dbName != "" {
-		s.RestorePrimaryOpts.TargetDB = dbName
-		s.Log.Infof("Target database (dari filename): %s", dbName)
-
-		// Confirm with user unless force is enabled
-		if !s.RestorePrimaryOpts.Force {
-			confirm, err := input.PromptConfirm(fmt.Sprintf("Target database: %s. Lanjutkan?", dbName))
-			if err != nil {
-				return fmt.Errorf("gagal mendapatkan konfirmasi: %w", err)
-			}
-			if !confirm {
-				// Ask for manual input
-				dbName, err = input.PromptString("Masukkan nama target database")
-				if err != nil {
-					return fmt.Errorf("gagal mendapatkan nama database: %w", err)
-				}
-				s.RestorePrimaryOpts.TargetDB = dbName
-			}
-		}
-	} else {
-		// Manual input
-		if s.RestorePrimaryOpts.Force {
-			return fmt.Errorf("target database tidak bisa diinfer dari filename; wajib diisi (--target-db) pada mode non-interaktif (--force)")
-		}
-		dbName, err := input.PromptString("Masukkan nama target database")
-		if err != nil {
-			return fmt.Errorf("gagal mendapatkan nama database: %w", err)
-		}
-		s.RestorePrimaryOpts.TargetDB = dbName
+	// Interaktif: langsung minta client-code, lalu bentuk target DB primary dari pola.
+	if s.RestorePrimaryOpts.Force {
+		return fmt.Errorf("client-code wajib diisi (--client-code) pada mode non-interaktif (--force)")
 	}
+
+	// Default client-code (opsional) diambil dari filename (tanpa konfirmasi & tanpa set sebagai target DB).
+	defaultClientCode := ""
+	inferredDB := helper.ExtractDatabaseNameFromFile(filepath.Base(s.RestorePrimaryOpts.File))
+	inferredLower := strings.ToLower(strings.TrimSpace(inferredDB))
+	if strings.HasPrefix(inferredLower, consts.PrimaryPrefixNBC) {
+		defaultClientCode = strings.TrimPrefix(inferredLower, consts.PrimaryPrefixNBC)
+	} else if strings.HasPrefix(inferredLower, consts.PrimaryPrefixBiznet) {
+		defaultClientCode = strings.TrimPrefix(inferredLower, consts.PrimaryPrefixBiznet)
+	}
+
+	clientCode, err := input.AskString(
+		"Masukkan client-code target (contoh: tes123_tes)",
+		defaultClientCode,
+		func(ans interface{}) error {
+			str, ok := ans.(string)
+			if !ok {
+				return fmt.Errorf("input tidak valid")
+			}
+			str = strings.TrimSpace(str)
+			if str == "" {
+				return fmt.Errorf("client-code tidak boleh kosong")
+			}
+			prefix := inferPrimaryPrefixFromTargetOrFile("", s.RestorePrimaryOpts.File)
+			candidate := buildPrimaryTargetDBFromClientCode(prefix, str)
+			if !helpers.IsPrimaryDatabaseName(candidate) {
+				return fmt.Errorf("client-code menghasilkan nama database primary yang tidak valid")
+			}
+			return nil
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("gagal mendapatkan client-code: %w", err)
+	}
+
+	prefix := inferPrimaryPrefixFromTargetOrFile("", s.RestorePrimaryOpts.File)
+	s.RestorePrimaryOpts.TargetDB = buildPrimaryTargetDBFromClientCode(prefix, clientCode)
 
 	s.Log.Infof("Target database: %s", s.RestorePrimaryOpts.TargetDB)
 	return nil

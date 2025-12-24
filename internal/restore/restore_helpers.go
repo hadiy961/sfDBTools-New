@@ -30,7 +30,7 @@ func (s *Service) BackupDatabaseIfNeeded(ctx context.Context, dbName string, dbE
 		return "", fmt.Errorf("gagal backup database target: %w", err)
 	}
 
-	s.Log.Infof("Backup pre-restore berhasil: %s", backupFile)
+	s.Log.Infof("Backup database berhasil: %s", backupFile)
 	return backupFile, nil
 }
 

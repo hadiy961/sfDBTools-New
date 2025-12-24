@@ -43,6 +43,43 @@ func AddRestoreTargetFlags(cmd *cobra.Command, requireTarget bool) {
 	cmd.Flags().StringP("backup-dir", "b", "", "Direktori output untuk backup pre-restore (default: dari config)")
 }
 
+// AddRestorePrimaryTargetFlags menambahkan flags target untuk restore primary.
+// UX: user hanya mengisi --client-code, lalu tool akan membentuk nama DB primary.
+// Flags: --client-code, --drop-target, --skip-backup, --backup-dir
+func AddRestorePrimaryTargetFlags(cmd *cobra.Command) {
+	cmd.Flags().StringP("client-code", "C", "", "Client code target (akan menjadi dbsf_nbc_{client-code} / dbsf_biznet_{client-code})")
+
+	cmd.Flags().Bool("drop-target", true, "Drop target database sebelum restore")
+	cmd.Flags().Bool("skip-backup", false, "Skip backup database target sebelum restore")
+	cmd.Flags().StringP("backup-dir", "b", "", "Direktori output untuk backup pre-restore (default: dari config)")
+}
+
+// AddRestoreSecondaryTargetFlags menambahkan flags target untuk restore secondary.
+// UX: user mengisi --client-code dan --instance, lalu tool akan membentuk nama DB secondary.
+// Flags: --client-code, --instance, --drop-target, --skip-backup, --backup-dir
+func AddRestoreSecondaryTargetFlags(cmd *cobra.Command) {
+	cmd.Flags().StringP("client-code", "C", "", "Client code target (akan menjadi dbsf_nbc_{client-code} / dbsf_biznet_{client-code})")
+	cmd.Flags().StringP("instance", "I", "", "Instance secondary target (akan menjadi ..._secondary_{instance}); kosong = pilih interaktif")
+
+	cmd.Flags().Bool("drop-target", true, "Drop target database sebelum restore")
+	cmd.Flags().Bool("skip-backup", false, "Skip backup database target sebelum restore")
+	cmd.Flags().StringP("backup-dir", "b", "", "Direktori output untuk backup pre-restore (default: dari config)")
+}
+
+// AddRestoreSecondarySourceFlags menambahkan flags sumber restore secondary.
+// Flags: --from
+func AddRestoreSecondarySourceFlags(cmd *cobra.Command) {
+	cmd.Flags().String("from", "file", "Sumber restore: primary atau file")
+}
+
+// AddRestoreDmartFlags menambahkan flags umum untuk companion database (_dmart).
+// Flags: --dmart-file, --dmart-include, --dmart-detect
+func AddRestoreDmartFlags(cmd *cobra.Command) {
+	cmd.Flags().StringP("dmart-file", "c", "", "Lokasi file backup dmart (_dmart) - optional, auto-detect jika kosong")
+	cmd.Flags().Bool("dmart-include", true, "Include restore companion database (_dmart)")
+	cmd.Flags().Bool("dmart-detect", true, "Auto-detect file companion database (_dmart)")
+}
+
 // AddRestoreGrantsFlags menambahkan flags untuk user grants
 // Flags: --grants-file, --skip-grants
 func AddRestoreGrantsFlags(cmd *cobra.Command) {
@@ -118,11 +155,23 @@ func AddRestoreSingleFlags(cmd *cobra.Command) {
 func AddRestorePrimaryAllFlags(cmd *cobra.Command) {
 	AddRestoreCommonFlags(cmd)
 	AddRestoreFileFlags(cmd)
-	AddRestoreTargetFlags(cmd, false) // target-db optional (bisa auto-detect)
+	AddRestorePrimaryTargetFlags(cmd)
 	cmd.Flags().Bool("force", false, "Force restore tanpa konfirmasi interaktif")
 	cmd.Flags().Bool("continue-on-error", false, "Lanjutkan restore meski ada error (default: stop on error)")
 	AddRestorePrimaryFlags(cmd)
 	AddRestoreGrantsFlags(cmd)
+	AddRestoreDryRunFlag(cmd)
+}
+
+// AddRestoreSecondaryAllFlags menambahkan semua flags untuk restore secondary command
+func AddRestoreSecondaryAllFlags(cmd *cobra.Command) {
+	AddRestoreCommonFlags(cmd)
+	AddRestoreFileFlags(cmd)
+	AddRestoreSecondarySourceFlags(cmd)
+	AddRestoreSecondaryTargetFlags(cmd)
+	AddRestoreDmartFlags(cmd)
+	cmd.Flags().Bool("force", false, "Force restore tanpa konfirmasi interaktif")
+	cmd.Flags().Bool("continue-on-error", false, "Lanjutkan restore meski ada error (default: stop on error)")
 	AddRestoreDryRunFlag(cmd)
 }
 

@@ -68,8 +68,6 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 		}
 		opts.Filter.ExcludeData = helper.GetBoolFlagOrEnv(cmd, "exclude-data", "")
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
-		opts.IncludeTemp = helper.GetBoolFlagOrEnv(cmd, "include-temp", "")
-		opts.IncludeArchive = helper.GetBoolFlagOrEnv(cmd, "include-archive", "")
 	} else if mode == "primary" {
 		// Mode primary sama seperti single, hanya tanpa --database flag
 		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
@@ -77,8 +75,6 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 		}
 		opts.Filter.ExcludeData = helper.GetBoolFlagOrEnv(cmd, "exclude-data", "")
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
-		opts.IncludeTemp = helper.GetBoolFlagOrEnv(cmd, "include-temp", "")
-		opts.IncludeArchive = helper.GetBoolFlagOrEnv(cmd, "include-archive", "")
 		if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
 			opts.ClientCode = v
 		}
@@ -89,8 +85,6 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 		}
 		opts.Filter.ExcludeData = helper.GetBoolFlagOrEnv(cmd, "exclude-data", "")
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
-		opts.IncludeTemp = helper.GetBoolFlagOrEnv(cmd, "include-temp", "")
-		opts.IncludeArchive = helper.GetBoolFlagOrEnv(cmd, "include-archive", "")
 		if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
 			opts.ClientCode = v
 		}

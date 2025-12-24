@@ -35,7 +35,12 @@ func filterFromBackupOptions(ctx context.Context, client *database.Client, opts 
 		IncludeDatabases: opts.Filter.IncludeDatabases,
 		IncludeFile:      opts.Filter.IncludeFile,
 	}
-	return database.FilterDatabases(ctx, client, filterOpts)
+	dbFiltered, stats, err := database.FilterDatabases(ctx, client, filterOpts)
+	if err != nil {
+		return nil, stats, err
+	}
+
+	return dbFiltered, stats, nil
 }
 
 func (s *Setup) DisplayFilterWarnings(stats *types.FilterStats) {

@@ -59,8 +59,6 @@ func (d *OptionsDisplayer) buildModeSpecificSection() [][]string {
 
 	if d.options.Mode == consts.ModePrimary || d.options.Mode == consts.ModeSecondary {
 		data = append(data, []string{"Include DMart", fmt.Sprintf("%v", d.options.IncludeDmart)})
-		data = append(data, []string{"Include Temp", fmt.Sprintf("%v", d.options.IncludeTemp)})
-		data = append(data, []string{"Include Archive", fmt.Sprintf("%v", d.options.IncludeArchive)})
 
 		if len(d.options.CompanionStatus) > 0 {
 			data = append(data, d.buildCompanionStatus()...)

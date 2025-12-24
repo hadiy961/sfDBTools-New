@@ -51,8 +51,6 @@ func addBackupAllModeExcludeFlags(cmd *cobra.Command, opts *types_backup.BackupD
 
 func addBackupCompanionFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
 	cmd.Flags().BoolVar(&opts.IncludeDmart, "include-dmart", opts.IncludeDmart, "Backup juga database <database>_dmart jika tersedia")
-	cmd.Flags().BoolVar(&opts.IncludeTemp, "include-temp", opts.IncludeTemp, "Backup juga database <database>_temp jika tersedia")
-	cmd.Flags().BoolVar(&opts.IncludeArchive, "include-archive", opts.IncludeArchive, "Backup juga database <database>_archive jika tersedia")
 }
 
 func addBackupCommonModeFlags(cmd *cobra.Command, defaultOpts *types_backup.BackupDBOptions) {

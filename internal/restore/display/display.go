@@ -86,6 +86,36 @@ func ShowRestorePrimaryResult(result *types.RestoreResult) {
 	fmt.Println()
 }
 
+// ShowRestoreSecondaryResult menampilkan hasil restore secondary
+func ShowRestoreSecondaryResult(result *types.RestoreResult) {
+	ui.PrintSubHeader("Hasil Restore Secondary")
+	fmt.Println()
+
+	fmt.Printf("  %-20s: %s\n", "Target Database", result.TargetDB)
+	fmt.Printf("  %-20s: %s\n", "Source File", result.SourceFile)
+
+	if result.CompanionDB != "" && result.CompanionFile != "" {
+		fmt.Printf("  %-20s: %s\n", "Companion Database", result.CompanionDB)
+		fmt.Printf("  %-20s: %s\n", "Companion File", result.CompanionFile)
+	}
+
+	if result.BackupFile != "" {
+		fmt.Printf("  %-20s: %s\n", "Backup Pre-Restore", result.BackupFile)
+		fmt.Printf("  %-20s: %s\n", "Backup Directory", filepath.Dir(result.BackupFile))
+	}
+
+	if result.DroppedDB {
+		fmt.Printf("  %-20s: %s\n", "Database Dropped", "Ya")
+	}
+	if result.DroppedCompanion {
+		fmt.Printf("  %-20s: %s\n", "Companion Dropped", "Ya")
+	}
+
+	fmt.Printf("  %-20s: %s\n", "Duration", result.Duration)
+	fmt.Printf("  %-20s: %s\n", "Status", "Berhasil")
+	fmt.Println()
+}
+
 // ShowRestoreAllResult menampilkan hasil restore all databases
 func ShowRestoreAllResult(result *types.RestoreResult) {
 	ui.PrintSubHeader("Hasil Restore All Databases")

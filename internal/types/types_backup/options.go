@@ -39,8 +39,6 @@ type BackupDBOptions struct {
 	ExcludeUser     bool            // Exclude user grants dari export (default: false = export user)
 	DBName          string          // Nama database untuk backup single/primary/secondary
 	IncludeDmart    bool            // Sertakan database <db>_dmart jika tersedia (hanya primary/secondary)
-	IncludeTemp     bool            // Sertakan database <db>_temp jika tersedia (hanya primary/secondary)
-	IncludeArchive  bool            // Sertakan database <db>_archive jika tersedia (hanya primary/secondary)
 	CompanionStatus map[string]bool `json:"-"` // Status ketersediaan companion db (hanya primary/secondary)
 	ClientCode      string          // Client code untuk filter database (primary/secondary)
 	Instance        string          // Instance name untuk filter secondary database

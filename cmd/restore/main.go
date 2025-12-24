@@ -36,6 +36,7 @@ func init() {
 	// Register subcommands
 	CmdRestore.AddCommand(CmdRestoreSingle)
 	CmdRestore.AddCommand(CmdRestorePrimary)
+	CmdRestore.AddCommand(CmdRestoreSecondary)
 	CmdRestore.AddCommand(CmdRestoreAll)
 	CmdRestore.AddCommand(CmdRestoreSelection)
 	CmdRestore.AddCommand(CmdRestoreCustom)

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
 )
@@ -158,6 +159,18 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 				if opts.StopOnError {
 					failures++
 					return nil, err
+				}
+			}
+		}
+
+		// Post-restore: buat _temp + copy grants (warning-only)
+		if !strings.HasSuffix(dbName, consts.SuffixDmart) {
+			tempDB, terr := e.svc.CreateTempDatabaseIfNeeded(ctx, dbName)
+			if terr != nil {
+				logger.Warnf("temp DB gagal (%s): %v", dbName, terr)
+			} else if strings.TrimSpace(tempDB) != "" {
+				if gerr := e.svc.CopyDatabaseGrants(ctx, dbName, tempDB); gerr != nil {
+					logger.Warnf("copy grants ke temp DB gagal (%s): %v", dbName, gerr)
 				}
 			}
 		}

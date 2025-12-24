@@ -31,6 +31,15 @@ func (s *Service) ExecuteRestorePrimary(ctx context.Context) (*types.RestoreResu
 	return executor.Execute(ctx)
 }
 
+// ExecuteRestoreSecondary menjalankan restore secondary database
+func (s *Service) ExecuteRestoreSecondary(ctx context.Context) (*types.RestoreResult, error) {
+	executor, err := modes.GetExecutor(consts.ModeSecondary, s)
+	if err != nil {
+		return nil, err
+	}
+	return executor.Execute(ctx)
+}
+
 // ExecuteRestoreAll menjalankan restore all databases dengan streaming filtering
 func (s *Service) ExecuteRestoreAll(ctx context.Context) (*types.RestoreResult, error) {
 	executor, err := modes.GetExecutor(consts.ModeAll, s)

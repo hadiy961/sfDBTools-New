@@ -9,6 +9,8 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sfDBTools/pkg/consts"
+	"strings"
 	"time"
 
 	"sfDBTools/internal/types"
@@ -139,6 +141,29 @@ func (e *customExecutor) Execute(ctx context.Context) (*types.RestoreResult, err
 		}
 		logger.Warnf("restore DMART gagal (lanjut karena continue-on-error): %v", err)
 		result.Success = false
+	}
+
+	// Post-restore (warning-only): buat <db>_temp + copy grants.
+	// Hanya dijalankan jika keseluruhan restore dianggap sukses.
+	if result.Success && !strings.HasSuffix(opts.Database, consts.SuffixDmart) {
+		tempDB, terr := e.svc.CreateTempDatabaseIfNeeded(ctx, opts.Database)
+		if terr != nil {
+			logger.Warnf("Gagal membuat temp DB: %v", terr)
+			ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal membuat temp DB: %v", terr))
+		} else if strings.TrimSpace(tempDB) != "" {
+			if gerr := e.svc.CopyDatabaseGrants(ctx, opts.Database, tempDB); gerr != nil {
+				logger.Warnf("Gagal copy grants ke temp DB: %v", gerr)
+				ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants ke temp DB: %v", gerr))
+			}
+		}
+	}
+
+	// Copy grants main -> dmart (warning-only) jika overall sukses.
+	if result.Success {
+		if gerr := e.svc.CopyDatabaseGrants(ctx, opts.Database, opts.DatabaseDmart); gerr != nil {
+			logger.Warnf("Gagal copy grants ke DMART: %v", gerr)
+			ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants ke DMART: %v", gerr))
+		}
 	}
 
 	ui.PrintSuccess("Restore custom selesai")

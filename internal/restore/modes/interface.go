@@ -34,6 +34,7 @@ type RestoreService interface {
 	// Options Accessors
 	GetSingleOptions() *types.RestoreSingleOptions
 	GetPrimaryOptions() *types.RestorePrimaryOptions
+	GetSecondaryOptions() *types.RestoreSecondaryOptions
 	GetAllOptions() *types.RestoreAllOptions
 	GetSelectionOptions() *types.RestoreSelectionOptions
 	GetCustomOptions() *types.RestoreCustomOptions
@@ -46,5 +47,8 @@ type RestoreService interface {
 	DropDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, shouldDrop bool) error
 	CreateAndRestoreDatabase(ctx context.Context, dbName string, filePath string, encryptionKey string) error
 	RestoreUserGrantsIfAvailable(ctx context.Context, grantsFile string) (bool, error)
+	// Post-restore operations (best-effort; caller may treat errors as warnings)
+	CreateTempDatabaseIfNeeded(ctx context.Context, dbName string) (string, error)
+	CopyDatabaseGrants(ctx context.Context, sourceDB string, targetDB string) error
 	DetectOrSelectCompanionFile() error
 }

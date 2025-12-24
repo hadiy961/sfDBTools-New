@@ -72,6 +72,40 @@ type RestorePrimaryOptions struct {
 	StopOnError        bool                  // True = stop pada error pertama; False = lanjut (continue-on-error)
 }
 
+// RestoreSecondaryOptions menyimpan opsi konfigurasi untuk proses restore secondary database.
+// Secondary database mengikuti pola: dbsf_{nbc|biznet}_{client-code}_secondary_{instance}
+// Sumber restore bisa berasal dari file backup atau dari backup database primary.
+type RestoreSecondaryOptions struct {
+	Profile       ProfileInfo // Profile database target untuk restore
+	DropTarget    bool        // Drop target database sebelum restore (default true)
+	EncryptionKey string      // Kunci enkripsi untuk decrypt file backup (atau encrypt pre-backup primary)
+	SkipBackup    bool        // Skip backup database target sebelum restore (default false)
+	File          string      // Lokasi file backup yang akan di-restore (dipakai jika From=file)
+	Ticket        string      // Ticket number untuk restore request (wajib)
+
+	// Companion (dmart)
+	IncludeDmart    bool   // Include companion database (_dmart) (default true)
+	AutoDetectDmart bool   // Auto-detect file companion database (_dmart) (default true; only for From=file)
+	CompanionFile   string // Lokasi file backup companion (_dmart) - optional, auto-detect jika kosong (From=file)
+
+	// Secondary naming
+	ClientCode string // Client code (akan menjadi dbsf_nbc_{client-code} / dbsf_biznet_{client-code})
+	Instance   string // Instance secondary (suffix setelah _secondary_)
+
+	// Source
+	From      string // primary|file
+	PrimaryDB string // Resolved primary database name (dipakai jika From=primary)
+
+	// Target
+	TargetDB      string                // Database secondary target untuk restore
+	BackupOptions *RestoreBackupOptions // Opsi untuk backup sebelum restore (jika tidak skip)
+
+	// Behavior
+	DryRun      bool // Dry-run mode: validasi tanpa restore (default false)
+	Force       bool // Bypass confirmations / force mode
+	StopOnError bool // Reserved for consistency (default: stop)
+}
+
 // RestoreAllOptions opsi konfigurasi untuk restore all databases
 type RestoreAllOptions struct {
 	Profile       ProfileInfo

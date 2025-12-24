@@ -54,9 +54,15 @@ func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, clie
 
 	nonSystemDBs := make([]string, 0, len(allDatabases))
 	for _, db := range allDatabases {
-		if _, isSystem := types.SystemDatabases[strings.ToLower(db)]; !isSystem {
-			nonSystemDBs = append(nonSystemDBs, db)
+		dbLower := strings.ToLower(db)
+		if _, isSystem := types.SystemDatabases[dbLower]; isSystem {
+			continue
 		}
+		// Backup tidak lagi mendukung database *_temp dan *_archive.
+		if strings.HasSuffix(dbLower, consts.SuffixTemp) || strings.HasSuffix(dbLower, consts.SuffixArchive) {
+			continue
+		}
+		nonSystemDBs = append(nonSystemDBs, db)
 	}
 
 	if len(nonSystemDBs) == 0 {
@@ -200,6 +206,12 @@ func (s *Selector) SelectDatabaseAndBuildList(ctx context.Context, client Databa
 		}
 	}
 
+	// Backup tidak mendukung database *_temp dan *_archive.
+	selectedLower := strings.ToLower(selectedDB)
+	if strings.HasSuffix(selectedLower, consts.SuffixTemp) || strings.HasSuffix(selectedLower, consts.SuffixArchive) {
+		return nil, "", nil, fmt.Errorf("backup tidak mendukung database dengan suffix '%s' atau '%s'", consts.SuffixTemp, consts.SuffixArchive)
+	}
+
 	if !pkghelper.StringSliceContainsFold(allDatabases, selectedDB) {
 		return nil, "", nil, fmt.Errorf("database %s tidak ditemukan di server", selectedDB)
 	}
@@ -209,9 +221,7 @@ func (s *Selector) SelectDatabaseAndBuildList(ctx context.Context, client Databa
 
 	if mode == consts.ModePrimary || mode == consts.ModeSecondary {
 		for suffix, enabled := range map[string]bool{
-			consts.SuffixDmart:   s.Options.IncludeDmart,
-			consts.SuffixTemp:    s.Options.IncludeTemp,
-			consts.SuffixArchive: s.Options.IncludeArchive,
+			consts.SuffixDmart: s.Options.IncludeDmart,
 		} {
 			if !enabled {
 				continue

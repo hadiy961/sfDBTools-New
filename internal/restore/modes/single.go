@@ -11,7 +11,9 @@ import (
 	"fmt"
 	"sfDBTools/internal/restore/helpers"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
+	"strings"
 	"time"
 )
 
@@ -87,6 +89,20 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*types.RestoreResult, err
 		result.GrantsRestored = false
 	} else {
 		result.GrantsRestored = grantsRestored
+	}
+
+	// 6. Post-restore: buat database _temp (warning-only) + copy grants (warning-only)
+	if !strings.HasSuffix(opts.TargetDB, consts.SuffixDmart) {
+		tempDB, terr := e.service.CreateTempDatabaseIfNeeded(ctx, opts.TargetDB)
+		if terr != nil {
+			logger.Warnf("Gagal membuat temp DB: %v", terr)
+			ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal membuat temp DB: %v", terr))
+		} else if strings.TrimSpace(tempDB) != "" {
+			if gerr := e.service.CopyDatabaseGrants(ctx, opts.TargetDB, tempDB); gerr != nil {
+				logger.Warnf("Gagal copy grants ke temp DB: %v", gerr)
+				ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants ke temp DB: %v", gerr))
+			}
+		}
 	}
 
 	result.Success = true

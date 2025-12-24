@@ -21,16 +21,17 @@ import (
 type Service struct {
 	servicehelper.BaseService
 
-	Config             *appconfig.Config
-	Log                applog.Logger
-	ErrorLog           *errorlog.ErrorLogger
-	Profile            *types.ProfileInfo
-	RestoreOpts        *types.RestoreSingleOptions
-	RestorePrimaryOpts *types.RestorePrimaryOptions
-	RestoreAllOpts     *types.RestoreAllOptions
-	RestoreSelOpts     *types.RestoreSelectionOptions
-	RestoreCustomOpts  *types.RestoreCustomOptions
-	TargetClient       *database.Client
+	Config               *appconfig.Config
+	Log                  applog.Logger
+	ErrorLog             *errorlog.ErrorLogger
+	Profile              *types.ProfileInfo
+	RestoreOpts          *types.RestoreSingleOptions
+	RestorePrimaryOpts   *types.RestorePrimaryOptions
+	RestoreSecondaryOpts *types.RestoreSecondaryOptions
+	RestoreAllOpts       *types.RestoreAllOptions
+	RestoreSelOpts       *types.RestoreSelectionOptions
+	RestoreCustomOpts    *types.RestoreCustomOptions
+	TargetClient         *database.Client
 
 	// Restore-specific state
 	restoreInProgress bool
@@ -58,6 +59,9 @@ func NewRestoreService(logs applog.Logger, cfg *appconfig.Config, restore interf
 			svc.Profile = &v.Profile
 		case *types.RestorePrimaryOptions:
 			svc.RestorePrimaryOpts = v
+			svc.Profile = &v.Profile
+		case *types.RestoreSecondaryOptions:
+			svc.RestoreSecondaryOpts = v
 			svc.Profile = &v.Profile
 		case *types.RestoreAllOptions:
 			svc.RestoreAllOpts = v
@@ -142,6 +146,10 @@ func (s *Service) GetSingleOptions() *types.RestoreSingleOptions {
 
 func (s *Service) GetPrimaryOptions() *types.RestorePrimaryOptions {
 	return s.RestorePrimaryOpts
+}
+
+func (s *Service) GetSecondaryOptions() *types.RestoreSecondaryOptions {
+	return s.RestoreSecondaryOpts
 }
 
 func (s *Service) GetAllOptions() *types.RestoreAllOptions {

@@ -29,7 +29,7 @@ Fitur:
   - User Grants: Dapat memulihkan hak akses user (Grants) setelah restore data selesai.
   - Environment Password: Setup password user aplikasi secara otomatis via environment variable.`,
 	Example: `  # 1. Restore paket primary (auto-detect companion)
-  sfdbtools db-restore primary --file "app_db_backup.sql" --ticket "TICKET-123"
+  sfdbtools db-restore primary --file "dbsf_nbc_client.sql" --client-code "tes123_tes" --ticket "TICKET-123"
 
   # 2. Restore primary dengan menunjuk file companion secara eksplisit
   sfdbtools db-restore primary \
@@ -40,8 +40,9 @@ Fitur:
   # 3. Restore primary saja (abaikan dmart)
 	sfdbtools db-restore primary --file "app_db.sql" --dmart-include=false --ticket "TICKET-123"
 
-  # 4. Restore dan apply user grants dari file
-  sfdbtools db-restore primary --file "app_db.sql" --grants-file "users.sql" --ticket "TICKET-123"`,
+
+	# 4. Restore dan apply user grants dari file
+	sfdbtools db-restore primary --file "dbsf_nbc_client.sql" --client-code "tes123_tes" --grants-file "users.sql" --ticket "TICKET-123"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia
 		if appdeps.Deps == nil {

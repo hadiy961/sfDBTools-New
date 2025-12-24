@@ -198,6 +198,61 @@ func ExecuteRestorePrimaryCommand(cmd *cobra.Command, deps *appdeps.Dependencies
 	return nil
 }
 
+// ExecuteRestoreSecondaryCommand adalah entry point untuk restore secondary command
+func ExecuteRestoreSecondaryCommand(cmd *cobra.Command, deps *appdeps.Dependencies) error {
+	logger := deps.Logger
+	logger.Info("Memulai proses restore secondary database")
+
+	parsedOpts, err := parsing.ParsingRestoreSecondaryOptions(cmd)
+	if err != nil {
+		logger.Error("gagal parsing opsi: " + err.Error())
+		return err
+	}
+
+	svc := NewRestoreService(logger, deps.Config, &parsedOpts)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		sig := <-sigChan
+		logger.Warnf("Menerima signal %v, menghentikan restore... (Tekan sekali lagi untuk force exit)", sig)
+		svc.HandleShutdown()
+		cancel()
+
+		<-sigChan
+		logger.Warn("Menerima signal kedua, memaksa berhenti (force exit)...")
+		os.Exit(1)
+	}()
+
+	if err := svc.SetupRestoreSecondarySession(ctx); err != nil {
+		return err
+	}
+	defer svc.Close()
+
+	result, err := svc.ExecuteRestoreSecondary(ctx)
+	if err != nil {
+		if ctx.Err() != nil {
+			logger.Warn("Proses restore secondary dibatalkan.")
+			return nil
+		}
+		logger.Error("Restore secondary gagal: " + err.Error())
+		svc.ErrorLog.Log(map[string]interface{}{
+			"function": "ExecuteRestoreSecondary",
+			"error":    err.Error(),
+		}, err)
+		return err
+	}
+
+	display.ShowRestoreSecondaryResult(result)
+
+	ui.PrintSuccess("Restore secondary database berhasil diselesaikan")
+	logger.Info("Restore secondary database berhasil diselesaikan")
+	return nil
+}
+
 // ExecuteRestoreAllCommand adalah entry point untuk restore all databases command
 func ExecuteRestoreAllCommand(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 	logger := deps.Logger
