@@ -18,12 +18,12 @@ import (
 // SetupRestoreSelectionSession melakukan setup untuk restore selection (CSV)
 func (s *Service) SetupRestoreSelectionSession(ctx context.Context) error {
 	ui.Headers("Restore Selection (CSV)")
-	allowInteractive := !s.RestoreSelOpts.Force
-
-	// 1. Resolve CSV path (interaktif jika kosong, kecuali --force)
 	if s.RestoreSelOpts == nil {
 		return fmt.Errorf("opsi selection tidak tersedia")
 	}
+	allowInteractive := !s.RestoreSelOpts.Force
+
+	// 1. Resolve CSV path (interaktif jika kosong, kecuali --force)
 	if err := s.resolveSelectionCSV(&s.RestoreSelOpts.CSV, allowInteractive); err != nil {
 		return err
 	}

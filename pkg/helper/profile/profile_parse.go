@@ -37,12 +37,17 @@ func LoadAndParseProfile(absPath string, key string) (*types.ProfileInfo, error)
 	plaintext, err := encrypt.DecryptAES(data, []byte(k))
 	if err != nil {
 		var hint string
-		if info.EncryptionSource == "env" {
-			hint = "Menggunakan kunci enkripsi dari environment variable " + consts.ENV_SOURCE_PROFILE_KEY + ", pastikan sesuai dengan yang digunakan saat enkripsi"
-		} else {
-			hint = "Menggunakan kunci enkripsi dari prompt, pastikan sesuai dengan yang digunakan saat enkripsi"
+		switch info.EncryptionSource {
+		case "env":
+			hint = "Kunci enkripsi diambil dari environment variable " + consts.ENV_SOURCE_PROFILE_KEY + ". Pastikan nilainya sama dengan saat enkripsi atau gunakan --profile-key."
+		case "flag/state":
+			hint = "Kunci enkripsi berasal dari flag/argumen (--profile-key). Pastikan nilainya sesuai dengan saat enkripsi atau set env " + consts.ENV_SOURCE_PROFILE_KEY + "."
+		case "prompt":
+			hint = "Kunci enkripsi dimasukkan manual. Pastikan sesuai dengan yang digunakan saat enkripsi atau set via --profile-key/" + consts.ENV_SOURCE_PROFILE_KEY + "."
+		default:
+			hint = "Pastikan kunci enkripsi yang diberikan cocok dengan yang digunakan saat enkripsi (flag --profile-key atau env " + consts.ENV_SOURCE_PROFILE_KEY + ")."
 		}
-		return nil, fmt.Errorf("gagal mendekripsi file '%s' %s ", absPath, hint)
+		return nil, fmt.Errorf("gagal mendekripsi file '%s': %s", absPath, hint)
 	}
 
 	parsed := parsing.ParseINIClient(string(plaintext))

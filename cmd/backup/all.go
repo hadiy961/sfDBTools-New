@@ -1,16 +1,13 @@
-// File : cmd/cmd_backup/cmd_backup_all.go
+// File : cmd/backup/all.go
 // Deskripsi : Command untuk backup all databases dengan exclude filters
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-11
-// Last Modified : 2025-12-11
+// Last Modified : 2025-12-30
 
 package backupcmd
 
 import (
-	"fmt"
-	"sfDBTools/internal/backup"
 	defaultVal "sfDBTools/internal/defaultval"
-	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/pkg/consts"
 
@@ -42,17 +39,9 @@ Fitur:
   # 4. Backup dengan mengecualikan list database tertentu
   sfdbtools db-backup all --exclude-db "test_db,temp_db"`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Pastikan dependencies tersedia
-		if appdeps.Deps == nil {
-			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
-			return
-		}
-
-		// Backup all menggunakan mode 'all'
-		if err := backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModeAll); err != nil {
-			// Error has been logged by ExecuteBackup
-			return
-		}
+		runBackupCommand(cmd, func() (string, error) {
+			return consts.ModeAll, nil
+		})
 	},
 }
 

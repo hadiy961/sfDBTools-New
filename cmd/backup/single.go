@@ -1,10 +1,13 @@
+// File : cmd/backup/single.go
+// Deskripsi : Command untuk backup satu database
+// Author : Hadiyatna Muflihun
+// Tanggal : 2025-12-30
+// Last Modified : 2025-12-30
+
 package backupcmd
 
 import (
-	"fmt"
-	"sfDBTools/internal/backup"
 	defaultVal "sfDBTools/internal/defaultval"
-	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/pkg/consts"
 
@@ -29,16 +32,9 @@ Jika nama database tidak diberikan via flag, akan muncul menu interaktif untuk m
   sfdbtools db-backup single --db "target_db" --output-file "backup_target_v1.sql"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Pastikan dependencies tersedia
-		if appdeps.Deps == nil {
-			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
-			return
-		}
-
-		if err := backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModeSingle); err != nil {
-			// Error has been logged by ExecuteBackup
-			return
-		}
+		runBackupCommand(cmd, func() (string, error) {
+			return consts.ModeSingle, nil
+		})
 	},
 }
 

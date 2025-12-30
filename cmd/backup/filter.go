@@ -1,11 +1,16 @@
+// File : cmd/backup/filter.go
+// Deskripsi : Command untuk backup database dengan filter
+// Author : Hadiyatna Muflihun
+// Tanggal : 2025-12-30
+// Last Modified : 2025-12-30
+
 package backupcmd
 
 import (
 	"fmt"
-	"sfDBTools/internal/backup"
 	defaultVal "sfDBTools/internal/defaultval"
-	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
+	"sfDBTools/pkg/consts"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
@@ -34,26 +39,14 @@ Jika tidak ada database yang ditentukan lewat flag, mode interaktif (multi-selec
   # 4. Backup menggunakan pola nama (misal: semua yg berawalan 'shop_')
   sfdbtools db-backup filter --pattern "shop_*" --mode multi-file`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Pastikan dependencies tersedia
-		if appdeps.Deps == nil {
-			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
-			return
-		}
-
-		backupMode, err := getBackupMode(cmd)
-		if err != nil {
-			appdeps.Deps.Logger.Error(err.Error())
-			return
-		}
-
-		if err := backup.ExecuteBackup(cmd, appdeps.Deps, backupMode); err != nil {
-			appdeps.Deps.Logger.Error("db-backup filter gagal: " + err.Error())
-		}
+		runBackupCommand(cmd, func() (string, error) {
+			return getBackupMode(cmd)
+		})
 	},
 }
 
 func init() {
-	defaultOpts := defaultVal.DefaultBackupOptions("combined") // Default ke combined
+	defaultOpts := defaultVal.DefaultBackupOptions(consts.ModeCombined)
 	flags.AddBackupFilterFlags(CmdBackupFilter, &defaultOpts)
 
 	// Tambahkan flag --mode khusus untuk filter command
@@ -93,9 +86,9 @@ func getBackupMode(cmd *cobra.Command) (string, error) {
 	// Map mode ke backup mode internal
 	switch mode {
 	case "single-file":
-		return "combined", nil
+		return consts.ModeCombined, nil
 	case "multi-file":
-		return "separated", nil
+		return consts.ModeSeparated, nil
 	default:
 		return "", fmt.Errorf("mode tidak valid: %s. Gunakan 'single-file' atau 'multi-file'", mode)
 	}

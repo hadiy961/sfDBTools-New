@@ -1,10 +1,13 @@
+// File : cmd/backup/primary.go
+// Deskripsi : Command untuk backup database primary
+// Author : Hadiyatna Muflihun
+// Tanggal : 2025-12-30
+// Last Modified : 2025-12-30
+
 package backupcmd
 
 import (
-	"fmt"
-	"sfDBTools/internal/backup"
 	defaultVal "sfDBTools/internal/defaultval"
-	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/pkg/consts"
 
@@ -29,16 +32,9 @@ Contoh:
   # 2. Backup primary ke direktori khusus
   sfdbtools db-backup primary --output-dir "/backups/prod"`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Pastikan dependencies tersedia
-		if appdeps.Deps == nil {
-			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
-			return
-		}
-
-		if err := backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModePrimary); err != nil {
-			// Error has been logged by ExecuteBackup
-			return
-		}
+		runBackupCommand(cmd, func() (string, error) {
+			return consts.ModePrimary, nil
+		})
 	},
 }
 
