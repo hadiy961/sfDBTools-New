@@ -1,5 +1,43 @@
 # sfDBTools - Dokumentasi Backup All
 
+## Daftar Isi
+- [sfDBTools - Dokumentasi Backup All](#sfdbtools---dokumentasi-backup-all)
+  - [Daftar Isi](#daftar-isi)
+  - [Deskripsi](#deskripsi)
+  - [Flags / Parameter](#flags--parameter)
+  - [Aturan parameter](#aturan-parameter)
+  - [Urutan Proses (Mode Interaktif)](#urutan-proses-mode-interaktif)
+  - [Urutan Proses (Mode Non-Interaktif)](#urutan-proses-mode-non-interaktif)
+  - [Contoh Penggunaan](#contoh-penggunaan)
+    - [Backup Interaktif (Default)](#backup-interaktif-default)
+    - [Backup Non-Interaktif (untuk Automation/Scripting)](#backup-non-interaktif-untuk-automationscripting)
+    - [Menggunakan Environment Variables](#menggunakan-environment-variables)
+  - [Output Files](#output-files)
+    - [1. File Backup Utama](#1-file-backup-utama)
+    - [2. File Metadata (JSON)](#2-file-metadata-json)
+    - [3. File User Grants (Optional)](#3-file-user-grants-optional)
+    - [Contoh Struktur Output Directory](#contoh-struktur-output-directory)
+  - [Fitur-Fitur Khusus](#fitur-fitur-khusus)
+    - [1. Capture GTID (Global Transaction ID)](#1-capture-gtid-global-transaction-id)
+    - [2. Export User Grants](#2-export-user-grants)
+    - [3. Filter dan Exclude Options](#3-filter-dan-exclude-options)
+      - [Exclude System Databases](#exclude-system-databases)
+      - [Exclude Empty Databases](#exclude-empty-databases)
+      - [Exclude Data (Schema Only)](#exclude-data-schema-only)
+    - [4. Compression](#4-compression)
+    - [5. Encryption](#5-encryption)
+    - [6. Dry Run Mode](#6-dry-run-mode)
+  - [Metadata File](#metadata-file)
+  - [Troubleshooting](#troubleshooting)
+    - [Error: "ticket wajib diisi pada mode non-interaktif"](#error-ticket-wajib-diisi-pada-mode-non-interaktif)
+    - [Error: "profile-key wajib diisi pada mode non-interaktif"](#error-profile-key-wajib-diisi-pada-mode-non-interaktif)
+    - [Error: "backup-key wajib diisi saat enkripsi aktif pada mode non-interaktif"](#error-backup-key-wajib-diisi-saat-enkripsi-aktif-pada-mode-non-interaktif)
+    - [Warning: "SHOW MASTER STATUS tidak mengembalikan hasil"](#warning-show-master-status-tidak-mengembalikan-hasil)
+    - [Error: "gagal koneksi ke database"](#error-gagal-koneksi-ke-database)
+    - [Backup Terlalu Lambat](#backup-terlalu-lambat)
+    - [File Backup Terlalu Besar](#file-backup-terlalu-besar)
+  - [Best Practices](#best-practices)
+
 ## Deskripsi
 Perintah ini digunakan untuk mencadangkan semua database dari server.
 
