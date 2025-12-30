@@ -3,7 +3,7 @@
 //              Menggabungkan logika single.go dan separated.go untuk mengurangi duplikasi.
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-11
-// Last Modified : 2025-12-11
+// Last Modified : 2025-12-30
 
 package modes
 
@@ -16,6 +16,7 @@ import (
 	"sfDBTools/internal/backup/metadata"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
+	"strings"
 )
 
 // IterativeExecutor menangani backup yang dilakukan per-database secara berurutan
@@ -87,13 +88,50 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 func (e *IterativeExecutor) createOutputPathFunc(dbList []string) func(string) (string, error) {
 	opts := e.service.GetOptions()
 	primaryFilename := opts.File.Filename
+	primaryDBName := ""
+	if len(dbList) > 0 {
+		primaryDBName = dbList[0]
+	}
+
+	// Precompute final filename for primary DB if custom filename is set.
+	primaryFinalFilename := ""
+	if primaryDBName != "" && primaryFilename != "" {
+		defaultPath, derr := e.service.GenerateFullBackupPath(primaryDBName, opts.Mode)
+		if derr == nil {
+			defaultName := filepath.Base(defaultPath)
+			primaryFinalFilename = applyCustomBaseFilename(defaultName, primaryFilename)
+		}
+	}
 
 	return func(dbName string) (string, error) {
 		// Logika khusus untuk Single Mode Variant (Single, Primary, Secondary):
 		// Database pertama (index 0) bisa menggunakan custom filename jika diset user.
 		// Companion databases (dmart, temp, archive) akan tetap digenerate namanya.
-		if IsSingleModeVariant(e.mode) && len(dbList) > 0 && dbList[0] == dbName && primaryFilename != "" {
-			return filepath.Join(opts.OutputDir, primaryFilename), nil
+		if IsSingleModeVariant(e.mode) && primaryDBName != "" && primaryDBName == dbName && strings.TrimSpace(primaryFilename) != "" {
+			// Auto-append extension chain based on default generated filename.
+			if strings.TrimSpace(primaryFinalFilename) != "" {
+				return filepath.Join(opts.OutputDir, primaryFinalFilename), nil
+			}
+			defaultPath, derr := e.service.GenerateFullBackupPath(dbName, opts.Mode)
+			if derr != nil {
+				return "", derr
+			}
+			defaultName := filepath.Base(defaultPath)
+			finalName := applyCustomBaseFilename(defaultName, primaryFilename)
+			return filepath.Join(opts.OutputDir, finalName), nil
+		}
+
+		// Khusus PRIMARY/SECONDARY: companion file mengikuti pola filename utama.
+		// Contoh:
+		// - custom filename: tes_secondary_123_123
+		// - companion db: <primary>_dmart -> tes_secondary_123_123_dmart.sql.gz.enc
+		if (e.mode == consts.ModePrimary || e.mode == consts.ModeSecondary) &&
+			strings.TrimSpace(primaryFinalFilename) != "" &&
+			primaryDBName != "" && dbName != primaryDBName {
+			if suffix, ok := getCompanionSuffix(primaryDBName, dbName); ok {
+				companionFilename := insertSuffixBeforeSQLExt(primaryFinalFilename, suffix)
+				return filepath.Join(opts.OutputDir, companionFilename), nil
+			}
 		}
 
 		// Default: generate full path berdasarkan pattern standar

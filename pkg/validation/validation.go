@@ -2,7 +2,7 @@
 // Deskripsi : Fungsi fungsi untuk validasi ada disini
 // Author : Hadiyatna Muflihun
 // Tanggal : 11 November 2025
-// Last Modified : 11 November 2025
+// Last Modified : 30 December 2025
 package validation
 
 import (
@@ -15,6 +15,28 @@ import (
 
 	"github.com/AlecAivazis/survey/v2/terminal"
 )
+
+// ValidateCustomFilenameBase memvalidasi input custom filename (base name) agar aman.
+// Aturan:
+// - Boleh kosong (berarti auto filename)
+// - Tidak boleh mengandung path separator ('/' atau '\\')
+// - Tidak boleh mengandung path traversal '..'
+func ValidateCustomFilenameBase(name string) error {
+	v := strings.TrimSpace(name)
+	if v == "" {
+		return nil
+	}
+	if strings.Contains(v, "..") {
+		return fmt.Errorf("custom filename tidak boleh mengandung path traversal '..'")
+	}
+	if strings.ContainsAny(v, "/\\") {
+		return fmt.Errorf("custom filename tidak boleh mengandung path separator (gunakan nama file saja, tanpa folder)")
+	}
+	if strings.ContainsRune(v, os.PathSeparator) {
+		return fmt.Errorf("custom filename tidak boleh mengandung path separator")
+	}
+	return nil
+}
 
 // ValidateSubdirPattern memastikan pola valid:
 // - jumlah '{' sama dengan jumlah '}'

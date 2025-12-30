@@ -2,7 +2,7 @@
 // Deskripsi : Mode backup combined - semua database dalam satu file
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-05
+// Last Modified : 2025-12-30
 
 package modes
 
@@ -37,22 +37,9 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 
 	opts := e.service.GetOptions()
 	filename := opts.File.Path
-	// Mode all bisa override lewat --filename (base name tanpa ekstensi).
-	if opts.Mode == consts.ModeAll && opts.File.Filename != "" {
-		customBase := opts.File.Filename
-		if strings.Contains(customBase, ".sql") {
-			filename = customBase
-		} else {
-			ext := ""
-			if filename != "" && filename != consts.FilenameGenerateErrorPlaceholder {
-				if idx := strings.Index(filename, ".sql"); idx >= 0 {
-					ext = filename[idx:]
-				} else {
-					ext = filepath.Ext(filename)
-				}
-			}
-			filename = customBase + ext
-		}
+	// Mode all/combined bisa override lewat --filename (base name tanpa ekstensi).
+	if (opts.Mode == consts.ModeAll || opts.Mode == consts.ModeCombined) && opts.File.Filename != "" {
+		filename = applyCustomBaseFilename(filename, opts.File.Filename)
 	}
 	fullOutputPath := filepath.Join(opts.OutputDir, filename)
 	e.service.GetLog().Debug("Backup file: " + fullOutputPath)

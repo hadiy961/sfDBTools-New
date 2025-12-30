@@ -7,6 +7,7 @@ import (
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/validation"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -51,6 +52,9 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 
 	// Filename (optional; jika kosong akan auto dari config/pattern)
 	if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
+		if err := validation.ValidateCustomFilenameBase(v); err != nil {
+			return types_backup.BackupDBOptions{}, fmt.Errorf("filename tidak valid: %w", err)
+		}
 		opts.File.Filename = v
 	}
 

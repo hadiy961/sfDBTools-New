@@ -1,5 +1,5 @@
-// File : internal/backup/setup/all_edit.go
-// Deskripsi : Handler interaktif untuk mengubah opsi backup-all
+// File : internal/backup/setup/secondary_edit.go
+// Deskripsi : Handler interaktif untuk mengubah opsi backup-secondary
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
 // Last Modified : 2025-12-30
@@ -21,14 +21,15 @@ import (
 	"sfDBTools/pkg/validation"
 )
 
-func (s *Setup) editBackupAllOptionsInteractive(ctx context.Context, clientPtr **database.Client, customOutputDir *string) error {
+func (s *Setup) editBackupSecondaryOptionsInteractive(ctx context.Context, clientPtr **database.Client, customOutputDir *string) error {
 	options := []string{
 		"Profile",
 		"Ticket number",
-		"Capture GTID",
+		"Client code",
+		"Instance",
+		"Database selection",
+		"Include DMart",
 		"Export user grants",
-		"Exclude system databases",
-		"Exclude empty databases",
 		"Exclude data (schema only)",
 		"Backup directory",
 		"Filename",
@@ -46,36 +47,42 @@ func (s *Setup) editBackupAllOptionsInteractive(ctx context.Context, clientPtr *
 	case "Kembali":
 		return nil
 	case "Profile":
-		return s.changeBackupAllProfile(ctx, clientPtr)
+		return s.changeBackupSecondaryProfile(ctx, clientPtr)
 	case "Ticket number":
-		return s.changeBackupAllTicket()
-	case "Capture GTID":
-		return s.changeBackupAllCaptureGTID()
+		return s.changeBackupSecondaryTicket()
+	case "Client code":
+		return s.changeBackupSecondaryClientCode()
+	case "Instance":
+		return s.changeBackupSecondaryInstance()
+	case "Database selection":
+		return s.changeBackupSecondaryDatabaseSelection()
+	case "Include DMart":
+		return s.changeBackupSecondaryIncludeDmart()
 	case "Export user grants":
-		return s.changeBackupAllExportUserGrants()
-	case "Exclude system databases":
-		return s.changeBackupAllExcludeSystem()
-	case "Exclude empty databases":
-		return s.changeBackupAllExcludeEmpty()
+		return s.changeBackupSecondaryExportUserGrants()
 	case "Exclude data (schema only)":
-		return s.changeBackupAllExcludeData()
+		return s.changeBackupSecondaryExcludeData()
 	case "Backup directory":
-		return s.changeBackupAllBackupDirectory(customOutputDir)
+		return s.changeBackupSecondaryBackupDirectory(customOutputDir)
 	case "Filename":
-		return s.changeBackupAllFilename()
+		return s.changeBackupSecondaryFilename()
 	case "Encryption":
-		return s.changeBackupAllEncryption()
+		return s.changeBackupSecondaryEncryption()
 	case "Compression":
-		return s.changeBackupAllCompression()
+		return s.changeBackupSecondaryCompression()
 	}
 
 	return nil
 }
 
-func (s *Setup) changeBackupAllProfile(ctx context.Context, clientPtr **database.Client) error {
+func (s *Setup) changeBackupSecondaryProfile(ctx context.Context, clientPtr **database.Client) error {
 	// Paksa pemilihan ulang profile (termasuk prompt untuk memilih file profile)
 	s.Options.Profile.Path = ""
 	s.Options.Profile.EncryptionKey = ""
+
+	// Reset selection state (berbeda server -> db bisa berubah)
+	s.Options.DBName = ""
+	s.Options.CompanionStatus = nil
 
 	if err := s.CheckAndSelectConfigFile(); err != nil {
 		return fmt.Errorf("gagal mengubah profile source: %w", err)
@@ -104,7 +111,7 @@ func (s *Setup) changeBackupAllProfile(ctx context.Context, clientPtr **database
 	return nil
 }
 
-func (s *Setup) changeBackupAllTicket() error {
+func (s *Setup) changeBackupSecondaryTicket() error {
 	current := strings.TrimSpace(s.Options.Ticket)
 	if current == "" {
 		current = fmt.Sprintf("bk-%d", time.Now().UnixNano())
@@ -117,16 +124,59 @@ func (s *Setup) changeBackupAllTicket() error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllCaptureGTID() error {
-	val, err := input.AskYesNo("Capture GTID?", s.Options.CaptureGTID)
+func (s *Setup) changeBackupSecondaryClientCode() error {
+	current := strings.TrimSpace(s.Options.ClientCode)
+	val, err := input.AskString("Client code (kosongkan untuk nonaktif)", current, nil)
 	if err != nil {
-		return fmt.Errorf("gagal mengubah opsi capture-gtid: %w", err)
+		return fmt.Errorf("gagal mengubah client code: %w", err)
 	}
-	s.Options.CaptureGTID = val
+	next := strings.TrimSpace(val)
+	if next != current {
+		// Jika filter berubah, reset pemilihan DB agar selector melakukan pemilihan ulang.
+		s.Options.DBName = ""
+		s.Options.CompanionStatus = nil
+	}
+	s.Options.ClientCode = next
 	return nil
 }
 
-func (s *Setup) changeBackupAllExportUserGrants() error {
+func (s *Setup) changeBackupSecondaryInstance() error {
+	current := strings.TrimSpace(s.Options.Instance)
+	val, err := input.AskString("Instance (contoh: 1, 2, 3; kosongkan untuk nonaktif)", current, nil)
+	if err != nil {
+		return fmt.Errorf("gagal mengubah instance: %w", err)
+	}
+	next := strings.TrimSpace(val)
+	if next != current {
+		// Jika filter berubah, reset pemilihan DB agar selector melakukan pemilihan ulang.
+		s.Options.DBName = ""
+		s.Options.CompanionStatus = nil
+	}
+	s.Options.Instance = next
+	return nil
+}
+
+func (s *Setup) changeBackupSecondaryDatabaseSelection() error {
+	// Reset saja agar di loop berikutnya selector menampilkan prompt pilihan DB.
+	s.Options.DBName = ""
+	s.Options.CompanionStatus = nil
+	ui.PrintInfo("Database selection di-reset. Anda akan diminta memilih database lagi.")
+	ui.WaitForEnter("Tekan Enter untuk lanjut...")
+	return nil
+}
+
+func (s *Setup) changeBackupSecondaryIncludeDmart() error {
+	val, err := input.AskYesNo("Include DMart?", s.Options.IncludeDmart)
+	if err != nil {
+		return fmt.Errorf("gagal mengubah opsi include-dmart: %w", err)
+	}
+	s.Options.IncludeDmart = val
+	// Companion status tergantung flag ini.
+	s.Options.CompanionStatus = nil
+	return nil
+}
+
+func (s *Setup) changeBackupSecondaryExportUserGrants() error {
 	val, err := input.AskYesNo("Export user grants?", !s.Options.ExcludeUser)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi export user grants: %w", err)
@@ -135,25 +185,7 @@ func (s *Setup) changeBackupAllExportUserGrants() error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllExcludeSystem() error {
-	val, err := input.AskYesNo("Exclude system databases?", s.Options.Filter.ExcludeSystem)
-	if err != nil {
-		return fmt.Errorf("gagal mengubah opsi exclude-system: %w", err)
-	}
-	s.Options.Filter.ExcludeSystem = val
-	return nil
-}
-
-func (s *Setup) changeBackupAllExcludeEmpty() error {
-	val, err := input.AskYesNo("Exclude empty databases?", s.Options.Filter.ExcludeEmpty)
-	if err != nil {
-		return fmt.Errorf("gagal mengubah opsi exclude-empty: %w", err)
-	}
-	s.Options.Filter.ExcludeEmpty = val
-	return nil
-}
-
-func (s *Setup) changeBackupAllExcludeData() error {
+func (s *Setup) changeBackupSecondaryExcludeData() error {
 	val, err := input.AskYesNo("Exclude data (schema only)?", s.Options.Filter.ExcludeData)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi exclude-data: %w", err)
@@ -162,7 +194,7 @@ func (s *Setup) changeBackupAllExcludeData() error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllBackupDirectory(customOutputDir *string) error {
+func (s *Setup) changeBackupSecondaryBackupDirectory(customOutputDir *string) error {
 	current := strings.TrimSpace(s.Options.OutputDir)
 	if current == "" {
 		current = strings.TrimSpace(s.Config.Backup.Output.BaseDirectory)
@@ -187,7 +219,7 @@ func (s *Setup) changeBackupAllBackupDirectory(customOutputDir *string) error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllFilename() error {
+func (s *Setup) changeBackupSecondaryFilename() error {
 	val, err := input.AskString("Custom filename (tanpa ekstensi, kosongkan untuk auto)", s.Options.File.Filename, func(ans interface{}) error {
 		v, ok := ans.(string)
 		if !ok {
@@ -202,7 +234,7 @@ func (s *Setup) changeBackupAllFilename() error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllEncryption() error {
+func (s *Setup) changeBackupSecondaryEncryption() error {
 	enabled, err := input.AskYesNo("Encrypt backup file?", s.Options.Encryption.Enabled)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi encryption: %w", err)
@@ -229,7 +261,7 @@ func (s *Setup) changeBackupAllEncryption() error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllCompression() error {
+func (s *Setup) changeBackupSecondaryCompression() error {
 	enabled, err := input.AskYesNo("Compress backup file?", s.Options.Compression.Enabled)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi compression: %w", err)
@@ -261,25 +293,7 @@ func (s *Setup) changeBackupAllCompression() error {
 	s.Options.Compression.Enabled = true
 	s.Options.Compression.Type = string(ct)
 
-	lvl, err := input.AskInt("Compression level (1-9)", s.Options.Compression.Level, func(ans interface{}) error {
-		// validator survey menerima string (karena AskInt menggunakan Input string)
-		v, ok := ans.(string)
-		if !ok {
-			return fmt.Errorf("input tidak valid")
-		}
-		v = strings.TrimSpace(v)
-		if v == "" {
-			return fmt.Errorf("compression level wajib diisi")
-		}
-		// Parse dilakukan oleh AskInt; kita cukup validasi range via helper
-		// tapi butuh int; lakukan parse sederhana di sini.
-		parsed := 0
-		_, _ = fmt.Sscanf(v, "%d", &parsed)
-		if _, err := compress.ValidateCompressionLevel(parsed); err != nil {
-			return err
-		}
-		return nil
-	})
+	lvl, err := input.AskInt("Compression level (1-9)", s.Options.Compression.Level, nil)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah compression level: %w", err)
 	}

@@ -205,6 +205,10 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 				StderrOutput: stderrOutput,
 				FileSize:     0,
 			}
+			excerpt := summarizeStderr(stderrOutput, 20, 2000)
+			if excerpt != "" {
+				return result, fmt.Errorf("mysqldump gagal: %w (stderr: %s)", runErr, excerpt)
+			}
 			return result, fmt.Errorf("mysqldump gagal: %w", runErr)
 		}
 		excerpt := summarizeStderr(stderrOutput, 12, 1200)

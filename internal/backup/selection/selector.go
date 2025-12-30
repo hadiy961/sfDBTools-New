@@ -82,6 +82,13 @@ func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, clie
 	stats.TotalIncluded = len(selectedDBs)
 	stats.TotalExcluded = len(allDatabases) - len(selectedDBs)
 
+	// Persist pilihan sebagai include list agar flow tidak meminta multi-select lagi
+	// ketika user mengubah opsi (mis: filename/encryption/compression) dan session loop re-run.
+	if s.Options != nil {
+		s.Options.Filter.IncludeDatabases = selectedDBs
+		s.Options.Filter.IncludeFile = ""
+	}
+
 	return selectedDBs, stats, nil
 }
 

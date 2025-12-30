@@ -20,9 +20,10 @@ import (
 func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, error) {
 	compressionSettings := s.buildCompressionSettings()
 
-	// Untuk mode separated, gunakan IP address instead of hostname
+	// Konsisten: selalu gunakan hostname (DBInfo.HostName) untuk semua mode.
+	// Fallback ke DBInfo.Host hanya jika HostName kosong.
 	hostIdentifier := s.BackupDBOptions.Profile.DBInfo.HostName
-	if mode == consts.ModeSeparated || mode == consts.ModeSeparate {
+	if hostIdentifier == "" {
 		hostIdentifier = s.BackupDBOptions.Profile.DBInfo.Host
 	}
 
@@ -44,7 +45,10 @@ func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, er
 // GenerateBackupPaths generates output directory and filename for backup
 // Returns updated dbFiltered for single/primary/secondary mode (selected database + companions)
 func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error) {
-	dbHostname := s.BackupDBOptions.Profile.DBInfo.Host
+	dbHostname := s.BackupDBOptions.Profile.DBInfo.HostName
+	if dbHostname == "" {
+		dbHostname = s.BackupDBOptions.Profile.DBInfo.Host
+	}
 	compressionSettings := s.buildCompressionSettings()
 
 	// Generate output directory
@@ -104,9 +108,9 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Clie
 		ui.DisplayFilterStats(stats, consts.FeatureBackup, s.Log)
 	}
 
-	// Jika user set custom filename untuk mode all, treat sebagai base name tanpa ekstensi.
+	// Jika user set custom filename untuk mode all/combined, treat sebagai base name tanpa ekstensi.
 	// Ekstensi mengikuti default generated filename (mis. .sql.gz.enc / .sql / .sql.enc).
-	if s.BackupDBOptions.Mode == consts.ModeAll && s.BackupDBOptions.File.Filename != "" {
+	if (s.BackupDBOptions.Mode == consts.ModeAll || s.BackupDBOptions.Mode == consts.ModeCombined) && s.BackupDBOptions.File.Filename != "" {
 		defaultName := s.BackupDBOptions.File.Path
 		customBase := s.BackupDBOptions.File.Filename
 

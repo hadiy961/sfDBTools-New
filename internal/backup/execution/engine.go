@@ -108,6 +108,39 @@ func (e *Engine) ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.Bac
 			cleanupFailedBackup(cfg.OutputPath, e.Log)
 			return types_backup.DatabaseBackupInfo{}, err
 		}
+
+		// Fast retry for common TLS/SSL mismatch (client requires SSL but server doesn't support it).
+		// This often happens due to default client config enforcing SSL.
+		if writeResult != nil {
+			if IsSSLMismatchRequiredButServerNoSupport(writeResult.StderrOutput) {
+				if newArgs, added := AddDisableSSLArgs(mysqldumpArgs); added {
+					e.Log.Warn("mysqldump gagal karena SSL required tapi server tidak support SSL. Retry dengan --skip-ssl...")
+					cleanupFailedBackup(cfg.OutputPath, e.Log)
+					writeResult2, err2 := writeEngine.ExecuteMysqldumpWithPipe(ctx, newArgs, cfg.OutputPath, e.Options.Compression.Enabled, e.Options.Compression.Type)
+					if err2 == nil {
+						return e.buildBackupInfoFromResult(ctx, cfg, writeResult2, timer, startTime, dbVersion), nil
+					}
+					writeResult = writeResult2
+					err = err2
+				}
+			}
+		}
+
+		// Fast retry for common "exit status 2" cases (unknown option/variable).
+		// This usually happens when config contains mysqldump flags unsupported by the installed client.
+		if writeResult != nil {
+			if newArgs, removed, ok := RemoveUnsupportedMysqldumpOption(mysqldumpArgs, writeResult.StderrOutput); ok {
+				e.Log.Warnf("mysqldump gagal karena opsi tidak didukung (%s). Retry tanpa opsi tersebut...", removed)
+				cleanupFailedBackup(cfg.OutputPath, e.Log)
+				writeResult2, err2 := writeEngine.ExecuteMysqldumpWithPipe(ctx, newArgs, cfg.OutputPath, e.Options.Compression.Enabled, e.Options.Compression.Type)
+				if err2 == nil {
+					return e.buildBackupInfoFromResult(ctx, cfg, writeResult2, timer, startTime, dbVersion), nil
+				}
+				// If retry fails, return the retry error (still logged by handler below).
+				writeResult = writeResult2
+				err = err2
+			}
+		}
 		e.handleBackupError(err, cfg, writeResult)
 		return types_backup.DatabaseBackupInfo{}, err
 	}

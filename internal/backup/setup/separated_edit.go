@@ -1,5 +1,5 @@
-// File : internal/backup/setup/all_edit.go
-// Deskripsi : Handler interaktif untuk mengubah opsi backup-all
+// File : internal/backup/setup/separated_edit.go
+// Deskripsi : Handler interaktif untuk mengubah opsi backup-separated (multi-file)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
 // Last Modified : 2025-12-30
@@ -12,26 +12,28 @@ import (
 	"strings"
 	"time"
 
+	"sfDBTools/internal/backup/selection"
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	profilehelper "sfDBTools/pkg/helper/profile"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
-	"sfDBTools/pkg/validation"
 )
 
-func (s *Setup) editBackupAllOptionsInteractive(ctx context.Context, clientPtr **database.Client, customOutputDir *string) error {
+func (s *Setup) editBackupSeparatedOptionsInteractive(ctx context.Context, clientPtr **database.Client, customOutputDir *string) error {
 	options := []string{
 		"Profile",
 		"Ticket number",
-		"Capture GTID",
+		"Pilih database (multi-select)",
+		"Reset ke mode interaktif",
+		"Include list (manual)",
+		"Include file",
 		"Export user grants",
 		"Exclude system databases",
 		"Exclude empty databases",
 		"Exclude data (schema only)",
 		"Backup directory",
-		"Filename",
 		"Encryption",
 		"Compression",
 		"Kembali",
@@ -46,36 +48,51 @@ func (s *Setup) editBackupAllOptionsInteractive(ctx context.Context, clientPtr *
 	case "Kembali":
 		return nil
 	case "Profile":
-		return s.changeBackupAllProfile(ctx, clientPtr)
+		return s.changeBackupSeparatedProfile(ctx, clientPtr)
 	case "Ticket number":
-		return s.changeBackupAllTicket()
-	case "Capture GTID":
-		return s.changeBackupAllCaptureGTID()
+		return s.changeBackupSeparatedTicket()
+	case "Pilih database (multi-select)":
+		return s.changeBackupSeparatedSelectDatabases(ctx, clientPtr)
+	case "Reset ke mode interaktif":
+		return s.changeBackupSeparatedResetInteractive()
+	case "Include list (manual)":
+		return s.changeBackupSeparatedIncludeListManual()
+	case "Include file":
+		return s.changeBackupSeparatedIncludeFile()
 	case "Export user grants":
-		return s.changeBackupAllExportUserGrants()
+		return s.changeBackupSeparatedExportUserGrants()
 	case "Exclude system databases":
-		return s.changeBackupAllExcludeSystem()
+		return s.changeBackupSeparatedExcludeSystem()
 	case "Exclude empty databases":
-		return s.changeBackupAllExcludeEmpty()
+		return s.changeBackupSeparatedExcludeEmpty()
 	case "Exclude data (schema only)":
-		return s.changeBackupAllExcludeData()
+		return s.changeBackupSeparatedExcludeData()
 	case "Backup directory":
-		return s.changeBackupAllBackupDirectory(customOutputDir)
-	case "Filename":
-		return s.changeBackupAllFilename()
+		return s.changeBackupSeparatedBackupDirectory(customOutputDir)
 	case "Encryption":
-		return s.changeBackupAllEncryption()
+		return s.changeBackupSeparatedEncryption()
 	case "Compression":
-		return s.changeBackupAllCompression()
+		return s.changeBackupSeparatedCompression()
 	}
 
 	return nil
 }
 
-func (s *Setup) changeBackupAllProfile(ctx context.Context, clientPtr **database.Client) error {
-	// Paksa pemilihan ulang profile (termasuk prompt untuk memilih file profile)
+func (s *Setup) changeBackupSeparatedResetInteractive() error {
+	s.Options.Filter.IncludeDatabases = nil
+	s.Options.Filter.IncludeFile = ""
+	ui.PrintInfo("Include selection di-reset. Mode interaktif (multi-select) akan muncul lagi.")
+	ui.WaitForEnter("Tekan Enter untuk lanjut...")
+	return nil
+}
+
+func (s *Setup) changeBackupSeparatedProfile(ctx context.Context, clientPtr **database.Client) error {
 	s.Options.Profile.Path = ""
 	s.Options.Profile.EncryptionKey = ""
+
+	// Reset include selection state (berbeda server -> db bisa berubah)
+	s.Options.Filter.IncludeDatabases = nil
+	s.Options.Filter.IncludeFile = ""
 
 	if err := s.CheckAndSelectConfigFile(); err != nil {
 		return fmt.Errorf("gagal mengubah profile source: %w", err)
@@ -104,7 +121,7 @@ func (s *Setup) changeBackupAllProfile(ctx context.Context, clientPtr **database
 	return nil
 }
 
-func (s *Setup) changeBackupAllTicket() error {
+func (s *Setup) changeBackupSeparatedTicket() error {
 	current := strings.TrimSpace(s.Options.Ticket)
 	if current == "" {
 		current = fmt.Sprintf("bk-%d", time.Now().UnixNano())
@@ -117,16 +134,63 @@ func (s *Setup) changeBackupAllTicket() error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllCaptureGTID() error {
-	val, err := input.AskYesNo("Capture GTID?", s.Options.CaptureGTID)
-	if err != nil {
-		return fmt.Errorf("gagal mengubah opsi capture-gtid: %w", err)
+func (s *Setup) changeBackupSeparatedSelectDatabases(ctx context.Context, clientPtr **database.Client) error {
+	if clientPtr == nil || *clientPtr == nil {
+		return fmt.Errorf("koneksi database belum tersedia")
 	}
-	s.Options.CaptureGTID = val
+
+	selected, _, err := selection.New(s.Log, s.Options).GetFilteredDatabasesWithMultiSelect(ctx, *clientPtr)
+	if err != nil {
+		return err
+	}
+
+	s.Options.Filter.IncludeDatabases = selected
+	s.Options.Filter.IncludeFile = ""
+	ui.PrintInfo(fmt.Sprintf("Dipilih %d database untuk backup", len(selected)))
+	ui.WaitForEnter("Tekan Enter untuk lanjut...")
 	return nil
 }
 
-func (s *Setup) changeBackupAllExportUserGrants() error {
+func (s *Setup) changeBackupSeparatedIncludeListManual() error {
+	current := strings.Join(s.Options.Filter.IncludeDatabases, ",")
+	val, err := input.AskString("Include list (pisahkan dengan koma, kosongkan untuk reset)", current, nil)
+	if err != nil {
+		return fmt.Errorf("gagal mengubah include list: %w", err)
+	}
+	val = strings.TrimSpace(val)
+	if val == "" {
+		s.Options.Filter.IncludeDatabases = nil
+		return nil
+	}
+
+	parts := strings.Split(val, ",")
+	include := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			include = append(include, p)
+		}
+	}
+	s.Options.Filter.IncludeDatabases = include
+	s.Options.Filter.IncludeFile = ""
+	return nil
+}
+
+func (s *Setup) changeBackupSeparatedIncludeFile() error {
+	current := strings.TrimSpace(s.Options.Filter.IncludeFile)
+	val, err := input.AskString("Include file (path; kosongkan untuk reset)", current, nil)
+	if err != nil {
+		return fmt.Errorf("gagal mengubah include file: %w", err)
+	}
+	val = strings.TrimSpace(val)
+	s.Options.Filter.IncludeFile = val
+	if val != "" {
+		s.Options.Filter.IncludeDatabases = nil
+	}
+	return nil
+}
+
+func (s *Setup) changeBackupSeparatedExportUserGrants() error {
 	val, err := input.AskYesNo("Export user grants?", !s.Options.ExcludeUser)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi export user grants: %w", err)
@@ -135,7 +199,7 @@ func (s *Setup) changeBackupAllExportUserGrants() error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllExcludeSystem() error {
+func (s *Setup) changeBackupSeparatedExcludeSystem() error {
 	val, err := input.AskYesNo("Exclude system databases?", s.Options.Filter.ExcludeSystem)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi exclude-system: %w", err)
@@ -144,7 +208,7 @@ func (s *Setup) changeBackupAllExcludeSystem() error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllExcludeEmpty() error {
+func (s *Setup) changeBackupSeparatedExcludeEmpty() error {
 	val, err := input.AskYesNo("Exclude empty databases?", s.Options.Filter.ExcludeEmpty)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi exclude-empty: %w", err)
@@ -153,7 +217,7 @@ func (s *Setup) changeBackupAllExcludeEmpty() error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllExcludeData() error {
+func (s *Setup) changeBackupSeparatedExcludeData() error {
 	val, err := input.AskYesNo("Exclude data (schema only)?", s.Options.Filter.ExcludeData)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi exclude-data: %w", err)
@@ -162,7 +226,7 @@ func (s *Setup) changeBackupAllExcludeData() error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllBackupDirectory(customOutputDir *string) error {
+func (s *Setup) changeBackupSeparatedBackupDirectory(customOutputDir *string) error {
 	current := strings.TrimSpace(s.Options.OutputDir)
 	if current == "" {
 		current = strings.TrimSpace(s.Config.Backup.Output.BaseDirectory)
@@ -187,22 +251,7 @@ func (s *Setup) changeBackupAllBackupDirectory(customOutputDir *string) error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllFilename() error {
-	val, err := input.AskString("Custom filename (tanpa ekstensi, kosongkan untuk auto)", s.Options.File.Filename, func(ans interface{}) error {
-		v, ok := ans.(string)
-		if !ok {
-			return fmt.Errorf("input tidak valid")
-		}
-		return validation.ValidateCustomFilenameBase(v)
-	})
-	if err != nil {
-		return fmt.Errorf("gagal mengubah filename: %w", err)
-	}
-	s.Options.File.Filename = strings.TrimSpace(val)
-	return nil
-}
-
-func (s *Setup) changeBackupAllEncryption() error {
+func (s *Setup) changeBackupSeparatedEncryption() error {
 	enabled, err := input.AskYesNo("Encrypt backup file?", s.Options.Encryption.Enabled)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi encryption: %w", err)
@@ -229,7 +278,7 @@ func (s *Setup) changeBackupAllEncryption() error {
 	return nil
 }
 
-func (s *Setup) changeBackupAllCompression() error {
+func (s *Setup) changeBackupSeparatedCompression() error {
 	enabled, err := input.AskYesNo("Compress backup file?", s.Options.Compression.Enabled)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi compression: %w", err)
@@ -261,25 +310,7 @@ func (s *Setup) changeBackupAllCompression() error {
 	s.Options.Compression.Enabled = true
 	s.Options.Compression.Type = string(ct)
 
-	lvl, err := input.AskInt("Compression level (1-9)", s.Options.Compression.Level, func(ans interface{}) error {
-		// validator survey menerima string (karena AskInt menggunakan Input string)
-		v, ok := ans.(string)
-		if !ok {
-			return fmt.Errorf("input tidak valid")
-		}
-		v = strings.TrimSpace(v)
-		if v == "" {
-			return fmt.Errorf("compression level wajib diisi")
-		}
-		// Parse dilakukan oleh AskInt; kita cukup validasi range via helper
-		// tapi butuh int; lakukan parse sederhana di sini.
-		parsed := 0
-		_, _ = fmt.Sscanf(v, "%d", &parsed)
-		if _, err := compress.ValidateCompressionLevel(parsed); err != nil {
-			return err
-		}
-		return nil
-	})
+	lvl, err := input.AskInt("Compression level (1-9)", s.Options.Compression.Level, nil)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah compression level: %w", err)
 	}
