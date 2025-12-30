@@ -28,11 +28,6 @@ func DefaultBackupOptions(mode string) types_backup.BackupDBOptions {
 	// Enabled mengikuti config (atau auto-on jika key ada). Key boleh kosong jika user ingin input via flag/env/interaktif.
 	opts.Encryption.Key = cfg.Backup.Encryption.Key
 	opts.Encryption.Enabled = cfg.Backup.Encryption.Enabled || cfg.Backup.Encryption.Key != ""
-
-	// Cleanup Configuration (dipakai untuk menentukan apakah cleanup dijalankan setelah backup)
-	opts.Cleanup.Enabled = cfg.Backup.Cleanup.Enabled
-	opts.Cleanup.Days = cfg.Backup.Cleanup.Days
-	opts.Cleanup.CleanupSchedule = cfg.Backup.Cleanup.Schedule
 	// Output Directory Configuration
 	// Note: OutputDir ditampilkan dengan structure pattern yang sudah di-substitute dengan timestamp saat ini
 	// Contoh: /media/ArchiveDB/{year}{month}{day}/ menjadi /media/ArchiveDB/20251205/
@@ -74,7 +69,7 @@ func DefaultBackupOptions(mode string) types_backup.BackupDBOptions {
 		// Untuk mode single, selalu false
 		opts.IncludeDmart = false
 	}
-	opts.Force = false
+	opts.NonInteractive = false
 
 	return opts
 }

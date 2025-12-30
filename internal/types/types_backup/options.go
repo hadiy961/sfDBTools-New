@@ -2,7 +2,7 @@
 // Deskripsi : Options dan config structs untuk backup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-08
+// Last Modified : 2025-12-30
 
 package types_backup
 
@@ -28,11 +28,10 @@ type BackupDBOptions struct {
 	Profile         types.ProfileInfo
 	Compression     types.CompressionOptions
 	Encryption      types.EncryptionOptions
-	Cleanup         types.CleanupOptions
 	DryRun          bool
 	OutputDir       string
 	Mode            string         // "separate" atau "combined"
-	Force           bool           // Tampilkan opsi backup sebelum eksekusi
+	NonInteractive  bool           // Tidak melakukan interaksi (non-interaktif)
 	File            BackupFileInfo // Nama file backup lengkap dengan ekstensi
 	Entry           BackupEntryConfig
 	CaptureGTID     bool            // Tangkap informasi GTID saat backup (hanya untuk combined)
@@ -47,11 +46,11 @@ type BackupDBOptions struct {
 
 // BackupEntryConfig untuk konfigurasi backup entry point
 type BackupEntryConfig struct {
-	HeaderTitle string
-	Force       bool
-	BackupMode  string // "separate" atau "combined"
-	SuccessMsg  string
-	LogPrefix   string
+	HeaderTitle    string
+	NonInteractive bool
+	BackupMode     string // "separate" atau "combined"
+	SuccessMsg     string
+	LogPrefix      string
 }
 
 // BackupFileInfo menyimpan informasi ringkas tentang file backup.

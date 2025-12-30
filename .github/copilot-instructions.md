@@ -145,3 +145,13 @@ Follow these specific principles when writing or refactoring code for this proje
 - **Manual Testing**: Use `./scripts/build_run.sh -- [command]`
 - **Race Detection**: `./scripts/build_run.sh --race -- [command]`
 - **Quiet Mode Testing**: `SFDB_QUIET=1 ./scripts/build_run.sh -- [command]`
+
+## Consistency & Maintenance
+- Regularly review code for adherence to Go design principles.
+- Refactor services and modes to maintain clarity and simplicity.
+- Update documentation and comments to reflect architectural decisions and patterns.
+- Ensure all new features follow established patterns for ease of maintenance.
+- Keep dependencies minimal and relevant to avoid bloat.
+- Encourage code reviews focusing on design philosophy adherence and code quality.
+- Use indonesian language for comments and documentation where applicable.
+- Update last modified date on each modification on header comments of each file.

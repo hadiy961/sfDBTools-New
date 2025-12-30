@@ -30,7 +30,7 @@ Contoh:
   sfdbtools db-backup primary
 
   # 2. Backup primary ke direktori khusus
-  sfdbtools db-backup primary --output-dir "/backups/prod"`,
+  sfdbtools db-backup primary --backup-dir "/backups/prod"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runBackupCommand(cmd, func() (string, error) {
 			return consts.ModePrimary, nil

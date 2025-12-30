@@ -2,7 +2,7 @@
 // Deskripsi : Core execution logic untuk scanning dan deletion
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 17 Desember 2025
+// Last Modified : 30 Desember 2025
 
 package cleanup
 
@@ -10,17 +10,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
-	"time"
-
-	"sfDBTools/internal/appconfig"
-	"sfDBTools/internal/applog"
-	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"
+	"sort"
+	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
 )
@@ -133,62 +128,4 @@ func (s *Service) performDeletion(files []types_backup.BackupFileInfo) {
 
 	s.Log.Infof("Cleanup selesai: %d file dihapus, total %s ruang dibebaskan.",
 		deletedCount, global.FormatFileSize(totalFreedSize))
-}
-
-// =============================================================================
-// Public Helper Functions (Used by other modules like Backup)
-// =============================================================================
-
-// CleanupOldBackupsFromBackup menjalankan cleanup old backup files (untuk integrasi dengan backup module).
-func CleanupOldBackupsFromBackup(config *appconfig.Config, logger applog.Logger) error {
-	retentionDays := config.Backup.Cleanup.Days
-	if retentionDays <= 0 {
-		logger.Info("Retention days tidak valid, melewati cleanup")
-		return nil
-	}
-
-	baseDir := config.Backup.Output.BaseDirectory
-	cutoffTime := time.Now().AddDate(0, 0, -retentionDays)
-
-	logger.Infof("Melakukan cleanup backup files lebih dari %d hari (sebelum %s)",
-		retentionDays, cutoffTime.Format(consts.CleanupTimeFormat))
-
-	opts := types.CleanupOptions{
-		Enabled: true,
-		Days:    retentionDays,
-		Pattern: "",
-	}
-	svc := NewCleanupService(config, logger, opts)
-
-	filesToDelete, err := svc.scanFiles(baseDir, cutoffTime, "")
-	if err != nil {
-		return fmt.Errorf("gagal scan old backup files: %w", err)
-	}
-
-	if len(filesToDelete) == 0 {
-		logger.Info("Tidak ada old backup files yang perlu dihapus")
-		return nil
-	}
-
-	svc.performDeletion(filesToDelete)
-	return nil
-}
-
-// CleanupFailedBackup menghapus file backup yang gagal.
-func CleanupFailedBackup(filePath string, logger applog.Logger) {
-	if fsops.FileExists(filePath) {
-		logger.Infof("Menghapus file backup yang gagal: %s", filePath)
-		if err := fsops.RemoveFile(filePath); err != nil {
-			logger.Warnf("Gagal menghapus file backup yang gagal: %v", err)
-		}
-	}
-}
-
-// CleanupPartialBackup menghapus file backup yang belum selesai (graceful shutdown).
-func CleanupPartialBackup(filePath string, logger applog.Logger) error {
-	if err := fsops.RemoveFile(filePath); err != nil {
-		return fmt.Errorf("gagal menghapus file backup: %w", err)
-	}
-	logger.Infof("File backup yang belum selesai berhasil dihapus: %s", filePath)
-	return nil
 }

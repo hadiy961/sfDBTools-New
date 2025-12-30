@@ -44,9 +44,9 @@ func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Cli
 	return setup.New(s.Log, s.Config, s.BackupDBOptions, &s.excludedDatabases).GetFilteredDatabases(ctx, client)
 }
 
-func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, showOptions bool) (client *database.Client, dbFiltered []string, err error) {
+func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, nonInteractive bool) (client *database.Client, dbFiltered []string, err error) {
 	return setup.New(s.Log, s.Config, s.BackupDBOptions, &s.excludedDatabases).
-		PrepareBackupSession(ctx, headerTitle, showOptions, s.GenerateBackupPaths)
+		PrepareBackupSession(ctx, headerTitle, nonInteractive, s.GenerateBackupPaths)
 }
 
 // =============================================================================

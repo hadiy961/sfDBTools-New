@@ -11,11 +11,11 @@ import (
 	"sfDBTools/internal/backup/gtid"
 	"sfDBTools/internal/backup/metadata"
 	"sfDBTools/internal/backup/writer"
-	"sfDBTools/internal/cleanup"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
+	"sfDBTools/pkg/fsops"
 	pkghelper "sfDBTools/pkg/helper"
 )
 
@@ -105,7 +105,7 @@ func (e *Engine) ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.Bac
 		// If canceled, don't treat as regular failure
 		if ctx.Err() != nil {
 			e.Log.Warnf("Backup database %s dibatalkan", cfg.DBName)
-			cleanup.CleanupFailedBackup(cfg.OutputPath, e.Log)
+			cleanupFailedBackup(cfg.OutputPath, e.Log)
 			return types_backup.DatabaseBackupInfo{}, err
 		}
 		e.handleBackupError(err, cfg, writeResult)
@@ -129,12 +129,21 @@ func (e *Engine) handleBackupError(err error, cfg types_backup.BackupExecutionCo
 		e.ErrorLog.LogWithOutput(logMeta, stderrDetail, err)
 	}
 
-	cleanup.CleanupFailedBackup(cfg.OutputPath, e.Log)
+	cleanupFailedBackup(cfg.OutputPath, e.Log)
 
 	if cfg.IsMultiDB {
 		e.Log.Errorf("Gagal menjalankan mysqldump: %v", err)
 	} else {
 		e.Log.Error(fmt.Sprintf("gagal backup database %s: %v", cfg.DBName, err))
+	}
+}
+
+func cleanupFailedBackup(filePath string, logger applog.Logger) {
+	if fsops.FileExists(filePath) {
+		logger.Infof("Menghapus file backup yang gagal: %s", filePath)
+		if err := fsops.RemoveFile(filePath); err != nil {
+			logger.Warnf("Gagal menghapus file backup yang gagal: %v", err)
+		}
 	}
 }
 

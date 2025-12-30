@@ -2,6 +2,7 @@ package setup
 
 import (
 	"fmt"
+	"strings"
 
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
@@ -35,11 +36,20 @@ func allowInteractiveProfileSelection(mode string) bool {
 
 // CheckAndSelectConfigFile loads a source profile (interactive if allowed) and stores it into options.
 func (s *Setup) CheckAndSelectConfigFile() error {
-	allowInteractive := allowInteractiveProfileSelection(s.Options.Mode) && s.Options.Profile.Path == ""
+	if s.Options.NonInteractive {
+		if strings.TrimSpace(s.Options.Profile.Path) == "" {
+			return fmt.Errorf("profile wajib diisi pada mode non-interaktif (--non-interactive): gunakan --profile")
+		}
+		if strings.TrimSpace(s.Options.Profile.EncryptionKey) == "" {
+			return fmt.Errorf("profile-key wajib diisi pada mode non-interaktif (--non-interactive): gunakan --profile-key atau env %s", consts.ENV_SOURCE_PROFILE_KEY)
+		}
+	}
+
+	allowInteractive := allowInteractiveProfileSelection(s.Options.Mode) && !s.Options.NonInteractive && s.Options.Profile.Path == ""
 	profile, err := profilehelper.LoadSourceProfile(
 		s.Config.ConfigDir.DatabaseProfile,
 		s.Options.Profile.Path,
-		s.Options.Encryption.Key,
+		s.Options.Profile.EncryptionKey,
 		allowInteractive,
 	)
 	if err != nil {
@@ -54,7 +64,10 @@ func (s *Setup) CheckAndSelectConfigFile() error {
 func (s *Setup) SetupBackupExecution() error {
 	ui.PrintSubHeader("Persiapan Eksekusi Backup")
 
-	if s.Options.Ticket == "" {
+	if strings.TrimSpace(s.Options.Ticket) == "" {
+		if s.Options.NonInteractive {
+			return fmt.Errorf("ticket wajib diisi pada mode non-interaktif (--non-interactive): gunakan --ticket")
+		}
 		s.Log.Info("Ticket number tidak ditemukan, meminta input...")
 		ticket, err := input.AskTicket(consts.FeatureBackup)
 		if err != nil {
@@ -74,7 +87,18 @@ func (s *Setup) SetupBackupExecution() error {
 
 	if s.Options.Encryption.Enabled {
 		if s.Options.Encryption.Key == "" {
-			return fmt.Errorf("encryption diaktifkan tapi backup key kosong: gunakan --backup-key atau ENV SFDB_BACKUP_ENCRYPTION_KEY")
+			if s.Options.NonInteractive {
+				return fmt.Errorf("encryption diaktifkan tapi backup key kosong pada mode non-interaktif: gunakan --backup-key atau ENV %s (atau set --skip-encrypt)", consts.ENV_BACKUP_ENCRYPTION_KEY)
+			}
+			// Interaktif: minta backup key
+			key, err := input.AskPassword("Backup Key (required)", nil)
+			if err != nil {
+				return fmt.Errorf("gagal mendapatkan backup key: %w", err)
+			}
+			if strings.TrimSpace(key) == "" {
+				return fmt.Errorf("backup key tidak boleh kosong saat encryption aktif")
+			}
+			s.Options.Encryption.Key = key
 		}
 		s.Log.Info("Enkripsi AES-256-GCM diaktifkan untuk backup (kompatibel dengan OpenSSL)")
 	} else {

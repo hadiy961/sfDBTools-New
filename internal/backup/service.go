@@ -2,7 +2,7 @@
 // Deskripsi : Service utama untuk backup operations dengan interface implementation
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-05
+// Last Modified : 2025-12-30
 
 package backup
 
@@ -12,13 +12,13 @@ import (
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/backup/gtid"
 	"sfDBTools/internal/backup/modes"
-	"sfDBTools/internal/cleanup"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/backuphelper"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
+	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/servicehelper"
 	"sfDBTools/pkg/ui"
 )
@@ -137,11 +137,12 @@ func (s *Service) HandleShutdown() {
 	if shouldRemoveFile {
 		ui.RunWithSpinnerSuspended(func() {
 			s.Log.Warn("Proses backup dihentikan, melakukan rollback...")
-			if err := cleanup.CleanupPartialBackup(fileToRemove, s.Log); err != nil {
+			if err := fsops.RemoveFile(fileToRemove); err != nil {
 				s.Log.Errorf("Gagal menghapus file backup: %v", err)
 				ui.PrintError(fmt.Sprintf("⚠ WARNING: File backup partial mungkin masih tersisa: %s", fileToRemove))
 				ui.PrintError("Silakan hapus manual jika diperlukan.")
 			} else {
+				s.Log.Infof("File backup yang belum selesai berhasil dihapus: %s", fileToRemove)
 				s.Log.Info("File backup partial berhasil dihapus")
 			}
 		})

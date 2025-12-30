@@ -27,7 +27,6 @@ func (d *OptionsDisplayer) renderTable() {
 	data = append(data, d.buildFilterSection()...)
 	data = append(data, d.buildCompressionSection()...)
 	data = append(data, d.buildEncryptionSection()...)
-	data = append(data, d.buildCleanupSection()...)
 
 	ui.FormatTable([]string{"Parameter", "Value"}, data)
 }

@@ -1,3 +1,9 @@
+// File : internal/backup/setup/session.go
+// Deskripsi : Setup session backup (termasuk loop interaktif untuk mode ALL)
+// Author : Hadiyatna Muflihun
+// Tanggal : 2025-12-30
+// Last Modified : 2025-12-30
+
 package setup
 
 import (
@@ -18,7 +24,7 @@ import (
 type PathGenerator func(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error)
 
 // PrepareBackupSession runs the whole pre-backup preparation flow.
-func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, showOptions bool, genPaths PathGenerator) (client *database.Client, dbFiltered []string, err error) {
+func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, nonInteractive bool, genPaths PathGenerator) (client *database.Client, dbFiltered []string, err error) {
 	if headerTitle != "" {
 		ui.Headers(headerTitle)
 	}
@@ -54,10 +60,10 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, sh
 
 	customOutputDir := s.Options.OutputDir
 
-	// Interactive edit loop khusus untuk backup all (jika --force tidak diberikan)
+	// Interactive edit loop khusus untuk backup all (hanya jika interaktif)
 	for {
 		// Untuk mode ALL interaktif, minta ticket number terlebih dahulu agar muncul di Opsi Backup.
-		if s.Options.Mode == consts.ModeAll && !showOptions && s.Options.Ticket == "" {
+		if !nonInteractive && s.Options.Mode == consts.ModeAll && s.Options.Ticket == "" {
 			defaultTicket := fmt.Sprintf("bk-%d", time.Now().UnixNano())
 			ticket, ticketErr := input.AskString("Ticket number", defaultTicket, func(ans interface{}) error {
 				v, ok := ans.(string)
@@ -110,17 +116,23 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, sh
 			return nil, nil, fmt.Errorf("path generation menghasilkan daftar database kosong")
 		}
 
-		// Jika user sudah set output-dir interaktif, pertahankan override ini.
+		// Jika user sudah set backup-dir interaktif, pertahankan override ini.
 		if customOutputDir != "" {
 			s.Options.OutputDir = customOutputDir
 		}
 
+		// Jika mode non-interaktif: jangan tampilkan menu/edit/konfirmasi apapun.
+		if nonInteractive {
+			success = true
+			return client, dbFiltered, nil
+		}
+
 		// Default behavior untuk mode selain all tetap pakai confirm biasa.
-		if s.Options.Mode != consts.ModeAll || showOptions {
+		if s.Options.Mode != consts.ModeAll {
 			break
 		}
 
-		// Mode ALL + tidak --force: tampilkan opsi + beri pilihan edit.
+		// Mode ALL + interaktif: tampilkan opsi + beri pilihan edit.
 		displayer := display.NewOptionsDisplayer(s.Options)
 		displayer.Render()
 
@@ -152,85 +164,9 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, sh
 		case "Batalkan":
 			return nil, nil, validation.ErrUserCancelled
 		case "Ubah opsi":
-			// Edit opsi-opsi yang diambil dari config.yaml (mode all)
-			var v bool
-			var sVal string
-
-			// Ticket number (wajib)
-			defaultTicket := s.Options.Ticket
-			if defaultTicket == "" {
-				// Gunakan format yang sama seperti BackupID (lihat metadata builder): bk-<unixnano>
-				defaultTicket = fmt.Sprintf("bk-%d", time.Now().UnixNano())
-			}
-			if sVal, err = input.AskString("Ticket number", defaultTicket, nil); err != nil {
+			if err := s.editBackupAllOptionsInteractive(ctx, &client, &customOutputDir); err != nil {
 				return nil, nil, err
 			}
-			s.Options.Ticket = sVal
-
-			if v, err = input.AskYesNo("Capture GTID?", s.Options.CaptureGTID); err != nil {
-				return nil, nil, err
-			}
-			s.Options.CaptureGTID = v
-
-			// Export user grants == !ExcludeUser
-			if v, err = input.AskYesNo("Export user grants?", !s.Options.ExcludeUser); err != nil {
-				return nil, nil, err
-			}
-			s.Options.ExcludeUser = !v
-
-			if v, err = input.AskYesNo("Exclude system databases?", s.Options.Filter.ExcludeSystem); err != nil {
-				return nil, nil, err
-			}
-			s.Options.Filter.ExcludeSystem = v
-
-			if v, err = input.AskYesNo("Exclude empty databases?", s.Options.Filter.ExcludeEmpty); err != nil {
-				return nil, nil, err
-			}
-			s.Options.Filter.ExcludeEmpty = v
-
-			if v, err = input.AskYesNo("Exclude data (schema only)?", s.Options.Filter.ExcludeData); err != nil {
-				return nil, nil, err
-			}
-			s.Options.Filter.ExcludeData = v
-
-			if v, err = input.AskYesNo("Jalankan cleanup setelah backup?", s.Options.Cleanup.Enabled); err != nil {
-				return nil, nil, err
-			}
-			s.Options.Cleanup.Enabled = v
-
-			// Output directory override
-			if sVal, err = input.AskString("Output directory", s.Options.OutputDir, nil); err != nil {
-				return nil, nil, err
-			}
-			if sVal != "" {
-				customOutputDir = sVal
-				s.Options.OutputDir = sVal
-			}
-
-			// Custom filename base (tanpa ekstensi)
-			if sVal, err = input.AskString("Custom filename (tanpa ekstensi, kosongkan untuk auto)", s.Options.File.Filename, nil); err != nil {
-				return nil, nil, err
-			}
-			s.Options.File.Filename = sVal
-
-			// Tetap munculkan opsi encrypt on/off meskipun config encryption.enabled=true
-			if v, err = input.AskYesNo("Encrypt backup file?", s.Options.Encryption.Enabled); err != nil {
-				return nil, nil, err
-			}
-			s.Options.Encryption.Enabled = v
-
-			// Kecuali --backup-key sudah di provide (key sudah ada), maka tidak perlu prompt key.
-			if s.Options.Encryption.Enabled && s.Options.Encryption.Key == "" {
-				if sVal, err = input.AskPassword("Backup Key (required)", nil); err != nil {
-					return nil, nil, err
-				}
-				if sVal == "" {
-					ui.PrintError("Backup key tidak boleh kosong saat encryption aktif.")
-					continue
-				}
-				s.Options.Encryption.Key = sVal
-			}
-
 			// Loop lagi untuk re-filter & re-generate preview sesuai opsi terbaru
 			continue
 		default:
@@ -238,8 +174,8 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, sh
 		}
 	}
 
-	// Mode selain ALL atau jika --force: tetap pakai confirm lama
-	if !showOptions {
+	// Mode selain ALL (interaktif): konfirmasi sebelum lanjut
+	if !nonInteractive {
 		if proceed, askErr := display.NewOptionsDisplayer(s.Options).Display(); askErr != nil {
 			return nil, nil, askErr
 		} else if !proceed {

@@ -13,25 +13,38 @@ func addBackupCommonFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions
 	// Encryption (shared)
 	AddEncryptionFlags(cmd, &opts.Encryption)
 
-	// Dry Run
-	cmd.Flags().Bool("dry-run", opts.DryRun, "Jalankan backup dalam mode dry-run (tidak benar-benar membuat file backup)")
+	// Non Interactive
+	cmd.Flags().BoolVarP(&opts.NonInteractive, "non-interactive", "n", opts.NonInteractive, "Tidak melakukan interaksi (mode skrip)")
 
-	// Output Directory
-	cmd.Flags().String("output-dir", opts.OutputDir, "Direktori output untuk menyimpan file backup")
-	cmd.Flags().Bool("force", opts.Force, "Tampilkan opsi backup sebelum eksekusi")
+	// Dry Run
+	cmd.Flags().BoolVarP(&opts.DryRun, "dry-run", "d", opts.DryRun, "Jalankan backup dalam mode dry-run (tidak benar-benar membuat file backup)")
+
+	// Backup Directory (output)
+	cmd.Flags().StringVarP(&opts.OutputDir, "backup-dir", "o", opts.OutputDir, "Direktori output untuk menyimpan file backup (default: dari config)")
+
+	// Filename (tanpa ekstensi, optional - default auto dari config/pattern)
+	cmd.Flags().StringVarP(&opts.File.Filename, "filename", "f", opts.File.Filename, "Menentukan nama file untuk backup (Tanpa ekstensi)")
 
 	// Ticket
-	cmd.Flags().String("ticket", opts.Ticket, "Ticket number untuk request backup")
+	cmd.Flags().StringVarP(&opts.Ticket, "ticket", "t", opts.Ticket, "Ticket number untuk request backup")
+
+	// Exclude flags (default mengikuti config)
+	cmd.Flags().BoolVarP(&opts.Filter.ExcludeData, "exclude-data", "x", opts.Filter.ExcludeData, "Mengecualikan data dari pencadangan (schema only)")
+	cmd.Flags().BoolVarP(&opts.Filter.ExcludeSystem, "exclude-system", "S", opts.Filter.ExcludeSystem, "Mengecualikan sistem database")
+	cmd.Flags().BoolVarP(&opts.Filter.ExcludeEmpty, "exclude-empty", "E", opts.Filter.ExcludeEmpty, "Mengecualikan database kosong")
+
+	// Compression flags
+	cmd.Flags().BoolP("skip-compress", "C", !opts.Compression.Enabled, "Melewati proses kompresi pada file backup (default: dari config)")
+	cmd.Flags().StringVarP(&opts.Compression.Type, "compress", "c", opts.Compression.Type, "Menentukan jenis kompresi (gzip, zstd, xz, zlib, pgzip, none)")
+	cmd.Flags().IntVarP(&opts.Compression.Level, "compress-level", "l", opts.Compression.Level, "Menentukan level kompresi (1-9) (default: dari config)")
+
+	// Encryption skip flag
+	cmd.Flags().Bool("skip-encrypt", !opts.Encryption.Enabled, "Melewati proses enkripsi pada file backup (default: dari config)")
 }
 
 func addBackupIncludeFilterFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
 	cmd.Flags().StringArray("db", opts.Filter.IncludeDatabases, "Daftar database yang akan di-backup. Dapat dikombinasi dengan --db-file.")
 	cmd.Flags().String("db-file", opts.Filter.IncludeFile, "File berisi daftar database yang akan di-backup (satu per baris). Dapat dikombinasi dengan --db.")
-}
-
-func addBackupExcludeFilterFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
-	cmd.Flags().StringArray("exclude-db", opts.Filter.ExcludeDatabases, "Daftar database yang akan dikecualikan. Dapat dikombinasi dengan --exclude-db-file.")
-	cmd.Flags().String("exclude-db-file", opts.Filter.ExcludeDBFile, "File berisi daftar database yang akan dikecualikan (satu per baris). Dapat dikombinasi dengan --exclude-db.")
 }
 
 func addBackupAllModeExcludeFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
@@ -41,24 +54,14 @@ func addBackupCompanionFlags(cmd *cobra.Command, opts *types_backup.BackupDBOpti
 	cmd.Flags().BoolVar(&opts.IncludeDmart, "include-dmart", opts.IncludeDmart, "Backup juga database <database>_dmart jika tersedia")
 }
 
-func addBackupCommonModeFlags(cmd *cobra.Command, defaultOpts *types_backup.BackupDBOptions) {
-	cmd.Flags().StringVarP(&defaultOpts.OutputDir, "output-dir", "o", defaultOpts.OutputDir, "Direktori output untuk menyimpan file backup")
-	cmd.Flags().StringVarP(&defaultOpts.File.Filename, "filename", "f", "", "Nama file backup")
-	cmd.Flags().StringVar(&defaultOpts.Ticket, "ticket", defaultOpts.Ticket, "Ticket number untuk request backup")
-	cmd.Flags().BoolVar(&defaultOpts.Force, "force", defaultOpts.Force, "Tampilkan opsi backup sebelum eksekusi")
-}
-
 // AddBackupFlags
 func AddBackupFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
 	addBackupCommonFlags(cmd, opts)
 
-	// Filters (Custom implementation for backup struct compatibility)
-	addBackupExcludeFilterFlags(cmd, opts)
+	// Filters: hanya include (tidak expose exclude-db/exclude-db-file)
 	addBackupIncludeFilterFlags(cmd, opts)
 
-	// Ticket (wajib)
-	cmd.Flags().SetAnnotation("ticket", cobra.BashCompOneRequiredFlag, []string{"true"})
-	cmd.MarkFlagRequired("ticket")
+	// Ticket wajib divalidasi saat runtime (khususnya untuk --non-interactive)
 }
 
 // AddBackupFilterFlags menambahkan flags untuk backup filter (tanpa exclude flags)
@@ -73,40 +76,33 @@ func AddBackupFilterFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions
 func AddBackupAllFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
 	addBackupCommonFlags(cmd, opts)
 
-	// Custom filename untuk output file (mode all menghasilkan satu file)
-	cmd.Flags().StringVar(&opts.File.Filename, "filename", opts.File.Filename, "Nama file backup (custom, tanpa ekstensi)")
-
 	// Exclude filters (tidak ada include)
 	addBackupAllModeExcludeFlags(cmd, opts)
 }
 
 func AddBackupFlgs(cmd *cobra.Command, opts *types_backup.BackupDBOptions, mode string) {
-	if mode == "single" {
-		AddProfileFlags(cmd, &opts.Profile)
-		AddEncryptionFlags(cmd, &opts.Encryption)
+	// Semua mode backup memakai flags common yang sama.
+	addBackupCommonFlags(cmd, opts)
+
+	switch mode {
+	case "single":
 		SingleBackupFlags(cmd, opts)
-	} else if mode == "primary" {
-		AddProfileFlags(cmd, &opts.Profile)
-		AddEncryptionFlags(cmd, &opts.Encryption)
+	case "primary":
 		PrimaryBackupFlags(cmd, opts)
-	} else if mode == "secondary" {
-		AddProfileFlags(cmd, &opts.Profile)
-		AddEncryptionFlags(cmd, &opts.Encryption)
+	case "secondary":
 		SecondaryBackupFlags(cmd, opts)
-	} else {
-		AddBackupFlags(cmd, opts)
+	default:
+		// combined/separated/filter/all punya fungsi flag masing-masing.
 	}
 }
 
 func SingleBackupFlags(cmd *cobra.Command, defaultOpts *types_backup.BackupDBOptions) {
 	// Menambahkan flag spesifik untuk backup single database
-	cmd.Flags().StringVarP(&defaultOpts.DBName, "database", "d", defaultOpts.DBName, "Nama database yang akan di-backup")
-	addBackupCommonModeFlags(cmd, defaultOpts)
+	cmd.Flags().StringVar(&defaultOpts.DBName, "database", defaultOpts.DBName, "Nama database yang akan di-backup")
 }
 
 func SecondaryBackupFlags(cmd *cobra.Command, defaultOpts *types_backup.BackupDBOptions) {
 	// Menambahkan flag spesifik untuk backup secondary database (tanpa --database flag)
-	addBackupCommonModeFlags(cmd, defaultOpts)
 	addBackupCompanionFlags(cmd, defaultOpts)
 	cmd.Flags().StringVar(&defaultOpts.ClientCode, "client-code", defaultOpts.ClientCode, "Filter database secondary berdasarkan client code (contoh: adaro)")
 	cmd.Flags().StringVar(&defaultOpts.Instance, "instance", defaultOpts.Instance, "Filter database secondary berdasarkan instance (contoh: 1, 2, 3)")
@@ -114,7 +110,6 @@ func SecondaryBackupFlags(cmd *cobra.Command, defaultOpts *types_backup.BackupDB
 
 func PrimaryBackupFlags(cmd *cobra.Command, defaultOpts *types_backup.BackupDBOptions) {
 	// Menambahkan flag spesifik untuk backup primary database (tanpa --database flag)
-	addBackupCommonModeFlags(cmd, defaultOpts)
 	addBackupCompanionFlags(cmd, defaultOpts)
 	cmd.Flags().StringVar(&defaultOpts.ClientCode, "client-code", defaultOpts.ClientCode, "Filter database primary berdasarkan client code (contoh: adaro)")
 }

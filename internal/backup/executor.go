@@ -2,7 +2,7 @@
 // Deskripsi : Entry point dan executor logic untuk backup operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-05
+// Last Modified : 2025-12-30
 
 package backup
 
@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/backup/modes"
-	"sfDBTools/internal/cleanup"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/helper"
@@ -30,14 +29,6 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 	timer := helper.NewTimer()
 	result := s.executeBackupByMode(ctx, dbFiltered, backupMode)
 	result.TotalTimeTaken = timer.Elapsed()
-
-	// Cleanup old backups jika enabled (runtime options; default dari config)
-	if s.BackupDBOptions != nil && s.BackupDBOptions.Cleanup.Enabled && ctx.Err() == nil {
-		s.Log.Info("Menjalankan cleanup old backups setelah backup...")
-		if err := cleanup.CleanupOldBackupsFromBackup(s.Config, s.Log); err != nil {
-			s.Log.Warnf("Cleanup old backups gagal: %v", err)
-		}
-	}
 
 	// Handle errors
 	finalResult, err := s.handleBackupErrors(result)

@@ -2,7 +2,7 @@
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-05
+// Last Modified : 2025-12-30
 
 package backup
 
@@ -46,7 +46,7 @@ func ExecuteBackup(cmd *cobra.Command, deps *appdeps.Dependencies, mode string) 
 // ExecuteBackupCommand adalah unified entry point untuk semua jenis backup
 func (s *Service) ExecuteBackupCommand(ctx context.Context, config types_backup.BackupEntryConfig) error {
 	// Setup session (koneksi database source)
-	sourceClient, dbFiltered, err := s.PrepareBackupSession(ctx, config.HeaderTitle, config.Force)
+	sourceClient, dbFiltered, err := s.PrepareBackupSession(ctx, config.HeaderTitle, config.NonInteractive)
 	if err != nil {
 		return err
 	}
@@ -125,11 +125,11 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 
 	// BackupEntryConfig menyimpan konfigurasi untuk proses backup
 	backupConfig := types_backup.BackupEntryConfig{
-		HeaderTitle: config.HeaderTitle,
-		Force:       parsedOpts.Force,
-		SuccessMsg:  config.SuccessMsg,
-		LogPrefix:   config.LogPrefix,
-		BackupMode:  config.Mode,
+		HeaderTitle:    config.HeaderTitle,
+		NonInteractive: parsedOpts.NonInteractive,
+		SuccessMsg:     config.SuccessMsg,
+		LogPrefix:      config.LogPrefix,
+		BackupMode:     config.Mode,
 	}
 
 	if err := svc.ExecuteBackupCommand(ctx, backupConfig); err != nil {

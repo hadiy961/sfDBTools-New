@@ -11,7 +11,7 @@ Dibangun menggunakan **Go (Golang)**, alat ini mendukung operasi backup dan rest
   - `single`: Backup satu database spesifik.
   - `all`: Backup seluruh database dalam server.
   - `filter`: Backup beberapa database terpilih (interactive/flag).
-  - `primary` & `secondary`: Mode khusus untuk topologi database spesifik (mendukung companion DBs seperti `_dmart`, `_temp`).
+  - `primary` & `secondary`: Mode khusus untuk topologi database spesifik (mendukung companion DBs seperti `_dmart`).
 - **Keamanan**: Enkripsi AES-256-GCM (OpenSSL compatible) untuk file output.
 - **Efisiensi**: Streaming pipeline (mysqldump -> compress -> encrypt -> file) tanpa buffering memori besar.
 - **Kompresi**: Mendukung `zstd` (recommended), `gzip`, `pgzip` (parallel gzip), `xz`, `zlib`.
@@ -83,7 +83,7 @@ sfdbtools backup single --db my_app_db --ticket TICKET-123 --compress-type zstd
 sfdbtools backup all --exclude-system --ticket TICKET-123
 
 # Backup dengan enkripsi
-sfdbtools backup single --db sensitive_db --encryption-key "RAHASIA" --ticket TICKET-123
+sfdbtools backup single --db sensitive_db --backup-key "RAHASIA" --ticket TICKET-123
 ```
 
 ### 3. Melakukan Restore
@@ -96,7 +96,7 @@ sfdbtools backup single --db sensitive_db --encryption-key "RAHASIA" --ticket TI
 sfdbtools restore single --file /backups/my_app_db_2025.sql.zst --target-db my_app_dev --ticket TICKET-123
 
 # Restore Primary (Otomatis handle _dmart dan user app)
-sfdbtools restore primary --file /backups/dbsf_nbc_client.sql.zst --ticket TICKET-123
+sfdbtools restore primary --file /backups/dbsf_nbc_client.sql.zst --client-code client --ticket TICKET-123
 ```
 
 ### 4. Database Scanning

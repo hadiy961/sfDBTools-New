@@ -183,24 +183,3 @@ func (d *OptionsDisplayer) buildEncryptionSection() [][]string {
 
 	return data
 }
-
-func (d *OptionsDisplayer) buildCleanupSection() [][]string {
-	data := [][]string{
-		{"", ""},
-		{ui.ColorText("Cleanup", consts.UIColorPurple), ""},
-		{"Enabled", fmt.Sprintf("%v", d.options.Cleanup.Enabled)},
-	}
-
-	if d.options.Cleanup.Enabled {
-		data = append(data, []string{"Days to Keep", fmt.Sprintf("%d", d.options.Cleanup.Days)})
-		if d.options.Cleanup.Pattern != "" {
-			data = append(data, []string{"Pattern", d.options.Cleanup.Pattern})
-		}
-		if d.options.Cleanup.CleanupSchedule != "" {
-			data = append(data, []string{"Schedule", d.options.Cleanup.CleanupSchedule})
-		}
-		data = append(data, []string{"Background", fmt.Sprintf("%v", d.options.Cleanup.Background)})
-	}
-
-	return data
-}

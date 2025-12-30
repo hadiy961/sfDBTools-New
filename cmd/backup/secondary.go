@@ -30,7 +30,7 @@ Contoh:
   sfdbtools db-backup secondary
 
   # 2. Backup secondary ke lokasi lain
-  sfdbtools db-backup secondary --output-dir "/tmp/dev_backups"`,
+  sfdbtools db-backup secondary --backup-dir "/tmp/dev_backups"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runBackupCommand(cmd, func() (string, error) {
 			return consts.ModeSecondary, nil

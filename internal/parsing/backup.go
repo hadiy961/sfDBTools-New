@@ -1,9 +1,13 @@
 package parsing
 
 import (
+	"fmt"
 	defaultVal "sfDBTools/internal/defaultval"
 	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/compress"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -37,17 +41,70 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	// Dry Run
 	opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
 
-	// Output Directory
-	if v := helper.GetStringFlagOrEnv(cmd, "output-dir", ""); v != "" {
+	// Non Interactive
+	opts.NonInteractive = helper.GetBoolFlagOrEnv(cmd, "non-interactive", "")
+
+	// Backup Directory
+	if v := helper.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {
 		opts.OutputDir = v
 	}
-	opts.Force = helper.GetBoolFlagOrEnv(cmd, "force", "")
 
-	// Custom filename untuk mode all (single file)
-	if mode == "all" {
-		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
-			opts.File.Filename = v
+	// Filename (optional; jika kosong akan auto dari config/pattern)
+	if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
+		opts.File.Filename = v
+	}
+
+	// Compression flags
+	skipCompress := helper.GetBoolFlagOrEnv(cmd, "skip-compress", "")
+	if skipCompress {
+		opts.Compression.Enabled = false
+		opts.Compression.Type = consts.CompressionTypeNone
+	} else {
+		// Jika user eksplisit set --skip-compress=false, aktifkan kompresi berdasarkan type (jika bukan none)
+		if cmd.Flags().Changed("skip-compress") {
+			if strings.TrimSpace(opts.Compression.Type) != "" && strings.ToLower(strings.TrimSpace(opts.Compression.Type)) != consts.CompressionTypeNone {
+				opts.Compression.Enabled = true
+			}
 		}
+
+		// compress type
+		if v := helper.GetStringFlagOrEnv(cmd, "compress", ""); v != "" {
+			ct, err := compress.ValidateCompressionType(v)
+			if err != nil {
+				return types_backup.BackupDBOptions{}, err
+			}
+			if string(ct) == consts.CompressionTypeNone {
+				opts.Compression.Enabled = false
+				opts.Compression.Type = consts.CompressionTypeNone
+			} else {
+				opts.Compression.Enabled = true
+				opts.Compression.Type = string(ct)
+			}
+		}
+
+		// compress level
+		if cmd.Flags().Lookup("compress-level") != nil {
+			lvl, err := cmd.Flags().GetInt("compress-level")
+			if err != nil {
+				return types_backup.BackupDBOptions{}, fmt.Errorf("gagal membaca compress-level: %w", err)
+			}
+			if opts.Compression.Enabled {
+				if _, err := compress.ValidateCompressionLevel(lvl); err != nil {
+					return types_backup.BackupDBOptions{}, err
+				}
+				opts.Compression.Level = lvl
+			}
+		}
+	}
+
+	// Encryption skip flag
+	skipEncrypt := helper.GetBoolFlagOrEnv(cmd, "skip-encrypt", "")
+	if skipEncrypt {
+		opts.Encryption.Enabled = false
+		opts.Encryption.Key = ""
+	} else if cmd.Flags().Changed("skip-encrypt") {
+		// Jika user eksplisit set --skip-encrypt=false, anggap enkripsi ingin dipakai.
+		opts.Encryption.Enabled = true
 	}
 
 	// Mode-specific options
@@ -55,24 +112,15 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 		if v := helper.GetStringFlagOrEnv(cmd, "database", ""); v != "" {
 			opts.DBName = v
 		}
-		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
-			opts.File.Filename = v
-		}
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
 	} else if mode == "primary" {
 		// Mode primary sama seperti single, hanya tanpa --database flag
-		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
-			opts.File.Filename = v
-		}
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
 		if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
 			opts.ClientCode = v
 		}
 	} else if mode == "secondary" {
 		// Mode secondary sama seperti primary, hanya untuk database dengan suffix _secondary
-		if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
-			opts.File.Filename = v
-		}
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
 		if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
 			opts.ClientCode = v
@@ -89,6 +137,33 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 
 	// Mode
 	opts.Mode = mode
+
+	// Validasi mode non-interaktif (fail-fast)
+	if opts.NonInteractive {
+		if strings.TrimSpace(opts.Ticket) == "" {
+			return types_backup.BackupDBOptions{}, fmt.Errorf("ticket wajib diisi pada mode non-interaktif (--non-interactive): gunakan --ticket")
+		}
+		if strings.TrimSpace(opts.Profile.Path) == "" {
+			return types_backup.BackupDBOptions{}, fmt.Errorf("profile wajib diisi pada mode non-interaktif (--non-interactive): gunakan --profile")
+		}
+		if strings.TrimSpace(opts.Profile.EncryptionKey) == "" {
+			return types_backup.BackupDBOptions{}, fmt.Errorf("profile-key wajib diisi pada mode non-interaktif (--non-interactive): gunakan --profile-key atau env %s", consts.ENV_SOURCE_PROFILE_KEY)
+		}
+		if opts.Encryption.Enabled && strings.TrimSpace(opts.Encryption.Key) == "" {
+			return types_backup.BackupDBOptions{}, fmt.Errorf("backup-key wajib diisi saat enkripsi aktif pada mode non-interaktif: gunakan --backup-key atau env %s (atau set --skip-encrypt)", consts.ENV_BACKUP_ENCRYPTION_KEY)
+		}
+
+		// Mode-specific non-interactive requirements
+		if mode == consts.ModeSingle && strings.TrimSpace(opts.DBName) == "" {
+			return types_backup.BackupDBOptions{}, fmt.Errorf("database wajib diisi pada mode backup single saat non-interaktif: gunakan --database")
+		}
+		if isFilterCommand {
+			hasInclude := len(opts.Filter.IncludeDatabases) > 0 || strings.TrimSpace(opts.Filter.IncludeFile) != ""
+			if !hasInclude {
+				return types_backup.BackupDBOptions{}, fmt.Errorf("mode backup filter non-interaktif membutuhkan include list: gunakan --db atau --db-file")
+			}
+		}
+	}
 
 	return opts, nil
 }

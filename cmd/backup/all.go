@@ -31,13 +31,10 @@ Fitur:
   sfdbtools db-backup all
 
 	# 2. Backup ke direktori tertentu
-	sfdbtools db-backup all --output-dir "/backup/daily"
+	sfdbtools db-backup all --backup-dir "/backup/daily"
 
 	# 3. Backup dengan custom nama file output
-	sfdbtools db-backup all --output-dir "/backup/daily" --filename "all_backup_20251224"
-
-  # 4. Backup dengan mengecualikan list database tertentu
-  sfdbtools db-backup all --exclude-db "test_db,temp_db"`,
+	sfdbtools db-backup all --backup-dir "/backup/daily" --filename "all_backup_20251224"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runBackupCommand(cmd, func() (string, error) {
 			return consts.ModeAll, nil

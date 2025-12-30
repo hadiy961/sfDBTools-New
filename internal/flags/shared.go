@@ -10,7 +10,7 @@ import (
 // Flag: --profile, --profile-key
 func AddProfileFlags(cmd *cobra.Command, opts *types.ProfileInfo) {
 	cmd.Flags().StringVarP(&opts.Path, "profile", "p", opts.Path, "Path ke file profil database terenkripsi")
-	cmd.Flags().StringVarP(&opts.EncryptionKey, "profile-key", "P", opts.EncryptionKey, "Encryption key untuk decrypt file profil database")
+	cmd.Flags().StringVarP(&opts.EncryptionKey, "profile-key", "k", opts.EncryptionKey, "Encryption key untuk decrypt file profil database")
 }
 
 // AddEncryptionFlags mendaftarkan flag untuk opsi enkripsi output.

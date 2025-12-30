@@ -34,6 +34,18 @@ func PopulateFilterFlags(cmd *cobra.Command, opts *types.FilterOptions) {
 	if v := helper.GetStringFlagOrEnv(cmd, "db-file", ""); v != "" {
 		opts.IncludeFile = v
 	}
+
+	// Backup filters (default mengikuti config; override via flag jika ada)
+	// Catatan: exclude-db/exclude-db-file tidak diekspos sebagai flag untuk backup.
+	if cmd.Flags().Lookup("exclude-system") != nil {
+		opts.ExcludeSystem = helper.GetBoolFlagOrEnv(cmd, "exclude-system", "")
+	}
+	if cmd.Flags().Lookup("exclude-data") != nil {
+		opts.ExcludeData = helper.GetBoolFlagOrEnv(cmd, "exclude-data", "")
+	}
+	if cmd.Flags().Lookup("exclude-empty") != nil {
+		opts.ExcludeEmpty = helper.GetBoolFlagOrEnv(cmd, "exclude-empty", "")
+	}
 }
 
 // -------------------- restore helpers --------------------
