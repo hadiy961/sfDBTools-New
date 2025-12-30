@@ -10,6 +10,7 @@ import (
 func (d *OptionsDisplayer) buildGeneralSection() [][]string {
 	data := [][]string{
 		{"Mode Backup", ui.ColorText(d.options.Mode, consts.UIColorCyan)},
+		{"Ticket", ui.ColorText(d.options.Ticket, consts.UIColorYellow)},
 		{"Output Directory", d.options.OutputDir},
 	}
 
@@ -173,7 +174,11 @@ func (d *OptionsDisplayer) buildEncryptionSection() [][]string {
 	}
 
 	if d.options.Encryption.Enabled {
-		data = append(data, []string{"Key Status", ui.ColorText("Configured", consts.UIColorGreen)})
+		statusText := ui.ColorText("Missing", consts.UIColorRed)
+		if d.options.Encryption.Key != "" {
+			statusText = ui.ColorText("Configured", consts.UIColorGreen)
+		}
+		data = append(data, []string{"Key Status", statusText})
 	}
 
 	return data

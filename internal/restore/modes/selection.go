@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
 )
@@ -47,10 +46,7 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 	}
 
 	client := e.svc.GetTargetClient()
-
-	total := len(entries)
-	success := 0
-	failures := 0
+	tracker := newBatchRestoreTracker(len(entries))
 
 	for idx, ent := range entries {
 		select {
@@ -64,8 +60,8 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 		if dbName == "" {
 			dbName = helper.ExtractDatabaseNameFromFile(ent.File)
 			if dbName == "" {
-				failures++
-				msg := fmt.Sprintf("[%d/%d] %s: gagal infer nama database dari filename", idx+1, total, filepath.Base(ent.File))
+				tracker.recordFailure()
+				msg := fmt.Sprintf("[%d/%d] %s: gagal infer nama database dari filename", idx+1, tracker.total, filepath.Base(ent.File))
 				logger.Warn(msg)
 				if opts.StopOnError {
 					return nil, errors.New(msg)
@@ -76,8 +72,8 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 
 		// Encrypted file requires enc key
 		if e.isEncryptedFile(ent.File) && strings.TrimSpace(ent.EncKey) == "" {
-			failures++
-			msg := fmt.Sprintf("[%d/%d] %s: file terenkripsi, enc_key wajib diisi", idx+1, total, filepath.Base(ent.File))
+			tracker.recordFailure()
+			msg := fmt.Sprintf("[%d/%d] %s: file terenkripsi, enc_key wajib diisi", idx+1, tracker.total, filepath.Base(ent.File))
 			logger.Warn(msg)
 			if opts.StopOnError {
 				return nil, errors.New(msg)
@@ -86,12 +82,12 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 		}
 
 		// Log summary line for this entry
-		logger.Infof("[%d/%d] Restore %s → %s", idx+1, total, filepath.Base(ent.File), dbName)
+		logger.Infof("[%d/%d] Restore %s → %s", idx+1, tracker.total, filepath.Base(ent.File), dbName)
 
 		if opts.DryRun {
-			// For dry-run, only check file exists and optional db exists
+			// For dry-run, only check file exists
 			if _, err := os.Stat(ent.File); err != nil {
-				failures++
+				tracker.recordFailure()
 				msg := fmt.Sprintf("file tidak ditemukan: %s", ent.File)
 				logger.Warn(msg)
 				if opts.StopOnError {
@@ -99,51 +95,31 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 				}
 				continue
 			}
-			success++
+			tracker.recordSuccess()
 			continue
 		}
 
-		// Ensure connection is healthy before existence check
+		// Ensure connection is healthy
 		if pingErr := client.Ping(ctx); pingErr != nil {
 			logger.Warnf("koneksi database tidak sehat: %v", pingErr)
 		}
 
-		// Check target db existence (retry-capable)
-		dbExists, err := client.CheckDatabaseExists(ctx, dbName)
-		if err != nil {
-			failures++
-			logger.Warnf("cek database gagal (%s): %v", dbName, err)
-			if opts.StopOnError {
-				return nil, err
-			}
-			continue
+		// Use batch restore helper
+		restorer := &singleDatabaseRestore{
+			service:       e.svc,
+			ctx:           ctx,
+			dbName:        dbName,
+			sourceFile:    ent.File,
+			encryptionKey: ent.EncKey,
+			grantsFile:    ent.GrantsFile,
+			skipBackup:    opts.SkipBackup,
+			dropTarget:    opts.DropTarget,
+			stopOnError:   opts.StopOnError,
+			backupOpts:    opts.BackupOptions,
 		}
 
-		// Optional backup
-		if !opts.SkipBackup {
-			if _, err := e.svc.BackupDatabaseIfNeeded(ctx, dbName, dbExists, opts.SkipBackup, opts.BackupOptions); err != nil {
-				failures++
-				logger.Warnf("backup pre-restore gagal (%s): %v", dbName, err)
-				if opts.StopOnError {
-					return nil, err
-				}
-				continue
-			}
-		}
-
-		// Drop target if requested
-		if err := e.svc.DropDatabaseIfNeeded(ctx, dbName, dbExists, opts.DropTarget); err != nil {
-			failures++
-			logger.Warnf("drop database gagal (%s): %v", dbName, err)
-			if opts.StopOnError {
-				return nil, err
-			}
-			continue
-		}
-
-		// Create & restore
-		if err := e.svc.CreateAndRestoreDatabase(ctx, dbName, ent.File, ent.EncKey); err != nil {
-			failures++
+		if err := restorer.execute(); err != nil {
+			tracker.recordFailure()
 			logger.Warnf("restore gagal (%s): %v", dbName, err)
 			if opts.StopOnError {
 				return nil, err
@@ -151,43 +127,19 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 			continue
 		}
 
-		// Restore grants if provided
-		if strings.TrimSpace(ent.GrantsFile) != "" {
-			if _, err := e.svc.RestoreUserGrantsIfAvailable(ctx, ent.GrantsFile); err != nil {
-				// Do not fail entire item unless stop on error
-				logger.Warnf("restore grants gagal (%s): %v", dbName, err)
-				if opts.StopOnError {
-					failures++
-					return nil, err
-				}
-			}
-		}
-
-		// Post-restore: buat _temp + copy grants (warning-only)
-		if !strings.HasSuffix(dbName, consts.SuffixDmart) {
-			tempDB, terr := e.svc.CreateTempDatabaseIfNeeded(ctx, dbName)
-			if terr != nil {
-				logger.Warnf("temp DB gagal (%s): %v", dbName, terr)
-			} else if strings.TrimSpace(tempDB) != "" {
-				if gerr := e.svc.CopyDatabaseGrants(ctx, dbName, tempDB); gerr != nil {
-					logger.Warnf("copy grants ke temp DB gagal (%s): %v", dbName, gerr)
-				}
-			}
-		}
-
-		success++
+		tracker.recordSuccess()
 	}
 
-	// Summarize result
-	summary := fmt.Sprintf("%d berhasil, %d gagal dari %d entri", success, failures, total)
-	if failures > 0 {
-		ui.PrintWarning("Hasil: " + summary)
-	} else {
+	// Print summary
+	summary := tracker.getSummary()
+	if tracker.isAllSuccess() {
 		ui.PrintSuccess("Hasil: " + summary)
+	} else {
+		ui.PrintWarning("Hasil: " + summary)
 	}
 
 	return &types.RestoreResult{
-		Success:    failures == 0,
+		Success:    tracker.isAllSuccess(),
 		SourceFile: opts.CSV,
 		Duration:   time.Since(start).String(),
 	}, nil

@@ -9,6 +9,7 @@ package display
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 )
@@ -18,10 +19,18 @@ func DisplayConfirmation(opts map[string]string) error {
 	ui.PrintSubHeader("Konfirmasi Restore")
 	fmt.Println()
 
-	for key, value := range opts {
-		fmt.Printf("  %-20s: %s\n", key, value)
+	keys := make([]string, 0, len(opts))
+	for k := range opts {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	rows := make([][]string, 0, len(keys))
+	for _, k := range keys {
+		rows = append(rows, []string{k, opts[k]})
 	}
 
+	ui.FormatTable([]string{"Parameter", "Value"}, rows)
 	fmt.Println()
 
 	confirmed, err := input.PromptConfirm("Lanjutkan restore?")

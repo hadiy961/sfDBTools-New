@@ -34,69 +34,37 @@ func (e *SecondaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 	defer e.svc.ClearRestoreInProgress()
 
 	// Resolve source file(s)
-	sourceFile := ""
-	companionSourceFile := ""
-	if opts.From == "primary" {
-		// 1) Ensure primary exists
-		exists, err := e.svc.GetTargetClient().CheckDatabaseExists(ctx, opts.PrimaryDB)
-		if err != nil {
-			result.Error = fmt.Errorf("gagal mengecek database primary: %w", err)
-			return result, result.Error
-		}
-		if !exists {
-			result.Error = fmt.Errorf("database primary tidak ditemukan: %s", opts.PrimaryDB)
-			return result, result.Error
-		}
+	resolver := newSourceFileResolver(e.svc, ctx, opts.From, opts.PrimaryDB, opts.File, opts.BackupOptions, opts.StopOnError)
 
-		// 2) Backup primary (always)
-		b, err := e.svc.BackupDatabaseIfNeeded(ctx, opts.PrimaryDB, true, false, opts.BackupOptions)
-		if err != nil {
-			result.Error = fmt.Errorf("gagal backup database primary: %w", err)
-			return result, result.Error
-		}
-		sourceFile = b
-		result.SourceFile = b
+	sourceFile, err := resolver.resolveMainSource()
+	if err != nil {
+		result.Error = err
+		return result, err
+	}
+	result.SourceFile = sourceFile
 
-		// 2b) Backup primary companion (_dmart) jika diminta dan ada
-		if opts.IncludeDmart {
-			primaryDmart := opts.PrimaryDB + consts.SuffixDmart
-			dmartExists, derr := e.svc.GetTargetClient().CheckDatabaseExists(ctx, primaryDmart)
-			if derr != nil {
-				result.Error = fmt.Errorf("gagal mengecek companion (dmart) database primary: %w", derr)
-				return result, result.Error
-			}
-			if dmartExists {
-				db, berr := e.svc.BackupDatabaseIfNeeded(ctx, primaryDmart, true, false, opts.BackupOptions)
-				if berr != nil {
-					if opts.StopOnError {
-						result.Error = fmt.Errorf("gagal backup companion (dmart) database primary: %w", berr)
-						return result, result.Error
-					}
-					ui.PrintWarning(fmt.Sprintf("⚠️  Gagal backup primary dmart (%s): %v", primaryDmart, berr))
-				} else {
-					companionSourceFile = db
-					result.CompanionFile = db
-					result.CompanionDB = opts.TargetDB + consts.SuffixDmart
-				}
-			} else {
-				ui.PrintWarning(fmt.Sprintf("⚠️  Companion (dmart) primary tidak ditemukan: %s (skip)", primaryDmart))
-			}
-		}
-	} else {
-		sourceFile = opts.File
-		result.SourceFile = opts.File
-		if opts.IncludeDmart {
-			companionSourceFile = opts.CompanionFile
-			if strings.TrimSpace(companionSourceFile) != "" {
-				result.CompanionFile = companionSourceFile
-				result.CompanionDB = opts.TargetDB + consts.SuffixDmart
-			}
-		}
+	if err := validateSourceFile(sourceFile, opts.From); err != nil {
+		result.Error = err
+		return result, err
 	}
 
-	if sourceFile == "" {
-		result.Error = fmt.Errorf("source file kosong (from=%s)", opts.From)
-		return result, result.Error
+	// Resolve companion source if needed
+	var companionSourceFile string
+	if opts.IncludeDmart {
+		if opts.From == "primary" {
+			companionSourceFile, err = resolver.backupCompanionIfExists()
+			if err != nil {
+				result.Error = err
+				return result, err
+			}
+		} else {
+			companionSourceFile = opts.CompanionFile
+		}
+
+		if strings.TrimSpace(companionSourceFile) != "" {
+			result.CompanionFile = companionSourceFile
+			result.CompanionDB = opts.TargetDB + consts.SuffixDmart
+		}
 	}
 
 	// Dry-run: validate inputs only (no restore)
@@ -117,111 +85,65 @@ func (e *SecondaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 		return result, nil
 	}
 
-	// 3) Check target secondary existence
-	targetExists, err := e.svc.GetTargetClient().CheckDatabaseExists(ctx, opts.TargetDB)
-	if err != nil {
-		result.Error = fmt.Errorf("gagal mengecek database secondary: %w", err)
-		return result, result.Error
+	// Execute common restore flow for secondary database
+	flow := &commonRestoreFlow{
+		service:       e.svc,
+		ctx:           ctx,
+		dbName:        opts.TargetDB,
+		sourceFile:    sourceFile,
+		encryptionKey: opts.EncryptionKey,
+		skipBackup:    opts.SkipBackup,
+		dropTarget:    opts.DropTarget,
+		stopOnError:   opts.StopOnError,
+		backupOpts:    opts.BackupOptions,
 	}
 
-	// 4) Backup target secondary if requested
-	backupFile, err := e.svc.BackupDatabaseIfNeeded(ctx, opts.TargetDB, targetExists, opts.SkipBackup, opts.BackupOptions)
+	backupFile, err := flow.execute()
 	if err != nil {
 		result.Error = err
-		return result, result.Error
+		return result, err
 	}
 	result.BackupFile = backupFile
 
-	// 5) Drop target secondary if requested
-	if err := e.svc.DropDatabaseIfNeeded(ctx, opts.TargetDB, targetExists, opts.DropTarget); err != nil {
-		result.Error = err
-		return result, result.Error
-	}
-	if opts.DropTarget && targetExists {
-		result.DroppedDB = true
-	}
-
-	// 6) Create and restore to secondary
-	if err := e.svc.CreateAndRestoreDatabase(ctx, opts.TargetDB, sourceFile, opts.EncryptionKey); err != nil {
-		result.Error = err
-		return result, result.Error
-	}
-
-	// 7) Restore companion (dmart) if available
+	// Restore companion database if available
 	if opts.IncludeDmart && strings.TrimSpace(companionSourceFile) != "" {
-		companionDB := opts.TargetDB + consts.SuffixDmart
-		companionExists, cerr := e.svc.GetTargetClient().CheckDatabaseExists(ctx, companionDB)
-		if cerr != nil {
-			result.Error = fmt.Errorf("gagal mengecek companion (dmart) target: %w", cerr)
-			return result, result.Error
+		companionFlow := &companionRestoreFlow{
+			service:       e.svc,
+			ctx:           ctx,
+			primaryDB:     opts.TargetDB,
+			sourceFile:    companionSourceFile,
+			encryptionKey: opts.EncryptionKey,
+			skipBackup:    opts.SkipBackup,
+			dropTarget:    opts.DropTarget,
+			stopOnError:   opts.StopOnError,
+			backupOpts:    opts.BackupOptions,
 		}
 
-		// Backup companion target if requested
-		companionBackup, berr := e.svc.BackupDatabaseIfNeeded(ctx, companionDB, companionExists, opts.SkipBackup, opts.BackupOptions)
-		if berr != nil {
-			if opts.StopOnError {
-				result.Error = fmt.Errorf("gagal backup companion (dmart) target: %w", berr)
-				return result, result.Error
-			}
-			ui.PrintWarning(fmt.Sprintf("⚠️  Gagal backup target dmart (%s): %v", companionDB, berr))
-		} else if companionBackup != "" {
+		companionBackup, err := companionFlow.execute()
+		if err != nil && opts.StopOnError {
+			result.Error = err
+			return result, err
+		}
+		if companionBackup != "" {
 			result.CompanionBackup = companionBackup
 		}
-
-		// Drop companion target if requested
-		if err := e.svc.DropDatabaseIfNeeded(ctx, companionDB, companionExists, opts.DropTarget); err != nil {
-			if opts.StopOnError {
-				result.Error = fmt.Errorf("gagal drop companion (dmart) target: %w", err)
-				return result, result.Error
-			}
-			ui.PrintWarning(fmt.Sprintf("⚠️  Gagal drop target dmart (%s): %v", companionDB, err))
-		} else if opts.DropTarget && companionExists {
-			result.DroppedCompanion = true
-		}
-
-		if err := e.svc.CreateAndRestoreDatabase(ctx, companionDB, companionSourceFile, opts.EncryptionKey); err != nil {
-			if opts.StopOnError {
-				result.Error = fmt.Errorf("gagal restore companion (dmart) target: %w", err)
-				return result, result.Error
-			}
-			ui.PrintWarning(fmt.Sprintf("⚠️  Gagal restore companion (dmart) %s: %v", companionDB, err))
-		}
 	}
 
-	// 8) Post-restore: copy grants (warning-only)
-	// Khusus: jika source dari primary, copy grants primary -> secondary.
+	// Post-restore: copy grants from primary if applicable
 	if opts.From == "primary" {
-		if gerr := e.svc.CopyDatabaseGrants(ctx, opts.PrimaryDB, opts.TargetDB); gerr != nil {
-			logger.Warnf("Gagal copy grants primary -> secondary: %v", gerr)
-			ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants primary -> secondary: %v", gerr))
-		}
+		copyGrantsBetweenDatabases(ctx, e.svc, opts.PrimaryDB, opts.TargetDB)
 	}
 
-	// Copy grants secondary -> secondary_dmart (jika dmart tersedia)
+	// Copy grants to companion if available
 	if opts.IncludeDmart && strings.TrimSpace(companionSourceFile) != "" {
 		companionDB := opts.TargetDB + consts.SuffixDmart
-		if gerr := e.svc.CopyDatabaseGrants(ctx, opts.TargetDB, companionDB); gerr != nil {
-			logger.Warnf("Gagal copy grants secondary -> secondary_dmart: %v", gerr)
-			ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants secondary -> secondary_dmart: %v", gerr))
-		}
+		copyGrantsBetweenDatabases(ctx, e.svc, opts.TargetDB, companionDB)
 	}
 
-	// 9) Post-restore: buat database _temp (warning-only) + copy grants ke temp (warning-only)
-	if !strings.HasSuffix(opts.TargetDB, consts.SuffixDmart) {
-		tempDB, terr := e.svc.CreateTempDatabaseIfNeeded(ctx, opts.TargetDB)
-		if terr != nil {
-			logger.Warnf("Gagal membuat temp DB: %v", terr)
-			ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal membuat temp DB: %v", terr))
-		} else if strings.TrimSpace(tempDB) != "" {
-			if gerr := e.svc.CopyDatabaseGrants(ctx, opts.TargetDB, tempDB); gerr != nil {
-				logger.Warnf("Gagal copy grants ke temp DB: %v", gerr)
-				ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants ke temp DB: %v", gerr))
-			}
-		}
-	}
+	// Post-restore operations (temp DB creation)
+	performPostRestoreOperations(ctx, e.svc, opts.TargetDB)
 
-	result.Success = true
-	result.Duration = time.Since(startTime).Round(time.Second).String()
+	finalizeResult(result, startTime, true)
 	logger.Info("Restore secondary database berhasil")
 	return result, nil
 }

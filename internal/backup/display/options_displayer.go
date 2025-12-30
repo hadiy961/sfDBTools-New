@@ -17,8 +17,7 @@ func NewOptionsDisplayer(options *types_backup.BackupDBOptions) *OptionsDisplaye
 	return &OptionsDisplayer{options: options}
 }
 
-// Display menampilkan backup options dan meminta konfirmasi.
-func (d *OptionsDisplayer) Display() (bool, error) {
+func (d *OptionsDisplayer) renderTable() {
 	ui.PrintSubHeader("Opsi Backup")
 
 	data := [][]string{}
@@ -31,6 +30,16 @@ func (d *OptionsDisplayer) Display() (bool, error) {
 	data = append(data, d.buildCleanupSection()...)
 
 	ui.FormatTable([]string{"Parameter", "Value"}, data)
+}
+
+// Render menampilkan backup options tanpa meminta konfirmasi.
+func (d *OptionsDisplayer) Render() {
+	d.renderTable()
+}
+
+// Display menampilkan backup options dan meminta konfirmasi.
+func (d *OptionsDisplayer) Display() (bool, error) {
+	d.renderTable()
 
 	confirm, err := input.AskYesNo("Apakah Anda ingin melanjutkan?", true)
 	if err != nil {

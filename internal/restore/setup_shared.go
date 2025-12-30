@@ -9,8 +9,10 @@ package restore
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	restorehelpers "sfDBTools/internal/restore/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
@@ -164,19 +166,64 @@ func (s *Service) resolveEncryptionKey(filePath string, encryptionKey *string, a
 		return nil
 	}
 
-	if *encryptionKey == "" {
-		if !allowInteractive {
-			return fmt.Errorf("file backup terenkripsi; encryption key wajib diisi (--enc-key atau env) pada mode non-interaktif (--force)")
-		}
-		key, err := input.PromptPassword("Masukkan encryption key untuk decrypt file backup")
-		if err != nil {
-			return fmt.Errorf("gagal mendapatkan encryption key: %w", err)
-		}
-		*encryptionKey = key
+	if err := s.validateEncryptionKeyForFile(filePath, encryptionKey, allowInteractive); err != nil {
+		return err
 	}
 
 	s.Log.Debug("Encryption key berhasil di-resolve")
 	return nil
+}
+
+// validateEncryptionKeyForFile melakukan validasi awal encryption key terhadap file backup.
+// Jika key salah pada mode interaktif, user diberi opsi untuk mengganti key atau membatalkan.
+func (s *Service) validateEncryptionKeyForFile(filePath string, encryptionKey *string, allowInteractive bool) error {
+	for {
+		if strings.TrimSpace(*encryptionKey) == "" {
+			if !allowInteractive {
+				return fmt.Errorf("file backup terenkripsi; encryption key wajib diisi (--enc-key atau env) pada mode non-interaktif (--force)")
+			}
+			key, err := input.PromptPassword("Masukkan encryption key untuk decrypt file backup")
+			if err != nil {
+				return fmt.Errorf("gagal mendapatkan encryption key: %w", err)
+			}
+			*encryptionKey = key
+		}
+
+		reader, closers, err := restorehelpers.OpenAndPrepareReader(filePath, *encryptionKey)
+		if err == nil {
+			buf := make([]byte, 1)
+			_, readErr := reader.Read(buf)
+			restorehelpers.CloseReaders(closers)
+			if readErr != nil && readErr != io.EOF {
+				err = readErr
+			}
+		}
+
+		if err == nil {
+			// Key valid dan bisa dipakai untuk decrypt file
+			return nil
+		}
+
+		if !allowInteractive {
+			return fmt.Errorf("validasi encryption key gagal: %w", err)
+		}
+
+		ui.PrintError(fmt.Sprintf("Encryption key tidak valid atau file gagal didecrypt: %v", err))
+		action, selErr := input.SelectSingleFromList(
+			[]string{"Ubah key enkripsi", "Batalkan"},
+			"Encryption key salah. Pilih aksi:",
+		)
+		if selErr != nil {
+			return fmt.Errorf("gagal memilih aksi setelah error encryption key: %w", selErr)
+		}
+
+		if action == "Batalkan" {
+			return fmt.Errorf("restore dibatalkan oleh user (encryption key salah)")
+		}
+
+		// Ubah key: kosongkan lalu ulangi loop untuk meminta key baru
+		*encryptionKey = ""
+	}
 }
 
 // resolveTargetProfile resolve profile database target

@@ -73,6 +73,9 @@ func (s *Setup) SetupBackupExecution() error {
 	s.Log.Info("Direktori output siap: " + s.Options.OutputDir)
 
 	if s.Options.Encryption.Enabled {
+		if s.Options.Encryption.Key == "" {
+			return fmt.Errorf("encryption diaktifkan tapi backup key kosong: gunakan --backup-key atau ENV SFDB_BACKUP_ENCRYPTION_KEY")
+		}
 		s.Log.Info("Enkripsi AES-256-GCM diaktifkan untuk backup (kompatibel dengan OpenSSL)")
 	} else {
 		s.Log.Info("Enkripsi tidak diaktifkan, melewati langkah kunci enkripsi...")

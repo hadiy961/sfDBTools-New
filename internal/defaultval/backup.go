@@ -19,13 +19,20 @@ func DefaultBackupOptions(mode string) types_backup.BackupDBOptions {
 		return opts
 	}
 
-	// Compression Configuration - derive Enabled from Type (false if type is "none" or empty)
+	// Compression Configuration
+	// Enabled mengikuti config, dengan safeguard: disable jika type kosong/none.
 	opts.Compression.Type = cfg.Backup.Compression.Type
 	opts.Compression.Level = cfg.Backup.Compression.Level
-	opts.Compression.Enabled = cfg.Backup.Compression.Type != "" && cfg.Backup.Compression.Type != "none"
-	// Encryption Configuration - derive Enabled from Key (true if key is not empty)
+	opts.Compression.Enabled = cfg.Backup.Compression.Enabled && cfg.Backup.Compression.Type != "" && cfg.Backup.Compression.Type != "none"
+	// Encryption Configuration
+	// Enabled mengikuti config (atau auto-on jika key ada). Key boleh kosong jika user ingin input via flag/env/interaktif.
 	opts.Encryption.Key = cfg.Backup.Encryption.Key
-	opts.Encryption.Enabled = cfg.Backup.Encryption.Key != ""
+	opts.Encryption.Enabled = cfg.Backup.Encryption.Enabled || cfg.Backup.Encryption.Key != ""
+
+	// Cleanup Configuration (dipakai untuk menentukan apakah cleanup dijalankan setelah backup)
+	opts.Cleanup.Enabled = cfg.Backup.Cleanup.Enabled
+	opts.Cleanup.Days = cfg.Backup.Cleanup.Days
+	opts.Cleanup.CleanupSchedule = cfg.Backup.Cleanup.Schedule
 	// Output Directory Configuration
 	// Note: OutputDir ditampilkan dengan structure pattern yang sudah di-substitute dengan timestamp saat ini
 	// Contoh: /media/ArchiveDB/{year}{month}{day}/ menjadi /media/ArchiveDB/20251205/

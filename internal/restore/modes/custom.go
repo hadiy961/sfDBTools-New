@@ -77,93 +77,56 @@ func (e *customExecutor) Execute(ctx context.Context) (*types.RestoreResult, err
 		logger.Infof("User %s (%s) siap + grants applied", u.user, u.tag)
 	}
 
-	// Step 5-6 + rest: restore database & dmart like other restore modes
-	// Main DB
-	mainExists, err := client.CheckDatabaseExists(ctx, opts.Database)
+	// Step 5-6: Restore main database using common flow
+	mainFlow := &commonRestoreFlow{
+		service:       e.svc,
+		ctx:           ctx,
+		dbName:        opts.Database,
+		sourceFile:    opts.DatabaseFile,
+		encryptionKey: opts.EncryptionKey,
+		skipBackup:    opts.SkipBackup,
+		dropTarget:    opts.DropTarget,
+		stopOnError:   opts.StopOnError,
+		backupOpts:    opts.BackupOptions,
+	}
+
+	backupMain, err := mainFlow.execute()
 	if err != nil {
-		return nil, err
-	}
-	result.DroppedDB = mainExists && opts.DropTarget
-
-	var backupMain string
-	if !opts.SkipBackup {
-		b, err := e.svc.BackupDatabaseIfNeeded(ctx, opts.Database, mainExists, opts.SkipBackup, opts.BackupOptions)
-		if err != nil {
-			return nil, err
-		}
-		backupMain = b
-	}
-	result.BackupFile = backupMain
-
-	if err := e.svc.DropDatabaseIfNeeded(ctx, opts.Database, mainExists, opts.DropTarget); err != nil {
-		return nil, err
-	}
-	if err := e.svc.CreateAndRestoreDatabase(ctx, opts.Database, opts.DatabaseFile, opts.EncryptionKey); err != nil {
 		if opts.StopOnError {
 			return nil, err
 		}
 		logger.Warnf("restore main DB gagal (lanjut karena continue-on-error): %v", err)
 		result.Success = false
 	}
+	result.BackupFile = backupMain
 
-	// DMART
-	dmartExists, err := client.CheckDatabaseExists(ctx, opts.DatabaseDmart)
-	if err != nil {
+	// Restore DMART database using companion flow
+	dmartFlow := &companionRestoreFlow{
+		service:       e.svc,
+		ctx:           ctx,
+		primaryDB:     strings.TrimSuffix(opts.DatabaseDmart, consts.SuffixDmart),
+		sourceFile:    opts.DatabaseDmartFile,
+		encryptionKey: opts.EncryptionKey,
+		skipBackup:    opts.SkipBackup,
+		dropTarget:    opts.DropTarget,
+		stopOnError:   opts.StopOnError,
+		backupOpts:    opts.BackupOptions,
+	}
+
+	backupDmart, err := dmartFlow.execute()
+	if err != nil && opts.StopOnError {
 		return nil, err
 	}
-	result.DroppedCompanion = dmartExists && opts.DropTarget
-
-	var backupDmart string
-	if !opts.SkipBackup {
-		b, err := e.svc.BackupDatabaseIfNeeded(ctx, opts.DatabaseDmart, dmartExists, opts.SkipBackup, opts.BackupOptions)
-		if err != nil {
-			if opts.StopOnError {
-				return nil, err
-			}
-			logger.Warnf("backup DMART gagal (lanjut karena continue-on-error): %v", err)
-			result.Success = false
-		} else {
-			backupDmart = b
-		}
-	}
-	result.CompanionBackup = backupDmart
-
-	if err := e.svc.DropDatabaseIfNeeded(ctx, opts.DatabaseDmart, dmartExists, opts.DropTarget); err != nil {
-		if opts.StopOnError {
-			return nil, err
-		}
-		logger.Warnf("drop DMART gagal (lanjut karena continue-on-error): %v", err)
-		result.Success = false
-	}
-	if err := e.svc.CreateAndRestoreDatabase(ctx, opts.DatabaseDmart, opts.DatabaseDmartFile, opts.EncryptionKey); err != nil {
-		if opts.StopOnError {
-			return nil, err
-		}
+	if err != nil {
 		logger.Warnf("restore DMART gagal (lanjut karena continue-on-error): %v", err)
 		result.Success = false
 	}
+	result.CompanionBackup = backupDmart
 
-	// Post-restore (warning-only): buat <db>_temp + copy grants.
-	// Hanya dijalankan jika keseluruhan restore dianggap sukses.
-	if result.Success && !strings.HasSuffix(opts.Database, consts.SuffixDmart) {
-		tempDB, terr := e.svc.CreateTempDatabaseIfNeeded(ctx, opts.Database)
-		if terr != nil {
-			logger.Warnf("Gagal membuat temp DB: %v", terr)
-			ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal membuat temp DB: %v", terr))
-		} else if strings.TrimSpace(tempDB) != "" {
-			if gerr := e.svc.CopyDatabaseGrants(ctx, opts.Database, tempDB); gerr != nil {
-				logger.Warnf("Gagal copy grants ke temp DB: %v", gerr)
-				ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants ke temp DB: %v", gerr))
-			}
-		}
-	}
-
-	// Copy grants main -> dmart (warning-only) jika overall sukses.
+	// Post-restore operations using helpers
 	if result.Success {
-		if gerr := e.svc.CopyDatabaseGrants(ctx, opts.Database, opts.DatabaseDmart); gerr != nil {
-			logger.Warnf("Gagal copy grants ke DMART: %v", gerr)
-			ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants ke DMART: %v", gerr))
-		}
+		performPostRestoreOperations(ctx, e.svc, opts.Database)
+		copyGrantsBetweenDatabases(ctx, e.svc, opts.Database, opts.DatabaseDmart)
 	}
 
 	ui.PrintSuccess("Restore custom selesai")

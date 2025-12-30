@@ -31,8 +31,8 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 	result := s.executeBackupByMode(ctx, dbFiltered, backupMode)
 	result.TotalTimeTaken = timer.Elapsed()
 
-	// Cleanup old backups jika enabled
-	if s.Config.Backup.Cleanup.Enabled && ctx.Err() == nil {
+	// Cleanup old backups jika enabled (runtime options; default dari config)
+	if s.BackupDBOptions != nil && s.BackupDBOptions.Cleanup.Enabled && ctx.Err() == nil {
 		s.Log.Info("Menjalankan cleanup old backups setelah backup...")
 		if err := cleanup.CleanupOldBackupsFromBackup(s.Config, s.Log); err != nil {
 			s.Log.Warnf("Cleanup old backups gagal: %v", err)

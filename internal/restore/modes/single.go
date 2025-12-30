@@ -2,18 +2,14 @@
 // Deskripsi : Executor untuk restore single database
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-17
-// Last Modified : 2025-12-17
+// Last Modified : 2025-12-30
 
 package modes
 
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/restore/helpers"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/ui"
-	"strings"
 	"time"
 )
 
@@ -31,13 +27,10 @@ func NewSingleExecutor(svc RestoreService) *SingleExecutor {
 func (e *SingleExecutor) Execute(ctx context.Context) (*types.RestoreResult, error) {
 	startTime := time.Now()
 	opts := e.service.GetSingleOptions()
-
-	result := &types.RestoreResult{
-		TargetDB:   opts.TargetDB,
-		SourceFile: opts.File,
-	}
-
 	logger := e.service.GetLogger()
+
+	result := createResultWithDefaults(opts.TargetDB, opts.File, startTime)
+
 	logger.Info("Memulai proses restore database")
 	e.service.SetRestoreInProgress(opts.TargetDB)
 	defer e.service.ClearRestoreInProgress()
@@ -48,65 +41,33 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*types.RestoreResult, err
 		return e.executeDryRun(ctx, opts, result, startTime)
 	}
 
-	// 1. Check if database exists
-	logger.Debugf("Mengecek apakah database %s sudah ada...", opts.TargetDB)
-	dbExists, err := e.service.GetTargetClient().CheckDatabaseExists(ctx, opts.TargetDB)
-	if err != nil {
-		result.Error = fmt.Errorf("gagal mengecek database target: %w", err)
-		return result, result.Error
+	// Execute common restore flow (backup -> drop -> restore)
+	flow := &commonRestoreFlow{
+		service:       e.service,
+		ctx:           ctx,
+		dbName:        opts.TargetDB,
+		sourceFile:    opts.File,
+		encryptionKey: opts.EncryptionKey,
+		skipBackup:    opts.SkipBackup,
+		dropTarget:    opts.DropTarget,
+		backupOpts:    opts.BackupOptions,
 	}
-	logger.Debugf("Database %s exists: %v", opts.TargetDB, dbExists)
 
-	// 2. Backup database if needed
-	backupFile, err := e.service.BackupDatabaseIfNeeded(ctx, opts.TargetDB, dbExists, opts.SkipBackup, opts.BackupOptions)
+	backupFile, err := flow.execute()
 	if err != nil {
 		result.Error = err
-		return result, result.Error
+		return result, err
 	}
 	result.BackupFile = backupFile
 
-	// 3. Drop database if needed
-	if err := e.service.DropDatabaseIfNeeded(ctx, opts.TargetDB, dbExists, opts.DropTarget); err != nil {
-		result.Error = err
-		return result, result.Error
-	}
-	if opts.DropTarget && dbExists {
-		result.DroppedDB = true
-	}
-
-	// 4. Create database and restore from file
-	if err := e.service.CreateAndRestoreDatabase(ctx, opts.TargetDB, opts.File, opts.EncryptionKey); err != nil {
-		result.Error = err
-		return result, result.Error
-	}
-
-	// 5. Restore user grants if available
+	// Restore user grants if available
 	result.GrantsFile = opts.GrantsFile
-	grantsRestored, err := e.service.RestoreUserGrantsIfAvailable(ctx, opts.GrantsFile)
-	if err != nil {
-		logger.Errorf("Gagal restore user grants: %v", err)
-		ui.PrintWarning(fmt.Sprintf("⚠️  Database berhasil di-restore, tapi gagal restore user grants: %v", err))
-		result.GrantsRestored = false
-	} else {
-		result.GrantsRestored = grantsRestored
-	}
+	result.GrantsRestored = performGrantsRestore(ctx, e.service, opts.GrantsFile, false)
 
-	// 6. Post-restore: buat database _temp (warning-only) + copy grants (warning-only)
-	if !strings.HasSuffix(opts.TargetDB, consts.SuffixDmart) {
-		tempDB, terr := e.service.CreateTempDatabaseIfNeeded(ctx, opts.TargetDB)
-		if terr != nil {
-			logger.Warnf("Gagal membuat temp DB: %v", terr)
-			ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal membuat temp DB: %v", terr))
-		} else if strings.TrimSpace(tempDB) != "" {
-			if gerr := e.service.CopyDatabaseGrants(ctx, opts.TargetDB, tempDB); gerr != nil {
-				logger.Warnf("Gagal copy grants ke temp DB: %v", gerr)
-				ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants ke temp DB: %v", gerr))
-			}
-		}
-	}
+	// Post-restore operations (temp DB + grants copy)
+	performPostRestoreOperations(ctx, e.service, opts.TargetDB)
 
-	result.Success = true
-	result.Duration = time.Since(startTime).Round(time.Second).String()
+	finalizeResult(result, startTime, true)
 	logger.Info("Restore database berhasil")
 
 	return result, nil
@@ -114,40 +75,36 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*types.RestoreResult, err
 
 // executeDryRun melakukan validasi file backup tanpa restore
 func (e *SingleExecutor) executeDryRun(ctx context.Context, opts *types.RestoreSingleOptions, result *types.RestoreResult, startTime time.Time) (*types.RestoreResult, error) {
-	logger := e.service.GetLogger()
-	logger.Info("Validasi file backup...")
+	validator := newDryRunValidator(e.service, ctx, result, startTime)
 
-	// Validasi file exist dan bisa dibaca
-	reader, closers, err := helpers.OpenAndPrepareReader(opts.File, opts.EncryptionKey)
-	if err != nil {
-		result.Error = fmt.Errorf("gagal membuka file: %w", err)
-		return result, result.Error
+	// Validate file can be opened
+	if err := validator.validateSingleFile(opts.File, opts.EncryptionKey); err != nil {
+		result.Error = err
+		return result, err
 	}
-	defer helpers.CloseReaders(closers)
-
-	// Close reader immediately setelah validasi
-	_ = reader
 
 	// Check database status
-	dbExists, err := e.service.GetTargetClient().CheckDatabaseExists(ctx, opts.TargetDB)
+	dbExists, err := validator.validateDatabaseStatus(opts.TargetDB)
 	if err != nil {
-		result.Error = fmt.Errorf("gagal mengecek database target: %w", err)
-		return result, result.Error
+		result.Error = err
+		return result, err
 	}
 
-	// Print hasil validasi
-	ui.PrintSuccess("\n✓ Validasi File Backup:")
-	ui.PrintInfo(fmt.Sprintf("  Source File: %s", opts.File))
-	ui.PrintInfo(fmt.Sprintf("  Target DB: %s", opts.TargetDB))
-	ui.PrintInfo(fmt.Sprintf("  DB Exists: %v", dbExists))
+	// Build summary info
+	info := map[string]string{
+		"Source File": opts.File,
+		"Target DB":   opts.TargetDB,
+		"DB Exists":   fmt.Sprintf("%v", dbExists),
+	}
 	if dbExists && !opts.SkipBackup {
-		ui.PrintInfo("  Pre-restore Backup: Will be created")
-	}
-	if opts.DropTarget && dbExists {
-		ui.PrintWarning("  ⚠️  Database will be DROPPED before restore")
+		info["Pre-restore Backup"] = "Will be created"
 	}
 
-	result.Success = true
-	result.Duration = time.Since(startTime).Round(time.Second).String()
-	return result, nil
+	warnings := []string{}
+	if opts.DropTarget && dbExists {
+		warnings = append(warnings, "⚠️  Database will be DROPPED before restore")
+	}
+
+	validator.printSummary(info, warnings)
+	return validator.finalize()
 }
