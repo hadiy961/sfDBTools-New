@@ -8,7 +8,7 @@
   - **Lokasi**: `setup/session.go` menentukan perlakuan interaktif (ticket, edit loop) lewat OR per mode, sementara helper `modes.IsSingleModeVariant` hanya dipakai sebagian (`path_helpers.go`, `modes/iterative.go`).  
   - **Alasan**: Kebutuhan “single-variant behavior” terduplikasi; satu helper yang dipakai konsisten akan menyatukan validasi dan flow kontrol.
 
-- **Filter suffix (_dmart/_temp/_archive/_secondary) diulang**  
+- **Filter suffix (_dmart/_temp/_archive/_secondary) terduplikasi**  
   - **Lokasi**: `selection/filtering_logic.go` dan `selection/selector.go` masing-masing melakukan hardcode pengecualian suffix pada beberapa cabang (mode primary/secondary/single, client/instance filter, companion expansion) dengan pola `if strings.HasSuffix(..., SuffixTemp/Archive/Dmart) { continue }`.  
   - **Alasan**: Aturan nama companion/temp/archive/secondary tersebar; satu utilitas klasifikasi nama DB (primary/secondary/companion/terlarang) bisa dipakai ulang agar perubahan suffix hanya di satu titik.
 
@@ -16,7 +16,7 @@
   - **Lokasi**: `selection/selector.go` dan `selection/filtering_logic.go` sama-sama membaca `types.SystemDatabases` langsung, terpisah dari filter sistem di `pkg/database`.  
   - **Alasan**: Dua sumber kebenaran untuk system DB di dalam paket backup; pusatkan ke satu helper filter agar penambahan/ubah system DB tidak terlewat.
 
-- **Prompt ticket per-mode diulang**  
+- **Prompt ticket per-mode terduplikasi**  
   - **Lokasi**: `setup/session.go` memiliki blok serupa untuk ALL, SINGLE, PRIMARY, SECONDARY, dan combined/separated.  
   - **Alasan**: Perbedaan hanya pada mode target; ekstrak ke fungsi `ensureTicket(mode string, interactive bool)` agar validasi & default ticket konsisten dan mengurangi copy-paste.
 
