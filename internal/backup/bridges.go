@@ -63,22 +63,14 @@ func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []
 // =============================================================================
 
 func (s *Service) ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.BackupExecutionConfig) (types_backup.DatabaseBackupInfo, error) {
-	eng := execution.New(s.Log, s.Config, s.BackupDBOptions, s.ErrorLog)
-	eng.Client = s.Client
-	eng.GTIDInfo = s.gtidInfo
-	eng.ExcludedDatabases = s.excludedDatabases
-	eng.State = s
-	eng.UserGrants = s
+	eng := execution.New(s.Log, s.Config, s.BackupDBOptions, s.ErrorLog).
+		WithDependencies(s.Client, s.gtidInfo, s.excludedDatabases, s, s)
 	return eng.ExecuteAndBuildBackup(ctx, cfg)
 }
 
 func (s *Service) ExecuteBackupLoop(ctx context.Context, databases []string, config types_backup.BackupLoopConfig, outputPathFunc func(dbName string) (string, error)) types_backup.BackupLoopResult {
-	eng := execution.New(s.Log, s.Config, s.BackupDBOptions, s.ErrorLog)
-	eng.Client = s.Client
-	eng.GTIDInfo = s.gtidInfo
-	eng.ExcludedDatabases = s.excludedDatabases
-	eng.State = s
-	eng.UserGrants = s
+	eng := execution.New(s.Log, s.Config, s.BackupDBOptions, s.ErrorLog).
+		WithDependencies(s.Client, s.gtidInfo, s.excludedDatabases, s, s)
 	return eng.ExecuteBackupLoop(ctx, databases, config, outputPathFunc)
 }
 
