@@ -13,7 +13,7 @@
   - **Alasan**: Aturan nama companion/temp/archive/secondary tersebar; satu utilitas klasifikasi nama DB (primary/secondary/companion/terlarang) bisa dipakai ulang agar perubahan suffix hanya di satu titik.
 
 - **Skip system DB ganda**  
-  - **Lokasi**: `selection/selector.go` dan `selection/filtering_logic.go` sama‑sama membaca `types.SystemDatabases` langsung, terpisah dari filter sistem di `pkg/database`.  
+  - **Lokasi**: `selection/selector.go` dan `selection/filtering_logic.go` sama-sama membaca `types.SystemDatabases` langsung, terpisah dari filter sistem di `pkg/database`.  
   - **Alasan**: Dua sumber kebenaran untuk system DB di dalam paket backup; pusatkan ke satu helper filter agar penambahan/ubah system DB tidak terlewat.
 
 - **Prompt ticket per-mode diulang**  
