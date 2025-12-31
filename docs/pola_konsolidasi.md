@@ -1,29 +1,29 @@
-## Ringkasan Pola yang Perlu Dipusatkan
+## Pola Duplikasi yang Perlu Dipusatkan (Paket Backup)
 
-- **Klasifikasi nama database (primary/secondary/dmart/temp/archive)**  
-  - **Lokasi**: `internal/backup/selection/filtering_logic.go` dan `internal/backup/selection/selector.go` memfilter berdasarkan suffix/prefix; `internal/restore/helpers/validation.go` serta berbagai executor di `internal/restore/modes` melakukan pengecekan serupa secara manual.  
-  - **Alasan**: Aturan penamaan diulang dengan kombinasi `SuffixDmart`, `SuffixTemp`, `SuffixArchive`, dan `SecondarySuffix`. Satu helper deterministik akan menyamakan kriteria primary/secondary/dmart di seluruh backup & restore sehingga tidak ada perbedaan perilaku ketika aturan berubah.
+- **Alias mode separated/separate tersebar**  
+  - **Lokasi**: Kondisi `ModeSeparated || ModeSeparate` di `internal/backup/mode_config.go`, `display/options_helpers.go`, `execution/engine.go`, `path_helpers.go`, `modes/factory.go`, `metadata/generator.go`, `setup/session.go`.  
+  - **Alasan**: Alias ganda memaksa OR check di banyak tempat; normalisasi mode sekali (helper/enum) menghindari ketidakkonsistenan dan mempercepat penambahan mode baru.
 
-- **Penyaringan database sistem**  
-  - **Lokasi**: Banyak blok langsung membaca `types.SystemDatabases` (mis. `internal/backup/selection/selector.go`, `internal/backup/selection/filtering_logic.go`, `internal/restore/validation_helpers.go`, `internal/restore/validation_helpers.go` DropAll, setup restore) padahal `pkg/database` sudah memiliki `IsSystemDatabase/GetNonSystemDatabases`.  
-  - **Alasan**: Duplikasi list dan pengecekan membuka peluang inkonsistensi bila daftar system DB berubah. Satu gateway filter (mis. di `pkg/database`) cukup untuk semua alur.
+- **Deteksi single/primary/secondary bercabang manual**  
+  - **Lokasi**: `setup/session.go` menentukan perlakuan interaktif (ticket, edit loop) lewat OR per mode, sementara helper `modes.IsSingleModeVariant` hanya dipakai sebagian (`path_helpers.go`, `modes/iterative.go`).  
+  - **Alasan**: Kebutuhan “single-variant behavior” terduplikasi; satu helper yang dipakai konsisten akan menyatukan validasi dan flow kontrol.
 
-- **Factory executor mode backup vs restore**  
-  - **Lokasi**: `internal/backup/modes/factory.go` dan `internal/restore/modes/factory.go` sama-sama switch mode → `NewXExecutor`.  
-  - **Alasan**: Pola identik; registrasi map/tabel mode→constructor bisa dipakai ulang sehingga penambahan mode baru tidak perlu menyentuh dua switch terpisah.
+- **Filter suffix (_dmart/_temp/_archive/_secondary) diulang**  
+  - **Lokasi**: `selection/filtering_logic.go` dan `selection/selector.go` masing-masing meng-hardcode pengecualian suffix pada beberapa cabang (mode primary/secondary/single, client/instance filter, companion expansion).  
+  - **Alasan**: Aturan nama companion/temp/archive/secondary tersebar; satu utilitas klasifikasi nama DB (primary/secondary/companion/terlarang) bisa dipakai ulang agar perubahan suffix hanya di satu titik.
 
-- **Kerangka eksekusi restore (single/primary/secondary)**  
-  - **Lokasi**: `internal/restore/modes/single.go`, `primary.go`, `secondary.go` mengulangi alur yang sama: start timer, set in-progress, handle dry-run, jalankan `commonRestoreFlow`, restore grants, post-restore, finalize result.  
-  - **Alasan**: Blok pembuka/penutup identik mempersulit perubahan (mis. menambah logging/metrics) karena harus diubah di tiga file. Satu runner/templating flow dapat dipakai dengan hook per-mode.
+- **Skip system DB ganda**  
+  - **Lokasi**: `selection/selector.go` dan `selection/filtering_logic.go` sama‑sama membaca `types.SystemDatabases` langsung, terpisah dari filter sistem di `pkg/database`.  
+  - **Alasan**: Dua sumber kebenaran untuk system DB di dalam paket backup; pusatkan ke satu helper filter agar penambahan/ubah system DB tidak terlewat.
 
-- **Penanganan companion (_dmart) yang tersebar**  
-  - **Lokasi**: Pembuatan nama companion dan penetapan `CompanionDB/CompanionFile` muncul di executor `primary.go`, `secondary.go`, helper `companion_detect.go` (`buildCompanionDBName`), serta flow `companionRestoreFlow`.  
-  - **Alasan**: Logika penentuan companion DB/file (tambahkan suffix, skip ketika tidak ada) diulang; satu utilitas untuk “resolve companion (DB+file) dari target+flag+metadata” akan menyatukan keputusan skip/stop dan mencegah perbedaan hasil.
+- **Prompt ticket per-mode diulang**  
+  - **Lokasi**: `setup/session.go` memiliki blok serupa untuk ALL, SINGLE, PRIMARY, SECONDARY, dan combined/separated.  
+  - **Alasan**: Perbedaan hanya pada mode target; ekstrak ke fungsi `ensureTicket(mode, interactive)` agar validasi & default ticket konsisten dan mengurangi copy-paste.
 
-- **Validasi ekstensi file backup**  
-  - **Lokasi**: `internal/restore/companion_helpers.go` memiliki `isValidBackupFileExtension` lokal, sementara `helper.ValidBackupFileExtensionsForSelection` sudah tersedia; `pkg/helper/services.go` juga membuat wrapper identik ke `pkg/helper/file`.  
-  - **Alasan**: Dua sumber truth untuk ekstensi valid dan adanya wrapper tipis membuat risiko divergen saat format baru ditambah. Satu validator terpusat yang dipakai di semua path (termasuk companion/non-companion) menghilangkan duplikasi dan wrapper.
+- **Fallback hostname/host diduplikasi**  
+  - **Lokasi**: `setup/session.go` set `HostName` dari server atau fallback `Host`, sementara `backup/path_helpers.go` mengulang fallback ketika membentuk path/filename.  
+  - **Alasan**: Dua titik normalisasi hostname berpotensi divergen; lakukan satu kali di setup dan gunakan nilai final untuk seluruh path generation.
 
-- **Definisi Cobra command backup per-mode**  
-  - **Lokasi**: `cmd/backup/single.go`, `primary.go`, `secondary.go`, `all.go` memiliki pola sama: `DefaultBackupOptions`, `flags.AddBackupFlgs`, lalu `runBackupCommand` yang hanya mengembalikan mode.  
-  - **Alasan**: Empat file berisi pola identik berbeda di string mode saja; builder/helper pendaftar command bisa mereduksi duplikasi tanpa menambah wrapper kosong, sehingga penambahan mode baru cukup menambah entri konfigurasi.
+- **Kondisi ekspor user grants per mode berulang**  
+  - **Lokasi**: `execution/engine.go` memeriksa `ModeSeparated/ModeSeparate/ModeSingle` sebelum `ExportUserGrantsIfNeeded`; logika pemilihan file utama per mode di `modes/iterative.go` menggunakan kondisi serupa.  
+  - **Alasan**: Mode yang membutuhkan grants sebaiknya ditentukan dari satu tabel/flag sehingga ekspor/grants update tidak perlu diubah di banyak file.
