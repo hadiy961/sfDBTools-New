@@ -14,7 +14,7 @@ func GenerateBackupFilename(database string, mode string, hostname string, compr
 }
 
 func GenerateBackupFilenameWithCount(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, dbCount int, excludeData bool) (string, error) {
-	if (mode == "separated" || mode == "separate") && database == "" {
+	if mode == "separated" && database == "" {
 		return "", fmt.Errorf("database name tidak boleh kosong untuk mode separated")
 	}
 

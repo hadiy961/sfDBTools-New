@@ -10,7 +10,7 @@ func (d *OptionsDisplayer) isSingleMode() bool {
 }
 
 func (d *OptionsDisplayer) isSeparatedMode() bool {
-	return d.options.Mode == consts.ModeSeparated || d.options.Mode == consts.ModeSeparate
+	return d.options.Mode == consts.ModeSeparated
 }
 
 func (d *OptionsDisplayer) getExportUserStatus() string {

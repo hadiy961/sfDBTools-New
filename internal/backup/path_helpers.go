@@ -65,7 +65,7 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Clie
 	// Generate filename berdasarkan mode
 	exampleDBName := ""
 	dbCount := 0
-	if s.BackupDBOptions.Mode == consts.ModeSeparated || s.BackupDBOptions.Mode == consts.ModeSeparate ||
+	if s.BackupDBOptions.Mode == consts.ModeSeparated ||
 		modes.IsSingleModeVariant(s.BackupDBOptions.Mode) {
 		exampleDBName = "database_name"
 	} else if s.BackupDBOptions.Mode == consts.ModeCombined || s.BackupDBOptions.Mode == consts.ModeAll {

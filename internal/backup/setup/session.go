@@ -68,8 +68,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 		s.Options.Mode == consts.ModePrimary ||
 		s.Options.Mode == consts.ModeSecondary ||
 		s.Options.Mode == consts.ModeCombined ||
-		s.Options.Mode == consts.ModeSeparated ||
-		s.Options.Mode == consts.ModeSeparate
+		s.Options.Mode == consts.ModeSeparated
 
 	// Interactive edit loop khusus untuk backup all & single-variant modes (hanya jika interaktif)
 	for {
@@ -189,7 +188,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 
 		// Untuk mode FILTER interaktif (combined/separated), minta ticket number SETELAH database sudah dipilih
 		// (urutan: profile -> pilih DB (filter/multi) -> input ticket -> display opsi).
-		if !nonInteractive && (s.Options.Mode == consts.ModeCombined || s.Options.Mode == consts.ModeSeparated || s.Options.Mode == consts.ModeSeparate) && strings.TrimSpace(s.Options.Ticket) == "" {
+		if !nonInteractive && (s.Options.Mode == consts.ModeCombined || s.Options.Mode == consts.ModeSeparated) && strings.TrimSpace(s.Options.Ticket) == "" {
 			defaultTicket := fmt.Sprintf("bk-%d", time.Now().UnixNano())
 			ticket, ticketErr := input.AskString("Ticket number", defaultTicket, func(ans interface{}) error {
 				v, ok := ans.(string)
@@ -276,7 +275,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 				if err := s.editBackupCombinedOptionsInteractive(ctx, &client, &customOutputDir); err != nil {
 					return nil, nil, err
 				}
-			case consts.ModeSeparated, consts.ModeSeparate:
+			case consts.ModeSeparated:
 				if err := s.editBackupSeparatedOptionsInteractive(ctx, &client, &customOutputDir); err != nil {
 					return nil, nil, err
 				}

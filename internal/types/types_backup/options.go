@@ -30,7 +30,7 @@ type BackupDBOptions struct {
 	Encryption      types.EncryptionOptions
 	DryRun          bool
 	OutputDir       string
-	Mode            string         // "separate" atau "combined"
+	Mode            string         // "separated" atau "combined"
 	NonInteractive  bool           // Tidak melakukan interaksi (non-interaktif)
 	File            BackupFileInfo // Nama file backup lengkap dengan ekstensi
 	Entry           BackupEntryConfig
@@ -48,7 +48,7 @@ type BackupDBOptions struct {
 type BackupEntryConfig struct {
 	HeaderTitle    string
 	NonInteractive bool
-	BackupMode     string // "separate" atau "combined"
+	BackupMode     string // "separated" atau "combined"
 	SuccessMsg     string
 	LogPrefix      string
 }

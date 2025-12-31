@@ -18,7 +18,7 @@ func GetExecutor(mode string, svc BackupService) (ModeExecutor, error) {
 		// Combined dan all menggunakan executor yang sama (combined mode)
 		// Perbedaannya hanya di nama file output dan header display
 		return NewCombinedExecutor(svc), nil
-	case consts.ModeSingle, consts.ModePrimary, consts.ModeSecondary, consts.ModeSeparated, consts.ModeSeparate:
+	case consts.ModeSingle, consts.ModePrimary, consts.ModeSecondary, consts.ModeSeparated:
 		return NewIterativeExecutor(svc, mode), nil
 	default:
 		return nil, fmt.Errorf("mode backup tidak dikenali: %s", mode)
