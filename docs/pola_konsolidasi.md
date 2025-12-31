@@ -9,7 +9,7 @@
   - **Alasan**: Kebutuhan “single-variant behavior” terduplikasi; satu helper yang dipakai konsisten akan menyatukan validasi dan flow kontrol.
 
 - **Filter suffix (_dmart/_temp/_archive/_secondary) diulang**  
-  - **Lokasi**: `selection/filtering_logic.go` dan `selection/selector.go` masing-masing meng-hardcode pengecualian suffix pada beberapa cabang (mode primary/secondary/single, client/instance filter, companion expansion).  
+  - **Lokasi**: `selection/filtering_logic.go` dan `selection/selector.go` masing-masing melakukan hardcode pengecualian suffix pada beberapa cabang (mode primary/secondary/single, client/instance filter, companion expansion).  
   - **Alasan**: Aturan nama companion/temp/archive/secondary tersebar; satu utilitas klasifikasi nama DB (primary/secondary/companion/terlarang) bisa dipakai ulang agar perubahan suffix hanya di satu titik.
 
 - **Skip system DB ganda**  
@@ -21,7 +21,7 @@
   - **Alasan**: Perbedaan hanya pada mode target; ekstrak ke fungsi `ensureTicket(mode, interactive)` agar validasi & default ticket konsisten dan mengurangi copy-paste.
 
 - **Fallback hostname/host diduplikasi**  
-  - **Lokasi**: `setup/session.go` set `HostName` dari server atau fallback `Host`, sementara `backup/path_helpers.go` mengulang fallback ketika membentuk path/filename.  
+  - **Lokasi**: `setup/session.go` menetapkan `HostName` dari server atau fallback `Host`, sementara `backup/path_helpers.go` mengulang fallback ketika membentuk path/filename.  
   - **Alasan**: Dua titik normalisasi hostname berpotensi divergen; lakukan satu kali di setup dan gunakan nilai final untuk seluruh path generation.
 
 - **Kondisi ekspor user grants per mode berulang**  
