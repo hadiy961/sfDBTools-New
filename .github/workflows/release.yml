@@ -104,11 +104,11 @@ jobs:
         with:
           generate_release_notes: true
           files: |
-            dist/sfDBTools_*_linux_amd64.tar.gz
+            dist/sfDBTools_[0-9]*_linux_amd64.tar.gz
             dist/sfDBTools_linux_amd64.tar.gz
-            dist/sfDBTools_*_linux_amd64.sha256
-            dist/sfdbtools_*.deb
+            dist/sfDBTools_[0-9]*_linux_amd64.sha256
+            dist/sfdbtools_[0-9]*_amd64.deb
             dist/sfdbtools_latest_amd64.deb
-            dist/sfdbtools-*.rpm
+            dist/sfdbtools-[0-9]*-1.x86_64.rpm
             dist/sfdbtools-latest-1.x86_64.rpm
             dist/sfdbtools_*_packages.sha256
