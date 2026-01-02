@@ -2,7 +2,7 @@
 // Deskripsi : Mysqldump arguments builder dan password masking
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
+// Last Modified : 2026-01-02
 
 package execution
 
@@ -81,36 +81,4 @@ func BuildMysqldumpArgs(
 	}
 
 	return args
-}
-
-// MaskPasswordInArgs mengembalikan copy args dengan password di-mask untuk logging.
-// Melindungi kredensial dari exposure di log files.
-func MaskPasswordInArgs(args []string) []string {
-	masked := make([]string, len(args))
-	copy(masked, args)
-
-	for i := 0; i < len(masked); i++ {
-		arg := masked[i]
-
-		// Format: -pPASSWORD
-		if strings.HasPrefix(arg, "-p") && len(arg) > 2 {
-			masked[i] = "-p********"
-			continue
-		}
-
-		// Format: --password=PASSWORD
-		if strings.HasPrefix(arg, "--password=") {
-			masked[i] = "--password=********"
-			continue
-		}
-
-		// Format: -p PASSWORD atau --password PASSWORD (2 args)
-		if arg == "-p" || arg == "--password" {
-			if i+1 < len(masked) {
-				masked[i+1] = "********"
-			}
-		}
-	}
-
-	return masked
 }

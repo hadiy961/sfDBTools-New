@@ -25,7 +25,9 @@ func New(log applog.Logger, cfg *appconfig.Config, opts *types_backup.BackupDBOp
 	return &Setup{Log: log, Config: cfg, Options: opts, ExcludedDatabases: excluded}
 }
 
-func allowInteractiveProfileSelection(mode string) bool {
+// isInteractiveMode adalah source-of-truth tunggal untuk mode-mode backup yang
+// memperbolehkan flow interaktif (pemilihan profile dan edit opsi).
+func isInteractiveMode(mode string) bool {
 	switch mode {
 	case consts.ModeSingle, consts.ModePrimary, consts.ModeSecondary, consts.ModeCombined, consts.ModeAll, consts.ModeSeparated:
 		return true
@@ -45,7 +47,7 @@ func (s *Setup) CheckAndSelectConfigFile() error {
 		}
 	}
 
-	allowInteractive := allowInteractiveProfileSelection(s.Options.Mode) && !s.Options.NonInteractive && s.Options.Profile.Path == ""
+	allowInteractive := isInteractiveMode(s.Options.Mode) && !s.Options.NonInteractive && s.Options.Profile.Path == ""
 	profile, err := profilehelper.LoadSourceProfile(
 		s.Config.ConfigDir.DatabaseProfile,
 		s.Options.Profile.Path,
@@ -86,19 +88,8 @@ func (s *Setup) SetupBackupExecution() error {
 	s.Log.Info("Direktori output siap: " + s.Options.OutputDir)
 
 	if s.Options.Encryption.Enabled {
-		if s.Options.Encryption.Key == "" {
-			if s.Options.NonInteractive {
-				return fmt.Errorf("encryption diaktifkan tapi backup key kosong pada mode non-interaktif: gunakan --backup-key atau ENV %s (atau set --skip-encrypt)", consts.ENV_BACKUP_ENCRYPTION_KEY)
-			}
-			// Interaktif: minta backup key
-			key, err := input.AskPassword("Backup Key (required)", nil)
-			if err != nil {
-				return fmt.Errorf("gagal mendapatkan backup key: %w", err)
-			}
-			if strings.TrimSpace(key) == "" {
-				return fmt.Errorf("backup key tidak boleh kosong saat encryption aktif")
-			}
-			s.Options.Encryption.Key = key
+		if strings.TrimSpace(s.Options.Encryption.Key) == "" {
+			return fmt.Errorf("encryption diaktifkan tapi backup key kosong: gunakan --backup-key atau ENV %s (atau nonaktifkan encryption)", consts.ENV_BACKUP_ENCRYPTION_KEY)
 		}
 		s.Log.Info("Enkripsi AES-256-GCM diaktifkan untuk backup (kompatibel dengan OpenSSL)")
 	} else {

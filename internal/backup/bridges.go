@@ -1,3 +1,9 @@
+// File : internal/backup/bridges.go
+// Deskripsi : Bridge methods untuk menghubungkan service backup dengan sub-modul
+// Author : Hadiyatna Muflihun
+// Tanggal : 2025-12-05
+// Last Modified : 2026-01-02
+
 package backup
 
 import (
@@ -8,7 +14,6 @@ import (
 	"sfDBTools/internal/backup/gtid"
 	"sfDBTools/internal/backup/selection"
 	"sfDBTools/internal/backup/setup"
-	"sfDBTools/internal/backup/writer"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/database"
@@ -17,10 +22,6 @@ import (
 // =============================================================================
 // Selection bridges
 // =============================================================================
-
-func (s *Service) getFilteredDatabasesWithMultiSelect(ctx context.Context, client *database.Client) ([]string, *types.FilterStats, error) {
-	return selection.New(s.Log, s.BackupDBOptions).GetFilteredDatabasesWithMultiSelect(ctx, client)
-}
 
 func (s *Service) handleSingleModeSetup(ctx context.Context, client interface {
 	GetDatabaseList(context.Context) ([]string, error)
@@ -52,11 +53,6 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 // =============================================================================
 // Writer bridge
 // =============================================================================
-
-func (s *Service) executeMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []string, outputPath string, compressionRequired bool, compressionType string) (*types_backup.BackupWriteResult, error) {
-	return writer.New(s.Log, s.ErrorLog, s.BackupDBOptions).
-		ExecuteMysqldumpWithPipe(ctx, mysqldumpArgs, outputPath, compressionRequired, compressionType)
-}
 
 // =============================================================================
 // Execution bridges

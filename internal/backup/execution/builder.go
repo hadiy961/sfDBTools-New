@@ -2,7 +2,7 @@
 // Deskripsi : Builder functions untuk DatabaseBackupInfo dan metadata generation
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-31
-// Last Modified : 2025-12-31
+// Last Modified : 2026-01-02
 
 package execution
 
@@ -49,7 +49,6 @@ func (e *Engine) buildDryRunInfo(
 func (e *Engine) buildRealBackupInfo(
 	cfg types_backup.BackupExecutionConfig,
 	writeResult *types_backup.BackupWriteResult,
-	args []string,
 	timer *pkghelper.Timer,
 	startTime time.Time,
 	dbVersion string,

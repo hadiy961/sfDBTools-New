@@ -2,7 +2,7 @@
 // Deskripsi : Setup session backup (termasuk loop interaktif untuk mode ALL)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
+// Last Modified : 2025-12-31
 
 package setup
 
@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"sfDBTools/internal/backup/display"
 	"sfDBTools/internal/types"
@@ -30,8 +29,20 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 		ui.Headers(headerTitle)
 	}
 
+	// Normalisasi input awal (misalnya dari flag/ENV)
+	s.Options.Ticket = strings.TrimSpace(s.Options.Ticket)
+
 	if err = s.CheckAndSelectConfigFile(); err != nil {
 		return nil, nil, err
+	}
+
+	// Ticket selalu diminta sebelum koneksi DB dibuat (sesuai keputusan Persiapan 0).
+	// Hanya untuk mode interaktif dan hanya jika ticket masih kosong.
+	ticketRequired := isInteractiveMode(s.Options.Mode)
+	if !nonInteractive && ticketRequired && s.Options.Ticket == "" {
+		if ticketErr := s.changeBackupTicketInteractive(); ticketErr != nil {
+			return nil, nil, ticketErr
+		}
 	}
 
 	client, err = profilehelper.ConnectWithProfile(&s.Options.Profile, consts.DefaultInitialDatabase)
@@ -63,34 +74,10 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 
 	customOutputDir := s.Options.OutputDir
 
-	interactiveEditEnabled := s.Options.Mode == consts.ModeAll ||
-		s.Options.Mode == consts.ModeSingle ||
-		s.Options.Mode == consts.ModePrimary ||
-		s.Options.Mode == consts.ModeSecondary ||
-		s.Options.Mode == consts.ModeCombined ||
-		s.Options.Mode == consts.ModeSeparated
+	interactiveEditEnabled := isInteractiveMode(s.Options.Mode)
 
 	// Interactive edit loop khusus untuk backup all & single-variant modes (hanya jika interaktif)
 	for {
-		// Untuk mode ALL interaktif, minta ticket number terlebih dahulu agar muncul di Opsi Backup.
-		if !nonInteractive && s.Options.Mode == consts.ModeAll && s.Options.Ticket == "" {
-			defaultTicket := fmt.Sprintf("bk-%d", time.Now().UnixNano())
-			ticket, ticketErr := input.AskString("Ticket number", defaultTicket, func(ans interface{}) error {
-				v, ok := ans.(string)
-				if !ok {
-					return fmt.Errorf("input tidak valid")
-				}
-				if v == "" {
-					return fmt.Errorf("ticket number tidak boleh kosong")
-				}
-				return nil
-			})
-			if ticketErr != nil {
-				return nil, nil, ticketErr
-			}
-			s.Options.Ticket = ticket
-		}
-
 		var stats *types.FilterStats
 		dbFiltered, stats, err = s.GetFilteredDatabases(ctx, client)
 		if err != nil {
@@ -126,85 +113,8 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 			return nil, nil, fmt.Errorf("path generation menghasilkan daftar database kosong")
 		}
 
-		// Untuk mode SINGLE interaktif, minta ticket number SETELAH database sudah dipilih
-		// (urutan: profile -> pilih DB -> input ticket -> display opsi).
-		if !nonInteractive && s.Options.Mode == consts.ModeSingle && strings.TrimSpace(s.Options.Ticket) == "" {
-			defaultTicket := fmt.Sprintf("bk-%d", time.Now().UnixNano())
-			ticket, ticketErr := input.AskString("Ticket number", defaultTicket, func(ans interface{}) error {
-				v, ok := ans.(string)
-				if !ok {
-					return fmt.Errorf("input tidak valid")
-				}
-				if strings.TrimSpace(v) == "" {
-					return fmt.Errorf("ticket number tidak boleh kosong")
-				}
-				return nil
-			})
-			if ticketErr != nil {
-				return nil, nil, ticketErr
-			}
-			s.Options.Ticket = strings.TrimSpace(ticket)
-		}
-
-		// Untuk mode PRIMARY interaktif, minta ticket number SETELAH database sudah dipilih
-		// (urutan: profile -> pilih DB (primary) -> input ticket -> display opsi).
-		if !nonInteractive && s.Options.Mode == consts.ModePrimary && strings.TrimSpace(s.Options.Ticket) == "" {
-			defaultTicket := fmt.Sprintf("bk-%d", time.Now().UnixNano())
-			ticket, ticketErr := input.AskString("Ticket number", defaultTicket, func(ans interface{}) error {
-				v, ok := ans.(string)
-				if !ok {
-					return fmt.Errorf("input tidak valid")
-				}
-				if strings.TrimSpace(v) == "" {
-					return fmt.Errorf("ticket number tidak boleh kosong")
-				}
-				return nil
-			})
-			if ticketErr != nil {
-				return nil, nil, ticketErr
-			}
-			s.Options.Ticket = strings.TrimSpace(ticket)
-		}
-
-		// Untuk mode SECONDARY interaktif, minta ticket number SETELAH database sudah dipilih
-		// (urutan: profile -> pilih DB (secondary) -> input ticket -> display opsi).
-		if !nonInteractive && s.Options.Mode == consts.ModeSecondary && strings.TrimSpace(s.Options.Ticket) == "" {
-			defaultTicket := fmt.Sprintf("bk-%d", time.Now().UnixNano())
-			ticket, ticketErr := input.AskString("Ticket number", defaultTicket, func(ans interface{}) error {
-				v, ok := ans.(string)
-				if !ok {
-					return fmt.Errorf("input tidak valid")
-				}
-				if strings.TrimSpace(v) == "" {
-					return fmt.Errorf("ticket number tidak boleh kosong")
-				}
-				return nil
-			})
-			if ticketErr != nil {
-				return nil, nil, ticketErr
-			}
-			s.Options.Ticket = strings.TrimSpace(ticket)
-		}
-
-		// Untuk mode FILTER interaktif (combined/separated), minta ticket number SETELAH database sudah dipilih
-		// (urutan: profile -> pilih DB (filter/multi) -> input ticket -> display opsi).
-		if !nonInteractive && (s.Options.Mode == consts.ModeCombined || s.Options.Mode == consts.ModeSeparated) && strings.TrimSpace(s.Options.Ticket) == "" {
-			defaultTicket := fmt.Sprintf("bk-%d", time.Now().UnixNano())
-			ticket, ticketErr := input.AskString("Ticket number", defaultTicket, func(ans interface{}) error {
-				v, ok := ans.(string)
-				if !ok {
-					return fmt.Errorf("input tidak valid")
-				}
-				if strings.TrimSpace(v) == "" {
-					return fmt.Errorf("ticket number tidak boleh kosong")
-				}
-				return nil
-			})
-			if ticketErr != nil {
-				return nil, nil, ticketErr
-			}
-			s.Options.Ticket = strings.TrimSpace(ticket)
-		}
+		// Normalisasi (misalnya jika ticket diubah di menu edit pada langkah selanjutnya).
+		s.Options.Ticket = strings.TrimSpace(s.Options.Ticket)
 
 		// Jika user sudah set backup-dir interaktif, pertahankan override ini.
 		if customOutputDir != "" {
@@ -254,33 +164,8 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 		case "Batalkan":
 			return nil, nil, validation.ErrUserCancelled
 		case "Ubah opsi":
-			switch s.Options.Mode {
-			case consts.ModeAll:
-				if err := s.editBackupAllOptionsInteractive(ctx, &client, &customOutputDir); err != nil {
-					return nil, nil, err
-				}
-			case consts.ModeSingle:
-				if err := s.editBackupSingleOptionsInteractive(ctx, &client, &customOutputDir); err != nil {
-					return nil, nil, err
-				}
-			case consts.ModePrimary:
-				if err := s.editBackupPrimaryOptionsInteractive(ctx, &client, &customOutputDir); err != nil {
-					return nil, nil, err
-				}
-			case consts.ModeSecondary:
-				if err := s.editBackupSecondaryOptionsInteractive(ctx, &client, &customOutputDir); err != nil {
-					return nil, nil, err
-				}
-			case consts.ModeCombined:
-				if err := s.editBackupCombinedOptionsInteractive(ctx, &client, &customOutputDir); err != nil {
-					return nil, nil, err
-				}
-			case consts.ModeSeparated:
-				if err := s.editBackupSeparatedOptionsInteractive(ctx, &client, &customOutputDir); err != nil {
-					return nil, nil, err
-				}
-			default:
-				// Should never happen due to interactiveEditEnabled guard
+			if err := s.editBackupOptionsInteractive(ctx, &client, &customOutputDir, s.Options.Mode); err != nil {
+				return nil, nil, err
 			}
 			// Loop lagi untuk re-filter & re-generate preview sesuai opsi terbaru
 			continue

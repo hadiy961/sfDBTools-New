@@ -2,7 +2,7 @@
 // Deskripsi : Main backup execution engine dengan orchestration logic
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-31
+// Last Modified : 2026-01-02
 
 package execution
 
@@ -124,13 +124,13 @@ func (e *Engine) ExecuteAndBuildBackup(
 		return e.buildDryRunInfo(cfg, mysqldumpArgs, timer, startTime), nil
 	}
 
-	writeResult, finalArgs, err := e.executeWithRetry(ctx, cfg.OutputPath, mysqldumpArgs)
+	writeResult, _, err := e.executeWithRetry(ctx, cfg.OutputPath, mysqldumpArgs)
 	if err != nil {
 		e.handleBackupError(err, cfg, writeResult)
 		return types_backup.DatabaseBackupInfo{}, err
 	}
 
-	return e.buildRealBackupInfo(cfg, writeResult, finalArgs, timer, startTime, dbVersion), nil
+	return e.buildRealBackupInfo(cfg, writeResult, timer, startTime, dbVersion), nil
 }
 
 // executeWithRetry runs mysqldump with automatic retry on common failures.
@@ -149,7 +149,7 @@ func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args [
 		}
 
 		// Attempt retries dengan berbagai strategy
-		result, args, err = e.attemptRetries(ctx, outputPath, args, result, exec)
+		result, args, err = e.attemptRetries(outputPath, args, result, exec)
 	}
 
 	return result, args, err
@@ -157,7 +157,6 @@ func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args [
 
 // attemptRetries mencoba retry dengan berbagai strategy.
 func (e *Engine) attemptRetries(
-	ctx context.Context,
 	outputPath string,
 	args []string,
 	result *types_backup.BackupWriteResult,

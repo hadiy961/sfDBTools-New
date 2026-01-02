@@ -3,7 +3,7 @@
 //              Menggabungkan logika single.go dan separated.go untuk mengurangi duplikasi.
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-11
-// Last Modified : 2025-12-30
+// Last Modified : 2026-01-02
 
 package modes
 
@@ -65,10 +65,10 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 		e.service.UpdateMetadataUserGrantsPath(loopResult.BackupInfos[0].OutputFile, actualUserGrantsPath)
 
 		// Generate satu metadata untuk semua database yang berhasil di-backup
-		e.generateCombinedMetadata(ctx, loopResult, dbList)
+		e.generateCombinedMetadata(loopResult, dbList)
 
 		// Aggregate backup infos menjadi satu entry untuk display
-		res.BackupInfo = e.aggregateBackupInfos(loopResult.BackupInfos, dbList)
+		res.BackupInfo = e.aggregateBackupInfos(loopResult.BackupInfos)
 	}
 
 	// Update statistik akhir
@@ -141,7 +141,7 @@ func (e *IterativeExecutor) createOutputPathFunc(dbList []string) func(string) (
 
 // aggregateBackupInfos menggabungkan multiple backup infos menjadi satu entry
 // Digunakan untuk primary/secondary yang backup multiple databases tapi display sebagai satu
-func (e *IterativeExecutor) aggregateBackupInfos(backupInfos []types_backup.DatabaseBackupInfo, dbList []string) []types_backup.DatabaseBackupInfo {
+func (e *IterativeExecutor) aggregateBackupInfos(backupInfos []types_backup.DatabaseBackupInfo) []types_backup.DatabaseBackupInfo {
 	if len(backupInfos) == 0 {
 		return backupInfos
 	}
@@ -168,7 +168,7 @@ func (e *IterativeExecutor) aggregateBackupInfos(backupInfos []types_backup.Data
 
 // generateCombinedMetadata membuat satu metadata file untuk semua database yang berhasil di-backup
 // Digunakan untuk mode primary/secondary yang backup multiple databases (main + companions)
-func (e *IterativeExecutor) generateCombinedMetadata(ctx context.Context, loopResult types_backup.BackupLoopResult, dbList []string) {
+func (e *IterativeExecutor) generateCombinedMetadata(loopResult types_backup.BackupLoopResult, dbList []string) {
 	// Tidak generate metadata jika tidak ada backup yang berhasil
 	if len(loopResult.BackupInfos) == 0 {
 		return
