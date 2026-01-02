@@ -38,6 +38,25 @@ Dibangun menggunakan **Go (Golang)**, alat ini mendukung operasi backup dan rest
 
 ## 🛠️ Instalasi & Build
 
+sfDBTools bisa dipakai tanpa setup manual `/etc/sfDBTools`.
+
+### Instalasi (Recommended)
+
+- **Ubuntu 20+ / Debian**: install paket `.deb` dari GitHub Releases.
+- **CentOS 7+ / RHEL**: install paket `.rpm` dari GitHub Releases.
+
+Atau one-liner installer (auto pilih `.deb`/`.rpm`/tar sesuai OS):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/install.sh | sudo bash
+```
+
+### Instalasi (Portable)
+
+Download `sfDBTools_<versi>_linux_amd64.tar.gz` dari GitHub Releases, ekstrak, lalu jalankan binary `sfDBTools` (atau `sfdbtools` jika tersedia).
+
+### Build dari Source
+
 Pastikan Anda memiliki **Go 1.25+** terinstal.
 
 ```bash
@@ -57,32 +76,14 @@ go build -o bin/sfdbtools main.go
 
 ---
 
-## 🚢 Release
+## ⚙️ Konfigurasi (Auto)
 
-Checklist rilis (contoh versi `1.0.0`):
+Pada first run, jika file konfigurasi belum ada, sfDBTools akan membuat config default otomatis.
 
-```bash
-# Pastikan working tree bersih
-git status
-
-# Buat tag dan push
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin v1.0.0
-
-# Build (akan inject metadata version/commit/build-date otomatis)
-./scripts/build_run.sh --skip-run
-
-# Verifikasi versi
-go run . version
-```
-
-Alternatif (sekali jalan, otomatis trigger GitHub Release via tag):
-
-```bash
-bash ./scripts/release_github.sh 1.0.0
-```
-
----
+- Jika `SFDB_APPS_CONFIG` diset, file akan dibuat di path tersebut.
+- Jika tidak diset:
+  - Akan mencoba `/etc/sfDBTools/config.yaml` (jika punya permission).
+  - Jika tidak bisa, fallback ke `~/.config/sfDBTools/config.yaml` (atau `XDG_CONFIG_HOME/sfDBTools/config.yaml`).
 
 ## 📖 Panduan Penggunaan
 

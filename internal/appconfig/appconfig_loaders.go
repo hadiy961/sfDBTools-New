@@ -2,10 +2,12 @@
 // Deskripsi : Fungsi untuk memuat konfigurasi dari file YAML dan variabel lingkungan
 // Author : Hadiyatna Muflihun
 // Tanggal : 2024-10-03
-// Last Modified : 2024-10-03
+// Last Modified : 2026-01-02
 package appconfig
 
 import (
+	"errors"
+	"fmt"
 	"os"
 
 	"sfDBTools/pkg/consts"
@@ -28,6 +30,25 @@ func LoadConfigFromEnv() (*Config, error) {
 	if configPath == "" {
 		// Jika variabel lingkungan tidak ada, gunakan path default
 		configPath = consts.DefaultAppConfigPath
+	}
+
+	// 2a. Auto-init config jika belum ada.
+	// Jika path default (/etc/...) tidak bisa dibuat (non-root), fallback ke user config.
+	if _, err := os.Stat(configPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			if err := writeDefaultConfig(configPath); err != nil {
+				userPath, uerr := userDefaultConfigPath()
+				if uerr != nil {
+					return nil, fmt.Errorf("gagal membuat config default di %s: %w", configPath, err)
+				}
+				if err2 := writeDefaultConfig(userPath); err2 != nil {
+					return nil, fmt.Errorf("gagal membuat config default di %s: %w", userPath, err2)
+				}
+				configPath = userPath
+			}
+		} else {
+			return nil, err
+		}
 	}
 
 	// 3. Memuat dan mem-parsing file konfigurasi
@@ -59,6 +80,23 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	// Best practice: Anda bisa menambahkan logika validasi kustom di sini
 	// setelah parsing berhasil (misalnya, cek apakah BaseDirectory tidak kosong)
+	applyRuntimeDefaults(cfg, configPath)
 
 	return cfg, nil
+}
+
+func applyRuntimeDefaults(cfg *Config, configPath string) {
+	if cfg == nil {
+		return
+	}
+	// Hardcode app identity (tidak boleh diubah lewat config)
+	cfg.General.AppName = HardcodedAppName
+	cfg.General.Author = HardcodedAuthor
+	cfg.General.ClientCode = HardcodedClientCode
+	if cfg.General.Version == "" {
+		cfg.General.Version = defaultConfigForPath(configPath).General.Version
+	}
+	if cfg.ConfigDir.DatabaseProfile == "" {
+		cfg.ConfigDir.DatabaseProfile = defaultConfigForPath(configPath).ConfigDir.DatabaseProfile
+	}
 }

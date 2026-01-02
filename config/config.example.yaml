@@ -1,0 +1,68 @@
+# Default configuration for sfDBTools (safe defaults, no secrets)
+# Copy to /etc/sfDBTools/config.yaml if you want system-wide config.
+
+backup:
+  compression:
+    type: zstd # Tipe kompresi: gzip, zstd, xz, zlib, pgzip, none
+    level: 5 # Compression level dari 1 (tercepat, kompresi paling rendah) hingga 9 (paling lambat, kompresi paling tinggi)
+    enabled: true
+  mysqldump_args: -fQq --max-statement-time=0 --max-allowed-packet=1G --hex-blob --order-by-primary --single-transaction --routines=true --triggers=true --opt --net-buffer-length=16M
+  exclude:
+    user: false
+    system_databases: true
+    data: false
+    empty: false
+  include:
+    include_dmart: false
+    # databases: 
+    #   - dbsf_biznet_dadfs
+    #   - dbsf_biznet_jtrust
+    #   - dbsf_biznet_mariadb
+    # file : config/db_list.txt
+  cleanup:
+    enabled: false
+    schedule: ""
+    days: 0
+  encryption:
+    enabled: true
+  output:
+    base_directory: backup
+    structure:
+      create_subdirs: true
+      pattern: "{year}{month}{day}/"
+    save_backup_info: true
+  verification:
+    disk_space_check: false
+  replication:
+    capture_gtid: true
+    replication_user: repl_user
+    replication_password: repl_password
+
+config_dir:
+  database_profile: /etc/sfDBTools/config/db_profile
+
+general:
+  locale:
+    date_format: "2006-01-02"
+    time_format: "15:04:05"
+    timezone: Asia/Jakarta
+
+log:
+  format: text
+  level: info
+  output:
+    console:
+      enabled: true
+    file:
+      dir: logs
+      enabled: false
+      filename_pattern: sfDBTools_{date}.log
+      rotation:
+        compress_old: true
+        daily: true
+        max_size: 100MB
+        retention_days: 7
+  timezone: Asia/Jakarta
+
+script:
+  bundle_output_dir: "/etc/sfDBTools/scripts"

@@ -45,7 +45,59 @@ jobs:
             -o dist/sfDBTools .
 
           (cd dist && tar -czf "sfDBTools_${VERSION}_linux_amd64.tar.gz" sfDBTools)
+          (cd dist && cp "sfDBTools_${VERSION}_linux_amd64.tar.gz" "sfDBTools_linux_amd64.tar.gz")
           (cd dist && sha256sum "sfDBTools_${VERSION}_linux_amd64.tar.gz" > "sfDBTools_${VERSION}_linux_amd64.sha256")
+
+      - name: Build .deb and .rpm packages
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG_REF="${GITHUB_REF_NAME}"
+          VERSION="${TAG_REF#v}"
+
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+          sudo gem install --no-document fpm
+
+          PKGROOT="$(mktemp -d)"
+          mkdir -p "${PKGROOT}/usr/bin" "${PKGROOT}/etc/sfDBTools"
+
+          install -m 0755 dist/sfDBTools "${PKGROOT}/usr/bin/sfDBTools"
+          ln -sf sfDBTools "${PKGROOT}/usr/bin/sfdbtools"
+
+          # Install a default config file (dpkg/rpm will treat as config file)
+          install -m 0644 config/config.example.yaml "${PKGROOT}/etc/sfDBTools/config.yaml"
+
+          # DEB (Ubuntu/Debian)
+          fpm -s dir -t deb \
+            -n sfdbtools \
+            -v "${VERSION}" \
+            --architecture amd64 \
+            --description "sfDBTools - MySQL/MariaDB backup & management CLI" \
+            --maintainer "sfDBTools" \
+            --license "Internal" \
+            --config-files /etc/sfDBTools/config.yaml \
+            -C "${PKGROOT}" \
+            -p "dist/sfdbtools_${VERSION}_amd64.deb" \
+            .
+          cp "dist/sfdbtools_${VERSION}_amd64.deb" "dist/sfdbtools_latest_amd64.deb"
+
+          # RPM (CentOS/RHEL 7+)
+          fpm -s dir -t rpm \
+            -n sfdbtools \
+            -v "${VERSION}" \
+            --architecture x86_64 \
+            --description "sfDBTools - MySQL/MariaDB backup & management CLI" \
+            --maintainer "sfDBTools" \
+            --license "Internal" \
+            --config-files /etc/sfDBTools/config.yaml \
+            -C "${PKGROOT}" \
+            -p "dist/sfdbtools-${VERSION}-1.x86_64.rpm" \
+            .
+          cp "dist/sfdbtools-${VERSION}-1.x86_64.rpm" "dist/sfdbtools-latest-1.x86_64.rpm"
+
+          (cd dist && sha256sum sfdbtools_*.* > "sfdbtools_${VERSION}_packages.sha256")
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -53,4 +105,10 @@ jobs:
           generate_release_notes: true
           files: |
             dist/sfDBTools_*_linux_amd64.tar.gz
+            dist/sfDBTools_linux_amd64.tar.gz
             dist/sfDBTools_*_linux_amd64.sha256
+            dist/sfdbtools_*.deb
+            dist/sfdbtools_latest_amd64.deb
+            dist/sfdbtools-*.rpm
+            dist/sfdbtools-latest-1.x86_64.rpm
+            dist/sfdbtools_*_packages.sha256
