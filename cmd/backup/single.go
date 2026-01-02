@@ -2,7 +2,7 @@
 // Deskripsi : Command untuk backup satu database
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
+// Last Modified : 2026-01-02
 
 package backupcmd
 
@@ -23,13 +23,13 @@ var CmdBackupSingle = &cobra.Command{
 Command ini dioptimalkan untuk backup cepat database tunggal.
 Jika nama database tidak diberikan via flag, akan muncul menu interaktif untuk memilih satu database.`,
 	Example: `  # 1. Pilih satu database secara interaktif
-  sfdbtools db-backup single
+	  sfdbtools db-backup single
 
-  # 2. Backup database tertentu
-  sfdbtools db-backup single --db "target_db"
+	  # 2. Backup database tertentu
+	  sfdbtools db-backup single --database "target_db"
 
-  # 3. Backup ke output file spesifik
-  sfdbtools db-backup single --db "target_db" --output-file "backup_target_v1.sql"
+	  # 3. Backup dengan custom filename (tanpa ekstensi)
+	  sfdbtools db-backup single --database "target_db" --filename "backup_target_v1"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		runBackupCommand(cmd, func() (string, error) {

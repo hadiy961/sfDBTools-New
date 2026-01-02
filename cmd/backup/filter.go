@@ -2,7 +2,7 @@
 // Deskripsi : Command untuk backup database dengan filter
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
+// Last Modified : 2026-01-02
 
 package backupcmd
 
@@ -31,13 +31,10 @@ Jika tidak ada database yang ditentukan lewat flag, mode interaktif (multi-selec
   sfdbtools db-backup filter
 
   # 2. Backup database spesifik ke file terpisah (Multi-file)
-  sfdbtools db-backup filter --db "db_satu,db_dua" --mode multi-file
+	sfdbtools db-backup filter --db "db_satu" --db "db_dua" --mode multi-file
 
   # 3. Backup database spesifik digabung jadi satu file (Single-file)
-  sfdbtools db-backup filter --db "db_utama,db_pendukung" --mode single-file
-
-  # 4. Backup menggunakan pola nama (misal: semua yg berawalan 'shop_')
-  sfdbtools db-backup filter --pattern "shop_*" --mode multi-file`,
+	sfdbtools db-backup filter --db "db_utama" --db "db_pendukung" --mode single-file`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runBackupCommand(cmd, func() (string, error) {
 			return getBackupMode(cmd)

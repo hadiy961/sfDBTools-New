@@ -11,11 +11,15 @@ set -euo pipefail
 # Options (env vars):
 #   SFDBTOOLS_REPO   (default: hadiy961/sfDBTools-New)
 #   SFDBTOOLS_METHOD (deb|rpm|tar|auto) default: auto
-#   SFDBTOOLS_PREFIX (default: /usr/local) used for non-root tar installs
+#   SFDBTOOLS_PREFIX (default: /usr/local for root, ~/.local for non-root) used for tar installs
 
 REPO="${SFDBTOOLS_REPO:-hadiy961/sfDBTools-New}"
 METHOD="${SFDBTOOLS_METHOD:-auto}"
-PREFIX="${SFDBTOOLS_PREFIX:-/usr/local}"
+DEFAULT_PREFIX="/usr/local"
+if [[ "$(id -u)" -ne 0 ]]; then
+  DEFAULT_PREFIX="${HOME:-/usr/local}/.local"
+fi
+PREFIX="${SFDBTOOLS_PREFIX:-${DEFAULT_PREFIX}}"
 
 if [[ "$(uname -s)" != "Linux" ]]; then
   echo "Error: installer ini hanya untuk Linux." >&2
@@ -155,8 +159,10 @@ install_tar() {
 
   local bindir
   if [[ "${is_root}" == "true" ]]; then
+    # Root install: /usr/bin is almost always in PATH
     bindir="/usr/bin"
   else
+    # Non-root install: default to ~/.local/bin
     bindir="${PREFIX}/bin"
   fi
   mkdir -p "${bindir}"
@@ -168,7 +174,15 @@ install_tar() {
 
   echo "✓ Installed: ${bindir}/sfdbtools"
   if [[ "${is_root}" != "true" ]]; then
-    echo "ℹ️  Pastikan ${bindir} ada di PATH." >&2
+    case ":${PATH}:" in
+      *":${bindir}:"*) : ;;
+      *)
+        echo "ℹ️  PATH kamu belum berisi ${bindir}." >&2
+        echo "    Tambahkan ini (contoh bash):" >&2
+        echo "    echo 'export PATH=\"${bindir}:\$PATH\"' >> ~/.bashrc" >&2
+        echo "    source ~/.bashrc" >&2
+        ;;
+    esac
   fi
 }
 

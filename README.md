@@ -1,171 +1,156 @@
 # sfDBTools
 
-**sfDBTools** adalah CLI (Command Line Interface) utility yang komprehensif untuk manajemen operasi database MySQL/MariaDB. Alat ini dirancang untuk lingkungan production dengan fokus pada keamanan data, kemudahan penggunaan, dan otomatisasi.
+sfDBTools adalah CLI utility untuk operasi MySQL/MariaDB: backup, restore, db-scan, cleanup, crypto, dan manajemen profil koneksi.
 
-Dibangun menggunakan **Go (Golang)**, alat ini mendukung operasi backup dan restore dengan fitur enkripsi (AES-256), kompresi multi-format (Zstd, Gzip, XZ), dan manajemen profil koneksi yang aman.
+Target utama: penggunaan di environment server (Linux) dengan fokus pada **streaming** (hemat RAM), **safety**, dan **otomasi**.
 
-## 🚀 Fitur Utama
+## Instalasi (Linux amd64)
 
-### 🛡️ Backup Database
-- **Multi-Mode**:
-  - `single`: Backup satu database spesifik.
-  - `all`: Backup seluruh database dalam server.
-  - `filter`: Backup beberapa database terpilih (interactive/flag).
-  - `primary` & `secondary`: Mode khusus untuk topologi database spesifik (mendukung companion DBs seperti `_dmart`).
-- **Keamanan**: Enkripsi AES-256-GCM (OpenSSL compatible) untuk file output.
-- **Efisiensi**: Streaming pipeline (mysqldump -> compress -> encrypt -> file) tanpa buffering memori besar.
-- **Kompresi**: Mendukung `zstd` (recommended), `gzip`, `pgzip` (parallel gzip), `xz`, `zlib`.
-- **Metadata**: Menyertakan file `.meta.json` dan `.users.sql` (grants) untuk setiap backup.
+### One-click install (recommended)
 
-### 🔄 Restore Database
-- **Safety First**: Validasi ketat untuk mencegah restore ke database primary secara tidak sengaja.
-- **Auto-Detection**: Mendeteksi format kompresi dan enkripsi secara otomatis.
-- **Smart Restore**:
-  - Otomatis mencari dan me-restore *companion databases* (misal: `db_name` dan `db_name_dmart`).
-  - **Pre-Restore Backup**: Opsi otomatis mem-backup target database sebelum ditimpa.
-  - **User Grants**: Restore hak akses user aplikasi secara otomatis setelah data dipulihkan.
-
-### 🔐 Manajemen Profil
-- Menyimpan kredensial database dalam file terenkripsi (`.cnf.enc`).
-- Mencegah *hardcoding* password dalam script atau command history.
-
-### 📊 Monitoring & Utility
-- **DB Scan**: Mengumpulkan metrik database (ukuran, jumlah tabel, prosedur, dll).
-- **Cleanup**: Rotasi file backup otomatis berdasarkan usia file.
-- **Crypto Utils**: Enkripsi/dekripsi file atau teks ad-hoc.
-
----
-
-## 🛠️ Instalasi & Build
-
-sfDBTools bisa dipakai tanpa setup manual `/etc/sfDBTools`.
-
-### Instalasi (Recommended)
-
-- **Ubuntu 20+ / Debian**: install paket `.deb` dari GitHub Releases.
-- **CentOS 7+ / RHEL**: install paket `.rpm` dari GitHub Releases.
-
-Atau one-liner installer (auto pilih `.deb`/`.rpm`/tar sesuai OS):
+Install sebagai root (akan auto pilih `.deb` / `.rpm` / tar sesuai OS):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/install.sh | sudo bash
 ```
 
-Uninstall:
+Install tanpa root (tar ke `~/.local/bin`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/install.sh | bash
+```
+
+Verifikasi:
+
+```bash
+sfdbtools version
+sfdbtools --help
+```
+
+### Uninstall
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/uninstall.sh | sudo bash
 ```
 
-Uninstall + hapus config (HATI-HATI):
+Uninstall + hapus config user (HATI-HATI):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/uninstall.sh | sudo bash -s -- --purge
 ```
 
-### Instalasi (Portable)
+## Requirements (dependensi runtime)
 
-Download `sfDBTools_<versi>_linux_amd64.tar.gz` dari GitHub Releases, ekstrak, lalu jalankan binary `sfDBTools` (atau `sfdbtools` jika tersedia).
+- `mysqldump` wajib tersedia untuk fitur backup (`db-backup`).
+- `mysql` CLI wajib tersedia untuk fitur restore (`db-restore`).
+  - Biasanya tersedia dari paket `mysql-client` atau `mariadb-client` (nama paket tergantung distro).
+- Akses network ke server database + user DB yang punya privilege sesuai operasi.
+- Untuk beberapa fitur `script`, diperlukan `bash`.
 
-### Build dari Source
+## Konfigurasi (auto)
 
-Pastikan Anda memiliki **Go 1.25+** terinstal.
+Saat pertama kali dijalankan, jika file konfigurasi belum ada, sfDBTools akan membuat config default otomatis.
 
-```bash
-# Clone repository
-git clone https://your-repo/sfDBTools.git
-cd sfDBTools
-
-# Download dependencies
-go mod tidy
-
-# Build binary
-go build -o bin/sfdbtools main.go
-
-# Atau gunakan script helper (Linux)
-./scripts/build_run.sh -- help
-```
-
----
-
-## ⚙️ Konfigurasi (Auto)
-
-Pada first run, jika file konfigurasi belum ada, sfDBTools akan membuat config default otomatis.
-
-- Jika `SFDB_APPS_CONFIG` diset, file akan dibuat di path tersebut.
+- Jika `SFDB_APPS_CONFIG` diset, file config dibuat di path tersebut.
 - Jika tidak diset:
-  - Akan mencoba `/etc/sfDBTools/config.yaml` (jika punya permission).
-  - Jika tidak bisa, fallback ke `~/.config/sfDBTools/config.yaml` (atau `XDG_CONFIG_HOME/sfDBTools/config.yaml`).
+  - akan mencoba `/etc/sfDBTools/config.yaml` (jika punya permission)
+  - fallback ke `~/.config/sfDBTools/config.yaml` (atau `XDG_CONFIG_HOME/sfDBTools/config.yaml`)
 
-## 📖 Panduan Penggunaan
+## Quickstart
 
-### 1. Konfigurasi Profil (Langkah Awal)
-Sebelum melakukan operasi database, buat profil koneksi terlebih dahulu:
+### 1) Buat profile koneksi (wizard)
 
-```bash
-# Membuat profil baru (Interaktif)
-sfdbtools profile create --interactive
-
-# List profil yang tersedia
-sfdbtools profile show --file my_prod_db.cnf.enc
-```
-
-### 2. Melakukan Backup
-
-**Format Umum:**
-`sfdbtools backup [mode] --ticket [TICKET_NO] [flags]`
+Jalankan tanpa flag untuk wizard interaktif:
 
 ```bash
-# Backup satu database dengan kompresi ZSTD
-sfdbtools backup single --db my_app_db --ticket TICKET-123 --compress-type zstd
-
-# Backup semua database, kecuali system DB
-sfdbtools backup all --exclude-system --ticket TICKET-123
-
-# Backup dengan enkripsi
-sfdbtools backup single --db sensitive_db --backup-key "RAHASIA" --ticket TICKET-123
+sfdbtools profile create
 ```
 
-### 3. Melakukan Restore
-
-**Format Umum:**
-`sfdbtools restore [mode] --ticket [TICKET_NO] [flags]`
+Atau one-liner (contoh):
 
 ```bash
-# Restore ke database baru (Single Mode)
-sfdbtools restore single --file /backups/my_app_db_2025.sql.zst --target-db my_app_dev --ticket TICKET-123
-
-# Restore Primary (Otomatis handle _dmart dan user app)
-sfdbtools restore primary --file /backups/dbsf_nbc_client.sql.zst --client-code client --ticket TICKET-123
+sfdbtools profile create \
+  --profile "prod-db" \
+  --host "10.0.0.5" \
+  --port 3306 \
+  --user "admin" \
+  --password "s3cr3t" \
+  --profile-key "my-secret-key"
 ```
 
-### 4. Database Scanning
+Lihat profile:
+
 ```bash
-# Scan ukuran dan metadata semua database lokal
-sfdbtools db-scan all-local --profile my_prod.cnf.enc
+sfdbtools profile show
 ```
 
----
+### 2) Backup
 
-## 🏗️ Arsitektur Kode
+Backup single database:
 
-Project ini menerapkan prinsip **Clean Architecture** dan **Design Patterns** untuk memastikan *maintainability*.
+```bash
+sfdbtools db-backup single \
+  --profile ./configs/prod-db.cnf.enc \
+  --profile-key "my-secret-key" \
+  --database "target_db" \
+  --ticket "TICKET-123"
+```
 
-### Struktur Direktori
-*   `cmd/`: Entry point untuk Cobra CLI commands.
-*   `internal/`: Logika bisnis inti.
-    *   `backup/`: Menggunakan **Strategy Pattern** (`CombinedExecutor`, `IterativeExecutor`) untuk menangani berbagai mode backup.
-    *   `restore/`: Menggunakan struktur serupa dengan backup untuk konsistensi, memisahkan logika `Single` dan `Primary`.
-*   `pkg/`: Library pendukung yang *reusable* (enkripsi, kompresi, database wrapper, UI).
+Backup semua database (misal exclude system DB):
 
-### Prinsip Desain
-1.  **KISS (Keep It Simple, Stupid)**: Alur *streaming* linear untuk data backup/restore.
-2.  **DRY (Don't Repeat Yourself)**: Penggunaan shared helpers di `pkg/` untuk validasi, koneksi, dan file operations.
-3.  **Fail-Fast**: Validasi ketat di awal (koneksi, keberadaan file, aturan safety) sebelum proses berat dimulai.
-4.  **Security**: Enkripsi *at rest* dan penanganan password yang aman (masking di logs).
+```bash
+sfdbtools db-backup all \
+  --profile ./configs/prod-db.cnf.enc \
+  --profile-key "my-secret-key" \
+  --exclude-system \
+  --ticket "TICKET-123"
+```
 
----
+Jika ingin enkripsi output backup:
 
-## 📝 Lisensi
+```bash
+export SFDB_BACKUP_ENCRYPTION_KEY="my-backup-key"
+sfdbtools db-backup single --profile ./configs/prod-db.cnf.enc --profile-key "my-secret-key" --database "target_db" --ticket "TICKET-123"
+```
 
-Copyright © 2025. Internal Tool.
+### 3) Restore
+
+Restore single database (wajib `--ticket`):
+
+```bash
+sfdbtools db-restore single \
+  --file "/path/to/backup.sql.gz.enc" \
+  --encryption-key "my-backup-key" \
+  --ticket "TICKET-123"
+```
+
+## Ringkasan Command
+
+- `sfdbtools db-backup`: backup database (subcommand: `all`, `filter`, `single`, `primary`, `secondary`)
+- `sfdbtools db-restore`: restore database (subcommand: `single`, `primary`, `secondary`, `all`, `selection`, `custom`)
+- `sfdbtools db-scan`: scan metadata DB (subcommand: `all`, `all-local`, `filter`, `rescan`)
+- `sfdbtools profile`: create/show/edit/delete profile koneksi
+- `sfdbtools cleanup`: housekeeping file backup
+- `sfdbtools crypto`: encrypt/decrypt file/text + base64 utils
+- `sfdbtools script`: encrypt/extract/info/run bundle script
+- `sfdbtools completion`: generate shell completion
+- `sfdbtools version`: tampilkan versi
+
+Untuk detail flag tiap command, gunakan:
+
+```bash
+sfdbtools <command> --help
+sfdbtools <command> <subcommand> --help
+```
+
+## Environment Variables (yang sering dipakai)
+
+- `SFDB_APPS_CONFIG`: override lokasi config YAML.
+- `SFDB_QUIET=1`: suppress banner/spinner (cocok untuk pipeline).
+- `SFDB_BACKUP_ENCRYPTION_KEY`: default key untuk enkripsi backup.
+- `SFDB_ENCRYPTION_KEY`: default key untuk beberapa perintah `crypto`.
+- `SFDB_SCRIPT_KEY`: key untuk bundle `script`.
+
+## Lisensi
+
+Internal Tool DataOn.
