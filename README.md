@@ -38,7 +38,7 @@ Dibangun menggunakan **Go (Golang)**, alat ini mendukung operasi backup dan rest
 
 ## 🛠️ Instalasi & Build
 
-Pastikan Anda memiliki **Go 1.21+** terinstal.
+Pastikan Anda memiliki **Go 1.25+** terinstal.
 
 ```bash
 # Clone repository
@@ -74,6 +74,12 @@ git push origin v1.0.0
 
 # Verifikasi versi
 go run . version
+```
+
+Alternatif (sekali jalan, otomatis trigger GitHub Release via tag):
+
+```bash
+bash ./scripts/release_github.sh 1.0.0
 ```
 
 ---
