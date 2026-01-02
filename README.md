@@ -51,6 +51,18 @@ Atau one-liner installer (auto pilih `.deb`/`.rpm`/tar sesuai OS):
 curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/install.sh | sudo bash
 ```
 
+Uninstall:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/uninstall.sh | sudo bash
+```
+
+Uninstall + hapus config (HATI-HATI):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/uninstall.sh | sudo bash -s -- --purge
+```
+
 ### Instalasi (Portable)
 
 Download `sfDBTools_<versi>_linux_amd64.tar.gz` dari GitHub Releases, ekstrak, lalu jalankan binary `sfDBTools` (atau `sfdbtools` jika tersedia).
