@@ -59,7 +59,22 @@ if [[ "${CLEAN}" == "true" ]]; then
 fi
 
 # Build flags
-GO_BUILD_FLAGS=("-trimpath" "-ldflags" "-s -w")
+VERSION_RAW="${SFDBTOOLS_VERSION:-}"
+if [[ -z "${VERSION_RAW}" ]]; then
+  VERSION_RAW="$(git -C "${ROOT_DIR}" describe --tags --always --dirty 2>/dev/null || echo dev)"
+fi
+
+# Drop leading 'v' to keep version value clean (e.g. v1.0.0 -> 1.0.0)
+VERSION="${VERSION_RAW#v}"
+COMMIT="$(git -C "${ROOT_DIR}" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+LDFLAGS="-s -w"
+LDFLAGS+=" -X sfDBTools/pkg/version.Version=${VERSION}"
+LDFLAGS+=" -X sfDBTools/pkg/version.Commit=${COMMIT}"
+LDFLAGS+=" -X sfDBTools/pkg/version.BuildDate=${BUILD_DATE}"
+
+GO_BUILD_FLAGS=("-trimpath" "-ldflags" "${LDFLAGS}")
 if [[ "${WITH_RACE}" == "true" ]]; then
   GO_BUILD_FLAGS+=("-race")
 fi

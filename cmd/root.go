@@ -2,7 +2,7 @@
 // Deskripsi : Root command untuk aplikasi sfDBTools
 // Author : Hadiyatna Muflihun
 // Tanggal : 2024-10-03
-// Last Modified : 2024-10-03
+// Last Modified : 2026-01-02
 package cmd
 
 import (
@@ -33,6 +33,10 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Skip dependensi dan logging untuk perintah completion agar output bersih
 		if cmd.Name() == "completion" || cmd.HasParent() && cmd.Parent().Name() == "completion" {
+			return nil
+		}
+		// Version harus bisa jalan tanpa config (mis. sebelum instalasi config.yaml)
+		if cmd.Name() == "version" {
 			return nil
 		}
 		if appdeps.Deps == nil || appdeps.Deps.Config == nil || appdeps.Deps.Logger == nil {

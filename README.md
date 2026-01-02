@@ -57,6 +57,27 @@ go build -o bin/sfdbtools main.go
 
 ---
 
+## 🚢 Release
+
+Checklist rilis (contoh versi `1.0.0`):
+
+```bash
+# Pastikan working tree bersih
+git status
+
+# Buat tag dan push
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+
+# Build (akan inject metadata version/commit/build-date otomatis)
+./scripts/build_run.sh --skip-run
+
+# Verifikasi versi
+go run . version
+```
+
+---
+
 ## 📖 Panduan Penggunaan
 
 ### 1. Konfigurasi Profil (Langkah Awal)

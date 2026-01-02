@@ -25,17 +25,21 @@ func main() {
 
 	// Deteksi jika yang dipanggil adalah perintah completion
 	isCompletion := len(os.Args) > 1 && os.Args[1] == "completion"
+	isVersion := len(os.Args) > 1 && os.Args[1] == "version"
 	if isCompletion {
 		quiet = true // pastikan tidak ada header/spinner yang tampil
+	}
+	if isVersion {
+		quiet = true // output versi sebaiknya bersih untuk scripting
 	}
 
 	if !quiet {
 		ui.Headers("Main Menu")
 	}
 
-	// 1. Muat Konfigurasi (skip saat completion agar output bersih)
+	// 1. Muat Konfigurasi (skip saat completion/version agar output bersih)
 	var err error
-	if !isCompletion {
+	if !isCompletion && !isVersion {
 		cfg, err = config.LoadConfigFromEnv()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "FATAL: Gagal memuat konfigurasi: %v\n", err)
