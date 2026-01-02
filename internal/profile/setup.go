@@ -2,7 +2,7 @@
 // Deskripsi : Setup, configuration helpers, and path management
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 17 Desember 2025
+// Last Modified : 2 Januari 2026
 
 package profile
 
@@ -57,6 +57,7 @@ func (s *Service) fillOriginalInfoFromMeta(absPath string, info types.ProfileInf
 		Path:         absPath,
 		Name:         helper.TrimProfileSuffix(filepath.Base(absPath)),
 		DBInfo:       info.DBInfo,
+		SSHTunnel:    info.SSHTunnel,
 		Size:         fileSizeStr,
 		LastModified: lastMod,
 	}
@@ -71,5 +72,35 @@ port=%d
 user=%s
 password=%s
 `
-	return fmt.Sprintf(content, s.ProfileInfo.DBInfo.Host, s.ProfileInfo.DBInfo.Port, s.ProfileInfo.DBInfo.User, s.ProfileInfo.DBInfo.Password)
+
+	base := fmt.Sprintf(content, s.ProfileInfo.DBInfo.Host, s.ProfileInfo.DBInfo.Port, s.ProfileInfo.DBInfo.User, s.ProfileInfo.DBInfo.Password)
+
+	ssh := s.ProfileInfo.SSHTunnel
+	if !ssh.Enabled && strings.TrimSpace(ssh.Host) == "" {
+		return base
+	}
+
+	if ssh.Port == 0 {
+		ssh.Port = 22
+	}
+
+	sshContent := `
+[ssh]
+enabled=%t
+host=%s
+port=%d
+user=%s
+ssh_password=%s
+identity_file=%s
+local_port=%d
+`
+	return base + fmt.Sprintf(sshContent,
+		ssh.Enabled,
+		ssh.Host,
+		ssh.Port,
+		ssh.User,
+		ssh.Password,
+		ssh.IdentityFile,
+		ssh.LocalPort,
+	)
 }

@@ -2,40 +2,38 @@ package parsing
 
 import "strings"
 
-// ParseINIClient melakukan parsing INI sederhana untuk section [client]
-func ParseINIClient(content string) map[string]string {
-	// Hasil parsing
+// ParseINISection melakukan parsing INI sederhana untuk section tertentu.
+// Mengembalikan map key->value lowercase. Return nil jika section tidak ditemukan / kosong.
+func ParseINISection(content string, sectionName string) map[string]string {
 	res := map[string]string{}
-	var inClient bool
-	// Split konten menjadi baris
+	var inSection bool
 	lines := strings.Split(content, "\n")
-	// Iterasi setiap baris
 	for _, l := range lines {
-		// Bersihkan baris
 		line := strings.TrimSpace(l)
 		if line == "" || strings.HasPrefix(line, ";") || strings.HasPrefix(line, "#") {
 			continue
 		}
-		// [section]
 		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
 			section := strings.TrimSpace(line[1 : len(line)-1])
-			inClient = strings.EqualFold(section, "client")
+			inSection = strings.EqualFold(section, sectionName)
 			continue
 		}
-		// key=value hanya diproses jika di dalam section [client]
-		if !inClient {
+		if !inSection {
 			continue
 		}
-		// key = value
 		if idx := strings.Index(line, "="); idx != -1 {
 			key := strings.TrimSpace(strings.ToLower(line[:idx]))
 			val := strings.TrimSpace(line[idx+1:])
 			res[key] = val
 		}
 	}
-	// Jika tidak ada data, kembalikan nil
 	if len(res) == 0 {
 		return nil
 	}
 	return res
+}
+
+// ParseINIClient melakukan parsing INI sederhana untuk section [client]
+func ParseINIClient(content string) map[string]string {
+	return ParseINISection(content, "client")
 }

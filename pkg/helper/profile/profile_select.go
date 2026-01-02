@@ -57,6 +57,7 @@ func SelectExistingDBConfig(configDir, purpose string) (types.ProfileInfo, error
 	}
 	if info != nil {
 		ProfileInfo.DBInfo = info.DBInfo
+		ProfileInfo.SSHTunnel = info.SSHTunnel
 		ProfileInfo.EncryptionSource = info.EncryptionSource
 	}
 
@@ -68,6 +69,7 @@ func SelectExistingDBConfig(configDir, purpose string) (types.ProfileInfo, error
 	}
 
 	ProfileInfo.DBInfo = info.DBInfo
+	ProfileInfo.SSHTunnel = info.SSHTunnel
 	ProfileInfo.Size = fileSizeStr
 	ProfileInfo.LastModified = lastModTime
 

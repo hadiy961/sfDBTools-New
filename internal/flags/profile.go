@@ -17,6 +17,15 @@ func ProfileCreate(cmd *cobra.Command) {
 	cmd.Flags().StringP("output-dir", "o", defaultOptions.OutputDir, "Direktori output untuk menyimpan profil yang dibuat (opsional)")
 	cmd.Flags().StringP("profile-key", "k", "", "Kunci enkripsi untuk mengenkripsi file profil")
 	cmd.Flags().BoolP("interactive", "i", defaultOptions.Interactive, "Mode interaktif untuk memasukkan informasi profil")
+
+	// SSH tunnel (opsional)
+	cmd.Flags().Bool("ssh", false, "Aktifkan koneksi database melalui SSH tunnel")
+	cmd.Flags().String("ssh-host", "", "SSH bastion host")
+	cmd.Flags().Int("ssh-port", 22, "SSH port")
+	cmd.Flags().String("ssh-user", "", "SSH username")
+	cmd.Flags().String("ssh-password", "", "SSH password (opsional)")
+	cmd.Flags().String("ssh-identity-file", "", "Path ke SSH private key (opsional)")
+	cmd.Flags().Int("ssh-local-port", 0, "Local port untuk SSH tunnel (0 = otomatis)")
 }
 
 // ProfileEdit - Flag untuk mengedit profil yang ada
@@ -31,6 +40,15 @@ func ProfileEdit(cmd *cobra.Command) {
 	cmd.Flags().StringP("new-name", "N", "", "Nama baru untuk file profil (akan merename file saat menyimpan)")
 	cmd.Flags().StringP("profile-key", "k", "", "Kunci enkripsi untuk mendekripsi/enkripsi file profil")
 	cmd.Flags().BoolP("interactive", "i", defaultOptions.Interactive, "Mode interaktif untuk mengedit informasi profil")
+
+	// SSH tunnel (opsional)
+	cmd.Flags().Bool("ssh", false, "Aktifkan koneksi database melalui SSH tunnel")
+	cmd.Flags().String("ssh-host", "", "SSH bastion host")
+	cmd.Flags().Int("ssh-port", 22, "SSH port")
+	cmd.Flags().String("ssh-user", "", "SSH username")
+	cmd.Flags().String("ssh-password", "", "SSH password (opsional)")
+	cmd.Flags().String("ssh-identity-file", "", "Path ke SSH private key (opsional)")
+	cmd.Flags().Int("ssh-local-port", 0, "Local port untuk SSH tunnel (0 = otomatis)")
 }
 
 // ProfileShow - Flag untuk menampilkan profil yang ada

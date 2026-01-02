@@ -2,7 +2,7 @@
 // Deskripsi : Core execution logic untuk profile CRUD operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 17 Desember 2025
+// Last Modified : 2 Januari 2026
 
 package profile
 
@@ -14,10 +14,10 @@ import (
 
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
+	profilehelper "sfDBTools/pkg/helper/profile"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
@@ -118,8 +118,11 @@ func (s *Service) ShowProfile() error {
 		s.ProfileInfo.DBInfo = s.OriginalProfileInfo.DBInfo
 	}
 
-	if err := database.ConnectionTest(&s.ProfileInfo.DBInfo, s.Log); err != nil {
-		return nil // Just return, error already logged/displayed
+	if c, err := profilehelper.ConnectWithProfile(s.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
+		// Tetap tampilkan detail profil walaupun koneksi gagal.
+		ui.PrintWarning("Koneksi database gagal: " + err.Error())
+	} else {
+		c.Close()
 	}
 
 	s.DisplayProfileDetails()
@@ -182,6 +185,13 @@ func (s *Service) EditProfile() error {
 				}
 				if strings.TrimSpace(s.ProfileInfo.Name) == "" {
 					s.ProfileInfo.Name = s.OriginalProfileInfo.Name
+				}
+				// Preserve SSH settings jika user tidak mengisi flag ssh apapun
+				if !s.ProfileInfo.SSHTunnel.Enabled && strings.TrimSpace(s.ProfileInfo.SSHTunnel.Host) == "" &&
+					strings.TrimSpace(s.ProfileInfo.SSHTunnel.User) == "" && strings.TrimSpace(s.ProfileInfo.SSHTunnel.Password) == "" &&
+					strings.TrimSpace(s.ProfileInfo.SSHTunnel.IdentityFile) == "" &&
+					s.ProfileInfo.SSHTunnel.LocalPort == 0 {
+					s.ProfileInfo.SSHTunnel = s.OriginalProfileInfo.SSHTunnel
 				}
 			}
 
@@ -390,7 +400,7 @@ func (s *Service) SaveProfile(mode string) error {
 		}
 	}
 
-	if err := database.ConnectionTest(&s.ProfileInfo.DBInfo, s.Log); err != nil {
+	if c, err := profilehelper.ConnectWithProfile(s.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
 		if !isInteractive {
 			return err
 		}
@@ -403,6 +413,7 @@ func (s *Service) SaveProfile(mode string) error {
 		}
 		ui.PrintWarning("⚠️  PERINGATAN: Menyimpan konfigurasi dengan koneksi database yang tidak valid.")
 	} else {
+		c.Close()
 		s.Log.Info("Koneksi database valid.")
 	}
 

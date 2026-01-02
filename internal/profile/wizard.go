@@ -2,7 +2,7 @@
 // Deskripsi : Interactive wizard logic for profile creation and editing
 // Author : Hadiyatna Muflihun
 // Tanggal : 17 Desember 2025
-// Last Modified : 17 Desember 2025
+// Last Modified : 2 Januari 2026
 
 package profile
 
@@ -18,6 +18,7 @@ import (
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -32,16 +33,37 @@ func (s *Service) runWizard(mode string) error {
 			if err := s.promptSelectExistingConfig(); err != nil {
 				return err
 			}
-		}
 
-		// 1. Config Name
-		if err := s.promptDBConfigName(mode); err != nil {
-			return err
-		}
+			// Tampilkan isi profil terlebih dahulu
+			prevShow := s.ProfileShow
+			s.ProfileShow = &types.ProfileShowOptions{}
+			s.DisplayProfileDetails()
+			s.ProfileShow = prevShow
 
-		// 2. Profile Details
-		if err := s.promptProfileInfo(); err != nil {
-			return err
+			action, err := input.SelectSingleFromList(
+				[]string{"Ubah data", "Batalkan"},
+				"Aksi:",
+			)
+			if err != nil {
+				return validation.HandleInputError(err)
+			}
+			if action == "Batalkan" {
+				return validation.ErrUserCancelled
+			}
+
+			if err := s.promptEditSelectedFields(); err != nil {
+				return err
+			}
+		} else {
+			// 1. Config Name
+			if err := s.promptDBConfigName(mode); err != nil {
+				return err
+			}
+
+			// 2. Profile Details
+			if err := s.promptProfileInfo(); err != nil {
+				return err
+			}
 		}
 
 		if s.ProfileInfo.Name == "" {
@@ -105,11 +127,168 @@ func (s *Service) promptSelectExistingConfig() error {
 		Path:         info.Path,
 		Name:         info.Name,
 		DBInfo:       info.DBInfo,
+		SSHTunnel:    info.SSHTunnel,
 		Size:         info.Size,
 		LastModified: info.LastModified,
 	}
 
 	s.Log.Debug("Memuat konfigurasi dari: " + info.Path + " Name: " + info.Name)
+	return nil
+}
+
+func (s *Service) promptEditSelectedFields() error {
+	fields := []string{
+		"Nama profil",
+		"Database Host",
+		"Database Port",
+		"Database User",
+		"Database Password",
+		"SSH Tunnel (enable/disable)",
+		"SSH Host",
+		"SSH Port",
+		"SSH User",
+		"SSH Password",
+		"SSH Identity File",
+		"SSH Local Port",
+	}
+
+	idxs, err := input.ShowMultiSelect("Pilih data yang ingin diubah:", fields)
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
+	if len(idxs) == 0 {
+		ui.PrintWarning("Tidak ada field yang dipilih untuk diubah.")
+		return validation.ErrUserCancelled
+	}
+
+	selected := make(map[string]bool, len(idxs))
+	for _, i := range idxs {
+		if i >= 1 && i <= len(fields) {
+			selected[fields[i-1]] = true
+		}
+	}
+
+	if selected["Nama profil"] {
+		if err := s.promptDBConfigName("edit"); err != nil {
+			return err
+		}
+	}
+
+	if selected["Database Host"] {
+		v, err := input.AskString("Database Host", s.ProfileInfo.DBInfo.Host, survey.Required)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		s.ProfileInfo.DBInfo.Host = v
+	}
+
+	if selected["Database Port"] {
+		v, err := input.AskInt("Database Port", s.ProfileInfo.DBInfo.Port, survey.Required)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		s.ProfileInfo.DBInfo.Port = v
+	}
+
+	if selected["Database User"] {
+		v, err := input.AskString("Database User", s.ProfileInfo.DBInfo.User, survey.Required)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		s.ProfileInfo.DBInfo.User = v
+	}
+
+	if selected["Database Password"] {
+		existing := ""
+		if s.ProfileInfo != nil {
+			existing = s.ProfileInfo.DBInfo.Password
+		}
+		ui.PrintInfo("💡 Tekan Enter untuk mempertahankan password saat ini.")
+		pw, err := input.AskPassword("Database Password", nil)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		if pw == "" {
+			s.ProfileInfo.DBInfo.Password = existing
+		} else {
+			s.ProfileInfo.DBInfo.Password = pw
+		}
+	}
+
+	if selected["SSH Tunnel (enable/disable)"] {
+		enable, err := input.AskYesNo("Gunakan SSH tunnel untuk koneksi database?", s.ProfileInfo.SSHTunnel.Enabled)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		s.ProfileInfo.SSHTunnel.Enabled = enable
+	}
+
+	sshRequired := survey.Validator(nil)
+	if s.ProfileInfo.SSHTunnel.Enabled {
+		sshRequired = survey.Required
+	}
+
+	if selected["SSH Host"] {
+		v, err := input.AskString("SSH Host (bastion)", s.ProfileInfo.SSHTunnel.Host, sshRequired)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		s.ProfileInfo.SSHTunnel.Host = v
+	}
+
+	if selected["SSH Port"] {
+		def := s.ProfileInfo.SSHTunnel.Port
+		if def == 0 {
+			def = 22
+		}
+		v, err := input.AskInt("SSH Port", def, sshRequired)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		s.ProfileInfo.SSHTunnel.Port = v
+	}
+
+	if selected["SSH User"] {
+		v, err := input.AskString("SSH User (kosong = default)", s.ProfileInfo.SSHTunnel.User, nil)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		s.ProfileInfo.SSHTunnel.User = v
+	}
+
+	if selected["SSH Password"] {
+		existing := ""
+		if s.ProfileInfo != nil {
+			existing = s.ProfileInfo.SSHTunnel.Password
+		}
+		ui.PrintInfo("💡 Tekan Enter untuk mempertahankan SSH password saat ini.")
+		pw, err := input.AskPassword("SSH Password (opsional)", nil)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		if pw == "" {
+			s.ProfileInfo.SSHTunnel.Password = existing
+		} else {
+			s.ProfileInfo.SSHTunnel.Password = pw
+		}
+	}
+
+	if selected["SSH Identity File"] {
+		v, err := input.AskString("SSH Identity File (opsional)", s.ProfileInfo.SSHTunnel.IdentityFile, nil)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		s.ProfileInfo.SSHTunnel.IdentityFile = v
+	}
+
+	if selected["SSH Local Port"] {
+		v, err := input.AskInt("Local Port (0 = otomatis)", s.ProfileInfo.SSHTunnel.LocalPort, nil)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		s.ProfileInfo.SSHTunnel.LocalPort = v
+	}
+
 	return nil
 }
 
@@ -195,6 +374,66 @@ func (s *Service) promptProfileInfo() error {
 		s.ProfileInfo.DBInfo.Password = pw
 	}
 
+	// SSH tunnel (opsional)
+	defaultSSH := false
+	if s.ProfileInfo != nil && (s.ProfileInfo.SSHTunnel.Enabled || s.ProfileInfo.SSHTunnel.Host != "") {
+		defaultSSH = s.ProfileInfo.SSHTunnel.Enabled
+	}
+
+	enableSSH, err := input.AskYesNo("Gunakan SSH tunnel untuk koneksi database?", defaultSSH)
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
+	if !enableSSH {
+		return nil
+	}
+
+	s.ProfileInfo.SSHTunnel.Enabled = true
+
+	sshHost, err := input.AskString("SSH Host (bastion)", s.ProfileInfo.SSHTunnel.Host, survey.Required)
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
+	s.ProfileInfo.SSHTunnel.Host = sshHost
+
+	sshPort := s.ProfileInfo.SSHTunnel.Port
+	if sshPort == 0 {
+		sshPort = 22
+	}
+	p, err := input.AskInt("SSH Port", sshPort, survey.Required)
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
+	s.ProfileInfo.SSHTunnel.Port = p
+
+	sshUser, err := input.AskString("SSH User (kosong = default)", s.ProfileInfo.SSHTunnel.User, nil)
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
+	s.ProfileInfo.SSHTunnel.User = sshUser
+
+	// SSH password (opsional). Jika kosong, tetap gunakan nilai yang sudah ada.
+	ui.PrintInfo("💡 SSH password opsional. Kosongkan jika menggunakan key/agent.")
+	sshPw, err := input.AskPassword("SSH Password (opsional)", nil)
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
+	if sshPw != "" {
+		s.ProfileInfo.SSHTunnel.Password = sshPw
+	}
+
+	identity, err := input.AskString("SSH Identity File (opsional)", s.ProfileInfo.SSHTunnel.IdentityFile, nil)
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
+	s.ProfileInfo.SSHTunnel.IdentityFile = identity
+
+	lp, err := input.AskInt("Local Port (0 = otomatis)", s.ProfileInfo.SSHTunnel.LocalPort, nil)
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
+	s.ProfileInfo.SSHTunnel.LocalPort = lp
+
 	return nil
 }
 
@@ -256,6 +495,14 @@ func ValidateProfileInfo(p *types.ProfileInfo) error {
 	}
 	if err := ValidateDBInfo(&p.DBInfo); err != nil {
 		return fmt.Errorf("validasi informasi database gagal: %w", err)
+	}
+	if p.SSHTunnel.Enabled {
+		if strings.TrimSpace(p.SSHTunnel.Host) == "" {
+			return fmt.Errorf("ssh tunnel aktif tapi ssh host kosong")
+		}
+		if p.SSHTunnel.Port == 0 {
+			p.SSHTunnel.Port = 22
+		}
 	}
 	return nil
 }

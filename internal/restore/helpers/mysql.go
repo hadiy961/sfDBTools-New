@@ -19,15 +19,17 @@ import (
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
+	profilehelper "sfDBTools/pkg/helper/profile"
 	"sfDBTools/pkg/ui"
 	"strings"
 )
 
 // BuildMySQLArgs membuat argument list untuk mysql command
 func BuildMySQLArgs(profile *types.ProfileInfo, database string, extraArgs ...string) []string {
+	eff := profilehelper.EffectiveDBInfo(profile)
 	args := []string{
-		fmt.Sprintf("--host=%s", profile.DBInfo.Host),
-		fmt.Sprintf("--port=%d", profile.DBInfo.Port),
+		fmt.Sprintf("--host=%s", eff.Host),
+		fmt.Sprintf("--port=%d", eff.Port),
 		fmt.Sprintf("--user=%s", profile.DBInfo.User),
 		fmt.Sprintf("--password=%s", profile.DBInfo.Password),
 	}

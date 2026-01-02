@@ -25,7 +25,17 @@ type Config struct {
 }
 
 type Client struct {
-	db *sql.DB
+	db      *sql.DB
+	onClose func() error
+}
+
+// SetOnClose mendaftarkan callback yang dipanggil saat Close().
+// Digunakan untuk cleanup resource tambahan (mis. SSH tunnel).
+func (c *Client) SetOnClose(fn func() error) {
+	if c == nil {
+		return
+	}
+	c.onClose = fn
 }
 
 // DSN menghasilkan string Data Source Name (DSN) dari konfigurasi.
@@ -98,6 +108,9 @@ func NewClient(ctx context.Context, cfg Config, timeout time.Duration, maxOpenCo
 func (c *Client) Close() error {
 	if c == nil || c.db == nil {
 		return nil
+	}
+	if c.onClose != nil {
+		_ = c.onClose()
 	}
 	return c.db.Close()
 }

@@ -2,7 +2,7 @@
 // Deskripsi : Utility untuk load dan parse profil terenkripsi
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-30
+// Last Modified : 2026-01-02
 
 package profile
 
@@ -61,6 +61,8 @@ func LoadAndParseProfile(absPath string, key string) (*types.ProfileInfo, error)
 		return nil, fmt.Errorf("gagal mem-parse isi konfigurasi '%s': format INI bagian [client] tidak ditemukan atau rusak", absPath)
 	}
 
+	sshParsed := parsing.ParseINISection(string(plaintext), "ssh")
+
 	info.Name = profileutil.TrimProfileSuffix(filepath.Base(absPath))
 	{
 		if h, ok := parsed["host"]; ok {
@@ -77,6 +79,42 @@ func LoadAndParseProfile(absPath string, key string) (*types.ProfileInfo, error)
 		if pw, ok := parsed["password"]; ok {
 			info.DBInfo.Password = pw
 		}
+	}
+
+	if sshParsed != nil {
+		ssh := types.SSHTunnelConfig{}
+		if v, ok := sshParsed["enabled"]; ok {
+			switch strings.ToLower(strings.TrimSpace(v)) {
+			case "1", "true", "yes", "y", "on":
+				ssh.Enabled = true
+			}
+		}
+		if v, ok := sshParsed["host"]; ok {
+			ssh.Host = strings.TrimSpace(v)
+		}
+		if v, ok := sshParsed["port"]; ok {
+			if p, perr := strconv.Atoi(strings.TrimSpace(v)); perr == nil {
+				ssh.Port = p
+			}
+		}
+		if ssh.Port == 0 {
+			ssh.Port = 22
+		}
+		if v, ok := sshParsed["user"]; ok {
+			ssh.User = strings.TrimSpace(v)
+		}
+		if v, ok := sshParsed["ssh_password"]; ok {
+			ssh.Password = strings.TrimSpace(v)
+		}
+		if v, ok := sshParsed["identity_file"]; ok {
+			ssh.IdentityFile = strings.TrimSpace(v)
+		}
+		if v, ok := sshParsed["local_port"]; ok {
+			if lp, lperr := strconv.Atoi(strings.TrimSpace(v)); lperr == nil {
+				ssh.LocalPort = lp
+			}
+		}
+		info.SSHTunnel = ssh
 	}
 	return info, nil
 }

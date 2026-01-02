@@ -20,6 +20,17 @@ func ParsingCreateProfile(cmd *cobra.Command, applog applog.Logger) (*types.Prof
 	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
 	interactive := helper.GetBoolFlagOrEnv(cmd, "interactive", "")
 
+	sshEnabled := helper.GetBoolFlagOrEnv(cmd, "ssh", "")
+	sshHost := helper.GetStringFlagOrEnv(cmd, "ssh-host", "")
+	sshPort := helper.GetIntFlagOrEnv(cmd, "ssh-port", "")
+	sshUser := helper.GetStringFlagOrEnv(cmd, "ssh-user", "")
+	sshPassword := helper.GetStringFlagOrEnv(cmd, "ssh-password", "")
+	sshIdentityFile := helper.GetStringFlagOrEnv(cmd, "ssh-identity-file", "")
+	sshLocalPort := helper.GetIntFlagOrEnv(cmd, "ssh-local-port", "")
+	if sshPort == 0 {
+		sshPort = 22
+	}
+
 	if port == 0 {
 		port = 3306
 	}
@@ -46,6 +57,15 @@ func ParsingCreateProfile(cmd *cobra.Command, applog applog.Logger) (*types.Prof
 				User:     user,
 				Password: password,
 			},
+			SSHTunnel: types.SSHTunnelConfig{
+				Enabled:      sshEnabled,
+				Host:         sshHost,
+				Port:         sshPort,
+				User:         sshUser,
+				Password:     sshPassword,
+				IdentityFile: sshIdentityFile,
+				LocalPort:    sshLocalPort,
+			},
 		},
 		OutputDir:   outputDir,
 		Interactive: interactive,
@@ -66,6 +86,17 @@ func ParsingEditProfile(cmd *cobra.Command) (*types.ProfileEditOptions, error) {
 	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
 	interactive := helper.GetBoolFlagOrEnv(cmd, "interactive", "")
 
+	sshEnabled := helper.GetBoolFlagOrEnv(cmd, "ssh", "")
+	sshHost := helper.GetStringFlagOrEnv(cmd, "ssh-host", "")
+	sshPort := helper.GetIntFlagOrEnv(cmd, "ssh-port", "")
+	sshUser := helper.GetStringFlagOrEnv(cmd, "ssh-user", "")
+	sshPassword := helper.GetStringFlagOrEnv(cmd, "ssh-password", "")
+	sshIdentityFile := helper.GetStringFlagOrEnv(cmd, "ssh-identity-file", "")
+	sshLocalPort := helper.GetIntFlagOrEnv(cmd, "ssh-local-port", "")
+	if sshPort == 0 {
+		sshPort = 22
+	}
+
 	profileOptions := &types.ProfileEditOptions{
 		ProfileInfo: types.ProfileInfo{
 			Path:          filePath,
@@ -76,6 +107,15 @@ func ParsingEditProfile(cmd *cobra.Command) (*types.ProfileEditOptions, error) {
 				Port:     port,
 				User:     user,
 				Password: password,
+			},
+			SSHTunnel: types.SSHTunnelConfig{
+				Enabled:      sshEnabled,
+				Host:         sshHost,
+				Port:         sshPort,
+				User:         sshUser,
+				Password:     sshPassword,
+				IdentityFile: sshIdentityFile,
+				LocalPort:    sshLocalPort,
 			},
 		},
 		NewName:     newName,

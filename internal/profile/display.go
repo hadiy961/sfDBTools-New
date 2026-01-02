@@ -2,7 +2,7 @@
 // Deskripsi : Display functions untuk profile operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 17 Desember 2025
+// Last Modified : 2 Januari 2026
 
 package profile
 
@@ -59,6 +59,19 @@ func (s *Service) printCreateSummary() {
 		pwState = "(set)"
 	}
 	rows = append(rows, []string{"5", "Password", pwState})
+	sshState := "disabled"
+	if s.ProfileInfo.SSHTunnel.Enabled {
+		sshState = "enabled"
+	}
+	rows = append(rows, []string{"6", "SSH Tunnel", sshState})
+	if s.ProfileInfo.SSHTunnel.Enabled {
+		rows = append(rows, []string{"7", "SSH Host", s.ProfileInfo.SSHTunnel.Host})
+		sshPwState := "(not set)"
+		if s.ProfileInfo.SSHTunnel.Password != "" {
+			sshPwState = "(set)"
+		}
+		rows = append(rows, []string{"8", "SSH Password", sshPwState})
+	}
 
 	ui.FormatTable([]string{"No", "Field", "Value"}, rows)
 }
@@ -99,6 +112,18 @@ func (s *Service) printChangeSummary() {
 		rows = append(rows, []string{fmt.Sprintf("%d", idx), "Password", pwState(orig.DBInfo.Password), pwState(s.ProfileInfo.DBInfo.Password)})
 		idx++
 	}
+	if orig.SSHTunnel.Enabled != s.ProfileInfo.SSHTunnel.Enabled {
+		rows = append(rows, []string{fmt.Sprintf("%d", idx), "SSH Tunnel", fmt.Sprintf("%v", orig.SSHTunnel.Enabled), fmt.Sprintf("%v", s.ProfileInfo.SSHTunnel.Enabled)})
+		idx++
+	}
+	if orig.SSHTunnel.Host != s.ProfileInfo.SSHTunnel.Host {
+		rows = append(rows, []string{fmt.Sprintf("%d", idx), "SSH Host", orig.SSHTunnel.Host, s.ProfileInfo.SSHTunnel.Host})
+		idx++
+	}
+	if orig.SSHTunnel.Password != s.ProfileInfo.SSHTunnel.Password {
+		rows = append(rows, []string{fmt.Sprintf("%d", idx), "SSH Password", pwState(orig.SSHTunnel.Password), pwState(s.ProfileInfo.SSHTunnel.Password)})
+		idx++
+	}
 
 	if len(rows) == 0 {
 		ui.PrintInfo("Tidak ada perubahan yang terdeteksi pada konfigurasi.")
@@ -127,8 +152,19 @@ func (s *Service) printShowDetails() {
 		{"4", "Port", fmt.Sprintf("%d", orig.DBInfo.Port)},
 		{"5", "User", orig.DBInfo.User},
 		{"6", "Password", pwState},
+		{"7", "SSH Tunnel", fmt.Sprintf("%v", orig.SSHTunnel.Enabled)},
 		{"8", "File Size", orig.Size},
 		{"9", "Last Modified", fmt.Sprintf("%v", orig.LastModified)},
+	}
+	if orig.SSHTunnel.Enabled {
+		rows = append(rows, []string{"10", "SSH Host", orig.SSHTunnel.Host})
+		rows = append(rows, []string{"11", "SSH User", orig.SSHTunnel.User})
+		rows = append(rows, []string{"12", "SSH Port", fmt.Sprintf("%d", orig.SSHTunnel.Port)})
+		sshPwState := "(not set)"
+		if orig.SSHTunnel.Password != "" {
+			sshPwState = "(set)"
+		}
+		rows = append(rows, []string{"13", "SSH Password", sshPwState})
 	}
 
 	ui.FormatTable([]string{"No", "Field", "Value"}, rows)

@@ -2,7 +2,7 @@
 // Deskripsi : Helper profile dan koneksi database target untuk restore
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
+// Last Modified : 2026-01-02
 
 package restore
 
@@ -10,11 +10,9 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"time"
 
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/database"
 	profilehelper "sfDBTools/pkg/helper/profile"
 )
 
@@ -47,17 +45,7 @@ func (s *Service) resolveTargetProfile(profileInfo *types.ProfileInfo, allowInte
 func (s *Service) connectToTargetDatabase(ctx context.Context) error {
 	s.Log.Info("Menghubungkan ke database target...")
 
-	cfg := database.Config{
-		Host:                 s.Profile.DBInfo.Host,
-		Port:                 s.Profile.DBInfo.Port,
-		User:                 s.Profile.DBInfo.User,
-		Password:             s.Profile.DBInfo.Password,
-		AllowNativePasswords: true,
-		ParseTime:            true,
-		Database:             "",
-	}
-
-	client, err := database.NewClient(ctx, cfg, 10*time.Second, 10, 5, 5*time.Minute)
+	client, err := profilehelper.ConnectWithProfile(s.Profile, consts.DefaultInitialDatabase)
 	if err != nil {
 		return fmt.Errorf("koneksi database target gagal: %w", err)
 	}

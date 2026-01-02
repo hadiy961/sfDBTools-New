@@ -18,6 +18,7 @@ import (
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
 	pkghelper "sfDBTools/pkg/helper"
+	profilehelper "sfDBTools/pkg/helper/profile"
 )
 
 // StateTracker interface untuk tracking current backup file state.
@@ -113,7 +114,7 @@ func (e *Engine) ExecuteAndBuildBackup(
 
 	mysqldumpArgs := BuildMysqldumpArgs(
 		e.Config.Backup.MysqlDumpArgs,
-		e.Options.Profile.DBInfo,
+		profilehelper.EffectiveDBInfo(&e.Options.Profile),
 		e.Options.Filter,
 		dbList,
 		cfg.DBName,
