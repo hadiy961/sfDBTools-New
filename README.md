@@ -98,44 +98,287 @@ Lihat profile:
 sfdbtools profile show
 ```
 
-### 2) Backup
+### 2) Backup Database
 
-Backup single database:
+#### Backup Single Database
+
+Backup satu database dengan kompresi dan enkripsi:
 
 ```bash
 sfdbtools db-backup single \
   --profile ./configs/prod-db.cnf.enc \
   --profile-key "my-secret-key" \
-  --database "target_db" \
-  --ticket "TICKET-123"
+  --database "myapp_db" \
+  --ticket "TICKET-123" \
+  --compression zstd \
+  --encryption-key "backup-secret"
 ```
 
-Backup semua database (misal exclude system DB):
+#### Backup Semua Database (Exclude System DB)
 
 ```bash
 sfdbtools db-backup all \
   --profile ./configs/prod-db.cnf.enc \
   --profile-key "my-secret-key" \
   --exclude-system \
-  --ticket "TICKET-123"
+  --compression gzip \
+  --ticket "BACKUP-DAILY-001"
 ```
 
-Jika ingin enkripsi output backup:
+#### Backup Primary Databases (Pattern-Based)
+
+Backup semua database yang match pattern primary (contoh: `dbsf_nbc_*`):
 
 ```bash
-export SFDB_BACKUP_ENCRYPTION_KEY="my-backup-key"
-sfdbtools db-backup single --profile ./configs/prod-db.cnf.enc --profile-key "my-secret-key" --database "target_db" --ticket "TICKET-123"
+sfdbtools db-backup primary \
+  --profile ./configs/prod-db.cnf.enc \
+  --profile-key "my-secret-key" \
+  --compression zstd \
+  --ticket "PROD-BACKUP-20260105"
 ```
 
-### 3) Restore
+#### Backup dengan Custom Output Directory
 
-Restore single database (wajib `--ticket`):
+```bash
+sfdbtools db-backup single \
+  --profile ./configs/prod-db.cnf.enc \
+  --profile-key "my-secret-key" \
+  --database "customer_data" \
+  --output-dir "/backups/custom/location" \
+  --ticket "CUSTOM-001"
+```
+
+#### Backup Tanpa Data (Schema Only)
+
+```bash
+sfdbtools db-backup single \
+  --profile ./configs/prod-db.cnf.enc \
+  --profile-key "my-secret-key" \
+  --database "myapp_db" \
+  --no-data \
+  --ticket "SCHEMA-BACKUP-001"
+```
+
+#### Backup dengan User Grants
+
+```bash
+sfdbtools db-backup single \
+  --profile ./configs/prod-db.cnf.enc \
+  --profile-key "my-secret-key" \
+  --database "myapp_db" \
+  --dump-user-grants \
+  --ticket "FULL-BACKUP-001"
+```
+
+### 3) Restore Database
+
+#### Restore Single Database
+
+Restore database dari backup file (wajib `--ticket`):
 
 ```bash
 sfdbtools db-restore single \
-  --file "/path/to/backup.sql.gz.enc" \
-  --encryption-key "my-backup-key" \
-  --ticket "TICKET-123"
+  --file "/backups/myapp_db_20260105_120000.sql.gz.enc" \
+  --encryption-key "backup-secret" \
+  --ticket "RESTORE-123"
+```
+
+#### Restore ke Target Database Berbeda
+
+```bash
+sfdbtools db-restore single \
+  --file "/backups/production_db.sql.gz.enc" \
+  --target-database "staging_db" \
+  --encryption-key "backup-secret" \
+  --ticket "RESTORE-TO-STAGING"
+```
+
+#### Restore dengan Auto-Detect Companion Database
+
+Restore primary database beserta companion-nya (_dmart, _temp, dll):
+
+```bash
+sfdbtools db-restore primary \
+  --file "/backups/dbsf_nbc_client_20260105.sql.gz.enc" \
+  --auto-detect-dmart \
+  --encryption-key "backup-secret" \
+  --ticket "RESTORE-WITH-COMPANION"
+```
+
+#### Restore Selection (Interactive)
+
+Restore dengan memilih database secara interaktif:
+
+```bash
+sfdbtools db-restore selection \
+  --file "/backups/all_databases_20260105.sql.gz.enc" \
+  --encryption-key "backup-secret" \
+  --ticket "SELECTIVE-RESTORE"
+```
+
+### 4) Database Scan
+
+#### Scan Semua Database
+
+Lihat metadata semua database di server:
+
+```bash
+sfdbtools db-scan all \
+  --profile ./configs/prod-db.cnf.enc \
+  --profile-key "my-secret-key"
+```
+
+#### Scan Database Lokal
+
+Scan database dari file backup lokal:
+
+```bash
+sfdbtools db-scan all-local \
+  --backup-dir "/backups/2026/01/05"
+```
+
+#### Scan dengan Filter
+
+Scan database yang match pattern tertentu:
+
+```bash
+sfdbtools db-scan filter \
+  --profile ./configs/prod-db.cnf.enc \
+  --profile-key "my-secret-key" \
+  --filter "dbsf_*"
+```
+
+### 5) Cleanup Old Backups
+
+#### Cleanup Otomatis Berdasarkan Retention
+
+```bash
+sfdbtools cleanup auto \
+  --backup-dir "/backups" \
+  --retention-days 30 \
+  --dry-run
+```
+
+Setelah yakin, jalankan tanpa `--dry-run`:
+
+```bash
+sfdbtools cleanup auto \
+  --backup-dir "/backups" \
+  --retention-days 30
+```
+
+#### Cleanup Manual (Interactive)
+
+```bash
+sfdbtools cleanup manual \
+  --backup-dir "/backups/2025"
+```
+
+### 6) Profile Management
+
+#### Create Profile (Interactive Wizard)
+
+```bash
+sfdbtools profile create
+```
+
+#### Show All Profiles
+
+```bash
+sfdbtools profile show
+```
+
+#### Show Specific Profile
+
+```bash
+sfdbtools profile show --file ./configs/prod-db.cnf.enc
+```
+
+#### Edit Profile
+
+```bash
+sfdbtools profile edit --file ./configs/prod-db.cnf.enc
+```
+
+#### Delete Profile
+
+```bash
+sfdbtools profile delete --file ./configs/prod-db.cnf.enc
+```
+
+### 7) Crypto Utilities
+
+#### Encrypt File
+
+```bash
+sfdbtools crypto encrypt-file \
+  --input /path/to/sensitive-data.txt \
+  --output /path/to/sensitive-data.txt.enc \
+  --key "my-encryption-key"
+```
+
+#### Decrypt File
+
+```bash
+sfdbtools crypto decrypt-file \
+  --input /path/to/sensitive-data.txt.enc \
+  --output /path/to/sensitive-data.txt \
+  --key "my-encryption-key"
+```
+
+#### Encrypt Text (Interactive)
+
+```bash
+sfdbtools crypto encrypt-text
+```
+
+#### Base64 Encode
+
+```bash
+echo "Hello World" | sfdbtools crypto base64-encode
+```
+
+#### Base64 Decode
+
+```bash
+echo "SGVsbG8gV29ybGQ=" | sfdbtools crypto base64-decode
+```
+
+### 8) Automation & Pipeline Usage
+
+#### Quiet Mode untuk CI/CD
+
+```bash
+export SFDB_QUIET=1  # Suppress banners dan spinner
+sfdbtools db-backup single \
+  --profile ./configs/prod-db.cnf.enc \
+  --profile-key "my-secret-key" \
+  --database "myapp_db" \
+  --ticket "AUTO-BACKUP-$(date +%Y%m%d)" 2>&1 | tee backup.log
+```
+
+#### Environment Variables untuk Automation
+
+```bash
+# Set environment variables untuk password
+export SFDB_SOURCE_PROFILE_KEY="profile-encryption-key"
+export SFDB_BACKUP_ENCRYPTION_KEY="backup-encryption-key"
+
+# Jalankan tanpa perlu specify key di CLI
+sfdbtools db-backup single \
+  --profile ./configs/prod-db.cnf.enc \
+  --database "myapp_db" \
+  --ticket "AUTO-BACKUP-001"
+```
+
+#### Cron Job Example
+
+```cron
+# Daily backup jam 2 pagi
+0 2 * * * cd /opt/sfDBTools && SFDB_QUIET=1 sfdbtools db-backup all --profile /etc/sfDBTools/prod.cnf.enc --ticket "DAILY-$(date +\%Y\%m\%d)" >> /var/log/sfdbtools-backup.log 2>&1
+
+# Weekly cleanup retention 30 hari
+0 3 * * 0 sfdbtools cleanup auto --backup-dir /backups --retention-days 30 >> /var/log/sfdbtools-cleanup.log 2>&1
 ```
 
 ## Ringkasan Command

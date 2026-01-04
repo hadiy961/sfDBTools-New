@@ -2,7 +2,7 @@
 // Deskripsi : Generator unit systemd untuk scheduler backup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-02
+// Last Modified : 2026-01-05
 
 package scheduler
 
@@ -168,6 +168,8 @@ func writeServiceTemplate() error {
 		"",
 		"[Service]",
 		"Type=oneshot",
+		"UMask=0077",
+		"SyslogIdentifier=sfdbtools",
 		fmt.Sprintf("EnvironmentFile=-%s", defaultEnvFile),
 		"",
 		// Global lock: semua job antri dan tidak boleh paralel.
@@ -245,6 +247,9 @@ func validateJobsForStart(deps *appdeps.Dependencies, jobs []types.BackupSchedul
 	if deps == nil || deps.Config == nil {
 		return fmt.Errorf("config belum tersedia")
 	}
+	if err := ensureEnvFileSecure(defaultEnvFile); err != nil {
+		return err
+	}
 
 	// Pastikan profile-key tersedia via env OS atau file env systemd.
 	sourceProfileKey := lookupEnvOrFile(consts.ENV_SOURCE_PROFILE_KEY, defaultEnvFile)
@@ -297,6 +302,24 @@ func validateJobsForStart(deps *appdeps.Dependencies, jobs []types.BackupSchedul
 		}
 	}
 
+	return nil
+}
+
+func ensureEnvFileSecure(path string) error {
+	st, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("gagal cek env file %s: %w", path, err)
+	}
+	if st.IsDir() {
+		return fmt.Errorf("env file %s tidak valid (directory)", path)
+	}
+	// Env file bisa berisi key sensitif, jadi permission harus ketat.
+	if st.Mode().Perm()&0o077 != 0 {
+		return fmt.Errorf("permission env file %s tidak aman (%o). Disarankan: chown root:root %s && chmod 600 %s", path, st.Mode().Perm(), path, path)
+	}
 	return nil
 }
 

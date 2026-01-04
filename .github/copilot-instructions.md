@@ -1,7 +1,9 @@
 # sfDBTools Copilot Instructions
 
 ## Project Overview
-**sfDBTools** is a production-grade CLI utility for MySQL/MariaDB database management, built in **Go (Golang)**. It follows **Clean Architecture** principles and prioritizes data safety, security (AES-256), and automation.
+**sfDBTools** is a production-grade CLI utility built to simplify and standardize day-to-day work for **Database Administrators (DBAs)** managing **MariaDB/MySQL and Microsoft SQL Server** environments. It supports operational workflows across **SaaS**, **hosting**, and **on‑premise** deployments—focused on repeatability, automation, and reducing human error.
+
+Built in **Go (Golang)** and aligned with **Clean Architecture**, sfDBTools prioritizes **data safety** and **security**, including **AES‑256** encryption for sensitive assets (such as backups and connection profiles), while keeping execution reliable and suitable for production operations.
 
 **Core Features**: Backup (multi-mode with encryption/compression), Restore (with companion database handling), Profile management, DB scanning, Cleanup, and Crypto utilities.
 

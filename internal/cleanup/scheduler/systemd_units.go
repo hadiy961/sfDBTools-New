@@ -2,7 +2,7 @@
 // Deskripsi : Generator unit systemd untuk scheduler cleanup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-04
+// Last Modified : 2026-01-05
 
 package scheduler
 
@@ -28,6 +28,12 @@ const (
 
 func Start(ctx context.Context, deps *appdeps.Dependencies, dryRun bool) error {
 	if err := schedulerutil.EnsureLinux(); err != nil {
+		return err
+	}
+	if err := ensureRoot(); err != nil {
+		return err
+	}
+	if err := ensureEnvFileSecure(defaultEnvFile); err != nil {
 		return err
 	}
 	enabled, schedule, err := getCleanupConfig(deps)
@@ -59,6 +65,9 @@ func Start(ctx context.Context, deps *appdeps.Dependencies, dryRun bool) error {
 
 func Stop(ctx context.Context, _ *appdeps.Dependencies, killRunning bool) error {
 	if err := schedulerutil.EnsureLinux(); err != nil {
+		return err
+	}
+	if err := ensureRoot(); err != nil {
 		return err
 	}
 	_ = schedulerutil.Systemctl(ctx, "disable", "--now", cleanupTimerUnit)
@@ -97,6 +106,8 @@ func writeServiceUnit(dryRun bool) error {
 		args += " --dry-run"
 	}
 
+	binaryPath := detectBinaryPathForSystemd()
+
 	content := strings.Join([]string{
 		"[Unit]",
 		"Description=sfDBTools Cleanup",
@@ -105,9 +116,11 @@ func writeServiceUnit(dryRun bool) error {
 		"",
 		"[Service]",
 		"Type=oneshot",
+		"UMask=0077",
+		"SyslogIdentifier=sfdbtools",
 		fmt.Sprintf("EnvironmentFile=-%s", defaultEnvFile),
 		"",
-		fmt.Sprintf("ExecStart=/usr/bin/flock -x %s /usr/bin/sfdbtools --daemon %s", defaultLockFile, args),
+		fmt.Sprintf("ExecStart=/usr/bin/flock -x %s %s --daemon %s", defaultLockFile, binaryPath, args),
 		"TimeoutStartSec=0",
 		"",
 		"[Install]",
@@ -143,6 +156,45 @@ func writeTimerUnit(cron string) error {
 	path := filepath.Join(systemdUnitDir, cleanupTimerUnit)
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("gagal menulis unit timer %s: %w", path, err)
+	}
+	return nil
+}
+
+func ensureRoot() error {
+	// Butuh akses tulis /etc/systemd/system dan systemctl enable/disable.
+	if os.Geteuid() != 0 {
+		return fmt.Errorf("perintah ini butuh root (gunakan sudo)")
+	}
+	return nil
+}
+
+func detectBinaryPathForSystemd() string {
+	// Default: sesuai scripts/build_run.sh (dan tar installer).
+	defaultPath := "/usr/bin/sfDBTools"
+	if _, err := os.Stat("/usr/bin/sfdbtools"); err == nil {
+		return "/usr/bin/sfdbtools"
+	}
+	if _, err := os.Stat(defaultPath); err == nil {
+		return defaultPath
+	}
+	// Jika belum terinstall, tetap tulis defaultPath agar konsisten.
+	return defaultPath
+}
+
+func ensureEnvFileSecure(path string) error {
+	st, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("gagal cek env file %s: %w", path, err)
+	}
+	if st.IsDir() {
+		return fmt.Errorf("env file %s tidak valid (directory)", path)
+	}
+	// Env file bisa berisi key sensitif, jadi permission harus ketat.
+	if st.Mode().Perm()&0o077 != 0 {
+		return fmt.Errorf("permission env file %s tidak aman (%o). Disarankan: chown root:root %s && chmod 600 %s", path, st.Mode().Perm(), path, path)
 	}
 	return nil
 }
