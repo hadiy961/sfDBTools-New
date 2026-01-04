@@ -14,7 +14,6 @@ import (
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
@@ -120,15 +119,13 @@ func (e *Executor) EditProfile() error {
 
 		if err := e.SaveProfile(consts.ProfileSaveModeEdit); err != nil {
 			if err == validation.ErrConnectionFailedRetry {
-				retryInput, askErr := input.AskYesNo(consts.ProfilePromptRetryInputConfig, true)
-				if askErr != nil {
-					return validation.HandleInputError(askErr)
+				retry, err2 := e.handleConnectionFailedRetry(consts.ProfileMsgRetryEdit, consts.ProfileMsgEditCancelled)
+				if err2 != nil {
+					return err2
 				}
-				if retryInput {
-					ui.PrintWarning(consts.ProfileMsgRetryEdit)
+				if retry {
 					continue
 				}
-				ui.PrintInfo(consts.ProfileMsgEditCancelled)
 				return validation.ErrUserCancelled
 			}
 			return err

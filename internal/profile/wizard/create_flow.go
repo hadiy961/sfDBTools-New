@@ -9,6 +9,7 @@ package wizard
 import (
 	"strings"
 
+	"sfDBTools/internal/profile/shared"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
@@ -35,7 +36,7 @@ func (r *Runner) runCreateFlow(mode string) error {
 					return err2
 				}
 			} else {
-				ui.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + buildFileName(r.ProfileInfo.Name))
+				ui.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + shared.BuildProfileFileName(r.ProfileInfo.Name))
 			}
 		}
 	}

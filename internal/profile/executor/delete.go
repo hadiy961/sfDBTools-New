@@ -18,6 +18,64 @@ import (
 	"sfDBTools/pkg/validation"
 )
 
+func filterProfileConfigFiles(files []string) []string {
+	filtered := make([]string, 0, len(files))
+	for _, f := range files {
+		if validation.ProfileExt(f) == f {
+			filtered = append(filtered, f)
+		}
+	}
+	return filtered
+}
+
+func (e *Executor) collectValidPathsFromFlags(profiles []string) (validPaths []string, displayNames []string, err error) {
+	validPaths = make([]string, 0, len(profiles))
+	displayNames = make([]string, 0, len(profiles))
+
+	for _, p := range profiles {
+		if p == "" {
+			continue
+		}
+
+		absPath, name, err := helper.ResolveConfigPath(p)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !fsops.PathExists(absPath) {
+			return nil, nil, fmt.Errorf("%s (name: %s)", fmt.Sprintf(consts.ProfileErrConfigFileNotFoundFmt, absPath), name)
+		}
+
+		validPaths = append(validPaths, absPath)
+		displayNames = append(displayNames, fmt.Sprintf("%s (%s)", name, absPath))
+	}
+
+	return validPaths, displayNames, nil
+}
+
+func (e *Executor) deletePaths(paths []string, logSuccessFmt string, showErrorOnFail bool, logFailAsError bool) {
+	for _, p := range paths {
+		if err := fsops.RemoveFile(p); err != nil {
+			if e.Log != nil {
+				if logFailAsError {
+					e.Log.Error(fmt.Sprintf(consts.ProfileDeleteFailedFmt, p, err))
+				} else {
+					e.Log.Errorf(consts.ProfileLogDeleteFileFailedFmt, p, err)
+				}
+			}
+			if showErrorOnFail {
+				ui.PrintError(fmt.Sprintf(consts.ProfileDeleteFailedFmt, p, err))
+			}
+			continue
+		}
+
+		if e.Log != nil {
+			e.Log.Info(fmt.Sprintf(logSuccessFmt, p))
+		}
+		// UI success selalu pakai message yang sama seperti sebelumnya.
+		ui.PrintSuccess(fmt.Sprintf(consts.ProfileDeleteDeletedFmt, p))
+	}
+}
+
 func (e *Executor) PromptDeleteProfile() error {
 	ui.Headers(consts.ProfileUIHeaderDelete)
 	isInteractive := e.isInteractiveMode()
@@ -46,24 +104,9 @@ func (e *Executor) PromptDeleteProfile() error {
 
 	// 1) Jika profile path disediakan via flag --profile (support multiple)
 	if e.ProfileDelete != nil && len(e.ProfileDelete.Profiles) > 0 {
-		validPaths := make([]string, 0, len(e.ProfileDelete.Profiles))
-		displayNames := make([]string, 0, len(e.ProfileDelete.Profiles))
-
-		for _, p := range e.ProfileDelete.Profiles {
-			if p == "" {
-				continue
-			}
-
-			absPath, name, err := helper.ResolveConfigPath(p)
-			if err != nil {
-				return err
-			}
-			if !fsops.PathExists(absPath) {
-				return fmt.Errorf("%s (name: %s)", fmt.Sprintf(consts.ProfileErrConfigFileNotFoundFmt, absPath), name)
-			}
-
-			validPaths = append(validPaths, absPath)
-			displayNames = append(displayNames, fmt.Sprintf("%s (%s)", name, absPath))
+		validPaths, displayNames, err := e.collectValidPathsFromFlags(e.ProfileDelete.Profiles)
+		if err != nil {
+			return err
 		}
 
 		if len(validPaths) == 0 {
@@ -72,18 +115,7 @@ func (e *Executor) PromptDeleteProfile() error {
 		}
 
 		if e.ProfileDelete.Force {
-			for _, path := range validPaths {
-				if err := fsops.RemoveFile(path); err != nil {
-					if e.Log != nil {
-						e.Log.Errorf(consts.ProfileLogDeleteFileFailedFmt, path, err)
-					}
-					continue
-				}
-				if e.Log != nil {
-					e.Log.Info(fmt.Sprintf(consts.ProfileDeleteForceDeletedFmt, path))
-				}
-				ui.PrintSuccess(fmt.Sprintf(consts.ProfileDeleteDeletedFmt, path))
-			}
+			e.deletePaths(validPaths, consts.ProfileDeleteForceDeletedFmt, false, false)
 			return nil
 		}
 
@@ -101,19 +133,7 @@ func (e *Executor) PromptDeleteProfile() error {
 			return nil
 		}
 
-		for _, path := range validPaths {
-			if err := fsops.RemoveFile(path); err != nil {
-				if e.Log != nil {
-					e.Log.Errorf(consts.ProfileLogDeleteFileFailedFmt, path, err)
-				}
-				ui.PrintError(fmt.Sprintf(consts.ProfileDeleteFailedFmt, path, err))
-				continue
-			}
-			if e.Log != nil {
-				e.Log.Info(fmt.Sprintf(consts.ProfileDeleteDeletedFmt, path))
-			}
-			ui.PrintSuccess(fmt.Sprintf(consts.ProfileDeleteDeletedFmt, path))
-		}
+		e.deletePaths(validPaths, consts.ProfileDeleteDeletedFmt, true, false)
 		return nil
 	}
 
@@ -123,12 +143,7 @@ func (e *Executor) PromptDeleteProfile() error {
 		return fmt.Errorf(consts.ProfileDeleteReadConfigDirFailedFmt, err)
 	}
 
-	filtered := make([]string, 0, len(files))
-	for _, f := range files {
-		if validation.ProfileExt(f) == f {
-			filtered = append(filtered, f)
-		}
-	}
+	filtered := filterProfileConfigFiles(files)
 	if len(filtered) == 0 {
 		ui.PrintInfo(consts.ProfileDeleteNoConfigFiles)
 		return nil
@@ -162,19 +177,7 @@ func (e *Executor) PromptDeleteProfile() error {
 		}
 	}
 
-	for _, p := range selected {
-		if err := fsops.RemoveFile(p); err != nil {
-			if e.Log != nil {
-				e.Log.Error(fmt.Sprintf(consts.ProfileDeleteFailedFmt, p, err))
-			}
-			ui.PrintError(fmt.Sprintf(consts.ProfileDeleteFailedFmt, p, err))
-			continue
-		}
-		if e.Log != nil {
-			e.Log.Info(fmt.Sprintf(consts.ProfileDeleteDeletedFmt, p))
-		}
-		ui.PrintSuccess(fmt.Sprintf(consts.ProfileDeleteDeletedFmt, p))
-	}
+	e.deletePaths(selected, consts.ProfileDeleteDeletedFmt, true, true)
 
 	return nil
 }

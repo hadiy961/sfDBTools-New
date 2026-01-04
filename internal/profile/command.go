@@ -16,6 +16,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var profileExecutionConfigs = map[string]types.ProfileEntryConfig{
+	consts.ProfileModeCreate: {
+		HeaderTitle: consts.ProfileHeaderCreate,
+		Mode:        consts.ProfileModeCreate,
+		SuccessMsg:  consts.ProfileSuccessCreated,
+		LogPrefix:   consts.ProfileLogPrefixCreate,
+	},
+	consts.ProfileModeShow: {
+		HeaderTitle: consts.ProfileHeaderShow,
+		Mode:        consts.ProfileModeShow,
+		SuccessMsg:  "", // No success message for show
+		LogPrefix:   consts.ProfileLogPrefixShow,
+	},
+	consts.ProfileModeEdit: {
+		HeaderTitle: consts.ProfileHeaderEdit,
+		Mode:        consts.ProfileModeEdit,
+		SuccessMsg:  consts.ProfileSuccessUpdated,
+		LogPrefix:   consts.ProfileLogPrefixEdit,
+	},
+	consts.ProfileModeDelete: {
+		HeaderTitle: consts.ProfileHeaderDelete,
+		Mode:        consts.ProfileModeDelete,
+		SuccessMsg:  consts.ProfileSuccessDeleted,
+		LogPrefix:   consts.ProfileLogPrefixDelete,
+	},
+}
+
 // =============================================================================
 // Public API - Command Executors (dipanggil dari cmd layer)
 // =============================================================================
@@ -88,34 +115,7 @@ func executeProfileWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 
 // GetExecutionConfig mengembalikan konfigurasi untuk mode profile tertentu
 func GetExecutionConfig(mode string) (types.ProfileEntryConfig, error) {
-	configs := map[string]types.ProfileEntryConfig{
-		consts.ProfileModeCreate: {
-			HeaderTitle: consts.ProfileHeaderCreate,
-			Mode:        consts.ProfileModeCreate,
-			SuccessMsg:  consts.ProfileSuccessCreated,
-			LogPrefix:   consts.ProfileLogPrefixCreate,
-		},
-		consts.ProfileModeShow: {
-			HeaderTitle: consts.ProfileHeaderShow,
-			Mode:        consts.ProfileModeShow,
-			SuccessMsg:  "", // No success message for show
-			LogPrefix:   consts.ProfileLogPrefixShow,
-		},
-		consts.ProfileModeEdit: {
-			HeaderTitle: consts.ProfileHeaderEdit,
-			Mode:        consts.ProfileModeEdit,
-			SuccessMsg:  consts.ProfileSuccessUpdated,
-			LogPrefix:   consts.ProfileLogPrefixEdit,
-		},
-		consts.ProfileModeDelete: {
-			HeaderTitle: consts.ProfileHeaderDelete,
-			Mode:        consts.ProfileModeDelete,
-			SuccessMsg:  consts.ProfileSuccessDeleted,
-			LogPrefix:   consts.ProfileLogPrefixDelete,
-		},
-	}
-
-	config, ok := configs[mode]
+	config, ok := profileExecutionConfigs[mode]
 	if !ok {
 		return types.ProfileEntryConfig{}, ErrInvalidProfileMode
 	}

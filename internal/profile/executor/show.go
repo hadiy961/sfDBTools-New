@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi tampilkan profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package executor
 
@@ -64,13 +64,14 @@ func (e *Executor) ShowProfile() error {
 		}
 		e.ProfileInfo.Name = name
 		if e.LoadSnapshotFromPath != nil {
-			if snap, err := e.LoadSnapshotFromPath(abs); err != nil {
+			snap, err := e.LoadSnapshotFromPath(abs)
+			if err != nil {
 				if e.Log != nil {
 					e.Log.Warn(fmt.Sprintf(consts.ProfileLogLoadConfigDetailsFailedFmt, err))
 				}
-			} else {
-				e.OriginalProfileInfo = snap
+				return err
 			}
+			e.OriginalProfileInfo = snap
 		}
 	}
 
@@ -90,6 +91,37 @@ func (e *Executor) ShowProfile() error {
 		ui.PrintWarning(consts.ProfileWarnDBConnectFailedPrefix + err.Error())
 	} else {
 		c.Close()
+	}
+
+	// Non-interaktif: --reveal-password tidak boleh prompt.
+	// Fail-fast jika key salah/corrupt agar scripting mendapat exit code non-zero.
+	if e.ProfileShow != nil && e.ProfileShow.RevealPassword && !isInteractive {
+		if strings.TrimSpace(e.ProfileInfo.EncryptionKey) == "" {
+			return fmt.Errorf(
+				consts.ProfileErrNonInteractiveProfileKeyRequiredFmt,
+				consts.ENV_TARGET_PROFILE_KEY,
+				consts.ENV_SOURCE_PROFILE_KEY,
+				validation.ErrNonInteractive,
+			)
+		}
+		info, err := profilehelper.ResolveAndLoadProfile(profilehelper.ProfileLoadOptions{
+			ConfigDir:      e.ConfigDir,
+			ProfilePath:    e.OriginalProfileInfo.Path,
+			ProfileKey:     e.ProfileInfo.EncryptionKey,
+			RequireProfile: true,
+		})
+		if err != nil {
+			return err
+		}
+		display := consts.ProfileDisplayStateNotSet
+		if strings.TrimSpace(info.DBInfo.Password) != "" {
+			display = info.DBInfo.Password
+		}
+		ui.PrintSubHeader(consts.ProfileDisplayRevealedPasswordTitle)
+		ui.FormatTable(
+			[]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderValue},
+			[][]string{{"1", consts.ProfileLabelDBPassword, display}},
+		)
 	}
 
 	if e.DisplayProfileDetails != nil {

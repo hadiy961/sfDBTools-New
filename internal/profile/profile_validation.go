@@ -2,7 +2,7 @@
 // Deskripsi : Validasi dan pengecekan unik untuk profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package profile
 
@@ -79,6 +79,9 @@ func ValidateProfileInfo(p *types.ProfileInfo) error {
 	}
 	if p.Name == "" {
 		return fmt.Errorf(consts.ProfileErrProfileNameEmptyAlt)
+	}
+	if err := validation.ValidateProfileName(p.Name); err != nil {
+		return err
 	}
 	if err := ValidateDBInfo(&p.DBInfo); err != nil {
 		return fmt.Errorf(consts.ProfileErrValidateDBInfoFailedFmt, err)

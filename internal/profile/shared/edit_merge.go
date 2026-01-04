@@ -7,10 +7,30 @@
 package shared
 
 import (
+	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/validation"
 	"strings"
 
 	"sfDBTools/internal/types"
 )
+
+func BuildProfileFileName(name string) string {
+	return validation.ProfileExt(helper.TrimProfileSuffix(strings.TrimSpace(name)))
+}
+
+func CloneAsOriginalProfileInfo(info *types.ProfileInfo) *types.ProfileInfo {
+	if info == nil {
+		return nil
+	}
+	return &types.ProfileInfo{
+		Path:         info.Path,
+		Name:         info.Name,
+		DBInfo:       info.DBInfo,
+		SSHTunnel:    info.SSHTunnel,
+		Size:         info.Size,
+		LastModified: info.LastModified,
+	}
+}
 
 func ApplySnapshotAsBaseline(dst *types.ProfileInfo, snapshot *types.ProfileInfo) {
 	if dst == nil || snapshot == nil {

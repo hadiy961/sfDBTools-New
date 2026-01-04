@@ -4,7 +4,7 @@ package consts
 // Deskripsi : Konstanta yang digunakan oleh fitur profile (prompt, header, dan pesan umum)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 // =============================================================================
 // Header + Success message
@@ -26,7 +26,8 @@ const (
 // =============================================================================
 
 const (
-	ProfileMsgNonInteractivePrefix = "mode non-interaktif (--quiet): "
+	ProfileNonInteractiveQuiet     = "non-interaktif (--quiet):"
+	ProfileMsgNonInteractivePrefix = "mode " + ProfileNonInteractiveQuiet + " "
 
 	// Mode strings
 	ProfileModeCreate = "create"
@@ -64,18 +65,29 @@ const (
 	ProfilePromptConfirmRetry         = "Apakah Anda ingin mengulang proses?"
 	ProfilePromptRetryInputConfig     = "Apakah Anda ingin mengulang input konfigurasi?"
 
-	ProfilePromptDBHost     = "Database Host"
-	ProfilePromptDBPort     = "Database Port"
-	ProfilePromptDBUser     = "Database User"
-	ProfilePromptDBPassword = "Database Password"
+	// Shared labels (dipakai ulang oleh prompt/field/display)
+	ProfileLabelDBHost          = "Database Host"
+	ProfileLabelDBPort          = "Database Port"
+	ProfileLabelDBUser          = "Database User"
+	ProfileLabelDBPassword      = "Database Password"
+	ProfileLabelSSHHost         = "SSH Host"
+	ProfileLabelSSHPort         = "SSH Port"
+	ProfileLabelSSHUser         = "SSH User"
+	ProfileLabelSSHPassword     = "SSH Password"
+	ProfileLabelSSHIdentityFile = "SSH Identity File"
+	ProfileLabelLocalPort       = "Local Port"
+	ProfileLabelSSHLocalPort    = "SSH Local Port"
+
+	ProfileSuffixOptional     = " (opsional)"
+	ProfileSuffixEmptyDefault = " (kosong = default)"
+	ProfileSuffixZeroAuto     = " (0 = otomatis)"
 
 	ProfilePromptUseSSHTunnel            = "Gunakan SSH tunnel untuk koneksi database?"
 	ProfilePromptSSHHost                 = "SSH Host (bastion)"
-	ProfilePromptSSHPort                 = "SSH Port"
-	ProfilePromptSSHUser                 = "SSH User (kosong = default)"
-	ProfilePromptSSHPasswordOptional     = "SSH Password (opsional)"
-	ProfilePromptSSHIdentityFileOptional = "SSH Identity File (opsional)"
-	ProfilePromptSSHLocalPort            = "Local Port (0 = otomatis)"
+	ProfilePromptSSHUser                 = ProfileLabelSSHUser + ProfileSuffixEmptyDefault
+	ProfilePromptSSHPasswordOptional     = ProfileLabelSSHPassword + ProfileSuffixOptional
+	ProfilePromptSSHIdentityFileOptional = ProfileLabelSSHIdentityFile + ProfileSuffixOptional
+	ProfilePromptSSHLocalPort            = ProfileLabelLocalPort + ProfileSuffixZeroAuto
 
 	ProfileTipKeepCurrentDBPassword  = "💡 Tekan Enter untuk mempertahankan password saat ini."
 	ProfileTipKeepCurrentSSHPassword = "💡 Tekan Enter untuk mempertahankan SSH password saat ini."
@@ -136,13 +148,14 @@ const (
 	ProfileDeleteDeletedFmt             = "Berhasil menghapus: %s"
 	ProfileDeleteFailedFmt              = "Gagal menghapus: %s (%v)"
 	ProfileDeleteWillDeleteHeader       = "Akan menghapus profil berikut:"
-	ProfileDeleteConfirmCountFmt        = "Anda yakin ingin menghapus %d profil ini?"
+	ProfileDeleteConfirmPrefix          = "Anda yakin ingin menghapus %d "
+	ProfileDeleteConfirmCountFmt        = ProfileDeleteConfirmPrefix + "profil ini?"
 	ProfileDeleteCancelledByUser        = "Penghapusan dibatalkan oleh pengguna."
 	ProfileDeleteReadConfigDirFailedFmt = "gagal membaca direktori konfigurasi: %w"
 	ProfileDeleteNoConfigFiles          = "Tidak ada file konfigurasi untuk dihapus."
 	ProfileDeleteSelectFilesPrompt      = "Pilih file konfigurasi yang akan dihapus:"
 	ProfileDeleteNoFilesSelected        = "Tidak ada file terpilih untuk dihapus."
-	ProfileDeleteConfirmFilesCountFmt   = "Anda yakin ingin menghapus %d file?"
+	ProfileDeleteConfirmFilesCountFmt   = ProfileDeleteConfirmPrefix + "file?"
 	ProfileDeleteListPrefix             = " - "
 )
 
@@ -158,8 +171,9 @@ const (
 	ProfileErrFormatINIUnavailable        = "format config INI tidak tersedia"
 	ProfileErrEncryptionKeyUnavailableFmt = "kunci enkripsi tidak tersedia: %w"
 	ProfileErrEncryptConfigFailedFmt      = "gagal mengenkripsi konten konfigurasi: %w"
-	ProfileErrWriteNewConfigFailedFmt     = "gagal menyimpan file konfigurasi baru: %w"
-	ProfileErrWriteConfigFailedFmt        = "gagal menyimpan file konfigurasi: %w"
+	ProfileErrWriteConfigBase             = "gagal menyimpan file konfigurasi"
+	ProfileErrWriteNewConfigFailedFmt     = ProfileErrWriteConfigBase + " baru: %w"
+	ProfileErrWriteConfigFailedFmt        = ProfileErrWriteConfigBase + ": %w"
 
 	ProfileSavePromptContinueDespiteDBFail = "\nKoneksi database gagal. Apakah Anda tetap ingin menyimpan konfigurasi ini?"
 	ProfileSaveWarnSavingWithInvalidConn   = "⚠️  PERINGATAN: Menyimpan konfigurasi dengan koneksi database yang tidak valid."
@@ -206,17 +220,7 @@ const (
 // Label field untuk multi-select edit (wizard)
 const (
 	ProfileFieldName            = "Nama profil"
-	ProfileFieldDBHost          = "Database Host"
-	ProfileFieldDBPort          = "Database Port"
-	ProfileFieldDBUser          = "Database User"
-	ProfileFieldDBPassword      = "Database Password"
 	ProfileFieldSSHTunnelToggle = "SSH Tunnel (enable/disable)"
-	ProfileFieldSSHHost         = "SSH Host"
-	ProfileFieldSSHPort         = "SSH Port"
-	ProfileFieldSSHUser         = "SSH User"
-	ProfileFieldSSHPassword     = "SSH Password"
-	ProfileFieldSSHIdentityFile = "SSH Identity File"
-	ProfileFieldSSHLocalPort    = "SSH Local Port"
 )
 
 // =============================================================================
@@ -233,7 +237,7 @@ const (
 
 const (
 	ProfileCLIAutoInteractiveSuffix           = " (otomatis interaktif kecuali --quiet)"
-	ProfileCLIModeNonInteractiveHeader        = "Mode non-interaktif (--quiet):"
+	ProfileCLIModeNonInteractiveHeader        = "Mode " + ProfileNonInteractiveQuiet
 	ProfileCLINonInteractiveEnvProfileKeyNote = "(atau ENV SFDB_TARGET_PROFILE_KEY/SFDB_SOURCE_PROFILE_KEY)."
 )
 
@@ -254,7 +258,6 @@ const (
 	ProfileDisplayNoKeyProvided         = "Tidak ada encryption key yang diberikan. Tidak dapat menampilkan password asli."
 	ProfileDisplayInvalidKeyOrCorrupt   = "Enkripsi key salah atau file rusak. Tidak dapat menampilkan password asli."
 	ProfileDisplayRevealedPasswordTitle = "Revealed Password"
-	ProfileDisplayDatabasePasswordLabel = "Database Password"
 
 	ProfileDisplayTableHeaderNo     = "No"
 	ProfileDisplayTableHeaderField  = "Field"
@@ -271,10 +274,6 @@ const (
 	ProfileDisplayFieldSSHTunnel    = "SSH Tunnel"
 	ProfileDisplayFieldFileSize     = "File Size"
 	ProfileDisplayFieldLastModified = "Last Modified"
-	ProfileDisplayFieldSSHHost      = "SSH Host"
-	ProfileDisplayFieldSSHUser      = "SSH User"
-	ProfileDisplayFieldSSHPort      = "SSH Port"
-	ProfileDisplayFieldSSHPassword  = "SSH Password"
 
 	ProfileDisplayStateNotSet = "(not set)"
 	ProfileDisplayStateSet    = "(set)"

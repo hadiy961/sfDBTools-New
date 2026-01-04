@@ -11,18 +11,14 @@ import (
 	"os"
 	"strings"
 
+	"sfDBTools/internal/profile/shared"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 
 	"github.com/AlecAivazis/survey/v2"
 )
-
-func buildFileName(name string) string {
-	return validation.ProfileExt(helper.TrimProfileSuffix(strings.TrimSpace(name)))
-}
 
 func (r *Runner) promptDBConfigName(mode string) error {
 	ui.PrintSubHeader(consts.ProfileWizardSubHeaderConfigName)
@@ -49,7 +45,7 @@ func (r *Runner) promptDBConfigName(mode string) error {
 	}
 
 	r.ProfileInfo.Name = strings.TrimSpace(r.ProfileInfo.Name)
-	ui.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + buildFileName(r.ProfileInfo.Name))
+	ui.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + shared.BuildProfileFileName(r.ProfileInfo.Name))
 	return nil
 }
 
@@ -58,7 +54,7 @@ func (r *Runner) promptProfileInfo() error {
 
 	// Host
 	if strings.TrimSpace(r.ProfileInfo.DBInfo.Host) == "" {
-		v, err := input.AskString(consts.ProfilePromptDBHost, "localhost", survey.Required)
+		v, err := input.AskString(consts.ProfileLabelDBHost, "localhost", survey.Required)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -67,7 +63,7 @@ func (r *Runner) promptProfileInfo() error {
 
 	// Port
 	if r.ProfileInfo.DBInfo.Port == 0 {
-		v, err := input.AskInt(consts.ProfilePromptDBPort, 3306, survey.Required)
+		v, err := input.AskInt(consts.ProfileLabelDBPort, 3306, survey.Required)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -76,7 +72,7 @@ func (r *Runner) promptProfileInfo() error {
 
 	// User
 	if strings.TrimSpace(r.ProfileInfo.DBInfo.User) == "" {
-		v, err := input.AskString(consts.ProfilePromptDBUser, "root", survey.Required)
+		v, err := input.AskString(consts.ProfileLabelDBUser, "root", survey.Required)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -96,7 +92,7 @@ func (r *Runner) promptProfileInfo() error {
 			if isEditFlow {
 				ui.PrintInfo(consts.ProfileTipKeepCurrentDBPasswordUpdate)
 			}
-			pw, err := input.AskPassword(consts.ProfilePromptDBPassword, survey.Required)
+			pw, err := input.AskPassword(consts.ProfileLabelDBPassword, survey.Required)
 			if err != nil {
 				return validation.HandleInputError(err)
 			}
@@ -146,7 +142,7 @@ func (r *Runner) promptSSHTunnelDetailsIfEnabled() error {
 	}
 	// Port default 22
 	if ssh.Port == 0 {
-		v, err := input.AskInt(consts.ProfilePromptSSHPort, 22, survey.Required)
+		v, err := input.AskInt(consts.ProfileLabelSSHPort, 22, survey.Required)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}

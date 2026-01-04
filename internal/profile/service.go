@@ -41,28 +41,29 @@ func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interf
 		Config: cfg,
 	}
 
+	setProfileRefs := func(info *types.ProfileInfo) {
+		svc.ProfileInfo = info
+		svc.DBInfo = &info.DBInfo
+	}
+
 	if profile != nil {
 		switch v := profile.(type) {
 		case *types.ProfileCreateOptions:
 			svc.ProfileCreate = v
-			svc.ProfileInfo = &v.ProfileInfo
-			svc.DBInfo = &v.ProfileInfo.DBInfo
+			setProfileRefs(&v.ProfileInfo)
 		case *types.ProfileShowOptions:
 			svc.ProfileShow = v
-			svc.ProfileInfo = &v.ProfileInfo
-			svc.DBInfo = &v.ProfileInfo.DBInfo
+			setProfileRefs(&v.ProfileInfo)
 		case *types.ProfileEditOptions:
 			svc.ProfileEdit = v
-			svc.ProfileInfo = &v.ProfileInfo
-			svc.DBInfo = &v.ProfileInfo.DBInfo
+			setProfileRefs(&v.ProfileInfo)
 			// If user provided a file/path via flags, store it as OriginalProfileName
 			if v.ProfileInfo.Path != "" {
 				svc.OriginalProfileName = v.ProfileInfo.Path
 			}
 		case *types.ProfileDeleteOptions:
 			svc.ProfileDelete = v
-			svc.ProfileInfo = &v.ProfileInfo
-			svc.DBInfo = &v.ProfileInfo.DBInfo
+			setProfileRefs(&v.ProfileInfo)
 		default:
 			logs.Warn(consts.ProfileLogUnknownProfileTypeInService)
 			svc.ProfileInfo = &types.ProfileInfo{}

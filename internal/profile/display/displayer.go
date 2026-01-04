@@ -4,7 +4,7 @@ package display
 // Deskripsi : Tampilan detail profil (show/create/edit summary)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 import (
 	"fmt"
@@ -81,19 +81,19 @@ func (d *Displayer) printShowDetails() {
 		{"9", consts.ProfileDisplayFieldLastModified, fmt.Sprintf("%v", orig.LastModified)},
 	}
 	if orig.SSHTunnel.Enabled {
-		rows = append(rows, []string{"10", consts.ProfileDisplayFieldSSHHost, orig.SSHTunnel.Host})
-		rows = append(rows, []string{"11", consts.ProfileDisplayFieldSSHUser, orig.SSHTunnel.User})
-		rows = append(rows, []string{"12", consts.ProfileDisplayFieldSSHPort, fmt.Sprintf("%d", orig.SSHTunnel.Port)})
+		rows = append(rows, []string{"10", consts.ProfileLabelSSHHost, orig.SSHTunnel.Host})
+		rows = append(rows, []string{"11", consts.ProfileLabelSSHUser, orig.SSHTunnel.User})
+		rows = append(rows, []string{"12", consts.ProfileLabelSSHPort, fmt.Sprintf("%d", orig.SSHTunnel.Port)})
 		sshPwState := consts.ProfileDisplayStateNotSet
 		if orig.SSHTunnel.Password != "" {
 			sshPwState = consts.ProfileDisplayStateSet
 		}
-		rows = append(rows, []string{"13", consts.ProfileDisplayFieldSSHPassword, sshPwState})
+		rows = append(rows, []string{"13", consts.ProfileLabelSSHPassword, sshPwState})
 	}
 
 	ui.FormatTable([]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderValue}, rows)
 
-	if d.ProfileShow != nil && d.ProfileShow.RevealPassword {
+	if d.ProfileShow != nil && d.ProfileShow.RevealPassword && d.ProfileShow.Interactive {
 		d.revealPasswordConfirmAndShow(orig)
 	}
 }
@@ -134,7 +134,7 @@ func (d *Displayer) revealPasswordConfirmAndShow(orig *types.ProfileInfo) {
 	ui.PrintSubHeader(consts.ProfileDisplayRevealedPasswordTitle)
 	ui.FormatTable(
 		[]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderValue},
-		[][]string{{"1", consts.ProfileDisplayDatabasePasswordLabel, display}},
+		[][]string{{"1", consts.ProfileLabelDBPassword, display}},
 	)
 }
 
@@ -163,12 +163,12 @@ func (d *Displayer) printCreateSummary() {
 	rows = append(rows, []string{"6", consts.ProfileDisplayFieldSSHTunnel, sshState})
 
 	if d.ProfileInfo.SSHTunnel.Enabled {
-		rows = append(rows, []string{"7", consts.ProfileDisplayFieldSSHHost, d.ProfileInfo.SSHTunnel.Host})
+		rows = append(rows, []string{"7", consts.ProfileLabelSSHHost, d.ProfileInfo.SSHTunnel.Host})
 		sshPwState := consts.ProfileDisplayStateNotSet
 		if d.ProfileInfo.SSHTunnel.Password != "" {
 			sshPwState = consts.ProfileDisplayStateSet
 		}
-		rows = append(rows, []string{"8", consts.ProfileDisplayFieldSSHPassword, sshPwState})
+		rows = append(rows, []string{"8", consts.ProfileLabelSSHPassword, sshPwState})
 	}
 
 	ui.FormatTable([]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderValue}, rows)
@@ -216,11 +216,11 @@ func (d *Displayer) printChangeSummary() {
 		idx++
 	}
 	if orig.SSHTunnel.Host != d.ProfileInfo.SSHTunnel.Host {
-		rows = append(rows, []string{fmt.Sprintf("%d", idx), consts.ProfileDisplayFieldSSHHost, orig.SSHTunnel.Host, d.ProfileInfo.SSHTunnel.Host})
+		rows = append(rows, []string{fmt.Sprintf("%d", idx), consts.ProfileLabelSSHHost, orig.SSHTunnel.Host, d.ProfileInfo.SSHTunnel.Host})
 		idx++
 	}
 	if orig.SSHTunnel.Password != d.ProfileInfo.SSHTunnel.Password {
-		rows = append(rows, []string{fmt.Sprintf("%d", idx), consts.ProfileDisplayFieldSSHPassword, pwState(orig.SSHTunnel.Password), pwState(d.ProfileInfo.SSHTunnel.Password)})
+		rows = append(rows, []string{fmt.Sprintf("%d", idx), consts.ProfileLabelSSHPassword, pwState(orig.SSHTunnel.Password), pwState(d.ProfileInfo.SSHTunnel.Password)})
 		idx++
 	}
 

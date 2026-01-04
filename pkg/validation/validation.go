@@ -2,7 +2,7 @@
 // Deskripsi : Fungsi fungsi untuk validasi ada disini
 // Author : Hadiyatna Muflihun
 // Tanggal : 11 November 2025
-// Last Modified : 04 January 2026
+// Last Modified : 05 January 2026
 package validation
 
 import (
@@ -34,6 +34,28 @@ func ValidateCustomFilenameBase(name string) error {
 	}
 	if strings.ContainsRune(v, os.PathSeparator) {
 		return fmt.Errorf("custom filename tidak boleh mengandung path separator")
+	}
+	return nil
+}
+
+// ValidateProfileName memvalidasi nama profile agar aman sebagai base filename.
+// Aturan:
+// - Tidak boleh kosong
+// - Tidak boleh mengandung path separator ('/' atau '\\')
+// - Tidak boleh mengandung path traversal '..'
+func ValidateProfileName(name string) error {
+	v := strings.TrimSpace(name)
+	if v == "" {
+		return fmt.Errorf("nama profile tidak boleh kosong")
+	}
+	if strings.Contains(v, "..") {
+		return fmt.Errorf("nama profile tidak boleh mengandung path traversal '..'")
+	}
+	if strings.ContainsAny(v, "/\\") {
+		return fmt.Errorf("nama profile tidak boleh mengandung path separator (gunakan nama saja, tanpa folder)")
+	}
+	if strings.ContainsRune(v, os.PathSeparator) {
+		return fmt.Errorf("nama profile tidak boleh mengandung path separator")
 	}
 	return nil
 }

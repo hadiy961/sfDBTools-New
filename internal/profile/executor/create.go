@@ -10,7 +10,6 @@ import (
 	"fmt"
 
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
@@ -65,15 +64,13 @@ func (e *Executor) CreateProfile() error {
 
 		if err := e.SaveProfile(consts.ProfileSaveModeCreate); err != nil {
 			if err == validation.ErrConnectionFailedRetry {
-				retryInput, askErr := input.AskYesNo(consts.ProfilePromptRetryInputConfig, true)
-				if askErr != nil {
-					return validation.HandleInputError(askErr)
+				retry, err2 := e.handleConnectionFailedRetry(consts.ProfileMsgRetryCreate, consts.ProfileMsgCreateCancelled)
+				if err2 != nil {
+					return err2
 				}
-				if retryInput {
-					ui.PrintWarning(consts.ProfileMsgRetryCreate)
+				if retry {
 					continue
 				}
-				ui.PrintInfo(consts.ProfileMsgCreateCancelled)
 				return validation.ErrUserCancelled
 			}
 			return err

@@ -8,7 +8,7 @@ package wizard
 
 import (
 	"fmt"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/profile/shared"
 	"sfDBTools/pkg/consts"
 	profilehelper "sfDBTools/pkg/helper/profile"
 )
@@ -27,14 +27,7 @@ func (r *Runner) promptSelectExistingConfig() error {
 
 	r.ProfileInfo = info
 	r.OriginalProfileName = info.Name
-	r.OriginalProfileInfo = &types.ProfileInfo{
-		Path:         info.Path,
-		Name:         info.Name,
-		DBInfo:       info.DBInfo,
-		SSHTunnel:    info.SSHTunnel,
-		Size:         info.Size,
-		LastModified: info.LastModified,
-	}
+	r.OriginalProfileInfo = shared.CloneAsOriginalProfileInfo(info)
 
 	if r.Log != nil {
 		r.Log.Debug(fmt.Sprintf(consts.ProfileLogConfigLoadedFromFmt, info.Path, info.Name))

@@ -29,8 +29,13 @@ func ResolveConfigPath(spec string) (string, string, error) {
 	cfgDir := cfg.ConfigDir.DatabaseProfile
 	var absPath string
 	if filepath.IsAbs(spec) {
-		absPath = spec
+		absPath = filepath.Clean(spec)
 	} else {
+		// Untuk input relatif, hanya izinkan base filename agar tidak bisa path traversal.
+		// (custom lokasi file bisa pakai absolute path atau flag output-dir saat create)
+		if err := validation.ValidateCustomFilenameBase(spec); err != nil {
+			return "", "", err
+		}
 		absPath = filepath.Join(cfgDir, spec)
 	}
 	absPath = validation.ProfileExt(absPath)

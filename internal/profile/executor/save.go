@@ -2,7 +2,7 @@
 // Deskripsi : Simpan profile ke file (terenkripsi)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package executor
 
@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"sfDBTools/internal/profile/shared"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/fsops"
@@ -21,10 +22,6 @@ import (
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
-
-func buildFileName(name string) string {
-	return validation.ProfileExt(helper.TrimProfileSuffix(strings.TrimSpace(name)))
-}
 
 func (e *Executor) SaveProfile(mode string) error {
 	if e.Log != nil {
@@ -86,11 +83,17 @@ func (e *Executor) SaveProfile(mode string) error {
 	}
 
 	if mode == consts.ProfileSaveModeEdit && e.ProfileEdit != nil && strings.TrimSpace(e.ProfileEdit.NewName) != "" {
+		if err := validation.ValidateProfileName(e.ProfileEdit.NewName); err != nil {
+			return err
+		}
 		e.ProfileInfo.Name = e.ProfileEdit.NewName
+	}
+	if err := validation.ValidateProfileName(e.ProfileInfo.Name); err != nil {
+		return err
 	}
 
 	e.ProfileInfo.Name = helper.TrimProfileSuffix(e.ProfileInfo.Name)
-	newFileName := buildFileName(e.ProfileInfo.Name)
+	newFileName := shared.BuildProfileFileName(e.ProfileInfo.Name)
 	newFilePath := filepath.Join(baseDir, newFileName)
 
 	if mode == consts.ProfileSaveModeEdit && e.OriginalProfileName != "" && e.OriginalProfileName != e.ProfileInfo.Name {
@@ -103,13 +106,13 @@ func (e *Executor) SaveProfile(mode string) error {
 			oldFilePath = e.OriginalProfileInfo.Path
 		}
 		if oldFilePath == "" {
-			oldFilePath = filepath.Join(baseDir, buildFileName(e.OriginalProfileName))
+			oldFilePath = filepath.Join(baseDir, shared.BuildProfileFileName(e.OriginalProfileName))
 		}
 
 		if err := os.Remove(oldFilePath); err != nil {
 			ui.PrintWarning(fmt.Sprintf(consts.ProfileWarnSavedButDeleteOldFailedFmt, newFileName, oldFilePath, err))
 		}
-		ui.PrintSuccess(fmt.Sprintf(consts.ProfileSuccessSavedRenamedFmt, newFileName, buildFileName(e.OriginalProfileName)))
+		ui.PrintSuccess(fmt.Sprintf(consts.ProfileSuccessSavedRenamedFmt, newFileName, shared.BuildProfileFileName(e.OriginalProfileName)))
 		ui.PrintInfo(consts.ProfileMsgConfigSavedAtPrefix + newFilePath)
 		return nil
 	}

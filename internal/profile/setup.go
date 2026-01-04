@@ -10,23 +10,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sfDBTools/internal/profile/shared"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	profilehelper "sfDBTools/pkg/helper/profile"
-	"sfDBTools/pkg/validation"
 	"strings"
 )
-
-// buildFileName menormalkan input (menghapus suffix jika ada) lalu memastikan suffix .cnf.enc
-func buildFileName(name string) string {
-	return validation.ProfileExt(helper.TrimProfileSuffix(strings.TrimSpace(name)))
-}
 
 // filePathInConfigDir membangun absolute path di dalam config dir untuk nama file konfigurasi yang diberikan.
 func (s *Service) filePathInConfigDir(name string) string {
 	cfgDir := s.Config.ConfigDir.DatabaseProfile
-	return filepath.Join(cfgDir, buildFileName(name))
+	return filepath.Join(cfgDir, shared.BuildProfileFileName(name))
 }
 
 // loadSnapshotFromPath membaca file terenkripsi, mencoba dekripsi, parse, dan mengisi OriginalProfileInfo.
