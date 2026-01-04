@@ -8,7 +8,6 @@ import (
 	config "sfDBTools/internal/appconfig"
 	"sfDBTools/internal/autoupdate"
 	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
 	"time"
@@ -50,13 +49,16 @@ func main() {
 		// Logger aman walau cfg nil.
 		tmpLogger := applog.NewLogger(nil)
 
-		// Tampilkan spinner hanya jika auto-update diaktifkan dan tidak dalam quiet/daemon.
+		// Tampilkan spinner hanya jika auto-update aktif dan tidak dalam quiet/daemon.
 		var sp *ui.SpinnerWithElapsed
-		if os.Getenv(consts.ENV_AUTO_UPDATE) == "1" && !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) {
+		if autoupdate.AutoUpdateEnabled() && !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) {
 			sp = ui.NewSpinnerWithElapsed("Cek update")
 			sp.Start()
 		}
-		_ = autoupdate.MaybeAutoUpdate(ctx, tmpLogger)
+		if err := autoupdate.MaybeAutoUpdate(ctx, tmpLogger); err != nil {
+			// Jangan silent-fail: biasanya error permission (/usr/bin) atau koneksi.
+			tmpLogger.Warnf("Auto-update gagal: %v", err)
+		}
 		if sp != nil {
 			sp.Stop()
 		}

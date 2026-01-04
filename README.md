@@ -31,7 +31,7 @@ sfdbtools --help
 
 sfDBTools bisa melakukan auto-update dari GitHub Releases.
 
-- Enable auto-update saat start: `SFDB_AUTO_UPDATE=1`
+- Default: auto-update aktif saat startup.
 - Disable paksa (override): `SFDB_NO_AUTO_UPDATE=1`
 - Manual update: `sfdbtools update`
 

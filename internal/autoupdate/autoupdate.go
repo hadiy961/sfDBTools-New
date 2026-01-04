@@ -82,16 +82,24 @@ func OptionsFromEnv() Options {
 // MaybeAutoUpdate mengecek update dan melakukan self-update jika ditemukan versi lebih baru.
 // Jika update sukses, proses akan re-exec binary yang baru.
 func MaybeAutoUpdate(ctx context.Context, log Logger) error {
-	if strings.TrimSpace(os.Getenv(consts.ENV_AUTO_UPDATE)) != "1" {
-		return nil
-	}
-	// Hindari loop pada CI atau environment yang tidak menginginkan update otomatis.
-	if strings.TrimSpace(os.Getenv(consts.ENV_NO_AUTO_UPDATE)) == "1" {
+	if !AutoUpdateEnabled() {
 		return nil
 	}
 
 	opts := OptionsFromEnv()
 	return UpdateIfNeeded(ctx, log, opts)
+}
+
+// AutoUpdateEnabled menentukan apakah auto-update aktif.
+// Default: aktif (tanpa perlu set env), kecuali SFDB_NO_AUTO_UPDATE=1.
+func AutoUpdateEnabled() bool {
+	if strings.TrimSpace(os.Getenv(consts.ENV_NO_AUTO_UPDATE)) == "1" {
+		return false
+	}
+	// Backward-compatible: jika user eksplisit set SFDB_AUTO_UPDATE=0/empty,
+	// tetap anggap aktif kecuali disable flag digunakan.
+	// Jika user set SFDB_AUTO_UPDATE=1 juga tetap aktif.
+	return true
 }
 
 // UpdateIfNeeded melakukan pengecekan versi lalu update jika perlu.
