@@ -38,6 +38,8 @@ sfDBTools bisa melakukan auto-update dari GitHub Releases.
 Catatan:
 - Auto-update saat ini hanya untuk `linux/amd64` (sesuai workflow release).
 - Jika binary terpasang di `/usr/bin`, jalankan dengan `sudo` agar bisa overwrite.
+- Saat startup, sfDBTools akan cek koneksi internet dulu. Jika tidak ada internet, proses update akan di-skip.
+- Saat mode non-quiet, proses cek update menampilkan spinner singkat (output ke stderr).
 
 ### Uninstall
 
