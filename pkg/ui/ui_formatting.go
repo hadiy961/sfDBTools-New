@@ -2,13 +2,14 @@
 // Deskripsi : Fungsi utilitas untuk output format di terminal
 // Author : Hadiyatna Muflihun
 // Tanggal : 2024-10-03
-// Last Modified : 2024-10-03
+// Last Modified : 2026-01-04
 package ui
 
 import (
 	"fmt"
 	"os"
 	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/runtimecfg"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
@@ -43,6 +44,10 @@ func PrintInfo(message string) {
 
 // PrintHeader prints a header with border
 func PrintHeader(title string) {
+	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+		return
+	}
+
 	width, _, _ := GetTerminalSize()
 	if width <= 0 {
 		width = 80
@@ -73,6 +78,10 @@ func PrintError(message string) {
 
 // PrintSubHeader prints a sub-header
 func PrintSubHeader(title string) {
+	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+		return
+	}
+
 	fmt.Println()
 	PrintColoredLine("📋 "+title, consts.UIColorBold)
 	PrintDashedSeparator()

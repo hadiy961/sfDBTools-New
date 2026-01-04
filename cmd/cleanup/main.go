@@ -8,8 +8,9 @@ var CmdCleanupMain = &cobra.Command{
 	Aliases: []string{"clean"},
 	Short:   "Bersihkan file backup lama sesuai kebijakan retensi",
 	Long: `Perintah untuk membersihkan file-file backup lama di direktori output.
-Gunakan sub-perintah untuk menjalankan pembersihan sebenarnya, melihat pratinjau (dry-run),
-atau membersihkan berdasarkan pola tertentu.`,
+Gunakan sub-perintah untuk menjalankan pembersihan, atau membersihkan berdasarkan pola tertentu.
+
+Gunakan flag --dry-run untuk melihat pratinjau tanpa menghapus file.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
@@ -17,4 +18,5 @@ atau membersihkan berdasarkan pola tertentu.`,
 
 func init() {
 	CmdCleanupMain.AddCommand(CmdCleanupRun)
+	CmdCleanupMain.AddCommand(CmdCleanupSchedule)
 }

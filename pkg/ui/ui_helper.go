@@ -8,7 +8,10 @@ import (
 	"sfDBTools/internal/appconfig"
 	app_log "sfDBTools/internal/applog"
 	appdeps "sfDBTools/internal/deps"
+	"sfDBTools/pkg/runtimecfg"
 	"strings"
+
+	"github.com/mattn/go-isatty"
 )
 
 // ClearScreen clears the terminal screen using platform-specific commands
@@ -76,13 +79,23 @@ func ClearAndShowHeader(title string) error {
 }
 
 func Headers(title string) {
+	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+		return
+	}
+
 	cfg, err := appconfig.LoadConfigFromEnv()
 	if err != nil {
 		PrintError(fmt.Sprintf("Error loading config: %v", err))
 		return
 	}
 
-	ClearAndShowHeader(cfg.General.AppName + " v" + cfg.General.Version + " - " + title)
+	fullTitle := cfg.General.AppName + " v" + cfg.General.Version + " - " + title
+	// Kalau stdout bukan TTY (misal di-pipe), jangan clear screen.
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		_ = ClearAndShowHeader(fullTitle)
+		return
+	}
+	PrintHeader(fullTitle)
 }
 
 // FormatStringSlice converts a slice of strings into a comma-separated string

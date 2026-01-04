@@ -44,22 +44,12 @@ type ScanOptions struct {
 	ExcludeList   []string
 	ExcludeFile   string // Path ke file berisi blacklist database
 
-	// Target Database untuk menyimpan hasil scan
-	TargetDB struct {
-		Host     string
-		Port     int
-		User     string
-		Password string
-		Database string
-	}
-
 	// Output Options
 	DisplayResults bool
-	SaveToDB       bool
 	Background     bool // Jalankan scanning di background
 
 	// Internal use only
-	Mode        string // "all" atau "selection" atau "single" atau "rescan"
+	Mode        string // "all" atau "selection" atau "single"
 	ShowOptions bool   // Tampilkan opsi scanning sebelum eksekusi
 }
 

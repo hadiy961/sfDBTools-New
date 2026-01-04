@@ -40,10 +40,10 @@ func isInteractiveMode(mode string) bool {
 func (s *Setup) CheckAndSelectConfigFile() error {
 	if s.Options.NonInteractive {
 		if strings.TrimSpace(s.Options.Profile.Path) == "" {
-			return fmt.Errorf("profile wajib diisi pada mode non-interaktif (--non-interactive): gunakan --profile")
+			return fmt.Errorf("profile wajib diisi pada mode non-interaktif (--quiet): gunakan --profile")
 		}
 		if strings.TrimSpace(s.Options.Profile.EncryptionKey) == "" {
-			return fmt.Errorf("profile-key wajib diisi pada mode non-interaktif (--non-interactive): gunakan --profile-key atau env %s", consts.ENV_SOURCE_PROFILE_KEY)
+			return fmt.Errorf("profile-key wajib diisi pada mode non-interaktif (--quiet): gunakan --profile-key atau env %s", consts.ENV_SOURCE_PROFILE_KEY)
 		}
 	}
 
@@ -68,7 +68,7 @@ func (s *Setup) SetupBackupExecution() error {
 
 	if strings.TrimSpace(s.Options.Ticket) == "" {
 		if s.Options.NonInteractive {
-			return fmt.Errorf("ticket wajib diisi pada mode non-interaktif (--non-interactive): gunakan --ticket")
+			return fmt.Errorf("ticket wajib diisi pada mode non-interaktif (--quiet): gunakan --ticket")
 		}
 		s.Log.Info("Ticket number tidak ditemukan, meminta input...")
 		ticket, err := input.AskTicket(consts.FeatureBackup)

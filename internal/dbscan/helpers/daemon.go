@@ -2,53 +2,65 @@
 // Deskripsi : Helper untuk daemon/background process scanning
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 16 Desember 2025
+// Last Modified : 2026-01-03
 
 package helpers
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
+	"sfDBTools/internal/schedulerutil"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/process"
 	"sfDBTools/pkg/ui"
 )
 
+func detectUserModeText(mode schedulerutil.RunMode) string {
+	if mode == schedulerutil.RunModeUser {
+		return "user"
+	}
+	return "system"
+}
+
 // SpawnScanDaemon spawns new process sebagai background daemon untuk scanning
 func SpawnScanDaemon(config types.ScanEntryConfig) error {
-	// Get executable path
-	executable, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("gagal mendapatkan executable path: %w", err)
-	}
-
 	// Scan ID hanya untuk tampilan
 	scanID := fmt.Sprintf("scan_%s", time.Now().Format("20060102_150405"))
 	logDir := filepath.Join("logs", "dbscan")
-	pidFile := filepath.Join(logDir, "dbscan_background.pid")
-
-	args := os.Args[1:] // pass through args
-	env := []string{"SFDB_DAEMON_MODE=1"}
-
-	pid, logFile, err := process.SpawnDaemon(executable, args, env, logDir, pidFile, "dbscan")
+	wd, _ := os.Getwd()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := schedulerutil.SpawnSelfInBackground(ctx, schedulerutil.SpawnSelfOptions{
+		UnitPrefix:    "sfdbtools-dbscan",
+		Mode:          schedulerutil.RunModeAuto,
+		EnvFile:       "/etc/sfDBTools/.env",
+		WorkDir:       wd,
+		Collect:       true,
+		NoAskPass:     true,
+		WrapWithFlock: false,
+	})
 	if err != nil {
 		return err
 	}
 
 	ui.PrintHeader("DATABASE SCANNING - BACKGROUND MODE")
-	ui.PrintSuccess(fmt.Sprintf("Background process dimulai dengan PID: %d", pid))
+	ui.PrintSuccess("Background process dimulai via systemd")
 	ui.PrintInfo(fmt.Sprintf("Scan ID: %s", ui.ColorText(scanID, consts.UIColorCyan)))
-	if logFile != "" {
-		ui.PrintInfo(fmt.Sprintf("Log file: %s", ui.ColorText(logFile, consts.UIColorCyan)))
-		ui.PrintInfo(fmt.Sprintf("PID file: %s", ui.ColorText(pidFile, consts.UIColorCyan)))
-		ui.PrintInfo(fmt.Sprintf("Monitor dengan: tail -f %s", logFile))
+	ui.PrintInfo(fmt.Sprintf("Unit: %s", ui.ColorText(res.UnitName, consts.UIColorCyan)))
+	ui.PrintInfo(fmt.Sprintf("Mode: %s", ui.ColorText(detectUserModeText(res.Mode), consts.UIColorCyan)))
+	ui.PrintInfo(fmt.Sprintf("Log dir: %s", ui.ColorText(logDir, consts.UIColorCyan)))
+	if res.Mode == schedulerutil.RunModeUser {
+		ui.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
+		ui.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
 	} else {
-		ui.PrintInfo("Logs akan ditulis ke system logger")
+		ui.PrintInfo(fmt.Sprintf("Status: sudo systemctl status %s", res.UnitName))
+		ui.PrintInfo(fmt.Sprintf("Logs: sudo journalctl -u %s -f", res.UnitName))
 	}
-	ui.PrintInfo("Process berjalan di background. Gunakan 'ps aux | grep sfdbtools' untuk check status.")
+	ui.PrintInfo("Process berjalan di background.")
+	_ = res // output disimpan untuk troubleshooting bila diperlukan
 	return nil
 }

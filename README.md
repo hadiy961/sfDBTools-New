@@ -128,7 +128,7 @@ sfdbtools db-restore single \
 
 - `sfdbtools db-backup`: backup database (subcommand: `all`, `filter`, `single`, `primary`, `secondary`)
 - `sfdbtools db-restore`: restore database (subcommand: `single`, `primary`, `secondary`, `all`, `selection`, `custom`)
-- `sfdbtools db-scan`: scan metadata DB (subcommand: `all`, `all-local`, `filter`, `rescan`)
+- `sfdbtools db-scan`: scan metadata database (subcommand: `all`, `all-local`, `filter`)
 - `sfdbtools profile`: create/show/edit/delete profile koneksi
 - `sfdbtools cleanup`: housekeeping file backup
 - `sfdbtools crypto`: encrypt/decrypt file/text + base64 utils

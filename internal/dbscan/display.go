@@ -2,7 +2,7 @@
 // Deskripsi : Display functions untuk database scanning results
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 17 Desember 2025
+// Last Modified : 2026-01-04
 
 package dbscan
 
@@ -19,20 +19,11 @@ import (
 func (s *Service) DisplayScanOptions() (bool, error) {
 	ui.PrintSubHeader("Opsi Scanning")
 
-	targetConn := s.getTargetDBConfig()
-	targetInfo := fmt.Sprintf("%s@%s:%d/%s",
-		targetConn.User, targetConn.Host, targetConn.Port, targetConn.Database)
-
 	data := [][]string{
 		{"Exclude System DB", fmt.Sprintf("%v", s.ScanOptions.ExcludeSystem)},
 		{"Include List", fmt.Sprintf("%d database", len(s.ScanOptions.IncludeList))},
 		{"Exclude List", fmt.Sprintf("%d database", len(s.ScanOptions.ExcludeList))},
-		{"Save to DB", fmt.Sprintf("%v", s.ScanOptions.SaveToDB)},
 		{"Display Results", fmt.Sprintf("%v", s.ScanOptions.DisplayResults)},
-	}
-
-	if s.ScanOptions.SaveToDB {
-		data = append(data, []string{"Target DB", targetInfo})
 	}
 
 	if s.ScanOptions.Mode == "single" && s.ScanOptions.SourceDatabase != "" {

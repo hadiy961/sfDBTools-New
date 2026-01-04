@@ -2,7 +2,7 @@
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-30
+// Last Modified : 2026-01-04
 
 package backup
 
@@ -15,10 +15,14 @@ import (
 	"sfDBTools/internal/backup/display"
 	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/parsing"
+	"sfDBTools/internal/schedulerutil"
 	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -64,17 +68,21 @@ func (s *Service) ExecuteBackupCommand(ctx context.Context, config types_backup.
 		return err
 	}
 
-	// Tampilkan hasil
-	display.NewResultDisplayer(
-		result,
-		s.BackupDBOptions.Compression.Enabled,
-		s.BackupDBOptions.Compression.Type,
-		s.BackupDBOptions.Encryption.Enabled,
-	).Display()
+	// Tampilkan hasil (skip output interaktif saat quiet/daemon)
+	if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
+		display.NewResultDisplayer(
+			result,
+			s.BackupDBOptions.Compression.Enabled,
+			s.BackupDBOptions.Compression.Type,
+			s.BackupDBOptions.Encryption.Enabled,
+		).Display()
+	}
 
 	// Print success message jika ada
 	if config.SuccessMsg != "" {
-		ui.PrintSuccess(config.SuccessMsg)
+		if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
+			ui.PrintSuccess(config.SuccessMsg)
+		}
 		s.Log.Info(config.SuccessMsg)
 	}
 	return nil
@@ -87,6 +95,51 @@ func (s *Service) ExecuteBackupCommand(ctx context.Context, config types_backup.
 func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, config types_backup.ExecutionConfig) error {
 	logger := deps.Logger
 	logger.Info("Memulai proses backup database - " + config.Mode)
+
+	// Jika diminta background dan bukan proses daemon, jalankan ulang command via systemd-run.
+	bg := false
+	if cmd.Flags().Lookup("background") != nil {
+		v, err := cmd.Flags().GetBool("background")
+		if err == nil {
+			bg = v
+		}
+	}
+	if bg && !runtimecfg.IsDaemon() {
+		// Backup background harus non-interaktif agar tidak hang tanpa TTY.
+		nonInteractive := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
+		if !nonInteractive {
+			return fmt.Errorf("mode background membutuhkan --quiet (non-interaktif)")
+		}
+
+		wd, _ := os.Getwd()
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		res, runErr := schedulerutil.SpawnSelfInBackground(ctx, schedulerutil.SpawnSelfOptions{
+			UnitPrefix:    "sfdbtools-backup",
+			Mode:          schedulerutil.RunModeAuto,
+			EnvFile:       "/etc/sfDBTools/.env",
+			WorkDir:       wd,
+			Collect:       true,
+			NoAskPass:     true,
+			WrapWithFlock: true,
+			FlockPath:     "/var/lock/sfdbtools-backup.lock",
+		})
+		if runErr != nil {
+			return runErr
+		}
+
+		ui.PrintHeader("DB BACKUP - BACKGROUND MODE")
+		ui.PrintSuccess("Background backup dimulai via systemd")
+		ui.PrintInfo(fmt.Sprintf("Unit: %s", ui.ColorText(res.UnitName, consts.UIColorCyan)))
+		if res.Mode == schedulerutil.RunModeUser {
+			ui.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
+			ui.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
+		} else {
+			ui.PrintInfo(fmt.Sprintf("Status: sudo systemctl status %s", res.UnitName))
+			ui.PrintInfo(fmt.Sprintf("Logs: sudo journalctl -u %s -f", res.UnitName))
+		}
+		return nil
+	}
 
 	// Parsing opsi berdasarkan mode
 	parsedOpts, err := parsing.ParsingBackupOptions(cmd, config.Mode)
@@ -112,13 +165,17 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 	// Goroutine untuk menangani signal
 	go func() {
 		sig := <-sigChan
-		fmt.Println()
+		if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
+			fmt.Println()
+		}
 		logger.Warnf("Menerima signal %v, menghentikan backup... (Tekan sekali lagi untuk force exit)", sig)
 		svc.HandleShutdown()
 		cancel()
 
 		<-sigChan
-		fmt.Println()
+		if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
+			fmt.Println()
+		}
 		logger.Warn("Menerima signal kedua, memaksa berhenti (force exit)...")
 		os.Exit(1)
 	}()

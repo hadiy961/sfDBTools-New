@@ -2,7 +2,7 @@
 // Deskripsi : Helper untuk spinner dengan elapsed time tracking
 // Author : Hadiyatna Muflihun
 // Tanggal : 11 November 2025
-// Last Modified : 11 November 2025
+// Last Modified : 2026-01-04
 
 package ui
 
@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"os"
 	"sfDBTools/pkg/global"
+	"sfDBTools/pkg/runtimecfg"
+	"sfDBTools/pkg/spinnerguard"
 	"sync"
 	"time"
 
@@ -29,8 +31,20 @@ var (
 	activeMu      sync.Mutex
 )
 
+func init() {
+	// Daftarkan suspender agar komponen lain (misalnya logger) bisa men-suspend spinner
+	// tanpa perlu import paket ui (menghindari import cycle).
+	spinnerguard.SetSuspender(RunWithSpinnerSuspended)
+}
+
 // NewSpinnerWithElapsed membuat spinner baru dengan elapsed time tracking
 func NewSpinnerWithElapsed(message string) *SpinnerWithElapsed {
+	// Saat berjalan di background/daemon atau quiet, spinner bikin output tumpang tindih dengan logs.
+	// Jadi dimatikan dan diganti no-op.
+	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+		return &SpinnerWithElapsed{message: message, startTime: time.Now()}
+	}
+
 	spin := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 	spin.Suffix = fmt.Sprintf(" %s...", message)
 	// Write spinner to stderr so it doesn't interleave with stdout logs
@@ -48,6 +62,9 @@ func NewSpinnerWithElapsed(message string) *SpinnerWithElapsed {
 
 // Start memulai spinner dan elapsed time updater
 func (s *SpinnerWithElapsed) Start() {
+	if s == nil || s.spin == nil {
+		return
+	}
 	s.spin.Start()
 
 	// Register as active spinner
@@ -72,6 +89,9 @@ func (s *SpinnerWithElapsed) Start() {
 
 // Stop menghentikan spinner dan elapsed time updater
 func (s *SpinnerWithElapsed) Stop() {
+	if s == nil || s.spin == nil {
+		return
+	}
 	// Deregister active spinner if this is it
 	activeMu.Lock()
 	if activeSpinner == s {
@@ -85,6 +105,9 @@ func (s *SpinnerWithElapsed) Stop() {
 
 // UpdateMessage mengubah message spinner tanpa restart
 func (s *SpinnerWithElapsed) UpdateMessage(message string) {
+	if s == nil || s.spin == nil {
+		return
+	}
 	s.message = message
 	elapsed := time.Since(s.startTime)
 	s.spin.Suffix = fmt.Sprintf(" %s... (%s)", message, global.FormatDuration(elapsed))
@@ -92,6 +115,10 @@ func (s *SpinnerWithElapsed) UpdateMessage(message string) {
 
 // SuspendAndRun stops the spinner, runs action, then restarts the spinner preserving elapsed time
 func (s *SpinnerWithElapsed) SuspendAndRun(action func()) {
+	if s == nil || s.spin == nil {
+		action()
+		return
+	}
 	// Stop current spinner and goroutine
 	s.done <- true
 	s.spin.Stop()

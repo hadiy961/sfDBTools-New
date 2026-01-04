@@ -4,6 +4,7 @@ import (
 	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/profile"
+	"sfDBTools/pkg/consts"
 
 	"github.com/spf13/cobra"
 )
@@ -14,18 +15,21 @@ var CmdProfileDelete = &cobra.Command{
 	Long: `Menghapus file profil konfigurasi database dari sistem.
 
 Secara default, command ini akan meminta konfirmasi pengguna sebelum melakukan penghapusan untuk mencegah ketidaksengajaan.
-Gunakan flag --force untuk melewati konfirmasi (berguna untuk scripting).`,
-	Example: `  # 1. Hapus profil dengan konfirmasi (Interaktif memilih jika tidak ada flag)
-  sfdbtools profile delete
+Gunakan flag --force untuk melewati konfirmasi (berguna untuk scripting).
 
-  # 2. Hapus profil spesifik dengan nama
-  sfdbtools profile delete --profile "dev-db"
+` + consts.ProfileCLIModeNonInteractiveHeader + `
+	- Wajib isi --profile dan --force (tidak ada prompt).`,
+	Example: `  # 1) Interaktif (pilih profil jika tidak ada flag)
+	sfdbtools profile delete
 
-  # 3. Hapus profil tanpa konfirmasi (Force)
-  sfdbtools profile delete --profile "temp-db" --force
+	# 2) Hapus 1 profil (tetap minta konfirmasi)
+	sfdbtools profile delete --profile "dev-db"
 
-  # 4. Hapus profil dari direktori khusus
-  sfdbtools profile delete --profile "local-conf" --output-dir "./configs"`,
+	# 3) Non-interaktif (automation/pipeline)
+	sfdbtools profile delete --quiet --force --profile "temp-db"
+
+	# 4) Hapus banyak profil (non-interaktif)
+	sfdbtools profile delete --quiet --force --profile "a" --profile "b"`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return profile.ExecuteProfile(cmd, appdeps.Deps, "delete")
 	},

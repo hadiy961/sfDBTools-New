@@ -2,7 +2,7 @@
 // Deskripsi : Service utama implementation untuk database scanning operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 15 Oktober 2025
-// Last Modified : 17 Desember 2025
+// Last Modified : 2026-01-04
 
 package dbscan
 
@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
@@ -19,6 +18,7 @@ import (
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
+	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/servicehelper"
 	"sfDBTools/pkg/ui"
 )
@@ -65,14 +65,14 @@ func (s *Service) ExecuteScan(config types.ScanEntryConfig) error {
 	}
 
 	// Setup connections (Foreground Mode)
-	sourceClient, targetClient, dbFiltered, cleanup, err := s.setupScanConnections(ctx, config.HeaderTitle, config.ShowOptions)
+	sourceClient, dbFiltered, cleanup, err := s.setupScanConnections(ctx, config.HeaderTitle, config.ShowOptions)
 	if err != nil {
 		return err
 	}
 	defer cleanup()
 
 	// Lakukan scanning dengan UI output
-	result, detailsMap, err := s.executeScanWithClients(ctx, sourceClient, targetClient, dbFiltered, false)
+	result, detailsMap, err := s.executeScanWithClients(ctx, sourceClient, dbFiltered, false)
 	if err != nil {
 		s.Log.Error(config.LogPrefix + " gagal: " + err.Error())
 		return err
@@ -100,8 +100,8 @@ func (s *Service) handleBackgroundExecution(ctx context.Context, config types.Sc
 		return fmt.Errorf("background mode memerlukan file konfigurasi database")
 	}
 
-	// Check jika sudah running dalam daemon mode (env flag set)
-	if os.Getenv(consts.ENV_DAEMON_MODE) == "1" {
+	// Check jika sudah running dalam daemon mode (parameter flag)
+	if runtimecfg.IsDaemon() {
 		return s.executeScanInBackground(ctx, config)
 	}
 
@@ -113,7 +113,6 @@ func (s *Service) handleBackgroundExecution(ctx context.Context, config types.Sc
 func (s *Service) executeScanWithClients(
 	ctx context.Context,
 	sourceClient *database.Client,
-	targetClient *database.Client,
 	dbNames []string,
 	isBackground bool,
 ) (*types.ScanResult, map[string]types.DatabaseDetailInfo, error) {
@@ -134,7 +133,7 @@ func (s *Service) executeScanWithClients(
 	var localSizes map[string]int64
 	if s.ScanOptions.LocalScan {
 		s.Log.Info("Mode Local Scan diaktifkan: ukuran database diambil dari datadir")
-		datadir, err := s.getDataDir(ctx, sourceClient, targetClient)
+		datadir, err := s.getDataDir(ctx, sourceClient)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -149,7 +148,6 @@ func (s *Service) executeScanWithClients(
 
 	// Execute scan menggunakan helper
 	opts := helpers.ScanExecutorOptions{
-		SaveToDB:      s.ScanOptions.SaveToDB,
 		LocalScan:     s.ScanOptions.LocalScan,
 		DisplayResult: s.ScanOptions.DisplayResults,
 		IsBackground:  isBackground,
@@ -158,7 +156,7 @@ func (s *Service) executeScanWithClients(
 	}
 
 	result, detailsMap, err := helpers.ExecuteScanWithSave(
-		ctx, sourceClient, targetClient, dbNames,
+		ctx, sourceClient, dbNames,
 		serverHost, serverPort, opts,
 	)
 
@@ -176,15 +174,10 @@ func (s *Service) executeScanWithClients(
 }
 
 // getDataDir mendapatkan datadir dari source atau target client
-func (s *Service) getDataDir(ctx context.Context, sourceClient, targetClient *database.Client) (string, error) {
+func (s *Service) getDataDir(ctx context.Context, sourceClient *database.Client) (string, error) {
 	var datadir string
-	// Coba ambil dari source
 	if sourceClient != nil {
 		_ = sourceClient.DB().QueryRowContext(ctx, "SELECT @@datadir").Scan(&datadir)
-	}
-	// Fallback ke target jika source gagal/tidak ada
-	if datadir == "" && targetClient != nil {
-		_ = targetClient.DB().QueryRowContext(ctx, "SELECT @@datadir").Scan(&datadir)
 	}
 
 	if datadir == "" {

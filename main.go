@@ -6,7 +6,7 @@ import (
 	"sfDBTools/cmd"
 	config "sfDBTools/internal/appconfig"
 	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
 
 	applog "sfDBTools/internal/applog"
@@ -17,20 +17,20 @@ var cfg *config.Config
 var appLogger applog.Logger
 
 func main() {
-	// Quiet mode for pipeline-friendly output
-	quiet := false
-	if v := os.Getenv(consts.ENV_QUIET); v != "" && v != "0" && v != "false" {
-		quiet = true
-	}
+	// Bootstrap runtime mode dari parameter (tanpa env).
+	runtimecfg.BootstrapFromArgs(os.Args[1:])
+	quiet := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
 
 	// Deteksi jika yang dipanggil adalah perintah completion
 	isCompletion := len(os.Args) > 1 && os.Args[1] == "completion"
 	isVersion := len(os.Args) > 1 && os.Args[1] == "version"
 	if isCompletion {
 		quiet = true // pastikan tidak ada header/spinner yang tampil
+		runtimecfg.SetQuiet(true)
 	}
 	if isVersion {
 		quiet = true // output versi sebaiknya bersih untuk scripting
+		runtimecfg.SetQuiet(true)
 	}
 
 	if !quiet {
@@ -49,10 +49,6 @@ func main() {
 
 	// 2. Inisialisasi Logger Kustom
 	appLogger = applog.NewLogger(cfg)
-	if quiet {
-		// Route logs to stderr so stdout can be used for data piping
-		appLogger.SetOutput(os.Stderr)
-	}
 
 	// 3. Inisialisasi koneksi database dari environment variables
 	// In quiet mode atau saat completion, skip DB connection entirely

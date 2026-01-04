@@ -7,6 +7,7 @@ type CleanupOptions struct {
 	CleanupSchedule string
 	Pattern         string
 	Background      bool
+	DryRun          bool
 }
 
 // CleanupEntryConfig menyimpan konfigurasi untuk entry point cleanup.
@@ -16,5 +17,4 @@ type CleanupEntryConfig struct {
 	ShowOptions bool
 	SuccessMsg  string
 	LogPrefix   string
-	DryRun      bool
 }

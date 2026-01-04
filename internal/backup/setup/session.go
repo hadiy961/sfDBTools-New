@@ -2,7 +2,7 @@
 // Deskripsi : Setup session backup (termasuk loop interaktif untuk mode ALL)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-31
+// Last Modified : 2026-01-02
 
 package setup
 
@@ -111,6 +111,17 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 		}
 		if len(dbFiltered) == 0 {
 			return nil, nil, fmt.Errorf("path generation menghasilkan daftar database kosong")
+		}
+
+		// Log daftar database yang akan di-backup untuk mode ALL (penting untuk mode background).
+		if s.Options.Mode == consts.ModeAll {
+			s.Log.Infof("Database yang akan di-backup (total=%d)", len(dbFiltered))
+			if len(dbFiltered) <= consts.MaxDisplayDatabases {
+				s.Log.Infof("Daftar database: %s", strings.Join(dbFiltered, ", "))
+			} else {
+				s.Log.Infof("Daftar database (first %d): %s", consts.MaxDisplayDatabases, strings.Join(dbFiltered[:consts.MaxDisplayDatabases], ", "))
+				s.Log.Debugf("Daftar database lengkap: %v", dbFiltered)
+			}
 		}
 
 		// Normalisasi (misalnya jika ticket diubah di menu edit pada langkah selanjutnya).

@@ -2,7 +2,7 @@
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-16
-// Last Modified : 2025-12-16
+// Last Modified : 2026-01-04
 
 package profile
 
@@ -10,6 +10,7 @@ import (
 	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/parsing"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 
 	"github.com/spf13/cobra"
@@ -36,27 +37,30 @@ func ExecuteProfile(cmd *cobra.Command, deps *appdeps.Dependencies, mode string)
 // executeProfileWithConfig adalah helper function yang menjalankan profile dengan configuration
 func executeProfileWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, config types.ProfileEntryConfig) error {
 	logger := deps.Logger
-	logger.Info("Memulai proses profile - " + config.Mode)
+	if config.LogPrefix != "" {
+		logger.Infof(consts.ProfileLogStartProcessWithPrefixFmt, config.LogPrefix, config.Mode)
+	} else {
+		logger.Infof(consts.ProfileLogStartProcessFmt, config.Mode)
+	}
 
 	// Parsing opsi berdasarkan mode
 	var profileOptions interface{}
 	var err error
 
 	switch config.Mode {
-	case "create":
+	case consts.ProfileModeCreate:
 		profileOptions, err = parsing.ParsingCreateProfile(cmd, logger)
-	case "show":
+	case consts.ProfileModeShow:
 		profileOptions, err = parsing.ParsingShowProfile(cmd)
-	case "edit":
+	case consts.ProfileModeEdit:
 		profileOptions, err = parsing.ParsingEditProfile(cmd)
-	case "delete":
+	case consts.ProfileModeDelete:
 		profileOptions, err = parsing.ParsingDeleteProfile(cmd)
 	default:
 		return ErrInvalidProfileMode
 	}
 
 	if err != nil {
-		logger.Error("gagal parsing opsi: " + err.Error())
 		return err
 	}
 
@@ -85,33 +89,29 @@ func executeProfileWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 // GetExecutionConfig mengembalikan konfigurasi untuk mode profile tertentu
 func GetExecutionConfig(mode string) (types.ProfileEntryConfig, error) {
 	configs := map[string]types.ProfileEntryConfig{
-		"create": {
-			HeaderTitle: "Create Database Profile",
-			Mode:        "create",
-			ShowOptions: false,
-			SuccessMsg:  "✓ Profile berhasil dibuat",
-			LogPrefix:   "profile-create",
+		consts.ProfileModeCreate: {
+			HeaderTitle: consts.ProfileHeaderCreate,
+			Mode:        consts.ProfileModeCreate,
+			SuccessMsg:  consts.ProfileSuccessCreated,
+			LogPrefix:   consts.ProfileLogPrefixCreate,
 		},
-		"show": {
-			HeaderTitle: "Show Database Profile",
-			Mode:        "show",
-			ShowOptions: false,
+		consts.ProfileModeShow: {
+			HeaderTitle: consts.ProfileHeaderShow,
+			Mode:        consts.ProfileModeShow,
 			SuccessMsg:  "", // No success message for show
-			LogPrefix:   "profile-show",
+			LogPrefix:   consts.ProfileLogPrefixShow,
 		},
-		"edit": {
-			HeaderTitle: "Edit Database Profile",
-			Mode:        "edit",
-			ShowOptions: false,
-			SuccessMsg:  "✓ Profile berhasil diupdate",
-			LogPrefix:   "profile-edit",
+		consts.ProfileModeEdit: {
+			HeaderTitle: consts.ProfileHeaderEdit,
+			Mode:        consts.ProfileModeEdit,
+			SuccessMsg:  consts.ProfileSuccessUpdated,
+			LogPrefix:   consts.ProfileLogPrefixEdit,
 		},
-		"delete": {
-			HeaderTitle: "Delete Database Profile",
-			Mode:        "delete",
-			ShowOptions: false,
-			SuccessMsg:  "✓ Profile berhasil dihapus",
-			LogPrefix:   "profile-delete",
+		consts.ProfileModeDelete: {
+			HeaderTitle: consts.ProfileHeaderDelete,
+			Mode:        consts.ProfileModeDelete,
+			SuccessMsg:  consts.ProfileSuccessDeleted,
+			LogPrefix:   consts.ProfileLogPrefixDelete,
 		},
 	}
 

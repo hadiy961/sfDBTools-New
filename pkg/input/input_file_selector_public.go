@@ -12,6 +12,9 @@ import (
 // Jika user input path directory, akan tampilkan list file di directory tersebut.
 // Jika user input path file, akan konfirmasi yes/no.
 func SelectFileInteractive(directory string, message string, extensions []string) (string, error) {
+	if err := ensureInteractiveAllowed(); err != nil {
+		return "", err
+	}
 	fmt.Println()
 	fmt.Println("📁 File Selector - Tekan Enter untuk browse directory saat ini")
 	fmt.Printf("   Directory: %s\n", directory)

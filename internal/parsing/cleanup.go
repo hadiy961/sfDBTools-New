@@ -3,7 +3,6 @@ package parsing
 import (
 	defaultVal "sfDBTools/internal/defaultval"
 	"sfDBTools/internal/types"
-	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 
 	"github.com/spf13/cobra"
@@ -26,7 +25,10 @@ func ParsingCleanupOptions(cmd *cobra.Command) (types.CleanupOptions, error) {
 	}
 
 	// Background mode
-	opts.Background = helper.GetBoolFlagOrEnv(cmd, "background", consts.ENV_DAEMON_MODE)
+	opts.Background = helper.GetBoolFlagOrEnv(cmd, "background", "")
+
+	// Dry-run mode
+	opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
 
 	return opts, nil
 }

@@ -7,6 +7,7 @@ import (
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/validation"
 	"strings"
 
@@ -42,8 +43,8 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	// Dry Run
 	opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
 
-	// Non Interactive
-	opts.NonInteractive = helper.GetBoolFlagOrEnv(cmd, "non-interactive", "")
+	// Non Interactive (global): --quiet / --daemon
+	opts.NonInteractive = runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
 
 	// Backup Directory
 	if v := helper.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {
@@ -145,16 +146,16 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	// Validasi mode non-interaktif (fail-fast)
 	if opts.NonInteractive {
 		if strings.TrimSpace(opts.Ticket) == "" {
-			return types_backup.BackupDBOptions{}, fmt.Errorf("ticket wajib diisi pada mode non-interaktif (--non-interactive): gunakan --ticket")
+			return types_backup.BackupDBOptions{}, fmt.Errorf("ticket wajib diisi pada mode non-interaktif (--quiet): gunakan --ticket")
 		}
 		if strings.TrimSpace(opts.Profile.Path) == "" {
-			return types_backup.BackupDBOptions{}, fmt.Errorf("profile wajib diisi pada mode non-interaktif (--non-interactive): gunakan --profile")
+			return types_backup.BackupDBOptions{}, fmt.Errorf("profile wajib diisi pada mode non-interaktif (--quiet): gunakan --profile")
 		}
 		if strings.TrimSpace(opts.Profile.EncryptionKey) == "" {
-			return types_backup.BackupDBOptions{}, fmt.Errorf("profile-key wajib diisi pada mode non-interaktif (--non-interactive): gunakan --profile-key atau env %s", consts.ENV_SOURCE_PROFILE_KEY)
+			return types_backup.BackupDBOptions{}, fmt.Errorf("profile-key wajib diisi pada mode non-interaktif (--quiet): gunakan --profile-key atau env %s", consts.ENV_SOURCE_PROFILE_KEY)
 		}
 		if opts.Encryption.Enabled && strings.TrimSpace(opts.Encryption.Key) == "" {
-			return types_backup.BackupDBOptions{}, fmt.Errorf("backup-key wajib diisi saat enkripsi aktif pada mode non-interaktif: gunakan --backup-key atau env %s (atau set --skip-encrypt)", consts.ENV_BACKUP_ENCRYPTION_KEY)
+			return types_backup.BackupDBOptions{}, fmt.Errorf("backup-key wajib diisi saat enkripsi aktif pada mode non-interaktif (--quiet): gunakan --backup-key atau env %s (atau set --skip-encrypt)", consts.ENV_BACKUP_ENCRYPTION_KEY)
 		}
 
 		// Mode-specific non-interactive requirements

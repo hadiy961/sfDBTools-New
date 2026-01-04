@@ -27,7 +27,7 @@ func (s *Service) executeScanInBackground(ctx context.Context, config types.Scan
 	s.Log.Infof("[%s] === START BACKGROUND SCAN ===", scanID)
 
 	// Setup connections (silent mode)
-	sourceClient, targetClient, dbFiltered, cleanup, err := s.setupScanConnections(ctx, "", false)
+	sourceClient, dbFiltered, cleanup, err := s.setupScanConnections(ctx, "", false)
 	if err != nil {
 		s.Log.Errorf("[%s] Setup failed: %v", scanID, err)
 		return err
@@ -49,7 +49,7 @@ func (s *Service) executeScanInBackground(ctx context.Context, config types.Scan
 
 	// Execute Scan
 	s.Log.Infof("[%s] Scanning %d database...", scanID, len(dbFiltered))
-	result, detailsMap, err := s.executeScanWithClients(runCtx, sourceClient, targetClient, dbFiltered, true)
+	result, detailsMap, err := s.executeScanWithClients(runCtx, sourceClient, dbFiltered, true)
 	if err != nil {
 		s.Log.Errorf("[%s] Scan failed: %v", scanID, err)
 		s.logErrorToFile(scanID, err)

@@ -96,7 +96,7 @@ Compression levels: `1-9` (1=fastest/lowest ratio, 9=slowest/highest ratio)
 ### Common Optional
 - `-o, --backup-dir` - Output directory (default: from config)
 - `-f, --filename` - Custom filename base (without extension)
-- `-n, --non-interactive` - Non-interactive mode (for automation)
+- `-q, --quiet` - Non-interactive mode (for automation/pipeline; menonaktifkan prompt interaktif)
 - `-d, --dry-run` - Dry run mode (validation only)
 
 ### Filters
@@ -170,7 +170,7 @@ sfdbtools db-backup all [flags]
 **Non-Interactive Example**:
 ```bash
 sfdbtools db-backup all \
-  --non-interactive \
+  --quiet \
   --profile /etc/sfDBTools/profiles/db_prod.cnf.enc \
   --profile-key "your-profile-key" \
   --ticket "BACKUP-2026-001" \
@@ -225,7 +225,7 @@ sfdbtools db-backup filter
 
 # Single-file mode (non-interactive)
 sfdbtools db-backup filter \
-  --non-interactive \
+  --quiet \
   --mode single-file \
   --db "app_db,user_db,log_db" \
   --profile /path/to/profile.cnf.enc \
@@ -233,7 +233,7 @@ sfdbtools db-backup filter \
 
 # Multi-file mode with database list file
 sfdbtools db-backup filter \
-  --non-interactive \
+  --quiet \
   --mode multi-file \
   --db-file /path/to/db_list.txt \
   --profile /path/to/profile.cnf.enc \
@@ -333,7 +333,7 @@ sfdbtools db-backup primary \
 
 # Non-interactive with auto-detection
 sfdbtools db-backup primary \
-  --non-interactive \
+  --quiet \
   --client-code "client123" \
   --include-dmart \
   --profile /path/to/profile.cnf.enc \
@@ -509,7 +509,7 @@ When selecting "Ubah opsi", a submenu appears with:
 - Suitable for automation/scheduling
 
 **Required Inputs**:
-- `--non-interactive` flag
+- `--quiet` flag
 - `--profile` - Profile path
 - `--profile-key` - Profile key (or ENV)
 - `--ticket` - Ticket number
@@ -526,7 +526,7 @@ When selecting "Ubah opsi", a submenu appears with:
 **Example**:
 ```bash
 sfdbtools db-backup all \
-  --non-interactive \
+  --quiet \
   --profile /etc/profiles/prod.cnf.enc \
   --profile-key "key123" \
   --ticket "BACKUP-2026-001" \
@@ -829,7 +829,7 @@ sfdbtools db-backup secondary --client-code "client123" --instance "1" --ticket 
 
 # Non-interactive automated backup
 sfdbtools db-backup all \
-  --non-interactive \
+  --quiet \
   --profile /etc/profiles/prod.cnf.enc \
   --ticket "DAILY-BACKUP-$(date +%Y%m%d)" \
   --compress zstd \

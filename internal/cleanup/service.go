@@ -2,7 +2,7 @@
 // Deskripsi : Service utama implementation untuk cleanup operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 17 Desember 2025
+// Last Modified : 04 Januari 2026
 
 package cleanup
 
@@ -47,16 +47,15 @@ func (s *Service) ExecuteCleanupCommand(config types.CleanupEntryConfig) error {
 	}
 
 	// Jalankan cleanup berdasarkan mode
+	dryRun := s.CleanupOptions.DryRun
 	switch config.Mode {
 	case "run":
-		return s.cleanupCore(false, s.CleanupOptions.Pattern)
-	case "dry-run":
-		return s.cleanupCore(true, s.CleanupOptions.Pattern)
+		return s.cleanupCore(dryRun, s.CleanupOptions.Pattern)
 	case "pattern":
 		if s.CleanupOptions.Pattern == "" {
 			return ErrInvalidCleanupMode
 		}
-		return s.cleanupCore(false, s.CleanupOptions.Pattern)
+		return s.cleanupCore(dryRun, s.CleanupOptions.Pattern)
 	default:
 		return ErrInvalidCleanupMode
 	}

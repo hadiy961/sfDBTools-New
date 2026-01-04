@@ -45,6 +45,7 @@ type ProfileEditOptions struct {
 type ProfileShowOptions struct {
 	ProfileInfo
 	RevealPassword bool
+	Interactive    bool
 }
 
 // ProfileDeleteOptions - Flags for profile delete command
@@ -52,13 +53,13 @@ type ProfileDeleteOptions struct {
 	ProfileInfo ProfileInfo
 	Profiles    []string // List of profiles to delete
 	Force       bool
+	Interactive bool
 }
 
 // ProfileEntryConfig menyimpan konfigurasi untuk entry point profile operations
 type ProfileEntryConfig struct {
 	HeaderTitle string // UI header title
 	Mode        string // "create", "show", "edit", "delete"
-	ShowOptions bool   // Display profile info before operation
 	SuccessMsg  string // Success message
 	LogPrefix   string // Log prefix for tracking
 }

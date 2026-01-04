@@ -21,7 +21,6 @@ import (
 
 // ScanExecutorOptions adalah opsi untuk executor scanning
 type ScanExecutorOptions struct {
-	SaveToDB      bool
 	LocalScan     bool
 	DisplayResult bool
 	IsBackground  bool
@@ -33,7 +32,6 @@ type ScanExecutorOptions struct {
 func ExecuteScanWithSave(
 	ctx context.Context,
 	sourceClient *database.Client,
-	targetClient *database.Client,
 	dbNames []string,
 	serverHost string,
 	serverPort int,
@@ -75,8 +73,6 @@ func ExecuteScanWithSave(
 	failedCount := 0
 	var errors []string
 
-	saveEnabled := opts.SaveToDB && targetClient != nil
-
 	// Siapkan opsi untuk override size menggunakan hasil local scan (jika ada)
 	var collectOpts *DetailCollectOptions
 	if opts.LocalScan && opts.LocalSizes != nil {
@@ -100,19 +96,9 @@ func ExecuteScanWithSave(
 			}
 		}
 
-		if !saveEnabled {
-			successCount++
-			return nil
-		}
-
-		// Lakukan penyimpanan segera
-		if err := SaveDatabaseDetail(ctx, targetClient, detail, serverHost, serverPort); err != nil {
-			failedCount++
-			errors = append(errors, fmt.Sprintf("%s: %v", detail.DatabaseName, err))
-			opts.Logger.Errorf("Gagal menyimpan database %s: %v", detail.DatabaseName, err)
-			return err
-		}
 		successCount++
+		_ = serverHost
+		_ = serverPort
 		return nil
 	})
 

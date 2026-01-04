@@ -11,6 +11,9 @@ import (
 
 // selectFileFromDirectory menampilkan list file dalam directory dengan filter ekstensi.
 func selectFileFromDirectory(directory string, extensions []string) (string, error) {
+	if err := ensureInteractiveAllowed(); err != nil {
+		return "", err
+	}
 	files, err := os.ReadDir(directory)
 	if err != nil {
 		return "", fmt.Errorf("gagal membaca directory: %w", err)

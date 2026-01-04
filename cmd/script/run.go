@@ -12,7 +12,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -146,16 +145,7 @@ func selectSFToolsFileInteractive() (string, error) {
 }
 
 func selectSingleFromListWithDefault(items []string, message string, defaultVal string) (string, error) {
-	var selected string
-	prompt := &survey.Select{
-		Message: message,
-		Options: items,
-		Default: defaultVal,
-	}
-	if err := survey.AskOne(prompt, &selected); err != nil {
-		return "", err
-	}
-	return selected, nil
+	return input.SelectSingleFromListWithDefault(items, message, defaultVal)
 }
 
 func listSFToolsFiles(dir string) ([]string, error) {

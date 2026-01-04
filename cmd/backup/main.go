@@ -26,10 +26,13 @@ Setiap command mendukung opsi standar seperti kompresi, enkripsi (opsional), dan
 }
 
 func init() {
+	CmdBackupMain.PersistentFlags().Bool("background", false, "Jalankan backup di background via systemd-run (Linux only)")
+
 	// Tambahkan semua sub-command (Perlu diinisialisasi di file masing-masing)
 	CmdBackupMain.AddCommand(CmdBackupAll)
 	CmdBackupMain.AddCommand(CmdBackupFilter)
 	CmdBackupMain.AddCommand(CmdBackupSingle)
 	CmdBackupMain.AddCommand(CmdBackupPrimary)
 	CmdBackupMain.AddCommand(CmdBackupSecondary)
+	CmdBackupMain.AddCommand(CmdBackupSchedule)
 }

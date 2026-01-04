@@ -2,19 +2,18 @@
 // Deskripsi : Helper functions untuk quiet mode setup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-11-11
-// Last Modified : 2025-11-11
+// Last Modified : 2026-01-04
 
 package helpers
 
 import (
 	"os"
-	"strings"
 
 	"sfDBTools/internal/applog"
-	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/runtimecfg"
 )
 
-// SetupQuietMode memeriksa environment variable SFDB_QUIET dan mengkonfigurasi logger
+// SetupQuietMode memeriksa mode quiet/daemon berbasis parameter dan mengkonfigurasi logger
 // untuk mengarahkan output ke stderr jika quiet mode aktif.
 // Ini memastikan stdout tetap bersih untuk data output (pipeline-friendly).
 //
@@ -24,8 +23,7 @@ import (
 // Return:
 //   - bool: true jika quiet mode aktif, false jika tidak
 func SetupQuietMode(logger applog.Logger) bool {
-	v := os.Getenv(consts.ENV_QUIET)
-	quiet := v != "" && v != "0" && strings.ToLower(v) != "false"
+	quiet := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
 
 	if quiet && logger != nil {
 		logger.SetOutput(os.Stderr)

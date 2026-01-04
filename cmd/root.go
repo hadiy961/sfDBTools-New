@@ -2,21 +2,25 @@
 // Deskripsi : Root command untuk aplikasi sfDBTools
 // Author : Hadiyatna Muflihun
 // Tanggal : 2024-10-03
-// Last Modified : 2026-01-02
+// Last Modified : 2026-01-04
 package cmd
 
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	backupcmd "sfDBTools/cmd/backup"
 	cleanupcmd "sfDBTools/cmd/cleanup"
 	cryptocmd "sfDBTools/cmd/crypto"
 	dbscancmd "sfDBTools/cmd/dbscan"
+	jobscmd "sfDBTools/cmd/jobs"
 	profilecmd "sfDBTools/cmd/profile"
 	restorecmd "sfDBTools/cmd/restore"
 	scriptcmd "sfDBTools/cmd/script"
 	appdeps "sfDBTools/internal/deps"
+	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
+	"strings"
 
 	"github.com/spf13/cobra"
 	// Import globals dan sub-command
@@ -31,6 +35,16 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 
 	// PersistentPreRunE akan dijalankan SEBELUM perintah apapun.
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Apply global runtime flags seawal mungkin untuk memastikan mode daemon/quiet konsisten.
+		quietFlag, _ := cmd.Flags().GetBool("quiet")
+		quiteFlag, _ := cmd.Flags().GetBool("quite")
+		if quietFlag || quiteFlag {
+			runtimecfg.SetQuiet(true)
+		}
+		if d, _ := cmd.Flags().GetBool("daemon"); d {
+			runtimecfg.SetDaemon(true)
+		}
+
 		// Skip dependensi dan logging untuk perintah completion agar output bersih
 		if cmd.Name() == "completion" || cmd.HasParent() && cmd.Parent().Name() == "completion" {
 			return nil
@@ -43,8 +57,14 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 			return fmt.Errorf("dependensi belum di-inject. Pastikan untuk memanggil Execute(deps) dari main.go")
 		}
 
-		// Log bahwa perintah akan dieksekusi
-		appdeps.Deps.Logger.Infof("Memulai perintah: %s", cmd.Name())
+		// Log bahwa perintah akan dieksekusi, termasuk argumen (tanpa membocorkan secret).
+		bin := filepath.Base(os.Args[0])
+		argsSafe := sanitizeArgs(os.Args[1:])
+		argLine := strings.Join(argsSafe, " ")
+		if strings.TrimSpace(argLine) == "" {
+			argLine = "-"
+		}
+		appdeps.Deps.Logger.Infof("Memulai perintah: %s | argv: %s %s", cmd.CommandPath(), bin, argLine)
 
 		return nil
 	},
@@ -73,6 +93,14 @@ func Execute(deps *appdeps.Dependencies) {
 }
 
 func init() {
+	// Global flags (parameter-only): tanpa perlu SFDB_QUIET / SFDB_DAEMON_MODE.
+	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Output lebih senyap (tanpa spinner/header), cocok untuk pipeline")
+	rootCmd.PersistentFlags().Bool("quite", false, "Alias (deprecated) untuk --quiet")
+	_ = rootCmd.PersistentFlags().MarkHidden("quite")
+	_ = rootCmd.PersistentFlags().MarkDeprecated("quite", "gunakan --quiet")
+	rootCmd.PersistentFlags().Bool("daemon", false, "Mode daemon (untuk systemd/background); otomatis quiet")
+	_ = rootCmd.PersistentFlags().MarkHidden("daemon")
+
 	// Tambahkan sub-command yang sudah dibuat
 	// Kita anggap 'versionCmd' ada di cmd/version.go
 	rootCmd.AddCommand(versionCmd) // (Perlu diinisialisasi di cmd/version.go)
@@ -82,6 +110,7 @@ func init() {
 	rootCmd.AddCommand(scriptcmd.CmdScriptMain)
 	rootCmd.AddCommand(cleanupcmd.CmdCleanupMain)
 	rootCmd.AddCommand(backupcmd.CmdBackupMain)
+	rootCmd.AddCommand(jobscmd.CmdJobs)
 	rootCmd.AddCommand(restorecmd.CmdRestore)
 	rootCmd.AddCommand(completionCmd)
 }

@@ -2,14 +2,22 @@
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-16
-// Last Modified : 2025-12-16
+// Last Modified : 2026-01-04
 
 package cleanup
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"time"
+
 	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/parsing"
+	"sfDBTools/internal/schedulerutil"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
 
 	"github.com/spf13/cobra"
@@ -46,11 +54,49 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 		return err
 	}
 
+	// Konsisten dengan backup/dbscan: jika diminta background dan bukan proses daemon,
+	// jalankan ulang command ini via systemd-run (transient unit) dengan flag --daemon.
+	if parsedOpts.Background && !runtimecfg.IsDaemon() {
+		wd, _ := os.Getwd()
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		res, runErr := schedulerutil.SpawnSelfInBackground(ctx, schedulerutil.SpawnSelfOptions{
+			UnitPrefix:    "sfdbtools-cleanup",
+			Mode:          schedulerutil.RunModeAuto,
+			EnvFile:       "/etc/sfDBTools/.env",
+			WorkDir:       wd,
+			Collect:       true,
+			NoAskPass:     true,
+			WrapWithFlock: false,
+		})
+		if runErr != nil {
+			return runErr
+		}
+		ui.PrintHeader("CLEANUP - BACKGROUND MODE")
+		ui.PrintSuccess("Background cleanup dimulai via systemd")
+		ui.PrintInfo(fmt.Sprintf("Unit: %s", ui.ColorText(res.UnitName, consts.UIColorCyan)))
+		if res.Mode == schedulerutil.RunModeUser {
+			ui.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
+			ui.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
+		} else {
+			ui.PrintInfo(fmt.Sprintf("Status: sudo systemctl status %s", res.UnitName))
+			ui.PrintInfo(fmt.Sprintf("Logs: sudo journalctl -u %s -f", res.UnitName))
+		}
+		return nil
+	}
+
 	// Inisialisasi service cleanup
 	svc := NewCleanupService(deps.Config, logger, parsedOpts)
 
-	// Tampilkan header jika ada
-	if config.HeaderTitle != "" {
+	// Jika dry-run diminta via flag, gunakan judul & pesan yang konsisten dengan mode preview.
+	if parsedOpts.DryRun {
+		config.HeaderTitle = "Cleanup Preview (Dry Run)"
+		config.SuccessMsg = "✓ Cleanup preview selesai"
+		config.LogPrefix = "cleanup-dryrun"
+	}
+
+	// Tampilkan header jika ada (skip saat quiet/daemon)
+	if config.HeaderTitle != "" && !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
 		ui.Headers(config.HeaderTitle)
 	}
 
@@ -59,9 +105,11 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 		return err
 	}
 
-	// Print success message jika ada
+	// Print success message jika ada (skip stdout saat quiet/daemon)
 	if config.SuccessMsg != "" {
-		ui.PrintSuccess(config.SuccessMsg)
+		if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
+			ui.PrintSuccess(config.SuccessMsg)
+		}
 		logger.Info(config.SuccessMsg)
 	}
 
@@ -77,15 +125,6 @@ func GetExecutionConfig(mode string) (types.CleanupEntryConfig, error) {
 			ShowOptions: false,
 			SuccessMsg:  "✓ Cleanup backup files selesai",
 			LogPrefix:   "cleanup-run",
-			DryRun:      false,
-		},
-		"dry-run": {
-			HeaderTitle: "Cleanup Preview (Dry Run)",
-			Mode:        "dry-run",
-			ShowOptions: false,
-			SuccessMsg:  "✓ Cleanup preview selesai",
-			LogPrefix:   "cleanup-dryrun",
-			DryRun:      true,
 		},
 		"pattern": {
 			HeaderTitle: "Cleanup By Pattern",
@@ -93,7 +132,6 @@ func GetExecutionConfig(mode string) (types.CleanupEntryConfig, error) {
 			ShowOptions: false,
 			SuccessMsg:  "✓ Cleanup by pattern selesai",
 			LogPrefix:   "cleanup-pattern",
-			DryRun:      false,
 		},
 	}
 

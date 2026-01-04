@@ -2,7 +2,7 @@
 // Deskripsi : Setup connection, configuration loading, dan session preparation
 // Author : Hadiyatna Muflihun
 // Tanggal : 17 Desember 2025
-// Last Modified : 17 Desember 2025
+// Last Modified : 03 Januari 2026
 
 package dbscan
 
@@ -61,29 +61,14 @@ func ResolveScanLists(opts *types.ScanOptions) error {
 	return nil
 }
 
-// setupScanConnections mengorkestrasi setup koneksi source dan target database.
-// Menangani mode normal dan mode rescan.
-// Returns: sourceClient, targetClient, dbFiltered, cleanupFunc, error
-func (s *Service) setupScanConnections(ctx context.Context, headerTitle string, showOptions bool) (*database.Client, *database.Client, []string, func(), error) {
-	// Mode Rescan: penanganan khusus
-	if s.ScanOptions.Mode == "rescan" {
-		return s.prepareRescanSession(ctx, headerTitle, showOptions)
-	}
-
+// setupScanConnections mengorkestrasi setup koneksi source database.
+// Catatan: sfDBTools tidak menyimpan hasil scan ke database, jadi tidak ada koneksi target.
+// Returns: sourceClient, dbFiltered, cleanupFunc, error
+func (s *Service) setupScanConnections(ctx context.Context, headerTitle string, showOptions bool) (*database.Client, []string, func(), error) {
 	// Mode Normal: setup standar
 	sourceClient, dbFiltered, err := s.prepareScanSession(ctx, headerTitle, showOptions)
 	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-
-	// Setup Target Database Connection (Optional based on config)
-	var targetClient *database.Client
-	if s.ScanOptions.SaveToDB {
-		targetClient, err = s.ConnectToTargetDB(ctx)
-		if err != nil {
-			s.Log.Warn("Gagal koneksi ke target database, hasil scan tidak akan disimpan: " + err.Error())
-			s.ScanOptions.SaveToDB = false
-		}
+		return nil, nil, nil, err
 	}
 
 	// Cleanup function untuk menutup semua koneksi
@@ -91,12 +76,9 @@ func (s *Service) setupScanConnections(ctx context.Context, headerTitle string, 
 		if sourceClient != nil {
 			sourceClient.Close()
 		}
-		if targetClient != nil {
-			targetClient.Close()
-		}
 	}
 
-	return sourceClient, targetClient, dbFiltered, cleanup, nil
+	return sourceClient, dbFiltered, cleanup, nil
 }
 
 // prepareScanSession mempersiapkan session untuk scanning normal.
@@ -154,82 +136,6 @@ func (s *Service) prepareScanSession(ctx context.Context, headerTitle string, sh
 	return client, dbFiltered, nil
 }
 
-// prepareRescanSession mempersiapkan session untuk mode rescan.
-// Mengambil daftar database yang gagal dari target database.
-func (s *Service) prepareRescanSession(ctx context.Context, headerTitle string, showOptions bool) (*database.Client, *database.Client, []string, func(), error) {
-	if headerTitle != "" {
-		ui.Headers(headerTitle)
-		s.Log.Infof("=== %s ===", headerTitle)
-	}
-
-	if showOptions {
-		if proceed, askErr := s.DisplayScanOptions(); askErr != nil {
-			return nil, nil, nil, nil, askErr
-		} else if !proceed {
-			return nil, nil, nil, nil, validation.ErrUserCancelled
-		}
-	}
-
-	if err := s.CheckAndSelectConfigFile(); err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("gagal memuat konfigurasi database: %w", err)
-	}
-
-	// Connect ke Target Database (Wajib untuk rescan)
-	targetClient, err := s.ConnectToTargetDB(ctx)
-	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("gagal koneksi ke target database: %w", err)
-	}
-
-	// Helper cleanup sementara
-	var success bool
-	defer func() {
-		if !success && targetClient != nil {
-			targetClient.Close()
-		}
-	}()
-
-	// Ambil list failed databases
-	failedDBNames, err := helpers.GetFailedDatabaseNames(ctx, targetClient)
-	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("gagal mendapatkan list database yang gagal: %w", err)
-	}
-
-	if len(failedDBNames) == 0 {
-		ui.PrintInfo("Tidak ada database yang gagal untuk di-rescan")
-		return nil, nil, nil, nil, fmt.Errorf("tidak ada database yang gagal untuk di-rescan")
-	}
-
-	ui.PrintInfo(fmt.Sprintf("Ditemukan %d database yang gagal di-scan sebelumnya", len(failedDBNames)))
-
-	// Connect ke Source Database
-	sourceClient, err := profilehelper.ConnectWithProfile(&s.ScanOptions.ProfileInfo, consts.DefaultInitialDatabase)
-	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("gagal koneksi ke source database: %w", err)
-	}
-
-	// Display simplified stats
-	stats := &types.FilterStats{
-		TotalFound:    len(failedDBNames),
-		TotalIncluded: len(failedDBNames),
-	}
-	s.DisplayFilterStats(stats)
-
-	// Force enable SaveToDB untuk rescan (update status error)
-	s.ScanOptions.SaveToDB = true
-
-	cleanup := func() {
-		if sourceClient != nil {
-			sourceClient.Close()
-		}
-		if targetClient != nil {
-			targetClient.Close()
-		}
-	}
-
-	success = true
-	return sourceClient, targetClient, failedDBNames, cleanup, nil
-}
-
 // CheckAndSelectConfigFile memeriksa atau memilih file profile database.
 func (s *Service) CheckAndSelectConfigFile() error {
 	profile, err := profilehelper.LoadSourceProfile(
@@ -244,49 +150,6 @@ func (s *Service) CheckAndSelectConfigFile() error {
 
 	s.ScanOptions.ProfileInfo = *profile
 	return nil
-}
-
-// ConnectToTargetDB membuat koneksi ke database pusat (app database).
-func (s *Service) ConnectToTargetDB(ctx context.Context) (*database.Client, error) {
-	client, err := database.ConnectToAppDatabase()
-	if err != nil {
-		return nil, fmt.Errorf("gagal koneksi ke target database: %w", err)
-	}
-
-	if err := client.Ping(ctx); err != nil {
-		client.Close()
-		return nil, fmt.Errorf("gagal verifikasi koneksi target: %w", err)
-	}
-
-	return client, nil
-}
-
-// getTargetDBConfig mengambil konfigurasi target database (untuk display options).
-func (s *Service) getTargetDBConfig() types.ServerDBConnection {
-	conn := s.ScanOptions.TargetDB
-
-	// Fallback ke env defaults jika kosong
-	if conn.Host == "" {
-		conn.Host = helper.GetEnvOrDefault("SFDB_DB_HOST", "localhost")
-	}
-	if conn.Port == 0 {
-		conn.Port = helper.GetEnvOrDefaultInt("SFDB_DB_PORT", 3306)
-	}
-	if conn.User == "" {
-		conn.User = helper.GetEnvOrDefault("SFDB_DB_USER", "root")
-	}
-	if conn.Database == "" {
-		conn.Database = helper.GetEnvOrDefault("SFDB_DB_NAME", "sfDBTools")
-	}
-	// Password tidak perlu default, biarkan kosong jika tidak diset
-
-	return types.ServerDBConnection{
-		Host:     conn.Host,
-		Port:     conn.Port,
-		User:     conn.User,
-		Password: conn.Password,
-		Database: conn.Database,
-	}
 }
 
 // GetFilteredDatabases mengambil dan memfilter daftar database.

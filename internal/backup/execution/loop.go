@@ -2,13 +2,14 @@
 // Deskripsi : Loop execution logic untuk multi-database backup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-31
-// Last Modified : 2025-12-31
+// Last Modified : 2026-01-02
 
 package execution
 
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
@@ -58,6 +59,7 @@ func (e *Engine) executeSingleBackupInLoop(
 	outputPathFunc func(string) (string, error),
 	result *types_backup.BackupLoopResult,
 ) {
+	start := time.Now()
 	e.Log.Infof("[%d/%d] Backup database: %s", currentIdx, totalDBs, dbName)
 
 	// Generate output path untuk database ini
@@ -83,6 +85,7 @@ func (e *Engine) executeSingleBackupInLoop(
 	})
 
 	if err != nil {
+		e.Log.Warnf("[%d/%d] Backup database gagal: %s (%s)", currentIdx, totalDBs, dbName, time.Since(start).Round(time.Millisecond))
 		result.FailedDBs = append(result.FailedDBs, types_backup.FailedDatabaseInfo{
 			DatabaseName: dbName,
 			Error:        err.Error(),
@@ -93,6 +96,7 @@ func (e *Engine) executeSingleBackupInLoop(
 
 	result.BackupInfos = append(result.BackupInfos, backupInfo)
 	result.Success++
+	e.Log.Infof("[%d/%d] Selesai backup database: %s (%s)", currentIdx, totalDBs, dbName, time.Since(start).Round(time.Millisecond))
 
 	// Export user grants untuk separated/single modes
 	if e.UserGrants != nil {

@@ -18,6 +18,5 @@ func init() {
 	// Tambahkan semua sub-command (Perlu diinisialisasi di file masing-masing)
 	CmdDBScanMain.AddCommand(CmdDBScanAll)
 	CmdDBScanMain.AddCommand(CmdDBScanFilter)
-	CmdDBScanMain.AddCommand(CmdDBScanRescan)
 	CmdDBScanMain.AddCommand(CmdDBScanAllLocal)
 }

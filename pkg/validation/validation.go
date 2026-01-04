@@ -2,7 +2,7 @@
 // Deskripsi : Fungsi fungsi untuk validasi ada disini
 // Author : Hadiyatna Muflihun
 // Tanggal : 11 November 2025
-// Last Modified : 30 December 2025
+// Last Modified : 04 January 2026
 package validation
 
 import (
@@ -86,6 +86,7 @@ func ValidateSubdirPattern(pattern string, vars map[string]string) error {
 }
 
 var ErrUserCancelled = errors.New("user_cancelled")
+var ErrNonInteractive = errors.New("non_interactive")
 var ErrConnectionFailedRetry = errors.New("connection_failed_retry")
 
 // HandleInputError menangani error dari input/survey dan mengubahnya menjadi ErrUserCancelled jika perlu.

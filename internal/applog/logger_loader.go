@@ -2,7 +2,7 @@
 // Deskripsi : Fungsi untuk memuat dan menginisialisasi logger aplikasi
 // Author : Hadiyatna Muflihun
 // Tanggal : 2024-10-03
-// Last Modified : 2024-10-03
+// Last Modified : 2026-01-04
 package applog
 
 import (
@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/runtimecfg"
+	"sfDBTools/pkg/spinnerguard"
 	"strings"
 	"time"
 
@@ -18,6 +20,17 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	// Ganti dengan path modul Go Anda yang sebenarnya
 )
+
+type spinnerSuspendingWriter struct {
+	w io.Writer
+}
+
+func (s spinnerSuspendingWriter) Write(p []byte) (n int, err error) {
+	spinnerguard.RunWithSuspendedSpinner(func() {
+		n, err = s.w.Write(p)
+	})
+	return n, err
+}
 
 // Logger adalah tipe alias untuk logrus.Logger
 type Logger = *logrus.Logger
@@ -55,6 +68,10 @@ func Time(key string, t time.Time) Field {
 // NOTE: Logger tidak lagi me-load konfigurasi sendiri untuk menghindari import cycle.
 // Caller bertanggung jawab mengirimkan config (boleh nil).
 func NewLogger(appCfg *types.Config) Logger {
+	// Quiet mode berbasis parameter (tanpa env): log ke stderr (bukan stdout) supaya pipeline aman,
+	// tapi tetap boleh tulis ke file jika file logging diaktifkan.
+	quiet := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
+
 	// Default config (aman untuk mode completion / tanpa config)
 	cfg := types.LogConfig{
 		Format:   "text",
@@ -143,13 +160,21 @@ func NewLogger(appCfg *types.Config) Logger {
 		writers = append(writers, fileRotator)
 	}
 
-	// B. Output ke Console (stdout)
+	// B. Output ke Console
 	if cfg.Output.Console.Enabled {
-		writers = append(writers, os.Stdout)
+		if quiet {
+			writers = append(writers, spinnerSuspendingWriter{w: os.Stderr})
+		} else {
+			writers = append(writers, spinnerSuspendingWriter{w: os.Stdout})
+		}
 	}
 
 	if len(writers) == 0 {
-		writers = append(writers, os.Stdout)
+		if quiet {
+			writers = append(writers, spinnerSuspendingWriter{w: os.Stderr})
+		} else {
+			writers = append(writers, spinnerSuspendingWriter{w: os.Stdout})
+		}
 	}
 
 	// 6. Gabungkan semua output writers

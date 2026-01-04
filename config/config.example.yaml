@@ -20,12 +20,20 @@ backup:
     #   - dbsf_biznet_mariadb
     # file : config/db_list.txt
   cleanup:
+    # Cleanup retention untuk file backup lama.
+    # Jika ingin dijalankan otomatis via systemd timer:
+    # - set enabled=true dan schedule (cron 5 kolom)
+    # - jalankan: sfdbtools cleanup schedule start
     enabled: false
-    schedule: ""
-    days: 0
+    schedule: "" # contoh: "0 2 * * *" (tiap hari 02:00)
+    days: 0 # jumlah hari retensi (0 = tidak melakukan delete)
   encryption:
     enabled: true
   output:
+    # base_directory: /media/ArchiveDB
+    # Filename pattern menggunakan format fixed:
+    # {database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}
+    # Contoh: mydb_20251110_143025_dbserver1.sql.gz.enc
     base_directory: backup
     structure:
       create_subdirs: true
@@ -38,6 +46,38 @@ backup:
     replication_user: repl_user
     replication_password: repl_password
 
+  # Scheduler backup berbasis systemd timer.
+  # - Format schedule menggunakan cron (5 kolom)
+  # - Banyak job diperbolehkan (local/NFS/NAS, harian/mingguan/bulanan, dll)
+  # - Eksekusi job dipaksa SERIAL (antri) via global lock (tidak paralel)
+  scheduler:
+    jobs:
+      # - name: local_daily
+      #   enabled: true
+      #   schedule: "0 2 * * *" # tiap hari 02:00
+      #   mode: separated
+      #   include_file: /etc/sfDBTools/config/db_list.txt
+      #   profile: /etc/sfDBTools/config/db_profile/source.cnf.enc
+      #   ticket: "SCHEDULED"
+      #   output:
+      #     base_directory: /backup/local
+      #   cleanup:
+      #     enabled: true
+      #     retention_days: 7
+      #
+      # - name: nfs_every_3_days
+      #   enabled: true
+      #   schedule: "0 1 */3 * *" # tiap 3 hari 01:00
+      #   mode: separated
+      #   include_file: /etc/sfDBTools/config/db_list.txt
+      #   profile: /etc/sfDBTools/config/db_profile/source.cnf.enc
+      #   ticket: "SCHEDULED"
+      #   output:
+      #     base_directory: /mnt/nfs/backup
+      #   cleanup:
+      #     enabled: true
+      #     retention_days: 14
+
 config_dir:
   database_profile: /etc/sfDBTools/config/db_profile
 
@@ -49,7 +89,7 @@ general:
 
 log:
   format: text
-  level: info
+  level: info #TRACE, DEBUG, INFO, WARN, ERROR, FATAL, PANIC
   output:
     console:
       enabled: true
@@ -65,4 +105,6 @@ log:
   timezone: Asia/Jakarta
 
 script:
+  # Jika diisi, output file .sftools dari `sfdbtools script encrypt` akan disimpan ke folder ini.
+  # Jika kosong, default: satu folder dengan file entrypoint.
   bundle_output_dir: "/etc/sfDBTools/scripts"

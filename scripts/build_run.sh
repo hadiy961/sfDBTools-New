@@ -16,6 +16,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 BIN_DIR="/usr/bin"
 BIN_PATH="${BIN_DIR}/sfDBTools"
+BIN_LINK="${BIN_DIR}/sfdbtools"
 
 # Defaults
 SKIP_RUN=false
@@ -48,6 +49,11 @@ done
 # Env checks
 if ! command -v go >/dev/null 2>&1; then
   echo "Error: 'go' is not installed or not in PATH" >&2
+  exit 1
+fi
+
+if [[ "$(id -u)" -ne 0 ]]; then
+  echo "Error: build ke ${BIN_DIR} butuh root. Jalankan dengan sudo." >&2
   exit 1
 fi
 
@@ -86,8 +92,18 @@ fi
 (
   cd "${ROOT_DIR}"
   echo "→ Building sfdbtools …"
-  GO111MODULE=on go build "${GO_BUILD_FLAGS[@]}" -o "${BIN_PATH}" .
-  echo "✓ Built: ${BIN_PATH}"
+
+  # Build ke file temporary dulu supaya update binary lebih aman (atomic-ish)
+  tmp_out="$(mktemp -p /tmp sfDBTools.build.XXXXXX)"
+  trap 'rm -f "${tmp_out}"' EXIT
+  GO111MODULE=on go build "${GO_BUILD_FLAGS[@]}" -o "${tmp_out}" .
+
+  install -m 0755 "${tmp_out}" "${BIN_PATH}"
+  ln -sf "sfDBTools" "${BIN_LINK}" || true
+  rm -f "${tmp_out}"
+  trap - EXIT
+
+  echo "✓ Built: ${BIN_PATH} (link: ${BIN_LINK})"
 )
 
 # Run (unless skipped)

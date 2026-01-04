@@ -13,9 +13,6 @@ func addBackupCommonFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions
 	// Encryption (shared)
 	AddEncryptionFlags(cmd, &opts.Encryption)
 
-	// Non Interactive
-	cmd.Flags().BoolVarP(&opts.NonInteractive, "non-interactive", "n", opts.NonInteractive, "Tidak melakukan interaksi (mode skrip)")
-
 	// Dry Run
 	cmd.Flags().BoolVarP(&opts.DryRun, "dry-run", "d", opts.DryRun, "Jalankan backup dalam mode dry-run (tidak benar-benar membuat file backup)")
 
@@ -61,7 +58,7 @@ func AddBackupFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {
 	// Filters: hanya include (tidak expose exclude-db/exclude-db-file)
 	addBackupIncludeFilterFlags(cmd, opts)
 
-	// Ticket wajib divalidasi saat runtime (khususnya untuk --non-interactive)
+	// Ticket wajib divalidasi saat runtime (khususnya untuk mode non-interaktif via --quiet)
 }
 
 // AddBackupFilterFlags menambahkan flags untuk backup filter (tanpa exclude flags)

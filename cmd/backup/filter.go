@@ -2,7 +2,7 @@
 // Deskripsi : Command untuk backup database dengan filter
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2026-01-02
+// Last Modified : 2026-01-04
 
 package backupcmd
 
@@ -11,8 +11,9 @@ import (
 	defaultVal "sfDBTools/internal/defaultval"
 	"sfDBTools/internal/flags"
 	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/input"
+	"sfDBTools/pkg/validation"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -62,14 +63,9 @@ func getBackupMode(cmd *cobra.Command) (string, error) {
 		}
 
 		var selected string
-		prompt := &survey.Select{
-			Message: "Pilih mode backup:",
-			Options: modeOptions,
-			Default: modeOptions[0], // Default single-file
-		}
-
-		if err := survey.AskOne(prompt, &selected); err != nil {
-			return "", fmt.Errorf("pemilihan mode dibatalkan: %w", err)
+		selected, err := input.SelectSingleFromListWithDefault(modeOptions, "Pilih mode backup:", modeOptions[0])
+		if err != nil {
+			return "", fmt.Errorf("mode non-interaktif: set --mode secara eksplisit (single-file/multi-file): %w", validation.HandleInputError(err))
 		}
 
 		// Parse pilihan untuk mendapatkan mode

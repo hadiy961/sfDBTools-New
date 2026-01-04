@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"sfDBTools/internal/applog"
 	"sfDBTools/pkg/ui"
 )
 
@@ -13,12 +14,13 @@ import (
 type databaseMonitorWriter struct {
 	target    io.Writer
 	spinner   *ui.SpinnerWithElapsed
+	log       applog.Logger
 	currentDB string
 	startTime time.Time
 }
 
-func newDatabaseMonitorWriter(target io.Writer, spinner *ui.SpinnerWithElapsed) *databaseMonitorWriter {
-	return &databaseMonitorWriter{target: target, spinner: spinner}
+func newDatabaseMonitorWriter(target io.Writer, spinner *ui.SpinnerWithElapsed, log applog.Logger) *databaseMonitorWriter {
+	return &databaseMonitorWriter{target: target, spinner: spinner, log: log}
 }
 
 var dbMarker = []byte("-- Current Database: ")
@@ -47,22 +49,27 @@ func (w *databaseMonitorWriter) onDatabaseSwitch(newDB string) {
 	if w.currentDB != "" {
 		duration := now.Sub(w.startTime)
 		msg := fmt.Sprintf("✓ Database %s (%s)", w.currentDB, duration.Round(time.Millisecond))
-		w.spinner.SuspendAndRun(func() {
-			fmt.Println(msg)
-		})
+		if w.log != nil {
+			w.log.Infof("%s", msg)
+		}
 	}
 
 	w.currentDB = newDB
 	w.startTime = now
-	w.spinner.UpdateMessage(fmt.Sprintf("Processing %s", newDB))
+	if w.log != nil {
+		w.log.Infof("Processing database: %s", newDB)
+	}
+	if w.spinner != nil {
+		w.spinner.UpdateMessage(fmt.Sprintf("Processing %s", newDB))
+	}
 }
 
 func (w *databaseMonitorWriter) Finish(success bool) {
 	if w.currentDB != "" && success {
 		duration := time.Since(w.startTime)
 		msg := fmt.Sprintf("✓ Database %s (%s)", w.currentDB, duration.Round(time.Millisecond))
-		w.spinner.SuspendAndRun(func() {
-			fmt.Println(msg)
-		})
+		if w.log != nil {
+			w.log.Infof("%s", msg)
+		}
 	}
 }

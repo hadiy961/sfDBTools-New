@@ -2,7 +2,7 @@
 // Deskripsi : Setup, configuration helpers, and path management
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 2 Januari 2026
+// Last Modified : 4 Januari 2026
 
 package profile
 
@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	profilehelper "sfDBTools/pkg/helper/profile"
 	"sfDBTools/pkg/validation"
@@ -49,7 +50,7 @@ func (s *Service) fillOriginalInfoFromMeta(absPath string, info types.ProfileInf
 	var fileSizeStr string
 	var lastMod = info.LastModified
 	if fi, err := os.Stat(absPath); err == nil {
-		fileSizeStr = fmt.Sprintf("%d bytes", fi.Size())
+		fileSizeStr = fmt.Sprintf(consts.ProfileFmtFileSizeBytes, fi.Size())
 		lastMod = fi.ModTime()
 	}
 

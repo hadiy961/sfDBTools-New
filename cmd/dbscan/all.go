@@ -18,8 +18,6 @@ var CmdDBScanAll = &cobra.Command{
 	Short: "Scan semua database dan collect informasi detail",
 	Long: `Scan semua database dari server yang dikonfigurasi dan mengumpulkan informasi detail.
 
-Hasil scanning dapat disimpan ke database_details dan database_detail_history table untuk tracking dan monitoring.
-
 Contoh penggunaan:
 	sfdbtools dbscan all --profile /path/to/profile.cnf.enc --profile-key SECRET
 	sfdbtools dbscan all --profile /path/to/profile.cnf.enc --exclude-system=false

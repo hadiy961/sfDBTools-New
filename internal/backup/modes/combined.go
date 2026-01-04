@@ -2,7 +2,7 @@
 // Deskripsi : Mode backup combined - semua database dalam satu file
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-30
+// Last Modified : 2026-01-02
 
 package modes
 
@@ -13,6 +13,7 @@ import (
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
 	"strings"
+	"time"
 )
 
 // CombinedExecutor menangani backup combined mode
@@ -31,6 +32,15 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	e.service.GetLog().Info("Melakukan backup database dalam mode combined")
 
 	totalDBFound := len(dbFiltered)
+
+	// Informasi database yang akan di-backup (penting untuk mode background/quiet)
+	e.service.GetLog().Infof("Database yang akan di-backup (combined, total=%d)", totalDBFound)
+	if totalDBFound <= consts.MaxDisplayDatabases {
+		e.service.GetLog().Infof("Daftar database: %s", strings.Join(dbFiltered, ", "))
+	} else {
+		e.service.GetLog().Infof("Daftar database (first %d): %s", consts.MaxDisplayDatabases, strings.Join(dbFiltered[:consts.MaxDisplayDatabases], ", "))
+		e.service.GetLog().Debugf("Daftar database lengkap: %v", dbFiltered)
+	}
 
 	// Initialize result statistics
 	res.TotalDatabases = len(dbFiltered)
@@ -51,6 +61,8 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 
 	// Execute backup - gunakan mode dari BackupOptions (bisa 'all' atau 'combined')
 	backupMode := opts.Mode
+	start := time.Now()
+	e.service.GetLog().Infof("Memulai mysqldump combined untuk %d database", totalDBFound)
 	backupInfo, execErr := e.service.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
 		DBList:       dbFiltered,
 		OutputPath:   fullOutputPath,
@@ -58,6 +70,7 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 		TotalDBFound: totalDBFound,
 		IsMultiDB:    true,
 	})
+	e.service.GetLog().Infof("Selesai mysqldump combined (%s)", time.Since(start).Round(time.Millisecond))
 
 	if execErr != nil {
 		res.Errors = append(res.Errors, execErr.Error())

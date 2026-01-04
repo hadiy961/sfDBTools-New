@@ -4,29 +4,36 @@ import (
 	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/profile"
+	"sfDBTools/pkg/consts"
 
 	"github.com/spf13/cobra"
 )
 
 var CmdProfileShow = &cobra.Command{
 	Use:   "show",
-	Short: "Menampilkan detail informasi profil",
+	Short: "Menampilkan detail profil" + consts.ProfileCLIAutoInteractiveSuffix,
 	Long: `Menampilkan isi konfigurasi dari sebuah profil database.
 
-Secara default, informasi sensitif seperti password akan disensor (ditampilkan sebagai bintang/masking).
-Gunakan flag --reveal-password untuk menampilkan password dalam bentuk teks biasa (plaintext).
-Jika profil terenkripsi, Anda mungkin perlu memasukkan kunci enkripsi profil.`,
-	Example: `  # 1. Pilih profil secara interaktif untuk ditampilkan
-  sfdbtools profile show
+Default:
+	- Tanpa --quiet (TTY): bisa pilih profil dan input key secara interaktif.
 
-  # 2. Tampilkan profil tertentu
-  sfdbtools profile show --profile "dev-db"
+` + consts.ProfileCLIModeNonInteractiveHeader + `
+	- Wajib isi --profile dan --profile-key ` + consts.ProfileCLINonInteractiveEnvProfileKeyNote + `
 
-  # 3. Tampilkan profil dengan password terlihat (Unmasked)
-  sfdbtools profile show --profile "dev-db" --reveal-password
+Catatan:
+	- Password disensor secara default.
+	- Gunakan --reveal-password untuk menampilkan password dalam bentuk teks biasa.`,
+	Example: `  # 1) Interaktif (pilih profil + input key jika perlu)
+	sfdbtools profile show
 
-  # 4. Tampilkan profil yang berada di direktori khusus
-  sfdbtools profile show --profile "custom-conf" --output-dir "./configs"`,
+	# 2) Non-interaktif
+	sfdbtools profile show --quiet --profile "dev-db" --profile-key "my-key"
+
+	# 3) Non-interaktif via environment variables
+	SFDB_TARGET_PROFILE_KEY='my-key' sfdbtools profile show --quiet --profile "dev-db"
+
+	# 4) Tampilkan password (hati-hati)
+	sfdbtools profile show --quiet --profile "dev-db" --profile-key "my-key" --reveal-password`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return profile.ExecuteProfile(cmd, appdeps.Deps, "show")
 	},

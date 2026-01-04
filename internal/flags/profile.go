@@ -15,8 +15,7 @@ func ProfileCreate(cmd *cobra.Command) {
 	// Tambahkan flag spesifik untuk pembuatan profil
 	cmd.Flags().StringP("profile", "n", defaultOptions.ProfileInfo.Name, "Nama profil yang akan dibuat")
 	cmd.Flags().StringP("output-dir", "o", defaultOptions.OutputDir, "Direktori output untuk menyimpan profil yang dibuat (opsional)")
-	cmd.Flags().StringP("profile-key", "k", "", "Kunci enkripsi untuk mengenkripsi file profil")
-	cmd.Flags().BoolP("interactive", "i", defaultOptions.Interactive, "Mode interaktif untuk memasukkan informasi profil")
+	cmd.Flags().StringP("profile-key", "k", "", "Kunci enkripsi untuk mengenkripsi file profil (ENV: SFDB_TARGET_PROFILE_KEY atau SFDB_SOURCE_PROFILE_KEY)")
 
 	// SSH tunnel (opsional)
 	cmd.Flags().Bool("ssh", false, "Aktifkan koneksi database melalui SSH tunnel")
@@ -32,14 +31,13 @@ func ProfileCreate(cmd *cobra.Command) {
 func ProfileEdit(cmd *cobra.Command) {
 	// Ambil default dari defaultVal
 	AddDBInfoFlags(cmd)
-	defaultOptions := defaultVal.DefaultProfileCreateOptions()
+	// defaultOptions tidak lagi dipakai (flag --interactive dihapus)
 
 	// Tambahkan flag spesifik untuk mengedit profil
 	cmd.Flags().StringP("profile", "f", "", "Nama file profil yang akan diedit")
 	// new-name: apabila diberikan, lakukan rename saat menyimpan
 	cmd.Flags().StringP("new-name", "N", "", "Nama baru untuk file profil (akan merename file saat menyimpan)")
-	cmd.Flags().StringP("profile-key", "k", "", "Kunci enkripsi untuk mendekripsi/enkripsi file profil")
-	cmd.Flags().BoolP("interactive", "i", defaultOptions.Interactive, "Mode interaktif untuk mengedit informasi profil")
+	cmd.Flags().StringP("profile-key", "k", "", "Kunci enkripsi untuk mendekripsi/enkripsi file profil (ENV: SFDB_TARGET_PROFILE_KEY atau SFDB_SOURCE_PROFILE_KEY)")
 
 	// SSH tunnel (opsional)
 	cmd.Flags().Bool("ssh", false, "Aktifkan koneksi database melalui SSH tunnel")
@@ -58,7 +56,7 @@ func ProfileShow(cmd *cobra.Command) {
 
 	// Tambahkan flag spesifik untuk melihat profil
 	cmd.Flags().StringP("profile", "f", "", "Nama file profil yang akan ditampilkan")
-	cmd.Flags().StringP("profile-key", "k", "", "kunci enkripsi untuk mendekripsi file profil")
+	cmd.Flags().StringP("profile-key", "k", "", "Kunci enkripsi untuk mendekripsi file profil (ENV: SFDB_TARGET_PROFILE_KEY atau SFDB_SOURCE_PROFILE_KEY)")
 	cmd.Flags().BoolP("reveal-password", "r", defaultOptions.RevealPassword, "Tampilkan password secara jelas saat menampilkan profil")
 }
 

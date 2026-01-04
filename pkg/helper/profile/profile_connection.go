@@ -3,7 +3,6 @@ package profile
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/process"
+	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
 )
 
@@ -39,10 +39,7 @@ func ConnectWithProfile(profile *types.ProfileInfo, initialDB string) (*database
 	}
 
 	// Spinner message: tampilkan mode koneksi (direct vs SSH tunnel)
-	quiet := false
-	if v := os.Getenv(consts.ENV_QUIET); v != "" && v != "0" && strings.ToLower(v) != "false" {
-		quiet = true
-	}
+	quiet := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
 
 	name := strings.TrimSpace(profile.Name)
 	if name == "" {

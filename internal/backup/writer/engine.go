@@ -180,7 +180,7 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 
 	cmd := exec.CommandContext(ctx, "mysqldump", mysqldumpArgs...)
 
-	monitor := newDatabaseMonitorWriter(writer, spin)
+	monitor := newDatabaseMonitorWriter(writer, spin, e.Log)
 	cmd.Stdout = monitor
 
 	var stderrBuf strings.Builder

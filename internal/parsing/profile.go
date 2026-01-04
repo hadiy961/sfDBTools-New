@@ -1,11 +1,17 @@
 package parsing
 
 import (
+	"fmt"
+	"os"
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/runtimecfg"
+	"sfDBTools/pkg/validation"
+	"strings"
 
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )
 
@@ -17,8 +23,12 @@ func ParsingCreateProfile(cmd *cobra.Command, applog applog.Logger) (*types.Prof
 	password := helper.GetStringFlagOrEnv(cmd, "password", consts.ENV_TARGET_DB_PASSWORD)
 	name := helper.GetStringFlagOrEnv(cmd, "profile", "")
 	outputDir := helper.GetStringFlagOrEnv(cmd, "output-dir", "")
-	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
-	interactive := helper.GetBoolFlagOrEnv(cmd, "interactive", "")
+	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
+	if strings.TrimSpace(key) == "" {
+		key = helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+	}
+	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
+		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
 
 	sshEnabled := helper.GetBoolFlagOrEnv(cmd, "ssh", "")
 	sshHost := helper.GetStringFlagOrEnv(cmd, "ssh-host", "")
@@ -31,20 +41,37 @@ func ParsingCreateProfile(cmd *cobra.Command, applog applog.Logger) (*types.Prof
 		sshPort = 22
 	}
 
-	if port == 0 {
-		port = 3306
-	}
-	if host == "" {
-		host = "localhost"
-	}
-	if user == "" {
-		user = "root"
-	}
-	if name == "" {
-		name = "localhost_3306"
-	}
-	if outputDir == "" {
-		outputDir = "."
+	if !interactive {
+		missing := make([]string, 0, 4)
+		if strings.TrimSpace(name) == "" {
+			missing = append(missing, "--profile")
+		}
+		if strings.TrimSpace(host) == "" {
+			missing = append(missing, "--host / ENV "+consts.ENV_TARGET_DB_HOST)
+		}
+		if strings.TrimSpace(user) == "" {
+			missing = append(missing, "--user / ENV "+consts.ENV_TARGET_DB_USER)
+		}
+		if strings.TrimSpace(password) == "" {
+			missing = append(missing, "--password / ENV "+consts.ENV_TARGET_DB_PASSWORD)
+		}
+		if strings.TrimSpace(key) == "" {
+			missing = append(missing, "--profile-key / ENV "+consts.ENV_TARGET_PROFILE_KEY+" atau "+consts.ENV_SOURCE_PROFILE_KEY)
+		}
+		if len(missing) > 0 {
+			return nil, fmt.Errorf(
+				"mode non-interaktif (--quiet): parameter wajib belum diisi (%s). Contoh: sfdbtools profile create --quiet --profile <nama> --host <host> --user <user> --password <pw> --profile-key <key> [--port 3306]: %w",
+				strings.Join(missing, ", "),
+				validation.ErrNonInteractive,
+			)
+		}
+		// Port boleh default.
+		if port == 0 {
+			port = 3306
+		}
+	} else {
+		// Interactive: biarkan nilai kosong agar wizard bisa menanyakan (tanpa duplikasi input).
+		// Default nilai akan diberikan di layer wizard saat prompt.
 	}
 
 	profileOptions := &types.ProfileCreateOptions{
@@ -83,8 +110,32 @@ func ParsingEditProfile(cmd *cobra.Command) (*types.ProfileEditOptions, error) {
 	user := helper.GetStringFlagOrEnv(cmd, "user", consts.ENV_TARGET_DB_USER)
 	password := helper.GetStringFlagOrEnv(cmd, "password", consts.ENV_TARGET_DB_PASSWORD)
 	name := helper.GetStringFlagOrEnv(cmd, "profile", "")
-	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
-	interactive := helper.GetBoolFlagOrEnv(cmd, "interactive", "")
+	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
+	if strings.TrimSpace(key) == "" {
+		key = helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+	}
+	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
+		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
+
+	if !interactive {
+		missing := make([]string, 0, 2)
+		if strings.TrimSpace(filePath) == "" {
+			missing = append(missing, "--profile")
+		}
+		if strings.TrimSpace(key) == "" {
+			missing = append(missing, "--profile-key / ENV "+consts.ENV_TARGET_PROFILE_KEY+" atau "+consts.ENV_SOURCE_PROFILE_KEY)
+		}
+		if len(missing) > 0 {
+			return nil, fmt.Errorf(
+				"mode non-interaktif (--quiet): parameter wajib belum diisi (%s). Contoh: sfdbtools profile edit --quiet --profile <nama-file> --profile-key <key> [--host <host>] [--port 3306] [--user <user>] [--password <pw>]: %w",
+				strings.Join(missing, ", "),
+				validation.ErrNonInteractive,
+			)
+		}
+		if port == 0 {
+			port = 3306
+		}
+	}
 
 	sshEnabled := helper.GetBoolFlagOrEnv(cmd, "ssh", "")
 	sshHost := helper.GetStringFlagOrEnv(cmd, "ssh-host", "")
@@ -128,11 +179,34 @@ func ParsingEditProfile(cmd *cobra.Command) (*types.ProfileEditOptions, error) {
 // ParsingShowProfile
 func ParsingShowProfile(cmd *cobra.Command) (*types.ProfileShowOptions, error) {
 	filePath := helper.GetStringFlagOrEnv(cmd, "profile", "")
-	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
+	if strings.TrimSpace(key) == "" {
+		key = helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+	}
 	RevealPassword := helper.GetBoolFlagOrEnv(cmd, "reveal-password", "")
+	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
+		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
+
+	if !interactive {
+		missing := make([]string, 0, 2)
+		if strings.TrimSpace(filePath) == "" {
+			missing = append(missing, "--profile")
+		}
+		if strings.TrimSpace(key) == "" {
+			missing = append(missing, "--profile-key / ENV "+consts.ENV_TARGET_PROFILE_KEY+" atau "+consts.ENV_SOURCE_PROFILE_KEY)
+		}
+		if len(missing) > 0 {
+			return nil, fmt.Errorf(
+				"mode non-interaktif (--quiet): parameter wajib belum diisi (%s). Contoh: sfdbtools profile show --quiet --profile <nama-file> --profile-key <key> [--reveal-password]: %w",
+				strings.Join(missing, ", "),
+				validation.ErrNonInteractive,
+			)
+		}
+	}
 
 	profileOptions := &types.ProfileShowOptions{
 		RevealPassword: RevealPassword,
+		Interactive:    interactive,
 		ProfileInfo: types.ProfileInfo{
 			Path:          filePath,
 			EncryptionKey: key,
@@ -145,15 +219,34 @@ func ParsingShowProfile(cmd *cobra.Command) (*types.ProfileShowOptions, error) {
 // ParsingDeleteProfile parses flags for the profile delete command and returns ProfileDeleteOptions
 func ParsingDeleteProfile(cmd *cobra.Command) (*types.ProfileDeleteOptions, error) {
 	profilePaths := helper.GetStringSliceFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE)
-	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
 	force := helper.GetBoolFlagOrEnv(cmd, "force", "")
+	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
+		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
+
+	if !interactive {
+		missing := make([]string, 0, 1)
+		if len(profilePaths) == 0 {
+			missing = append(missing, "--profile")
+		}
+		if !force {
+			missing = append(missing, "--force")
+		}
+		if len(missing) > 0 {
+			return nil, fmt.Errorf(
+				"mode non-interaktif (--quiet): parameter wajib belum diisi (%s). Contoh: sfdbtools profile delete --quiet --force --profile <nama-file> [-f <nama-file-lain>]: %w",
+				strings.Join(missing, ", "),
+				validation.ErrNonInteractive,
+			)
+		}
+	}
 
 	profileOptions := &types.ProfileDeleteOptions{
 		ProfileInfo: types.ProfileInfo{
-			EncryptionKey: key,
+			EncryptionKey: "",
 		},
-		Profiles: profilePaths,
-		Force:    force,
+		Profiles:    profilePaths,
+		Force:       force,
+		Interactive: interactive,
 	}
 
 	return profileOptions, nil

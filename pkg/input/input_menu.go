@@ -8,6 +8,9 @@ import (
 
 // ShowMenu displays a menu and returns the selected index (1-based).
 func ShowMenu(title string, options []string) (int, error) {
+	if err := ensureInteractiveAllowed(); err != nil {
+		return 0, err
+	}
 	var selectedIndex int
 
 	prompt := &survey.Select{
@@ -30,6 +33,9 @@ func ShowMenu(title string, options []string) (int, error) {
 
 // ShowMultiSelect displays a multi-select menu and returns selected indices (1-based).
 func ShowMultiSelect(title string, options []string) ([]int, error) {
+	if err := ensureInteractiveAllowed(); err != nil {
+		return nil, err
+	}
 	var selected []string
 
 	prompt := &survey.MultiSelect{

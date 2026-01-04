@@ -17,7 +17,7 @@ The backup feature is designed as a pipeline with clear responsibility boundarie
 
 2. **Options parsing** (`internal/parsing/backup.go`)
    - Reads flags/env and produces a `types_backup.BackupDBOptions`.
-   - Performs **fail-fast validation**, especially in `--non-interactive` mode.
+   - Performs **fail-fast validation**, especially in non-interactive mode via `--quiet`.
 
 3. **Service orchestration** (`internal/backup/*.go`)
    - `backup.Service` wires dependencies and provides “bridges” to subpackages.
@@ -103,7 +103,7 @@ Typical wiring steps:
    - If it can be set by env, use the same helper patterns as existing fields.
 
 4. **Validate**
-   - Add fail-fast validation (especially for `--non-interactive`).
+   - Add fail-fast validation (especially for non-interactive via `--quiet`).
 
 5. **Use the option in the correct layer**
    - Setup-related? Put logic in `internal/backup/setup/*`.
@@ -232,7 +232,7 @@ Avoid leaking secrets:
 Before opening a PR for a backup feature:
 
 - CLI help text updated (command + flags)
-- `--non-interactive` validations updated
+- Non-interactive (`--quiet`) validations updated
 - Interactive flow still works (no unexpected prompts)
 - Output naming/extensions consistent with compression/encryption choices
 - Metadata remains correct and is written atomically

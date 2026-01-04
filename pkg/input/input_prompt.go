@@ -2,7 +2,7 @@
 // Deskripsi : Fungsi utilitas untuk input interaktif dari user
 // Author : Hadiyatna Muflihun
 // Tanggal : 2024-10-03
-// Last Modified : 2024-10-03
+// Last Modified : 2026-01-04
 package input
 
 import (
@@ -14,6 +14,9 @@ import (
 
 // AskPassword prompts user for a password with input masking.
 func AskPassword(message string, validator survey.Validator) (string, error) {
+	if err := ensureInteractiveAllowed(); err != nil {
+		return "", err
+	}
 	answer := ""
 	prompt := &survey.Password{Message: message}
 
@@ -27,6 +30,9 @@ func AskPassword(message string, validator survey.Validator) (string, error) {
 }
 
 func AskInt(message string, defaultValue int, validator survey.Validator) (int, error) {
+	if err := ensureInteractiveAllowed(); err != nil {
+		return 0, err
+	}
 	var answer string
 	prompt := &survey.Input{
 		Message: message,
@@ -46,6 +52,9 @@ func AskInt(message string, defaultValue int, validator survey.Validator) (int, 
 }
 
 func AskString(message, defaultValue string, validator survey.Validator) (string, error) {
+	if err := ensureInteractiveAllowed(); err != nil {
+		return "", err
+	}
 	var answer string
 	prompt := &survey.Input{
 		Message: message,
@@ -62,6 +71,9 @@ func AskString(message, defaultValue string, validator survey.Validator) (string
 }
 
 func AskYesNo(question string, defaultValue bool) (bool, error) {
+	if err := ensureInteractiveAllowed(); err != nil {
+		return false, err
+	}
 	var response bool
 	prompt := &survey.Confirm{
 		Message: question,
@@ -87,10 +99,29 @@ func PromptConfirm(message string) (bool, error) {
 
 // SelectSingleFromList menampilkan list dan meminta user memilih satu item.
 func SelectSingleFromList(items []string, message string) (string, error) {
+	if err := ensureInteractiveAllowed(); err != nil {
+		return "", err
+	}
 	var selected string
 	prompt := &survey.Select{
 		Message: message,
 		Options: items,
+	}
+	err := survey.AskOne(prompt, &selected)
+	return selected, err
+}
+
+// SelectSingleFromListWithDefault menampilkan list dan meminta user memilih satu item,
+// dengan default yang sudah dipilih.
+func SelectSingleFromListWithDefault(items []string, message string, defaultValue string) (string, error) {
+	if err := ensureInteractiveAllowed(); err != nil {
+		return "", err
+	}
+	var selected string
+	prompt := &survey.Select{
+		Message: message,
+		Options: items,
+		Default: defaultValue,
 	}
 	err := survey.AskOne(prompt, &selected)
 	return selected, err

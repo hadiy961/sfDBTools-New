@@ -65,7 +65,7 @@ type FilterStats struct {
 	NotFoundInBlacklist []string // Database di blacklist file (exclude file) yang tidak ditemukan di server
 }
 
-// DatabaseDetail menyimpan informasi detail database dari tabel database_details
+// DatabaseDetail menyimpan informasi detail database
 type DatabaseDetail struct {
 	DatabaseName   string    `db:"database_name"`
 	SizeBytes      int64     `db:"size_bytes"`

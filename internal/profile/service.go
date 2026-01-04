@@ -2,7 +2,7 @@
 // Deskripsi : Service utama implementation untuk profile operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 17 Desember 2025
+// Last Modified : 4 Januari 2026
 
 package profile
 
@@ -11,6 +11,7 @@ import (
 	"sfDBTools/internal/appconfig"
 	"sfDBTools/internal/applog"
 	"sfDBTools/internal/types"
+	"sfDBTools/pkg/consts"
 )
 
 // Error definitions
@@ -63,11 +64,11 @@ func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interf
 			svc.ProfileInfo = &v.ProfileInfo
 			svc.DBInfo = &v.ProfileInfo.DBInfo
 		default:
-			logs.Warn("Tipe profil tidak dikenali dalam Service")
+			logs.Warn(consts.ProfileLogUnknownProfileTypeInService)
 			svc.ProfileInfo = &types.ProfileInfo{}
 		}
 	} else {
-		logs.Warn("Tipe profil tidak dikenali dalam Service")
+		logs.Warn(consts.ProfileLogUnknownProfileTypeInService)
 	}
 
 	return svc
@@ -77,23 +78,18 @@ func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interf
 func (s *Service) ExecuteProfileCommand(config types.ProfileEntryConfig) error {
 	// Log prefix untuk tracking
 	if config.LogPrefix != "" {
-		s.Log.Infof("[%s] Memulai profile operation dengan mode: %s", config.LogPrefix, config.Mode)
-	}
-
-	// Tampilkan options jika diminta
-	if config.ShowOptions {
-		s.displayProfileOptions()
+		s.Log.Infof(consts.ProfileLogStartOperationWithPrefixFmt, config.LogPrefix, config.Mode)
 	}
 
 	// Jalankan profile operation berdasarkan mode
 	switch config.Mode {
-	case "create":
+	case consts.ProfileModeCreate:
 		return s.CreateProfile()
-	case "show":
+	case consts.ProfileModeShow:
 		return s.ShowProfile()
-	case "edit":
+	case consts.ProfileModeEdit:
 		return s.EditProfile()
-	case "delete":
+	case consts.ProfileModeDelete:
 		return s.PromptDeleteProfile()
 	default:
 		return ErrInvalidProfileMode
@@ -108,6 +104,11 @@ func (s *Service) isInteractiveMode() bool {
 	if s.ProfileEdit != nil {
 		return s.ProfileEdit.Interactive
 	}
-	// Default ke false untuk mode lain (show, delete)
+	if s.ProfileShow != nil {
+		return s.ProfileShow.Interactive
+	}
+	if s.ProfileDelete != nil {
+		return s.ProfileDelete.Interactive
+	}
 	return false
 }
