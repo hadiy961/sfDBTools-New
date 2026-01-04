@@ -2,7 +2,7 @@
 // Deskripsi : Root command untuk aplikasi sfDBTools
 // Author : Hadiyatna Muflihun
 // Tanggal : 2024-10-03
-// Last Modified : 2026-01-04
+// Last Modified : 2026-01-05
 package cmd
 
 import (
@@ -49,10 +49,11 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 		if cmd.Name() == "completion" || cmd.HasParent() && cmd.Parent().Name() == "completion" {
 			return nil
 		}
-		// Version harus bisa jalan tanpa config (mis. sebelum instalasi config.yaml)
-		if cmd.Name() == "version" {
+		// Version dan update harus bisa jalan tanpa config (mis. sebelum instalasi config.yaml)
+		if cmd.Name() == "version" || cmd.Name() == "update" {
 			return nil
 		}
+
 		if appdeps.Deps == nil || appdeps.Deps.Config == nil || appdeps.Deps.Logger == nil {
 			return fmt.Errorf("dependensi belum di-inject. Pastikan untuk memanggil Execute(deps) dari main.go")
 		}
@@ -104,6 +105,7 @@ func init() {
 	// Tambahkan sub-command yang sudah dibuat
 	// Kita anggap 'versionCmd' ada di cmd/version.go
 	rootCmd.AddCommand(versionCmd) // (Perlu diinisialisasi di cmd/version.go)
+	rootCmd.AddCommand(updateCmd)
 	rootCmd.AddCommand(profilecmd.CmdProfileMain)
 	rootCmd.AddCommand(dbscancmd.CmdDBScanMain)
 	rootCmd.AddCommand(cryptocmd.CmdCryptoMain)

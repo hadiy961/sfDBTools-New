@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sfDBTools/cmd"
 	config "sfDBTools/internal/appconfig"
+	"sfDBTools/internal/autoupdate"
 	appdeps "sfDBTools/internal/deps"
+	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
+	"time"
 
 	applog "sfDBTools/internal/applog"
 )
@@ -24,6 +28,7 @@ func main() {
 	// Deteksi jika yang dipanggil adalah perintah completion
 	isCompletion := len(os.Args) > 1 && os.Args[1] == "completion"
 	isVersion := len(os.Args) > 1 && os.Args[1] == "version"
+	isUpdate := len(os.Args) > 1 && os.Args[1] == "update"
 	if isCompletion {
 		quiet = true // pastikan tidak ada header/spinner yang tampil
 		runtimecfg.SetQuiet(true)
@@ -32,6 +37,30 @@ func main() {
 		quiet = true // output versi sebaiknya bersih untuk scripting
 		runtimecfg.SetQuiet(true)
 	}
+	if isUpdate {
+		quiet = true // update sebaiknya bersih dan tidak perlu header
+		runtimecfg.SetQuiet(true)
+	}
+
+	// Auto-update dijalankan sebelum load config agar tidak tergantung config.yaml.
+	// Skip untuk completion/version/update.
+	if !isCompletion && !isVersion && !isUpdate {
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+		// Logger aman walau cfg nil.
+		tmpLogger := applog.NewLogger(nil)
+
+		// Tampilkan spinner hanya jika auto-update diaktifkan dan tidak dalam quiet/daemon.
+		var sp *ui.SpinnerWithElapsed
+		if os.Getenv(consts.ENV_AUTO_UPDATE) == "1" && !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) {
+			sp = ui.NewSpinnerWithElapsed("Cek update")
+			sp.Start()
+		}
+		_ = autoupdate.MaybeAutoUpdate(ctx, tmpLogger)
+		if sp != nil {
+			sp.Stop()
+		}
+	}
 
 	if !quiet {
 		ui.Headers("Main Menu")
@@ -39,7 +68,7 @@ func main() {
 
 	// 1. Muat Konfigurasi (skip saat completion/version agar output bersih)
 	var err error
-	if !isCompletion && !isVersion {
+	if !isCompletion && !isVersion && !isUpdate {
 		cfg, err = config.LoadConfigFromEnv()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "FATAL: Gagal memuat konfigurasi: %v\n", err)

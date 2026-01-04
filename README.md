@@ -27,6 +27,18 @@ sfdbtools version
 sfdbtools --help
 ```
 
+## Auto Update
+
+sfDBTools bisa melakukan auto-update dari GitHub Releases.
+
+- Enable auto-update saat start: `SFDB_AUTO_UPDATE=1`
+- Disable paksa (override): `SFDB_NO_AUTO_UPDATE=1`
+- Manual update: `sfdbtools update`
+
+Catatan:
+- Auto-update saat ini hanya untuk `linux/amd64` (sesuai workflow release).
+- Jika binary terpasang di `/usr/bin`, jalankan dengan `sudo` agar bisa overwrite.
+
 ### Uninstall
 
 ```bash

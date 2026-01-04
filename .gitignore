@@ -8,3 +8,10 @@ logs/dbscan/dbscan_background.lock
 *.tmp*
 /backup/
 /logs/
+/scripts/dev_main_menu/
+/scripts/saas_main_menu/
+/scripts/sftr_sf6_main_menu/
+/scripts/sftr_sf7_main_menu/
+/scripts/build_run.sh
+/scripts/mydumper.sh
+/scripts/release_github.sh
