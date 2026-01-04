@@ -111,9 +111,9 @@ jobs:
           PREV_TAG="$(git tag --list 'v*' --sort=-v:refname | grep -v "^${TAG_REF}$" | head -n 1 || true)"
 
           if [[ -n "${PREV_TAG}" ]]; then
-            ./scripts/generate_changelog.sh --version "${VERSION}" --from "${PREV_TAG}" --to "${TAG_REF}" --out "dist/CHANGELOG_${VERSION}.md"
+            bash ./scripts/generate_changelog.sh --version "${VERSION}" --from "${PREV_TAG}" --to "${TAG_REF}" --out "dist/CHANGELOG_${VERSION}.md"
           else
-            ./scripts/generate_changelog.sh --version "${VERSION}" --to "${TAG_REF}" --out "dist/CHANGELOG_${VERSION}.md"
+            bash ./scripts/generate_changelog.sh --version "${VERSION}" --to "${TAG_REF}" --out "dist/CHANGELOG_${VERSION}.md"
           fi
 
           cp "dist/CHANGELOG_${VERSION}.md" "dist/CHANGELOG_latest.md"
