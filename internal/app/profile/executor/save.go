@@ -1,4 +1,4 @@
-// File : internal/profile/executor/save.go
+// File : internal/app/profile/executor/save.go
 // Deskripsi : Simpan profile ke file (terenkripsi)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfDBTools/internal/profile/shared"
+	"sfDBTools/internal/app/profile/shared"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/fsops"

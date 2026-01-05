@@ -1,8 +1,8 @@
-// File : internal/profile/wizard/prompts.go
+// File : internal/app/profile/wizard/prompts.go
 // Deskripsi : Prompt wizard untuk nama/config, DB info, dan SSH tunnel
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package wizard
 
@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	"sfDBTools/internal/profile/shared"
+	"sfDBTools/internal/app/profile/shared"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"

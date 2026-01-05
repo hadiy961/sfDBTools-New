@@ -1,8 +1,8 @@
-// File : internal/profile/executor/edit.go
+// File : internal/app/profile/executor/edit.go
 // Deskripsi : Eksekusi edit profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package executor
 
@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/profile/shared"
+	"sfDBTools/internal/app/profile/shared"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"

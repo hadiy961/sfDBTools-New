@@ -1,13 +1,13 @@
-// File : internal/profile/wizard_adapter.go
+// File : internal/app/profile/wizard_adapter.go
 // Deskripsi : Adapter untuk memanggil subpackage wizard dari Service
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package profile
 
 import (
-	"sfDBTools/internal/profile/wizard"
+	"sfDBTools/internal/app/profile/wizard"
 	"sfDBTools/internal/types"
 )
 
