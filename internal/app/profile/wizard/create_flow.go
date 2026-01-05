@@ -3,14 +3,13 @@
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
 // Last Modified : 5 Januari 2026
-
 package wizard
 
 import (
 	"strings"
 
 	"sfDBTools/internal/app/profile/shared"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
@@ -18,7 +17,7 @@ import (
 
 func (r *Runner) runCreateFlow(mode string) error {
 	if r.ProfileInfo == nil {
-		r.ProfileInfo = &types.ProfileInfo{}
+		r.ProfileInfo = &domain.ProfileInfo{}
 	}
 
 	// 1. Config Name (skip jika sudah diberikan via flag/env)

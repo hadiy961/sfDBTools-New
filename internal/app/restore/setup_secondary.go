@@ -1,16 +1,15 @@
 // File : internal/restore/setup_secondary.go
 // Deskripsi : Setup untuk restore secondary database mode (main setup flow only)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/ui"
 	"strings"
 )
@@ -121,7 +120,7 @@ func (s *Service) finalizeSecondarySetup(ctx context.Context, allowInteractive b
 	}
 
 	if opts.BackupOptions == nil {
-		opts.BackupOptions = &types.RestoreBackupOptions{}
+		opts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 	}
 
 	if !opts.SkipBackup || opts.From == "primary" {

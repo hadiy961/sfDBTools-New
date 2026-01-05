@@ -9,8 +9,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/internal/app/backup/model/types_backup"
+	applog "sfDBTools/internal/services/log"
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"

@@ -1,10 +1,12 @@
-// File : internal/types/types_restore.go
+// File : internal/app/restore/model/types_restore.go
 // Deskripsi : Type definitions untuk restore operations
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-16
-// Last Modified : 2025-12-16
+// Tanggal : 16 Desember 2025
+// Last Modified : 5 Januari 2026
 
 package types
+
+import "sfDBTools/internal/domain"
 
 // RestoreSelectionEntry merepresentasikan satu baris dari CSV selection
 type RestoreSelectionEntry struct {
@@ -16,7 +18,7 @@ type RestoreSelectionEntry struct {
 
 // RestoreSelectionOptions opsi konfigurasi untuk restore selection
 type RestoreSelectionOptions struct {
-	Profile       ProfileInfo           // Target profile
+	Profile       domain.ProfileInfo    // Target profile
 	CSV           string                // Path CSV input
 	DropTarget    bool                  // Drop target db dahulu
 	SkipBackup    bool                  // Skip backup pre-restore
@@ -29,7 +31,7 @@ type RestoreSelectionOptions struct {
 
 // RestoreSingleOptions menyimpan opsi konfigurasi untuk proses restore single database
 type RestoreSingleOptions struct {
-	Profile       ProfileInfo           // Profile database target untuk restore
+	Profile       domain.ProfileInfo    // Profile database target untuk restore
 	DropTarget    bool                  // Drop target database sebelum restore (default true)
 	EncryptionKey string                // Kunci enkripsi untuk decrypt file backup
 	SkipBackup    bool                  // Skip backup sebelum restore (default false)
@@ -47,13 +49,13 @@ type RestoreSingleOptions struct {
 // RestoreBackupOptions opsi untuk backup sebelum restore
 type RestoreBackupOptions struct {
 	OutputDir   string // Direktori output untuk backup pre-restore (jika kosong, gunakan dari config)
-	Compression CompressionOptions
-	Encryption  EncryptionOptions
+	Compression domain.CompressionOptions
+	Encryption  domain.EncryptionOptions
 }
 
 // RestorePrimaryOptions menyimpan opsi konfigurasi untuk proses restore primary database
 type RestorePrimaryOptions struct {
-	Profile            ProfileInfo           // Profile database target untuk restore
+	Profile            domain.ProfileInfo    // Profile database target untuk restore
 	DropTarget         bool                  // Drop target database sebelum restore (default true)
 	EncryptionKey      string                // Kunci enkripsi untuk decrypt file backup
 	SkipBackup         bool                  // Skip backup sebelum restore (default false)
@@ -76,12 +78,12 @@ type RestorePrimaryOptions struct {
 // Secondary database mengikuti pola: dbsf_{nbc|biznet}_{client-code}_secondary_{instance}
 // Sumber restore bisa berasal dari file backup atau dari backup database primary.
 type RestoreSecondaryOptions struct {
-	Profile       ProfileInfo // Profile database target untuk restore
-	DropTarget    bool        // Drop target database sebelum restore (default true)
-	EncryptionKey string      // Kunci enkripsi untuk decrypt file backup (atau encrypt pre-backup primary)
-	SkipBackup    bool        // Skip backup database target sebelum restore (default false)
-	File          string      // Lokasi file backup yang akan di-restore (dipakai jika From=file)
-	Ticket        string      // Ticket number untuk restore request (wajib)
+	Profile       domain.ProfileInfo // Profile database target untuk restore
+	DropTarget    bool               // Drop target database sebelum restore (default true)
+	EncryptionKey string             // Kunci enkripsi untuk decrypt file backup (atau encrypt pre-backup primary)
+	SkipBackup    bool               // Skip backup database target sebelum restore (default false)
+	File          string             // Lokasi file backup yang akan di-restore (dipakai jika From=file)
+	Ticket        string             // Ticket number untuk restore request (wajib)
 
 	// Companion (dmart)
 	IncludeDmart    bool   // Include companion database (_dmart) (default true)
@@ -108,7 +110,7 @@ type RestoreSecondaryOptions struct {
 
 // RestoreAllOptions opsi konfigurasi untuk restore all databases
 type RestoreAllOptions struct {
-	Profile       ProfileInfo
+	Profile       domain.ProfileInfo
 	EncryptionKey string
 	File          string
 	Ticket        string
@@ -131,7 +133,7 @@ type RestoreAllOptions struct {
 // RestoreCustomOptions opsi konfigurasi untuk restore custom (SFCola account detail → provision db+users+restore db+dmart)
 // Catatan: field password disimpan hanya untuk eksekusi, jangan pernah di-log.
 type RestoreCustomOptions struct {
-	Profile       ProfileInfo           // Target profile
+	Profile       domain.ProfileInfo    // Target profile
 	DropTarget    bool                  // Drop target db & dmart jika sudah ada
 	SkipBackup    bool                  // Skip backup pre-restore
 	BackupOptions *RestoreBackupOptions // Opsi backup pre-restore

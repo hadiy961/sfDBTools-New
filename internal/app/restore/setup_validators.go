@@ -1,9 +1,8 @@
 // File : internal/restore/setup_validators.go
 // Deskripsi : Validation functions untuk setup restore operations
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (
@@ -11,7 +10,7 @@ import (
 	"io"
 	"os"
 	"sfDBTools/internal/app/restore/helpers"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
@@ -176,11 +175,11 @@ func (s *Service) validateCompanionFile(opts interface{}, allowInteractive bool)
 	var includeDmart *bool
 
 	switch v := opts.(type) {
-	case *types.RestoreSecondaryOptions:
+	case *restoremodel.RestoreSecondaryOptions:
 		companionFile = v.CompanionFile
 		stopOnError = v.StopOnError
 		includeDmart = &v.IncludeDmart
-	case *types.RestorePrimaryOptions:
+	case *restoremodel.RestorePrimaryOptions:
 		companionFile = v.CompanionFile
 		stopOnError = v.StopOnError
 		includeDmart = &v.IncludeDmart

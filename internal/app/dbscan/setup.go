@@ -2,7 +2,7 @@
 // Deskripsi : Setup connection, configuration loading, dan session preparation
 // Author : Hadiyatna Muflihun
 // Tanggal : 17 Desember 2025
-// Last Modified : 05 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package dbscan
 
@@ -10,7 +10,8 @@ import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/app/dbscan/helpers"
-	"sfDBTools/internal/types"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/fsops"
@@ -22,7 +23,7 @@ import (
 
 // ResolveScanLists membaca file include/exclude dari path yang ada di ScanOptions
 // dan menggabungkannya ke dalam IncludeList/ExcludeList.
-func ResolveScanLists(opts *types.ScanOptions) error {
+func ResolveScanLists(opts *dbscanmodel.ScanOptions) error {
 	// Include File
 	if opts.DatabaseList.File != "" {
 		lines, err := fsops.ReadLinesFromFile(opts.DatabaseList.File)
@@ -153,6 +154,6 @@ func (s *Service) CheckAndSelectConfigFile() error {
 }
 
 // GetFilteredDatabases mengambil dan memfilter daftar database.
-func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Client) ([]string, *types.FilterStats, error) {
+func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Client) ([]string, *domain.FilterStats, error) {
 	return helpers.FilterFromScanOptions(ctx, client, &s.ScanOptions)
 }

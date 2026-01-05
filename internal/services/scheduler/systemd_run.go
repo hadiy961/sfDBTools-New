@@ -1,8 +1,8 @@
 // File : internal/services/scheduler/systemd_run.go
 // Deskripsi : Helper systemd-run untuk menjalankan perintah sebagai transient unit
 // Author : Hadiyatna Muflihun
-// Tanggal : 2026-01-04
-// Last Modified :  2026-01-05
+// Tanggal : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 package schedulerutil
 
 import (

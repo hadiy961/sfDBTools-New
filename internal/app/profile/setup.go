@@ -3,7 +3,6 @@
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
 // Last Modified : 5 Januari 2026
-
 package profile
 
 import (
@@ -11,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sfDBTools/internal/app/profile/shared"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	profilehelper "sfDBTools/pkg/helper/profile"
@@ -33,7 +32,7 @@ func (s *Service) loadSnapshotFromPath(absPath string) error {
 		RequireProfile: true,
 	})
 	if err != nil {
-		s.fillOriginalInfoFromMeta(absPath, types.ProfileInfo{})
+		s.fillOriginalInfoFromMeta(absPath, domain.ProfileInfo{})
 		return err
 	}
 	s.fillOriginalInfoFromMeta(absPath, *info)
@@ -41,7 +40,7 @@ func (s *Service) loadSnapshotFromPath(absPath string) error {
 }
 
 // fillOriginalInfoFromMeta mengisi OriginalProfileInfo dengan metadata file dan nilai koneksi yang tersedia
-func (s *Service) fillOriginalInfoFromMeta(absPath string, info types.ProfileInfo) {
+func (s *Service) fillOriginalInfoFromMeta(absPath string, info domain.ProfileInfo) {
 	var fileSizeStr string
 	var lastMod = info.LastModified
 	if fi, err := os.Stat(absPath); err == nil {
@@ -49,7 +48,7 @@ func (s *Service) fillOriginalInfoFromMeta(absPath string, info types.ProfileInf
 		lastMod = fi.ModTime()
 	}
 
-	s.OriginalProfileInfo = &types.ProfileInfo{
+	s.OriginalProfileInfo = &domain.ProfileInfo{
 		Path:         absPath,
 		Name:         helper.TrimProfileSuffix(filepath.Base(absPath)),
 		DBInfo:       info.DBInfo,

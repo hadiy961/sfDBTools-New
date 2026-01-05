@@ -1,9 +1,8 @@
 // File : internal/restore/setup_custom.go
 // Deskripsi : Setup session untuk restore custom
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-24
-// Last Modified : 2025-12-30
-
+// Tanggal : 24 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (
@@ -15,7 +14,7 @@ import (
 	"strings"
 
 	"sfDBTools/internal/app/restore/display"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
@@ -56,7 +55,7 @@ func (s *Service) SetupRestoreCustomSession(ctx context.Context) error {
 	// 5. Setup backup options if not skipped
 	if !opts.SkipBackup {
 		if opts.BackupOptions == nil {
-			opts.BackupOptions = &types.RestoreBackupOptions{}
+			opts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 		}
 		s.setupBackupOptions(opts.BackupOptions, s.Profile.EncryptionKey, true)
 	}

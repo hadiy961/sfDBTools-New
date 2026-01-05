@@ -1,8 +1,8 @@
-// File : internal/dbscan/helpers/executor.go
+// File : internal/app/dbscan/helpers/executor.go
 // Deskripsi : Helper functions untuk eksekusi scanning database (general purpose)
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 05 Januari 2026
+// Last Modified : 5 Januari 2026
 package helpers
 
 import (
@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"time"
 
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
+	applog "sfDBTools/internal/services/log"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/helper"
 
@@ -35,7 +35,7 @@ func ExecuteScanWithSave(
 	serverHost string,
 	serverPort int,
 	opts ScanExecutorOptions,
-) (*types.ScanResult, map[string]types.DatabaseDetailInfo, error) {
+) (*dbscanmodel.ScanResult, map[string]dbscanmodel.DatabaseDetailInfo, error) {
 	timer := helper.NewTimer()
 
 	if opts.IsBackground {
@@ -67,7 +67,7 @@ func ExecuteScanWithSave(
 
 	opts.Logger.Info("Memulai pengumpulan detail database...")
 
-	detailsMap := make(map[string]types.DatabaseDetailInfo)
+	detailsMap := make(map[string]dbscanmodel.DatabaseDetailInfo)
 	successCount := 0
 	failedCount := 0
 	var errors []string
@@ -84,7 +84,7 @@ func ExecuteScanWithSave(
 		collectOpts = &DetailCollectOptions{SizeProvider: sizeProvider}
 	}
 
-	detailsMap, collectErr := CollectDatabaseDetailsWithOptions(ctx, sourceClient, dbNames, opts.Logger, collectOpts, func(detail types.DatabaseDetailInfo) error {
+	detailsMap, collectErr := CollectDatabaseDetailsWithOptions(ctx, sourceClient, dbNames, opts.Logger, collectOpts, func(detail dbscanmodel.DatabaseDetailInfo) error {
 		detailsMap[detail.DatabaseName] = detail
 
 		// Jika LocalScan aktif dan ada ukuran lokal, pastikan nilai size sudah sesuai
@@ -103,7 +103,7 @@ func ExecuteScanWithSave(
 
 	if collectErr != nil {
 		opts.Logger.Errorf("Proses scanning dihentikan: %v", collectErr)
-		return &types.ScanResult{
+		return &dbscanmodel.ScanResult{
 			TotalDatabases: len(dbNames),
 			SuccessCount:   successCount,
 			FailedCount:    failedCount,
@@ -112,7 +112,7 @@ func ExecuteScanWithSave(
 		}, detailsMap, collectErr
 	}
 
-	result := &types.ScanResult{
+	result := &dbscanmodel.ScanResult{
 		TotalDatabases: len(dbNames),
 		SuccessCount:   successCount,
 		FailedCount:    failedCount,

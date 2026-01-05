@@ -1,8 +1,8 @@
 // File : cmd/cmd_version.go
 // Deskripsi : Sub-command untuk menampilkan versi aplikasi
 // Author : Hadiyatna Muflihun
-// Tanggal : 2024-10-03
-// Last Modified : 2026-01-02
+// Tanggal : 3 Oktober 2024
+// Last Modified : 2 Januari 2026
 package cmd
 
 import (

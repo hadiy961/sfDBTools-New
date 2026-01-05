@@ -1,13 +1,13 @@
 package deps
 
 import (
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
+	appconfig "sfDBTools/internal/services/config"
+	applog "sfDBTools/internal/services/log"
 )
 
 // Dependencies adalah struct yang menyimpan semua dependensi global aplikasi.
 type Dependencies struct {
-	Config *types.Config
+	Config *appconfig.Config
 	Logger applog.Logger
 }
 

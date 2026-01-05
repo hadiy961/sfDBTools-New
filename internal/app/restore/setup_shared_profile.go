@@ -1,22 +1,20 @@
 // File : internal/restore/setup_shared_profile.go
 // Deskripsi : Helper profile dan koneksi database target untuk restore
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2026-01-02
-
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (
 	"context"
 	"fmt"
 	"path/filepath"
-
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 	profilehelper "sfDBTools/pkg/helper/profile"
 )
 
-func (s *Service) resolveTargetProfile(profileInfo *types.ProfileInfo, allowInteractive bool) error {
+func (s *Service) resolveTargetProfile(profileInfo *domain.ProfileInfo, allowInteractive bool) error {
 	loadedProfile, err := profilehelper.ResolveAndLoadProfile(profilehelper.ProfileLoadOptions{
 		ConfigDir:         s.Config.ConfigDir.DatabaseProfile,
 		ProfilePath:       profileInfo.Path,

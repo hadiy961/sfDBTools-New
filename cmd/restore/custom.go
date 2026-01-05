@@ -1,7 +1,7 @@
 // File : cmd/cmd_restore/cmd_restore_custom.go
 // Deskripsi : Command untuk restore custom dari SFCola account detail
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-24
+// Tanggal : 24 Desember 2025
 
 package restorecmd
 

@@ -1,18 +1,16 @@
 // File : internal/restore/setup_all_edit.go
 // Deskripsi : Handler interaktif untuk mengubah opsi restore-all
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (
 	"context"
 	"fmt"
-	"strings"
-
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/input"
+	"strings"
 )
 
 func (s *Service) editRestoreAllOptionsInteractive() error {
@@ -153,7 +151,7 @@ func (s *Service) changeAllSkipBackup() error {
 	}
 
 	if s.RestoreAllOpts.BackupOptions == nil {
-		s.RestoreAllOpts.BackupOptions = &types.RestoreBackupOptions{}
+		s.RestoreAllOpts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 	}
 	s.setupBackupOptions(s.RestoreAllOpts.BackupOptions, s.RestoreAllOpts.EncryptionKey, true)
 	return nil
@@ -161,7 +159,7 @@ func (s *Service) changeAllSkipBackup() error {
 
 func (s *Service) changeAllBackupDirectory() error {
 	if s.RestoreAllOpts.BackupOptions == nil {
-		s.RestoreAllOpts.BackupOptions = &types.RestoreBackupOptions{}
+		s.RestoreAllOpts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 	}
 
 	current := s.RestoreAllOpts.BackupOptions.OutputDir

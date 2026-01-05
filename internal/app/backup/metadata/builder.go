@@ -8,7 +8,7 @@ package metadata
 
 import (
 	"fmt"
-	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/internal/app/backup/model/types_backup"
 	"sfDBTools/pkg/global"
 	"time"
 )

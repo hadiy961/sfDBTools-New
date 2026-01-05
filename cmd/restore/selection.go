@@ -1,7 +1,7 @@
 // File : cmd/cmd_restore/cmd_restore_selection.go
 // Deskripsi : Command untuk restore selection berbasis CSV
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-19
+// Tanggal : 19 Desember 2025
 
 package restorecmd
 

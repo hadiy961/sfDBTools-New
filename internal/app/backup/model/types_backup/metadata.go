@@ -1,4 +1,4 @@
-// File : internal/types/types_backup/metadata.go
+// File : internal/app/backup/model/types_backup/metadata.go
 // Deskripsi : Metadata config structs (tanpa method)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
@@ -6,7 +6,7 @@
 package types_backup
 
 import (
-	"sfDBTools/internal/services/log"
+	applog "sfDBTools/internal/services/log"
 	"time"
 )
 

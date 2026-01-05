@@ -1,21 +1,21 @@
 // File : internal/profile/command.go
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-16
-// Last Modified : 2026-01-05
+// Tanggal : 16 Desember 2025
+// Last Modified : 5 Januari 2026
 package profile
 
 import (
 	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 
 	"github.com/spf13/cobra"
+	profilemodel "sfDBTools/internal/app/profile/model"
 )
 
-var profileExecutionConfigs = map[string]types.ProfileEntryConfig{
+var profileExecutionConfigs = map[string]profilemodel.ProfileEntryConfig{
 	consts.ProfileModeCreate: {
 		HeaderTitle: consts.ProfileHeaderCreate,
 		Mode:        consts.ProfileModeCreate,
@@ -61,7 +61,7 @@ func ExecuteProfile(cmd *cobra.Command, deps *appdeps.Dependencies, mode string)
 // Internal Helpers
 // =============================================================================
 // executeProfileWithConfig adalah helper function yang menjalankan profile dengan configuration
-func executeProfileWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, config types.ProfileEntryConfig) error {
+func executeProfileWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, config profilemodel.ProfileEntryConfig) error {
 	logger := deps.Logger
 	if config.LogPrefix != "" {
 		logger.Infof(consts.ProfileLogStartProcessWithPrefixFmt, config.LogPrefix, config.Mode)
@@ -113,10 +113,10 @@ func executeProfileWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 }
 
 // GetExecutionConfig mengembalikan konfigurasi untuk mode profile tertentu
-func GetExecutionConfig(mode string) (types.ProfileEntryConfig, error) {
+func GetExecutionConfig(mode string) (profilemodel.ProfileEntryConfig, error) {
 	config, ok := profileExecutionConfigs[mode]
 	if !ok {
-		return types.ProfileEntryConfig{}, ErrInvalidProfileMode
+		return profilemodel.ProfileEntryConfig{}, ErrInvalidProfileMode
 	}
 
 	return config, nil

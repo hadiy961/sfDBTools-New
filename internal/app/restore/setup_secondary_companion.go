@@ -1,21 +1,19 @@
 // File : internal/restore/setup_secondary_companion.go
 // Deskripsi : Helper untuk companion (_dmart) pada restore secondary
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
+	"strings"
 )
 
 func (s *Service) resolveSecondaryCompanionFile(allowInteractive bool) error {
@@ -49,7 +47,7 @@ func (s *Service) resolveSecondaryCompanionFile(allowInteractive bool) error {
 	return s.handleCompanionNotFound(opts, allowInteractive)
 }
 
-func (s *Service) ensureValidCompanionPath(opts *types.RestoreSecondaryOptions, allowInteractive bool) error {
+func (s *Service) ensureValidCompanionPath(opts *restoremodel.RestoreSecondaryOptions, allowInteractive bool) error {
 	if strings.TrimSpace(opts.CompanionFile) == "" {
 		return nil
 	}
@@ -74,7 +72,7 @@ func (s *Service) ensureValidCompanionPath(opts *types.RestoreSecondaryOptions, 
 	return nil
 }
 
-func (s *Service) enforceForceWithoutDetect(opts *types.RestoreSecondaryOptions) error {
+func (s *Service) enforceForceWithoutDetect(opts *restoremodel.RestoreSecondaryOptions) error {
 	if !opts.Force || opts.AutoDetectDmart {
 		return nil
 	}
@@ -86,7 +84,7 @@ func (s *Service) enforceForceWithoutDetect(opts *types.RestoreSecondaryOptions)
 	return nil
 }
 
-func (s *Service) handleManualCompanionSelection(opts *types.RestoreSecondaryOptions, allowInteractive bool) error {
+func (s *Service) handleManualCompanionSelection(opts *restoremodel.RestoreSecondaryOptions, allowInteractive bool) error {
 	if !allowInteractive {
 		return nil
 	}
@@ -105,7 +103,7 @@ func (s *Service) handleManualCompanionSelection(opts *types.RestoreSecondaryOpt
 	return nil
 }
 
-func (s *Service) trySetAutoDetectedCompanion(opts *types.RestoreSecondaryOptions) bool {
+func (s *Service) trySetAutoDetectedCompanion(opts *restoremodel.RestoreSecondaryOptions) bool {
 	companionPath, err := s.detectCompanionAuto(opts.File)
 	if err == nil && companionPath != "" {
 		opts.CompanionFile = companionPath
@@ -114,7 +112,7 @@ func (s *Service) trySetAutoDetectedCompanion(opts *types.RestoreSecondaryOption
 	return false
 }
 
-func (s *Service) handleCompanionNotFound(opts *types.RestoreSecondaryOptions, allowInteractive bool) error {
+func (s *Service) handleCompanionNotFound(opts *restoremodel.RestoreSecondaryOptions, allowInteractive bool) error {
 	if !allowInteractive {
 		if opts.StopOnError {
 			return fmt.Errorf("dmart file (_dmart) tidak ditemukan secara otomatis")

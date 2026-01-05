@@ -3,7 +3,7 @@ package modes
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 	"strings"
@@ -20,12 +20,12 @@ func NewSecondaryExecutor(svc RestoreService) *SecondaryExecutor {
 	return &SecondaryExecutor{svc: svc}
 }
 
-func (e *SecondaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, error) {
+func (e *SecondaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResult, error) {
 	startTime := time.Now()
 	opts := e.svc.GetSecondaryOptions()
 	logger := e.svc.GetLogger()
 
-	result := &types.RestoreResult{
+	result := &restoremodel.RestoreResult{
 		TargetDB: opts.TargetDB,
 	}
 

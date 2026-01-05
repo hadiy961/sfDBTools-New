@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
 	"strings"
@@ -12,7 +12,7 @@ import (
 
 // FilterDatabases mengambil dan memfilter daftar database dari server berdasarkan FilterOptions
 // Returns: filtered database list, statistics, error
-func FilterDatabases(ctx context.Context, client *Client, options types.FilterOptions) ([]string, *types.FilterStats, error) {
+func FilterDatabases(ctx context.Context, client *Client, options domain.FilterOptions) ([]string, *domain.FilterStats, error) {
 	// 1. Get database list from server
 	allDatabases, err := client.GetDatabaseList(ctx)
 	if err != nil {
@@ -20,7 +20,7 @@ func FilterDatabases(ctx context.Context, client *Client, options types.FilterOp
 	}
 
 	// Initialize stats
-	stats := &types.FilterStats{
+	stats := &domain.FilterStats{
 		TotalFound:          len(allDatabases),
 		ExcludedDatabases:   []string{},
 		NotFoundInInclude:   []string{},
@@ -176,7 +176,7 @@ func (s *Client) GetDatabaseList(ctx context.Context) ([]string, error) {
 
 // shouldExcludeDatabase menentukan apakah database harus di-exclude
 // Returns true jika database harus di-exclude, false jika harus di-include
-func shouldExcludeDatabase(dbName string, whitelist, blacklist []string, excludeSystem bool, stats *types.FilterStats) bool {
+func shouldExcludeDatabase(dbName string, whitelist, blacklist []string, excludeSystem bool, stats *domain.FilterStats) bool {
 	// 1. Exclude empty names
 	if dbName == "" {
 		stats.ExcludedEmpty++
@@ -215,7 +215,7 @@ func shouldExcludeDatabase(dbName string, whitelist, blacklist []string, exclude
 // IsSystemDatabase memeriksa apakah database adalah system database
 // Function ini di-export agar bisa digunakan di package lain
 func IsSystemDatabase(dbName string) bool {
-	_, exists := types.SystemDatabases[strings.ToLower(dbName)]
+	_, exists := domain.SystemDatabases[strings.ToLower(dbName)]
 	return exists
 }
 

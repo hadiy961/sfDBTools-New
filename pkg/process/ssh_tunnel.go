@@ -1,8 +1,8 @@
 // File : pkg/process/ssh_tunnel.go
 // Deskripsi : SSH tunnel native Go (port forwarding)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2026-01-02
-// Last Modified : 2026-01-02
+// Tanggal : 2 Januari 2026
+// Last Modified : 2 Januari 2026
 
 package process
 

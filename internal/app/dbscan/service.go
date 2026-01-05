@@ -2,7 +2,7 @@
 // Deskripsi : Service utama implementation untuk database scanning operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 15 Oktober 2025
-// Last Modified : 2026-01-05
+// Last Modified : 5 Januari 2026
 package dbscan
 
 import (
@@ -11,9 +11,9 @@ import (
 	"fmt"
 
 	"sfDBTools/internal/app/dbscan/helpers"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 	appconfig "sfDBTools/internal/services/config"
 	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
@@ -34,11 +34,11 @@ type Service struct {
 	Config      *appconfig.Config
 	Log         applog.Logger
 	ErrorLog    *errorlog.ErrorLogger
-	ScanOptions types.ScanOptions
+	ScanOptions dbscanmodel.ScanOptions
 }
 
 // NewDBScanService membuat instance baru dari Service dengan proper dependency injection
-func NewDBScanService(config *appconfig.Config, logger applog.Logger, opts types.ScanOptions) *Service {
+func NewDBScanService(config *appconfig.Config, logger applog.Logger, opts dbscanmodel.ScanOptions) *Service {
 	logDir := config.Log.Output.File.Dir
 	if logDir == "" {
 		logDir = consts.DefaultLogDir
@@ -53,7 +53,7 @@ func NewDBScanService(config *appconfig.Config, logger applog.Logger, opts types
 }
 
 // ExecuteScan adalah entry point utama untuk database scan
-func (s *Service) ExecuteScan(config types.ScanEntryConfig) error {
+func (s *Service) ExecuteScan(config dbscanmodel.ScanEntryConfig) error {
 	ctx := context.Background()
 	s.ScanOptions.Mode = config.Mode
 	s.ScanOptions.LocalScan = (config.Mode == "all-local")
@@ -94,7 +94,7 @@ func (s *Service) ExecuteScan(config types.ScanEntryConfig) error {
 }
 
 // handleBackgroundExecution menangani logika eksekusi background/daemon
-func (s *Service) handleBackgroundExecution(ctx context.Context, config types.ScanEntryConfig) error {
+func (s *Service) handleBackgroundExecution(ctx context.Context, config dbscanmodel.ScanEntryConfig) error {
 	if s.ScanOptions.ProfileInfo.Path == "" {
 		return fmt.Errorf("background mode memerlukan file konfigurasi database")
 	}
@@ -114,7 +114,7 @@ func (s *Service) executeScanWithClients(
 	sourceClient *database.Client,
 	dbNames []string,
 	isBackground bool,
-) (*types.ScanResult, map[string]types.DatabaseDetailInfo, error) {
+) (*dbscanmodel.ScanResult, map[string]dbscanmodel.DatabaseDetailInfo, error) {
 	if !isBackground {
 		ui.PrintSubHeader("Memulai Proses Scanning Database")
 	}

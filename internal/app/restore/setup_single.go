@@ -1,9 +1,8 @@
 // File : internal/restore/setup_single.go
 // Deskripsi : Setup untuk restore single database mode
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (
@@ -14,7 +13,7 @@ import (
 	"strings"
 
 	"sfDBTools/internal/app/restore/helpers"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
@@ -81,7 +80,7 @@ func (s *Service) prepareRestoreSinglePrereqs(ctx context.Context, allowInteract
 
 	if !s.RestoreOpts.SkipBackup {
 		if s.RestoreOpts.BackupOptions == nil {
-			s.RestoreOpts.BackupOptions = &types.RestoreBackupOptions{}
+			s.RestoreOpts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 		}
 		s.setupBackupOptions(s.RestoreOpts.BackupOptions, s.RestoreOpts.EncryptionKey, allowInteractive)
 	}

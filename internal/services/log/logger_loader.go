@@ -1,8 +1,8 @@
 // File : internal/services/log/logger_loader.go
 // Deskripsi : Fungsi untuk memuat dan menginisialisasi logger aplikasi
 // Author : Hadiyatna Muflihun
-// Tanggal : 2024-10-03
-// Last Modified : 2026-01-05
+// Tanggal : 3 Oktober 2024
+// Last Modified : 5 Januari 2026
 package applog
 
 import (
@@ -10,7 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/types"
+	appconfig "sfDBTools/internal/services/config"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/spinnerguard"
 	"strings"
@@ -67,13 +67,13 @@ func Time(key string, t time.Time) Field {
 //
 // NOTE: Logger tidak lagi me-load konfigurasi sendiri untuk menghindari import cycle.
 // Caller bertanggung jawab mengirimkan config (boleh nil).
-func NewLogger(appCfg *types.Config) Logger {
+func NewLogger(appCfg *appconfig.Config) Logger {
 	// Quiet mode berbasis parameter (tanpa env): log ke stderr (bukan stdout) supaya pipeline aman,
 	// tapi tetap boleh tulis ke file jika file logging diaktifkan.
 	quiet := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
 
 	// Default config (aman untuk mode completion / tanpa config)
-	cfg := types.LogConfig{
+	cfg := appconfig.LogConfig{
 		Format:   "text",
 		Level:    "info",
 		Timezone: "Local",

@@ -1,21 +1,21 @@
-// File : internal/dbscan/helpers/display.go
+// File : internal/app/dbscan/helpers/display.go
 // Deskripsi : Helper functions untuk menampilkan hasil scanning (general purpose)
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 05 Januari 2026
+// Last Modified : 5 Januari 2026
 package helpers
 
 import (
 	"fmt"
 
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
+	applog "sfDBTools/internal/services/log"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 )
 
 // DisplayScanResult menampilkan hasil scanning ke UI
-func DisplayScanResult(result *types.ScanResult) {
+func DisplayScanResult(result *dbscanmodel.ScanResult) {
 	ui.PrintHeader("HASIL SCANNING")
 
 	data := [][]string{
@@ -37,7 +37,7 @@ func DisplayScanResult(result *types.ScanResult) {
 }
 
 // DisplayDetailResults menampilkan detail hasil scanning ke UI
-func DisplayDetailResults(detailsMap map[string]types.DatabaseDetailInfo) {
+func DisplayDetailResults(detailsMap map[string]dbscanmodel.DatabaseDetailInfo) {
 	ui.PrintHeader("DETAIL HASIL SCANNING")
 
 	headers := []string{"Database", "Size", "Tables", "Procedures", "Functions", "Views", "Grants", "Status"}
@@ -65,7 +65,7 @@ func DisplayDetailResults(detailsMap map[string]types.DatabaseDetailInfo) {
 }
 
 // LogScanResult menulis hasil scanning ke logger (untuk background mode)
-func LogScanResult(result *types.ScanResult, logger applog.Logger, scanID string) {
+func LogScanResult(result *dbscanmodel.ScanResult, logger applog.Logger, scanID string) {
 	logger.Infof("[%s] ========================================", scanID)
 	logger.Infof("[%s] HASIL SCANNING", scanID)
 	logger.Infof("[%s] ========================================", scanID)
@@ -83,7 +83,7 @@ func LogScanResult(result *types.ScanResult, logger applog.Logger, scanID string
 }
 
 // LogDetailResults menulis detail hasil scanning ke logger (untuk background mode)
-func LogDetailResults(detailsMap map[string]types.DatabaseDetailInfo, logger applog.Logger) {
+func LogDetailResults(detailsMap map[string]dbscanmodel.DatabaseDetailInfo, logger applog.Logger) {
 	logger.Info("=== Detail Hasil Scanning ===")
 
 	for dbName, detail := range detailsMap {

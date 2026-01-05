@@ -1,9 +1,8 @@
 // File : internal/restore/modes/all_helpers.go
 // Deskripsi : Helper functions untuk AllExecutor
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package modes
 
 import (
@@ -11,7 +10,7 @@ import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/app/restore/helpers"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/database"
 	"strings"
 )
@@ -39,7 +38,7 @@ func extractDBName(line string) string {
 }
 
 // shouldSkipDatabase mengecek apakah database harus di-skip (mengembalikan alasan string atau kosong)
-func shouldSkipDatabase(dbName string, opts *types.RestoreAllOptions) string {
+func shouldSkipDatabase(dbName string, opts *restoremodel.RestoreAllOptions) string {
 	for _, excluded := range opts.ExcludeDBs {
 		if dbName == excluded {
 			return "excluded by user"
@@ -52,7 +51,7 @@ func shouldSkipDatabase(dbName string, opts *types.RestoreAllOptions) string {
 }
 
 // collectDatabasesToRestore melakukan pass awal untuk mengumpulkan daftar DB target dari dump
-func collectDatabasesToRestore(ctx context.Context, opts *types.RestoreAllOptions) (map[string]struct{}, error) {
+func collectDatabasesToRestore(ctx context.Context, opts *restoremodel.RestoreAllOptions) (map[string]struct{}, error) {
 	reader, closers, err := helpers.OpenAndPrepareReader(opts.File, opts.EncryptionKey)
 	if err != nil {
 		return nil, err

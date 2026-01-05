@@ -1,27 +1,27 @@
 package flags
 
 import (
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 
 	"github.com/spf13/cobra"
 )
 
 // AddProfileFlags mendaftarkan flag standar untuk memilih profile database source.
 // Flag: --profile, --profile-key
-func AddProfileFlags(cmd *cobra.Command, opts *types.ProfileInfo) {
+func AddProfileFlags(cmd *cobra.Command, opts *domain.ProfileInfo) {
 	cmd.Flags().StringVarP(&opts.Path, "profile", "p", opts.Path, "Path ke file profil database terenkripsi")
 	cmd.Flags().StringVarP(&opts.EncryptionKey, "profile-key", "k", opts.EncryptionKey, "Encryption key untuk decrypt file profil database")
 }
 
 // AddEncryptionFlags mendaftarkan flag untuk opsi enkripsi output.
 // Flag: --backup-key
-func AddEncryptionFlags(cmd *cobra.Command, opts *types.EncryptionOptions) {
+func AddEncryptionFlags(cmd *cobra.Command, opts *domain.EncryptionOptions) {
 	cmd.Flags().StringVarP(&opts.Key, "backup-key", "K", opts.Key, "Kunci enkripsi untuk backup (ENV: SFDB_BACKUP_ENCRYPTION_KEY)")
 }
 
 // AddFilterFlags mendaftarkan flag untuk filtering database (Include/Exclude).
 // Flag: --db, --db-file, --exclude-db, --exclude-db-file, --exclude-system
-func AddFilterFlags(cmd *cobra.Command, opts *types.FilterOptions) {
+func AddFilterFlags(cmd *cobra.Command, opts *domain.FilterOptions) {
 	cmd.Flags().StringArrayVar(&opts.IncludeDatabases, "db", opts.IncludeDatabases, "Daftar database yang akan di-include (comma-separated). Dapat dikombinasi dengan --db-file.")
 	cmd.Flags().StringVar(&opts.IncludeFile, "db-file", opts.IncludeFile, "File berisi daftar database yang akan di-include (satu per baris).")
 

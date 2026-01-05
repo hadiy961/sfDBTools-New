@@ -1,8 +1,8 @@
 // File : internal/restore/companion_detect.go
 // Deskripsi : Helper deteksi companion (_dmart) file
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
+// Tanggal : 30 Desember 2025
+// Last Modified : 30 Desember 2025
 
 package restore
 
@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/internal/app/backup/model/types_backup"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	"strings"

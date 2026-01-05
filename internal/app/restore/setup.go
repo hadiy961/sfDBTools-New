@@ -1,8 +1,8 @@
 // File : internal/restore/setup.go
 // Deskripsi : Shared helper functions untuk setup restore operations
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-16
-// Last Modified : 2025-12-30
+// Tanggal : 16 Desember 2025
+// Last Modified : 30 Desember 2025
 
 package restore
 

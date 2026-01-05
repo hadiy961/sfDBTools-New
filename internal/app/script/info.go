@@ -7,13 +7,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
-	"strings"
-
-	"sfDBTools/internal/types"
+	scriptmodel "sfDBTools/internal/app/script/model"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
+	"sort"
+	"strings"
 )
 
 type BundleInfo struct {
@@ -26,7 +25,7 @@ type BundleInfo struct {
 	FileCount  int      `json:"file_count"`
 }
 
-func GetBundleInfo(opts types.ScriptInfoOptions) (BundleInfo, error) {
+func GetBundleInfo(opts scriptmodel.ScriptInfoOptions) (BundleInfo, error) {
 	bundlePath := strings.TrimSpace(opts.FilePath)
 	if bundlePath == "" {
 		return BundleInfo{}, fmt.Errorf("--file wajib diisi")

@@ -2,7 +2,7 @@
 // Deskripsi : Background executor dan local sizing logic
 // Author : Hadiyatna Muflihun
 // Tanggal : 15 Oktober 2025
-// Last Modified : 05 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package dbscan
 
@@ -16,12 +16,13 @@ import (
 	"time"
 
 	"sfDBTools/internal/app/dbscan/helpers"
-	"sfDBTools/internal/types"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 )
 
 // executeScanInBackground menjalankan scanning dalam mode background (tanpa UI).
 // Menggunakan file locking untuk mencegah multiple instance berjalan bersamaan.
-func (s *Service) executeScanInBackground(ctx context.Context, config types.ScanEntryConfig) error {
+func (s *Service) executeScanInBackground(ctx context.Context, config dbscanmodel.ScanEntryConfig) error {
+	_ = config
 	scanID := fmt.Sprintf("scan_%s", time.Now().Format("20060102_150405"))
 
 	s.Log.Infof("[%s] === START BACKGROUND SCAN ===", scanID)

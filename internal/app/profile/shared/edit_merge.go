@@ -1,28 +1,28 @@
-// File : internal/profile/shared/edit_merge.go
+// File : internal/app/profile/shared/edit_merge.go
 // Deskripsi : Helper shared untuk merge snapshot dan override saat edit profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package shared
 
 import (
-	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/validation"
 	"strings"
 
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
+	"sfDBTools/pkg/helper"
+	"sfDBTools/pkg/validation"
 )
 
 func BuildProfileFileName(name string) string {
 	return validation.ProfileExt(helper.TrimProfileSuffix(strings.TrimSpace(name)))
 }
 
-func CloneAsOriginalProfileInfo(info *types.ProfileInfo) *types.ProfileInfo {
+func CloneAsOriginalProfileInfo(info *domain.ProfileInfo) *domain.ProfileInfo {
 	if info == nil {
 		return nil
 	}
-	return &types.ProfileInfo{
+	return &domain.ProfileInfo{
 		Path:         info.Path,
 		Name:         info.Name,
 		DBInfo:       info.DBInfo,
@@ -32,7 +32,7 @@ func CloneAsOriginalProfileInfo(info *types.ProfileInfo) *types.ProfileInfo {
 	}
 }
 
-func ApplySnapshotAsBaseline(dst *types.ProfileInfo, snapshot *types.ProfileInfo) {
+func ApplySnapshotAsBaseline(dst *domain.ProfileInfo, snapshot *domain.ProfileInfo) {
 	if dst == nil || snapshot == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func ApplySnapshotAsBaseline(dst *types.ProfileInfo, snapshot *types.ProfileInfo
 	}
 }
 
-func ApplyDBOverrides(dst *types.ProfileInfo, override types.DBInfo) {
+func ApplyDBOverrides(dst *domain.ProfileInfo, override domain.DBInfo) {
 	if dst == nil {
 		return
 	}
@@ -64,7 +64,7 @@ func ApplyDBOverrides(dst *types.ProfileInfo, override types.DBInfo) {
 	}
 }
 
-func ApplySSHOverrides(dst *types.ProfileInfo, override types.SSHTunnelConfig) {
+func ApplySSHOverrides(dst *domain.ProfileInfo, override domain.SSHTunnelConfig) {
 	if dst == nil {
 		return
 	}
@@ -92,12 +92,12 @@ func ApplySSHOverrides(dst *types.ProfileInfo, override types.SSHTunnelConfig) {
 	}
 }
 
-func HasAnyDBOverride(override types.DBInfo) bool {
+func HasAnyDBOverride(override domain.DBInfo) bool {
 	return strings.TrimSpace(override.Host) != "" || override.Port != 0 ||
 		strings.TrimSpace(override.User) != "" || strings.TrimSpace(override.Password) != ""
 }
 
-func HasAnySSHOverride(override types.SSHTunnelConfig) bool {
+func HasAnySSHOverride(override domain.SSHTunnelConfig) bool {
 	return override.Enabled || strings.TrimSpace(override.Host) != "" || override.Port != 0 ||
 		strings.TrimSpace(override.User) != "" || strings.TrimSpace(override.Password) != "" ||
 		strings.TrimSpace(override.IdentityFile) != "" || override.LocalPort != 0

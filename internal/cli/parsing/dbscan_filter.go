@@ -1,9 +1,9 @@
 package parsing
 
 import (
-	"sfDBTools/internal/services/config"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 	defaultVal "sfDBTools/internal/cli/defaults"
-	"sfDBTools/internal/types"
+	appconfig "sfDBTools/internal/services/config"
 	"sfDBTools/pkg/helper"
 
 	"github.com/spf13/cobra"
@@ -12,7 +12,7 @@ import (
 // ParsingScanFilterOptions membaca flag untuk perintah `dbscan filter`.
 // Hanya melakukan mapping flag ke struct ScanOptions.
 // Pembacaan file dan penggabungan list dilakukan oleh caller (Service/Logic).
-func ParsingScanFilterOptions(cmd *cobra.Command, cfg *appconfig.Config) (types.ScanOptions, error) {
+func ParsingScanFilterOptions(cmd *cobra.Command, cfg *appconfig.Config) (dbscanmodel.ScanOptions, error) {
 	// Start dengan default untuk mode database (memuat fallback dari config/env)
 	opts := defaultVal.GetDefaultScanOptions("database")
 

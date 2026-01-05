@@ -2,14 +2,15 @@
 // Deskripsi : Display functions untuk database scanning results
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 2026-01-05
+// Last Modified : 5 Januari 2026
 
 package dbscan
 
 import (
 	"fmt"
 	"sfDBTools/internal/app/dbscan/helpers"
-	"sfDBTools/internal/types"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
@@ -49,18 +50,18 @@ func (s *Service) DisplayScanOptions() (bool, error) {
 
 // Wrapper methods for pkg/dbscanhelper and pkg/ui display functions
 
-func (s *Service) DisplayFilterStats(stats *types.FilterStats) {
+func (s *Service) DisplayFilterStats(stats *domain.FilterStats) {
 	ui.DisplayFilterStats(stats, "scan", s.Log)
 }
 
-func (s *Service) DisplayScanResult(result *types.ScanResult) {
+func (s *Service) DisplayScanResult(result *dbscanmodel.ScanResult) {
 	helpers.DisplayScanResult(result)
 }
 
-func (s *Service) DisplayDetailResults(detailsMap map[string]types.DatabaseDetailInfo) {
+func (s *Service) DisplayDetailResults(detailsMap map[string]dbscanmodel.DatabaseDetailInfo) {
 	helpers.DisplayDetailResults(detailsMap)
 }
 
-func (s *Service) LogDetailResults(detailsMap map[string]types.DatabaseDetailInfo) {
+func (s *Service) LogDetailResults(detailsMap map[string]dbscanmodel.DatabaseDetailInfo) {
 	helpers.LogDetailResults(detailsMap, s.Log)
 }

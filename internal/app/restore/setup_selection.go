@@ -1,9 +1,8 @@
 // File : internal/restore/setup_selection.go
 // Deskripsi : Setup untuk restore selection (CSV) mode
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (
@@ -11,7 +10,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sfDBTools/internal/app/restore/display"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/ui"
 )
 
@@ -51,7 +50,7 @@ func (s *Service) SetupRestoreSelectionSession(ctx context.Context) error {
 	// 6. Setup backup options if not skipped
 	if !s.RestoreSelOpts.SkipBackup {
 		if s.RestoreSelOpts.BackupOptions == nil {
-			s.RestoreSelOpts.BackupOptions = &types.RestoreBackupOptions{}
+			s.RestoreSelOpts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 		}
 		// In selection mode, encryption for backup uses profile's encryption by default (if any)
 		s.setupBackupOptions(s.RestoreSelOpts.BackupOptions, s.Profile.EncryptionKey, allowInteractive)

@@ -1,4 +1,4 @@
-package types
+package appconfig
 
 // Config adalah struktur level atas yang memegang semua bagian konfigurasi.
 // Tag 'yaml' digunakan untuk memetakan field Go ke kunci di file YAML.

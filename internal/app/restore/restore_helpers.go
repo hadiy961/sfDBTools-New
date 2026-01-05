@@ -1,20 +1,19 @@
 // File : internal/restore/restore_helpers.go
 // Deskripsi : Shared helper functions untuk restore executors
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-17
-// Last Modified : 2025-12-17
-
+// Tanggal : 17 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/app/restore/helpers"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 )
 
 // BackupDatabaseIfNeeded melakukan backup database jika diperlukan
-func (s *Service) BackupDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, skipBackup bool, backupOpts *types.RestoreBackupOptions) (string, error) {
+func (s *Service) BackupDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, skipBackup bool, backupOpts *restoremodel.RestoreBackupOptions) (string, error) {
 	if skipBackup {
 		return "", nil
 	}

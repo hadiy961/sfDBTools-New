@@ -1,8 +1,8 @@
 // File : internal/restore/companion_interactive.go
 // Deskripsi : Helper interaktif untuk pemilihan companion (_dmart) file
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
+// Tanggal : 30 Desember 2025
+// Last Modified : 30 Desember 2025
 
 package restore
 

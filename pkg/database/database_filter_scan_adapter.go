@@ -3,14 +3,15 @@ package database
 import (
 	"context"
 
-	"sfDBTools/internal/types"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
+	"sfDBTools/internal/domain"
 )
 
 // FilterFromScanOptions membuat FilterOptions dari ScanOptions dan execute filtering.
 //
 // Deprecated: gunakan internal/dbscan/helpers.FilterFromScanOptions.
-func FilterFromScanOptions(ctx context.Context, client *Client, opts *types.ScanOptions) ([]string, *types.FilterStats, error) {
-	filterOpts := types.FilterOptions{
+func FilterFromScanOptions(ctx context.Context, client *Client, opts *dbscanmodel.ScanOptions) ([]string, *domain.FilterStats, error) {
+	filterOpts := domain.FilterOptions{
 		ExcludeSystem:    opts.ExcludeSystem,
 		ExcludeDatabases: opts.ExcludeList,
 		ExcludeDBFile:    opts.ExcludeFile,

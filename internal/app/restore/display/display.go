@@ -1,20 +1,19 @@
 // File : internal/restore/display/display.go
 // Deskripsi : Display functions untuk restore results
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-17
-// Last Modified : 2025-12-17
-
+// Tanggal : 17 Desember 2025
+// Last Modified : 5 Januari 2026
 package display
 
 import (
 	"fmt"
 	"path/filepath"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/ui"
 )
 
 // ShowRestoreSingleResult menampilkan hasil restore single
-func ShowRestoreSingleResult(result *types.RestoreResult) {
+func ShowRestoreSingleResult(result *restoremodel.RestoreResult) {
 	ui.PrintSubHeader("Hasil Restore")
 	fmt.Println()
 
@@ -44,7 +43,7 @@ func ShowRestoreSingleResult(result *types.RestoreResult) {
 }
 
 // ShowRestorePrimaryResult menampilkan hasil restore primary
-func ShowRestorePrimaryResult(result *types.RestoreResult) {
+func ShowRestorePrimaryResult(result *restoremodel.RestoreResult) {
 	ui.PrintSubHeader("Hasil Restore Primary")
 	fmt.Println()
 
@@ -87,7 +86,7 @@ func ShowRestorePrimaryResult(result *types.RestoreResult) {
 }
 
 // ShowRestoreSecondaryResult menampilkan hasil restore secondary
-func ShowRestoreSecondaryResult(result *types.RestoreResult) {
+func ShowRestoreSecondaryResult(result *restoremodel.RestoreResult) {
 	ui.PrintSubHeader("Hasil Restore Secondary")
 	fmt.Println()
 
@@ -117,7 +116,7 @@ func ShowRestoreSecondaryResult(result *types.RestoreResult) {
 }
 
 // ShowRestoreAllResult menampilkan hasil restore all databases
-func ShowRestoreAllResult(result *types.RestoreResult) {
+func ShowRestoreAllResult(result *restoremodel.RestoreResult) {
 	ui.PrintSubHeader("Hasil Restore All Databases")
 	fmt.Println()
 
@@ -140,7 +139,7 @@ func ShowRestoreAllResult(result *types.RestoreResult) {
 }
 
 // ShowRestoreCustomResult menampilkan hasil restore custom (DB + DMART)
-func ShowRestoreCustomResult(result *types.RestoreResult) {
+func ShowRestoreCustomResult(result *restoremodel.RestoreResult) {
 	ui.PrintSubHeader("Hasil Restore Custom")
 	fmt.Println()
 

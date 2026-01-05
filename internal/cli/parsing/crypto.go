@@ -1,31 +1,31 @@
 package parsing
 
 import (
-	"sfDBTools/internal/types"
+	cryptomodel "sfDBTools/internal/services/crypto/model"
 	"sfDBTools/pkg/helper"
 
 	"github.com/spf13/cobra"
 )
 
 // ParsingBase64EncodeOptions membaca flag base64 encode
-func ParsingBase64EncodeOptions(cmd *cobra.Command) types.Base64EncodeOptions {
-	return types.Base64EncodeOptions{
+func ParsingBase64EncodeOptions(cmd *cobra.Command) cryptomodel.Base64EncodeOptions {
+	return cryptomodel.Base64EncodeOptions{
 		InputText:  helper.GetStringFlagOrEnv(cmd, "text", ""),
 		OutputPath: helper.GetStringFlagOrEnv(cmd, "out", ""),
 	}
 }
 
 // ParsingBase64DecodeOptions membaca flag base64 decode
-func ParsingBase64DecodeOptions(cmd *cobra.Command) types.Base64DecodeOptions {
-	return types.Base64DecodeOptions{
+func ParsingBase64DecodeOptions(cmd *cobra.Command) cryptomodel.Base64DecodeOptions {
+	return cryptomodel.Base64DecodeOptions{
 		InputData:  helper.GetStringFlagOrEnv(cmd, "data", ""),
 		OutputPath: helper.GetStringFlagOrEnv(cmd, "out", ""),
 	}
 }
 
 // ParsingEncryptFileOptions membaca flag encrypt file
-func ParsingEncryptFileOptions(cmd *cobra.Command) types.EncryptFileOptions {
-	return types.EncryptFileOptions{
+func ParsingEncryptFileOptions(cmd *cobra.Command) cryptomodel.EncryptFileOptions {
+	return cryptomodel.EncryptFileOptions{
 		InputPath:  helper.GetStringFlagOrEnv(cmd, "in", ""),
 		OutputPath: helper.GetStringFlagOrEnv(cmd, "out", ""),
 		Key:        helper.GetStringFlagOrEnv(cmd, "key", ""),
@@ -33,8 +33,8 @@ func ParsingEncryptFileOptions(cmd *cobra.Command) types.EncryptFileOptions {
 }
 
 // ParsingDecryptFileOptions membaca flag decrypt file
-func ParsingDecryptFileOptions(cmd *cobra.Command) types.DecryptFileOptions {
-	return types.DecryptFileOptions{
+func ParsingDecryptFileOptions(cmd *cobra.Command) cryptomodel.DecryptFileOptions {
+	return cryptomodel.DecryptFileOptions{
 		InputPath:  helper.GetStringFlagOrEnv(cmd, "in", ""),
 		OutputPath: helper.GetStringFlagOrEnv(cmd, "out", ""),
 		Key:        helper.GetStringFlagOrEnv(cmd, "key", ""),
@@ -42,8 +42,8 @@ func ParsingDecryptFileOptions(cmd *cobra.Command) types.DecryptFileOptions {
 }
 
 // ParsingEncryptTextOptions membaca flag encrypt text
-func ParsingEncryptTextOptions(cmd *cobra.Command) types.EncryptTextOptions {
-	return types.EncryptTextOptions{
+func ParsingEncryptTextOptions(cmd *cobra.Command) cryptomodel.EncryptTextOptions {
+	return cryptomodel.EncryptTextOptions{
 		InputText:  helper.GetStringFlagOrEnv(cmd, "text", ""),
 		OutputPath: helper.GetStringFlagOrEnv(cmd, "out", ""),
 		Key:        helper.GetStringFlagOrEnv(cmd, "key", ""),
@@ -51,8 +51,8 @@ func ParsingEncryptTextOptions(cmd *cobra.Command) types.EncryptTextOptions {
 }
 
 // ParsingDecryptTextOptions membaca flag decrypt text
-func ParsingDecryptTextOptions(cmd *cobra.Command) types.DecryptTextOptions {
-	return types.DecryptTextOptions{
+func ParsingDecryptTextOptions(cmd *cobra.Command) cryptomodel.DecryptTextOptions {
+	return cryptomodel.DecryptTextOptions{
 		InputData:  helper.GetStringFlagOrEnv(cmd, "data", ""),
 		OutputPath: helper.GetStringFlagOrEnv(cmd, "out", ""),
 		Key:        helper.GetStringFlagOrEnv(cmd, "key", ""),

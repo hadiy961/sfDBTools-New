@@ -2,27 +2,27 @@ package defaultVal
 
 import (
 	"fmt"
-	"sfDBTools/internal/services/config"
-	"sfDBTools/internal/types"
+	profilemodel "sfDBTools/internal/app/profile/model"
+	appconfig "sfDBTools/internal/services/config"
 )
 
-func DefaultProfileCreateOptions() types.ProfileCreateOptions {
+func DefaultProfileCreateOptions() profilemodel.ProfileCreateOptions {
 	cfg, err := appconfig.LoadConfigFromEnv()
 	if err != nil {
 		fmt.Println("Error loading config:", err)
-		return types.ProfileCreateOptions{
+		return profilemodel.ProfileCreateOptions{
 			OutputDir:   "",
 			Interactive: false,
 		}
 	}
-	return types.ProfileCreateOptions{
+	return profilemodel.ProfileCreateOptions{
 		OutputDir:   cfg.ConfigDir.DatabaseProfile,
 		Interactive: true,
 	}
 }
 
-func DefaultProfileShowOptions() types.ProfileShowOptions {
-	return types.ProfileShowOptions{
+func DefaultProfileShowOptions() profilemodel.ProfileShowOptions {
+	return profilemodel.ProfileShowOptions{
 		RevealPassword: false,
 	}
 }

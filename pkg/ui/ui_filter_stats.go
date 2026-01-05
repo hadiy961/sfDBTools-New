@@ -2,15 +2,15 @@ package ui
 
 import (
 	"fmt"
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
+	applog "sfDBTools/internal/services/log"
 	"sfDBTools/pkg/consts"
 )
 
 // DisplayFilterStats menampilkan statistik hasil pemfilteran database secara reusable.
 // Context parameter untuk menyesuaikan label (contoh: "Akan di-backup" atau "Akan di-scan")
 // Logger parameter opsional untuk logging (bisa nil)
-func DisplayFilterStats(stats *types.FilterStats, konteks string, logger applog.Logger) {
+func DisplayFilterStats(stats *domain.FilterStats, konteks string, logger applog.Logger) {
 	PrintSubHeader("Statistik Filtering Database")
 
 	// Hitung total excluded

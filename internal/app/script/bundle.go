@@ -11,13 +11,12 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"strings"
-	"time"
-
-	"sfDBTools/internal/types"
+	scriptmodel "sfDBTools/internal/app/script/model"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
+	"strings"
+	"time"
 )
 
 const (
@@ -33,7 +32,7 @@ type manifest struct {
 	RootDir    string `json:"root_dir,omitempty"`
 }
 
-func EncryptBundle(opts types.ScriptEncryptOptions) error {
+func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 	entryPath := strings.TrimSpace(opts.FilePath)
 	if entryPath == "" {
 		return fmt.Errorf("--file wajib diisi")
@@ -166,7 +165,7 @@ func EncryptBundle(opts types.ScriptEncryptOptions) error {
 	return nil
 }
 
-func RunBundle(opts types.ScriptRunOptions) error {
+func RunBundle(opts scriptmodel.ScriptRunOptions) error {
 	bundlePath := strings.TrimSpace(opts.FilePath)
 	if bundlePath == "" {
 		return fmt.Errorf("--file wajib diisi")

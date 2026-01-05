@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/internal/app/backup/model/types_backup"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/global"
 	"sfDBTools/pkg/helper"

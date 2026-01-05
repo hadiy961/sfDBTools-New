@@ -1,8 +1,8 @@
-// File : internal/types/types_backup/backup_info.go
+// File : internal/app/backup/model/types_backup/backup_info.go
 // Deskripsi : Database backup info struct
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-22
-// Last Modified : 2025-12-22
+// Last Modified : 2026-01-05
 
 package types_backup
 

@@ -1,8 +1,8 @@
 // File : cmd/cleanup/schedule.go
 // Deskripsi : Command untuk mengelola scheduler cleanup (systemd timer)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2026-01-02
-// Last Modified : 2026-01-05
+// Tanggal : 2 Januari 2026
+// Last Modified : 5 Januari 2026
 package cleanupcmd
 
 import (

@@ -1,20 +1,18 @@
 // File : internal/restore/setup_all.go
 // Deskripsi : Setup untuk restore all databases mode
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
-
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
+	"strings"
 )
 
 // SetupRestoreAllSession melakukan setup untuk restore all databases session
@@ -70,7 +68,7 @@ func (s *Service) prepareRestoreAllPrereqs(ctx context.Context, allowInteractive
 
 	if !s.RestoreAllOpts.SkipBackup {
 		if s.RestoreAllOpts.BackupOptions == nil {
-			s.RestoreAllOpts.BackupOptions = &types.RestoreBackupOptions{}
+			s.RestoreAllOpts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 		}
 		s.setupBackupOptions(s.RestoreAllOpts.BackupOptions, s.RestoreAllOpts.EncryptionKey, allowInteractive)
 	}

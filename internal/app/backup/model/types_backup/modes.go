@@ -1,8 +1,8 @@
-// File : internal/types/types_backup/modes.go
+// File : internal/app/backup/model/types_backup/modes.go
 // Deskripsi : Mode interface dan config structs
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-05
+// Last Modified : 2026-01-05
 
 package types_backup
 

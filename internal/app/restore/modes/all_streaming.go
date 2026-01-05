@@ -1,9 +1,8 @@
 // File : internal/restore/modes/all_streaming.go
 // Deskripsi : Streaming restore execution untuk AllExecutor
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package modes
 
 import (
@@ -11,7 +10,7 @@ import (
 	"fmt"
 	"io"
 	"sfDBTools/internal/app/restore/helpers"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/ui"
 	"sort"
 	"strings"
@@ -19,7 +18,7 @@ import (
 )
 
 // executeStreamingRestore melakukan restore dengan streaming processing
-func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.RestoreAllOptions) error {
+func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *restoremodel.RestoreAllOptions) error {
 	logger := e.service.GetLogger()
 
 	// 1) Kumpulkan daftar DB target dari dump (pass-1)
@@ -53,7 +52,7 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *types.R
 }
 
 // handlePreRestoreOperations handles backup and drop operations before restore
-func (e *AllExecutor) handlePreRestoreOperations(ctx context.Context, opts *types.RestoreAllOptions, names []string) error {
+func (e *AllExecutor) handlePreRestoreOperations(ctx context.Context, opts *restoremodel.RestoreAllOptions, names []string) error {
 	logger := e.service.GetLogger()
 
 	// Prepare backup and drop lists
@@ -96,7 +95,7 @@ func (e *AllExecutor) handlePreRestoreOperations(ctx context.Context, opts *type
 }
 
 // performStreamingRestore executes the actual streaming restore
-func (e *AllExecutor) performStreamingRestore(ctx context.Context, opts *types.RestoreAllOptions) error {
+func (e *AllExecutor) performStreamingRestore(ctx context.Context, opts *restoremodel.RestoreAllOptions) error {
 	logger := e.service.GetLogger()
 	restoreStart := time.Now()
 	spin := ui.NewSpinnerWithElapsed("Memulai proses restore...")

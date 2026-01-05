@@ -3,16 +3,12 @@
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
 // Last Modified : 5 Januari 2026
-
 package profile
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
@@ -20,9 +16,11 @@ import (
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/mattn/go-isatty"
+	"sfDBTools/internal/domain"
 )
 
 // CheckConfigurationNameUnique memvalidasi apakah nama konfigurasi unik.
@@ -73,7 +71,7 @@ func (s *Service) CheckConfigurationNameUnique(mode string) error {
 	return nil
 }
 
-func ValidateProfileInfo(p *types.ProfileInfo) error {
+func ValidateProfileInfo(p *domain.ProfileInfo) error {
 	if p == nil {
 		return fmt.Errorf(consts.ProfileErrProfileInfoNil)
 	}
@@ -97,7 +95,7 @@ func ValidateProfileInfo(p *types.ProfileInfo) error {
 	return nil
 }
 
-func ValidateDBInfo(db *types.DBInfo) error {
+func ValidateDBInfo(db *domain.DBInfo) error {
 	if db == nil {
 		return fmt.Errorf(consts.ProfileErrDBInfoNil)
 	}

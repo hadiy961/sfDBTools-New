@@ -1,8 +1,8 @@
 // File : cmd/cmd_restore/cmd_restore_primary.go
 // Deskripsi : Command untuk restore primary database
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-17
-// Last Modified : 2026-01-05
+// Tanggal : 17 Desember 2025
+// Last Modified : 5 Januari 2026
 package restorecmd
 
 import (

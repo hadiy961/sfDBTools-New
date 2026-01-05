@@ -1,8 +1,8 @@
 package parsing
 
 import (
+	cleanupmodel "sfDBTools/internal/app/cleanup/model"
 	defaultVal "sfDBTools/internal/cli/defaults"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/helper"
 
 	"github.com/spf13/cobra"
@@ -10,7 +10,7 @@ import (
 
 // ParsingCleanupOptions membaca flag untuk perintah cleanup
 // Mengembalikan CleanupOptions yang siap dipakai service.
-func ParsingCleanupOptions(cmd *cobra.Command) (types.CleanupOptions, error) {
+func ParsingCleanupOptions(cmd *cobra.Command) (cleanupmodel.CleanupOptions, error) {
 	// Mulai dari default
 	opts := defaultVal.DefaultCleanupOptions()
 

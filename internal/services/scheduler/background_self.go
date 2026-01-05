@@ -1,8 +1,8 @@
 // File : internal/services/scheduler/background_self.go
 // Deskripsi : Helper untuk menjalankan ulang proses saat ini via systemd-run (background)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2026-01-03
-// Last Modified :  2026-01-05
+// Tanggal : 3 Januari 2026
+// Last Modified : 5 Januari 2026
 package schedulerutil
 
 import (

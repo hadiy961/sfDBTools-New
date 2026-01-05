@@ -1,20 +1,21 @@
 // File : internal/restore/modes/interface.go
 // Deskripsi : Interface dan type definitions untuk restore modes
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-17
-// Last Modified : 2026-01-05
+// Tanggal : 17 Desember 2025
+// Last Modified : 5 Januari 2026
 package modes
 
 import (
 	"context"
+	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/domain"
 	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
 )
 
 // RestoreExecutor interface untuk semua mode restore
 type RestoreExecutor interface {
-	Execute(ctx context.Context) (*types.RestoreResult, error)
+	Execute(ctx context.Context) (*restoremodel.RestoreResult, error)
 }
 
 // RestoreService interface untuk service yang dibutuhkan oleh mode executors
@@ -24,25 +25,25 @@ type RestoreService interface {
 
 	// Context & Clients
 	GetTargetClient() *database.Client
-	GetProfile() *types.ProfileInfo
+	GetProfile() *domain.ProfileInfo
 
 	// State Management
 	SetRestoreInProgress(dbName string)
 	ClearRestoreInProgress()
 
 	// Options Accessors
-	GetSingleOptions() *types.RestoreSingleOptions
-	GetPrimaryOptions() *types.RestorePrimaryOptions
-	GetSecondaryOptions() *types.RestoreSecondaryOptions
-	GetAllOptions() *types.RestoreAllOptions
-	GetSelectionOptions() *types.RestoreSelectionOptions
-	GetCustomOptions() *types.RestoreCustomOptions
+	GetSingleOptions() *restoremodel.RestoreSingleOptions
+	GetPrimaryOptions() *restoremodel.RestorePrimaryOptions
+	GetSecondaryOptions() *restoremodel.RestoreSecondaryOptions
+	GetAllOptions() *restoremodel.RestoreAllOptions
+	GetSelectionOptions() *restoremodel.RestoreSelectionOptions
+	GetCustomOptions() *restoremodel.RestoreCustomOptions
 
 	// Restore Operations (Exposed from helpers)
-	BackupDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, skipBackup bool, backupOpts *types.RestoreBackupOptions) (string, error)
+	BackupDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, skipBackup bool, backupOpts *restoremodel.RestoreBackupOptions) (string, error)
 	// BackupDatabasesSingleFileIfNeeded melakukan backup gabungan (single-file/combined)
 	// untuk sekumpulan database sebelum restore all (konsep: backup filter --mode single-file).
-	BackupDatabasesSingleFileIfNeeded(ctx context.Context, dbNames []string, skipBackup bool, backupOpts *types.RestoreBackupOptions) (string, error)
+	BackupDatabasesSingleFileIfNeeded(ctx context.Context, dbNames []string, skipBackup bool, backupOpts *restoremodel.RestoreBackupOptions) (string, error)
 	DropDatabaseIfNeeded(ctx context.Context, dbName string, dbExists bool, shouldDrop bool) error
 	CreateAndRestoreDatabase(ctx context.Context, dbName string, filePath string, encryptionKey string) error
 	RestoreUserGrantsIfAvailable(ctx context.Context, grantsFile string) (bool, error)

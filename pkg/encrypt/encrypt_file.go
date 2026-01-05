@@ -1,8 +1,8 @@
 // File : pkg/encrypt/encrypt_file.go
 // Deskripsi : Fungsi utilitas untuk enkripsi dan dekripsi file backup
 // Author : Hadiyatna Muflihun
-// Tanggal : 2024-10-14
-// Last Modified : 2024-10-14
+// Tanggal : 14 Oktober 2024
+// Last Modified : 14 Oktober 2024
 package encrypt
 
 import (

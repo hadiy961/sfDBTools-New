@@ -1,7 +1,7 @@
 // File : internal/restore/modes/custom.go
 // Deskripsi : Executor untuk restore custom (SFCola account detail)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-24
+// Tanggal : 24 Desember 2025
 
 package modes
 
@@ -9,12 +9,11 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/consts"
+	"sfDBTools/pkg/ui"
 	"strings"
 	"time"
-
-	"sfDBTools/internal/types"
-	"sfDBTools/pkg/ui"
 )
 
 type customExecutor struct {
@@ -23,7 +22,7 @@ type customExecutor struct {
 
 func NewCustomExecutor(svc RestoreService) RestoreExecutor { return &customExecutor{svc: svc} }
 
-func (e *customExecutor) Execute(ctx context.Context) (*types.RestoreResult, error) {
+func (e *customExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResult, error) {
 	opts := e.svc.GetCustomOptions()
 	if opts == nil {
 		return nil, fmt.Errorf("opsi custom tidak tersedia")
@@ -33,7 +32,7 @@ func (e *customExecutor) Execute(ctx context.Context) (*types.RestoreResult, err
 	logger := e.svc.GetLogger()
 	client := e.svc.GetTargetClient()
 
-	result := &types.RestoreResult{
+	result := &restoremodel.RestoreResult{
 		Success:       true,
 		TargetDB:      opts.Database,
 		SourceFile:    filepath.Base(opts.DatabaseFile),

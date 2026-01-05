@@ -1,8 +1,8 @@
 // File : pkg/encrypt/encrypt_reader.go
 // Deskripsi : Streaming decrypt reader untuk backup files
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-11-05
-// Last Modified : 2025-11-14
+// Tanggal : 5 November 2025
+// Last Modified : 14 November 2025
 
 package encrypt
 

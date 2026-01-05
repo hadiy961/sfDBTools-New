@@ -1,23 +1,21 @@
 // File : internal/restore/setup_secondary_helpers.go
 // Deskripsi : Helper functions untuk setup restore secondary operations
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (
 	"context"
 	"fmt"
-	"strings"
-
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/input"
+	"strings"
 )
 
 // resolveSecondaryFrom resolve dari source (file atau primary)
-func (s *Service) resolveSecondaryFrom(opts *types.RestoreSecondaryOptions, allowInteractive bool) error {
+func (s *Service) resolveSecondaryFrom(opts *restoremodel.RestoreSecondaryOptions, allowInteractive bool) error {
 	from := normalizeRestoreSource(opts.From)
 	if from == "" {
 		if allowInteractive {
@@ -47,7 +45,7 @@ func (s *Service) resolveSecondaryFrom(opts *types.RestoreSecondaryOptions, allo
 }
 
 // resolveSecondaryClientCode resolve client code untuk secondary restore
-func (s *Service) resolveSecondaryClientCode(opts *types.RestoreSecondaryOptions, allowInteractive bool) error {
+func (s *Service) resolveSecondaryClientCode(opts *restoremodel.RestoreSecondaryOptions, allowInteractive bool) error {
 	if strings.TrimSpace(opts.ClientCode) != "" {
 		return nil
 	}
@@ -63,7 +61,7 @@ func (s *Service) resolveSecondaryClientCode(opts *types.RestoreSecondaryOptions
 }
 
 // resolveSecondaryEncryptionKey resolve encryption key untuk secondary restore
-func (s *Service) resolveSecondaryEncryptionKey(opts *types.RestoreSecondaryOptions, allowInteractive bool) error {
+func (s *Service) resolveSecondaryEncryptionKey(opts *restoremodel.RestoreSecondaryOptions, allowInteractive bool) error {
 	if opts.From == "file" {
 		return s.resolveEncryptionKey(opts.File, &opts.EncryptionKey, allowInteractive)
 	}
@@ -87,7 +85,7 @@ func (s *Service) resolveSecondaryEncryptionKey(opts *types.RestoreSecondaryOpti
 }
 
 // resolveSecondaryPrimaryDB resolve primary database untuk mode "from=primary"
-func (s *Service) resolveSecondaryPrimaryDB(ctx context.Context, opts *types.RestoreSecondaryOptions) error {
+func (s *Service) resolveSecondaryPrimaryDB(ctx context.Context, opts *restoremodel.RestoreSecondaryOptions) error {
 	cc := strings.TrimSpace(opts.ClientCode)
 	if cc == "" {
 		return fmt.Errorf("client code kosong")
@@ -127,7 +125,7 @@ func (s *Service) resolveSecondaryPrimaryDB(ctx context.Context, opts *types.Res
 }
 
 // resolveSecondaryPrefixForFileMode menentukan prefix primary untuk mode "from=file"
-func (s *Service) resolveSecondaryPrefixForFileMode(ctx context.Context, opts *types.RestoreSecondaryOptions) (string, error) {
+func (s *Service) resolveSecondaryPrefixForFileMode(ctx context.Context, opts *restoremodel.RestoreSecondaryOptions) (string, error) {
 	cc := strings.TrimSpace(opts.ClientCode)
 	if cc == "" {
 		return consts.PrimaryPrefixNBC, nil

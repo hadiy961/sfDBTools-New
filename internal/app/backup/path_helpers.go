@@ -4,7 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"sfDBTools/internal/app/backup/modes"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	pkghelper "sfDBTools/pkg/helper"
@@ -99,7 +99,7 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Clie
 	if err != nil {
 		s.Log.Warnf("gagal mengambil daftar database untuk statistik: %v", err)
 	} else {
-		stats := &types.FilterStats{
+		stats := &domain.FilterStats{
 			TotalFound:        len(allDatabases),
 			TotalIncluded:     len(dbFiltered),
 			TotalExcluded:     len(allDatabases) - len(dbFiltered),

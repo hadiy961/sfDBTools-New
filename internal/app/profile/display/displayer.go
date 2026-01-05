@@ -1,15 +1,16 @@
-package display
-
-// File : internal/profile/display/displayer.go
+// File : internal/app/profile/display/displayer.go
 // Deskripsi : Tampilan detail profil (show/create/edit summary)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
 // Last Modified : 5 Januari 2026
 
+package display
+
 import (
 	"fmt"
 
-	"sfDBTools/internal/types"
+	profilemodel "sfDBTools/internal/app/profile/model"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 	profilehelper "sfDBTools/pkg/helper/profile"
 	"sfDBTools/pkg/input"
@@ -20,9 +21,9 @@ import (
 
 type Displayer struct {
 	ConfigDir           string
-	ProfileInfo         *types.ProfileInfo
-	OriginalProfileInfo *types.ProfileInfo
-	ProfileShow         *types.ProfileShowOptions
+	ProfileInfo         *domain.ProfileInfo
+	OriginalProfileInfo *domain.ProfileInfo
+	ProfileShow         *profilemodel.ProfileShowOptions
 }
 
 func (d *Displayer) DisplayProfileDetails() {
@@ -98,7 +99,7 @@ func (d *Displayer) printShowDetails() {
 	}
 }
 
-func (d *Displayer) revealPasswordConfirmAndShow(orig *types.ProfileInfo) {
+func (d *Displayer) revealPasswordConfirmAndShow(orig *domain.ProfileInfo) {
 	if orig.Path == "" {
 		ui.PrintWarning(consts.ProfileDisplayNoFileForVerify)
 		return
