@@ -2,9 +2,8 @@
 // Deskripsi : Helper untuk menampilkan history job scheduler (journalctl)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified :  2026-01-05
+// Last Modified : 2026-01-05
 package scheduler
-
 import (
 	"context"
 	"fmt"
@@ -12,7 +11,7 @@ import (
 	"os/exec"
 	"strings"
 
-	appdeps "sfDBTools/internal/deps"
+	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/services/scheduler"
 )
 

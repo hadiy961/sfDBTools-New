@@ -2,14 +2,13 @@
 // Deskripsi : Command untuk restore single database
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-16
-// Last Modified : 2025-12-16
-
+// Last Modified :  2026-01-05
 package restorecmd
 
 import (
 	"fmt"
-	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/internal/flags"
+	appdeps "sfDBTools/internal/cli/deps"
+	"sfDBTools/internal/cli/flags"
 	"sfDBTools/internal/restore"
 
 	"github.com/spf13/cobra"

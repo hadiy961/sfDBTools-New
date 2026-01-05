@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"sfDBTools/internal/services/config"
 	app_log "sfDBTools/internal/services/log"
-	appdeps "sfDBTools/internal/deps"
+	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/pkg/runtimecfg"
 	"strings"
 

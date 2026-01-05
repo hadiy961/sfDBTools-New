@@ -4,7 +4,6 @@
 // Tanggal : 2024-10-03
 // Last Modified : 2026-01-05
 package cmd
-
 import (
 	"fmt"
 	"os"
@@ -17,7 +16,7 @@ import (
 	profilecmd "sfDBTools/cmd/profile"
 	restorecmd "sfDBTools/cmd/restore"
 	scriptcmd "sfDBTools/cmd/script"
-	appdeps "sfDBTools/internal/deps"
+	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
 	"strings"

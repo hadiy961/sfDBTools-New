@@ -12,10 +12,10 @@ The backup feature is designed as a pipeline with clear responsibility boundarie
 
 1. **CLI command layer** (`cmd/backup/*`)
    - Defines Cobra commands (`db-backup all|filter|single|primary|secondary`).
-   - Attaches flags (via `internal/flags/*`).
+   - Attaches flags (via `internal/cli/flags/*`).
    - Calls the unified executor `internal/backup.ExecuteBackup(...)`.
 
-2. **Options parsing** (`internal/parsing/backup.go`)
+2. **Options parsing** (`internal/cli/parsing/backup.go`)
    - Reads flags/env and produces a `types_backup.BackupDBOptions`.
    - Performs **fail-fast validation**, especially in non-interactive mode via `--quiet`.
 
@@ -58,7 +58,7 @@ If you add a feature that transforms backup output, it should be done as an `io.
 ### Fail fast in non-interactive mode
 Non-interactive mode is used for automation and must not prompt.
 
-- `internal/parsing/backup.go` enforces required inputs.
+- `internal/cli/parsing/backup.go` enforces required inputs.
 - `internal/backup/setup` enforces additional runtime validations.
 
 If you add a required input (new flag), also add:
@@ -95,11 +95,11 @@ Typical wiring steps:
    - Add/update structs in `internal/types/types_backup/options.go`.
 
 2. **Expose the flag**
-   - Add it in `internal/flags/backup.go` (or `internal/flags/shared.go` if it is truly shared).
+   - Add it in `internal/cli/flags/backup.go` (or `internal/cli/flags/shared.go` if it is truly shared).
    - Attach the flag in the command init (example: `cmd/backup/all.go` calls `flags.AddBackupAllFlags`).
 
 3. **Parse the flag**
-   - Implement parsing in `internal/parsing/backup.go`.
+   - Implement parsing in `internal/cli/parsing/backup.go`.
    - If it can be set by env, use the same helper patterns as existing fields.
 
 4. **Validate**
@@ -123,11 +123,11 @@ Steps:
 
 2. **Add CLI command (if needed)**
    - Create a new command under `cmd/backup/` and register it in `cmd/backup/main.go`.
-   - Attach flags using `internal/flags/backup.go`.
+   - Attach flags using `internal/cli/flags/backup.go`.
 
 3. **Add parsing & default values**
-   - Ensure `internal/defaultval.DefaultBackupOptions(mode)` supports your mode.
-   - Update `internal/parsing/backup.go` to handle any mode-specific flags.
+   - Ensure `internal/cli/defaults.DefaultBackupOptions(mode)` supports your mode.
+   - Update `internal/cli/parsing/backup.go` to handle any mode-specific flags.
 
 4. **Add an executor**
    - Implement `modes.ModeExecutor` under `internal/backup/modes/`.
@@ -244,8 +244,8 @@ Before opening a PR for a backup feature:
 ## 8) Quick Pointers (Files You Will Touch Often)
 
 - Commands: `cmd/backup/*.go`
-- Flags: `internal/flags/backup.go`
-- Parsing: `internal/parsing/backup.go`
+- Flags: `internal/cli/flags/backup.go`
+- Parsing: `internal/cli/parsing/backup.go`
 - Orchestration: `internal/backup/command.go`, `internal/backup/service.go`, `internal/backup/executor.go`
 - Modes: `internal/backup/modes/*`
 - Setup: `internal/backup/setup/*`

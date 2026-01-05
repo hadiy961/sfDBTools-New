@@ -3,7 +3,7 @@ package global
 import (
 	"sfDBTools/internal/services/config"
 	"sfDBTools/internal/services/log"
-	appdeps "sfDBTools/internal/deps"
+	appdeps "sfDBTools/internal/cli/deps"
 )
 
 // GetLogger adalah helper untuk mengakses logger dari package lain

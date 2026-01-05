@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"sfDBTools/internal/dbscan"
-	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/internal/flags"
-	"sfDBTools/internal/parsing"
+	appdeps "sfDBTools/internal/cli/deps"
+	"sfDBTools/internal/cli/flags"
+	"sfDBTools/internal/cli/parsing"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/validation"
 

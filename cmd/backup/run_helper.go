@@ -2,14 +2,13 @@
 // Deskripsi : Helper eksekusi command backup untuk menjaga alur konsisten
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package backupcmd
 
 import (
 	"fmt"
 	"sfDBTools/internal/backup"
-	appdeps "sfDBTools/internal/deps"
+	appdeps "sfDBTools/internal/cli/deps"
 
 	"github.com/spf13/cobra"
 )

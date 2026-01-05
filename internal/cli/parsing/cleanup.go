@@ -1,7 +1,7 @@
 package parsing
 
 import (
-	defaultVal "sfDBTools/internal/defaultval"
+	defaultVal "sfDBTools/internal/cli/defaults"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/helper"
 

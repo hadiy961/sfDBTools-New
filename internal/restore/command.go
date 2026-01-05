@@ -2,13 +2,12 @@
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-16
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package restore
 
 import (
-	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/internal/parsing"
+	appdeps "sfDBTools/internal/cli/deps"
+	"sfDBTools/internal/cli/parsing"
 	"sfDBTools/internal/restore/display"
 
 	"github.com/spf13/cobra"

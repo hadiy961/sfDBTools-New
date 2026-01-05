@@ -2,9 +2,9 @@ package cryptocmd
 
 import (
 	"sfDBTools/internal/services/crypto"
-	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/internal/flags"
-	"sfDBTools/internal/parsing"
+	appdeps "sfDBTools/internal/cli/deps"
+	"sfDBTools/internal/cli/flags"
+	"sfDBTools/internal/cli/parsing"
 
 	"github.com/spf13/cobra"
 )

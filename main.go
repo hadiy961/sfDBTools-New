@@ -7,7 +7,7 @@ import (
 	"sfDBTools/cmd"
 	config "sfDBTools/internal/services/config"
 	"sfDBTools/internal/autoupdate"
-	appdeps "sfDBTools/internal/deps"
+	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
 	"time"
