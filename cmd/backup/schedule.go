@@ -6,7 +6,7 @@
 package backupcmd
 
 import (
-	"sfDBTools/internal/backup/scheduler"
+	"sfDBTools/internal/app/backup/scheduler"
 	appdeps "sfDBTools/internal/cli/deps"
 
 	"github.com/spf13/cobra"
