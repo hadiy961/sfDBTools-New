@@ -3,7 +3,7 @@
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
 // Last Modified : 5 Januari 2026
-package schedulerutil
+package scheduler
 
 import (
 	"context"
