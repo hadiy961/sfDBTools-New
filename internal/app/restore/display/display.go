@@ -9,12 +9,12 @@ import (
 	"fmt"
 	"path/filepath"
 	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
 )
 
 // ShowRestoreSingleResult menampilkan hasil restore single
 func ShowRestoreSingleResult(result *restoremodel.RestoreResult) {
-	ui.PrintSubHeader("Hasil Restore")
+	print.PrintSubHeader("Hasil Restore")
 	fmt.Println()
 
 	fmt.Printf("  %-20s: %s\n", "Target Database", result.TargetDB)
@@ -44,7 +44,7 @@ func ShowRestoreSingleResult(result *restoremodel.RestoreResult) {
 
 // ShowRestorePrimaryResult menampilkan hasil restore primary
 func ShowRestorePrimaryResult(result *restoremodel.RestoreResult) {
-	ui.PrintSubHeader("Hasil Restore Primary")
+	print.PrintSubHeader("Hasil Restore Primary")
 	fmt.Println()
 
 	fmt.Printf("  %-20s: %s\n", "Target Database", result.TargetDB)
@@ -87,7 +87,7 @@ func ShowRestorePrimaryResult(result *restoremodel.RestoreResult) {
 
 // ShowRestoreSecondaryResult menampilkan hasil restore secondary
 func ShowRestoreSecondaryResult(result *restoremodel.RestoreResult) {
-	ui.PrintSubHeader("Hasil Restore Secondary")
+	print.PrintSubHeader("Hasil Restore Secondary")
 	fmt.Println()
 
 	fmt.Printf("  %-20s: %s\n", "Target Database", result.TargetDB)
@@ -117,7 +117,7 @@ func ShowRestoreSecondaryResult(result *restoremodel.RestoreResult) {
 
 // ShowRestoreAllResult menampilkan hasil restore all databases
 func ShowRestoreAllResult(result *restoremodel.RestoreResult) {
-	ui.PrintSubHeader("Hasil Restore All Databases")
+	print.PrintSubHeader("Hasil Restore All Databases")
 	fmt.Println()
 
 	fmt.Printf("  %-20s: %s\n", "Source File", result.SourceFile)
@@ -140,7 +140,7 @@ func ShowRestoreAllResult(result *restoremodel.RestoreResult) {
 
 // ShowRestoreCustomResult menampilkan hasil restore custom (DB + DMART)
 func ShowRestoreCustomResult(result *restoremodel.RestoreResult) {
-	ui.PrintSubHeader("Hasil Restore Custom")
+	print.PrintSubHeader("Hasil Restore Custom")
 	fmt.Println()
 
 	fmt.Printf("  %-20s: %s\n", "Target Database", result.TargetDB)

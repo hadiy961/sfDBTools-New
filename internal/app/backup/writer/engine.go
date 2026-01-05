@@ -11,12 +11,12 @@ import (
 
 	"sfDBTools/internal/app/backup/model/types_backup"
 	applog "sfDBTools/internal/services/log"
+	"sfDBTools/internal/ui/progress"
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/errorlog"
 	pkghelper "sfDBTools/pkg/helper"
-	"sfDBTools/pkg/ui"
 )
 
 func summarizeStderr(stderr string, maxLines int, maxChars int) string {
@@ -151,7 +151,7 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 		return nil, err
 	}
 
-	spin := ui.NewSpinnerWithElapsed("Memproses backup database")
+	spin := progress.NewSpinnerWithElapsed("Memproses backup database")
 	spin.Start()
 	defer spin.Stop()
 

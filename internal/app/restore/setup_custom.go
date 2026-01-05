@@ -15,13 +15,13 @@ import (
 
 	"sfDBTools/internal/app/restore/display"
 	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 )
 
 func (s *Service) SetupRestoreCustomSession(ctx context.Context) error {
-	ui.Headers("Restore Custom")
+	print.PrintAppHeader("Restore Custom")
 
 	opts := s.GetCustomOptions()
 	if opts == nil {
@@ -61,7 +61,7 @@ func (s *Service) SetupRestoreCustomSession(ctx context.Context) error {
 	}
 
 	// 6. Prompt paste account detail
-	ui.PrintSubHeader("Paste Account Detail")
+	print.PrintSubHeader("Paste Account Detail")
 	fmt.Println("Paste account detail dari SFCola, lalu Enter dan tekan Ctrl+D")
 
 	pasted, err := readMultilineUntilEndToken("END")
@@ -94,7 +94,7 @@ func (s *Service) SetupRestoreCustomSession(ctx context.Context) error {
 	}
 	validExtensions := helper.ValidBackupFileExtensionsForSelection()
 
-	dbFile, err := input.SelectFileInteractive(defaultDir, "Pilih file backup untuk DATABASE", validExtensions)
+	dbFile, err := prompt.SelectFile(defaultDir, "Pilih file backup untuk DATABASE", validExtensions)
 	if err != nil {
 		return fmt.Errorf("gagal memilih file backup database: %w", err)
 	}
@@ -108,7 +108,7 @@ func (s *Service) SetupRestoreCustomSession(ctx context.Context) error {
 	opts.DatabaseFile = absDB
 
 	// 8. Pilih file backup dmart
-	dmartFile, err := input.SelectFileInteractive(defaultDir, "Pilih file backup untuk DATABASE DMART", validExtensions)
+	dmartFile, err := prompt.SelectFile(defaultDir, "Pilih file backup untuk DATABASE DMART", validExtensions)
 	if err != nil {
 		return fmt.Errorf("gagal memilih file backup dmart: %w", err)
 	}

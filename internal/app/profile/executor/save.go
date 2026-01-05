@@ -13,13 +13,13 @@ import (
 	"strings"
 
 	"sfDBTools/internal/app/profile/shared"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
 	profilehelper "sfDBTools/pkg/helper/profile"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
 
@@ -48,14 +48,14 @@ func (e *Executor) SaveProfile(mode string) error {
 		if !isInteractive {
 			return err
 		}
-		continueAnyway, askErr := input.AskYesNo(consts.ProfileSavePromptContinueDespiteDBFail, false)
+		continueAnyway, askErr := prompt.Confirm(consts.ProfileSavePromptContinueDespiteDBFail, false)
 		if askErr != nil {
 			return validation.HandleInputError(askErr)
 		}
 		if !continueAnyway {
 			return validation.ErrConnectionFailedRetry
 		}
-		ui.PrintWarning(consts.ProfileSaveWarnSavingWithInvalidConn)
+		print.PrintWarning(consts.ProfileSaveWarnSavingWithInvalidConn)
 	} else {
 		c.Close()
 		if e.Log != nil {
@@ -110,10 +110,10 @@ func (e *Executor) SaveProfile(mode string) error {
 		}
 
 		if err := os.Remove(oldFilePath); err != nil {
-			ui.PrintWarning(fmt.Sprintf(consts.ProfileWarnSavedButDeleteOldFailedFmt, newFileName, oldFilePath, err))
+			print.PrintWarning(fmt.Sprintf(consts.ProfileWarnSavedButDeleteOldFailedFmt, newFileName, oldFilePath, err))
 		}
-		ui.PrintSuccess(fmt.Sprintf(consts.ProfileSuccessSavedRenamedFmt, newFileName, shared.BuildProfileFileName(e.OriginalProfileName)))
-		ui.PrintInfo(consts.ProfileMsgConfigSavedAtPrefix + newFilePath)
+		print.PrintSuccess(fmt.Sprintf(consts.ProfileSuccessSavedRenamedFmt, newFileName, shared.BuildProfileFileName(e.OriginalProfileName)))
+		print.PrintInfo(consts.ProfileMsgConfigSavedAtPrefix + newFilePath)
 		return nil
 	}
 
@@ -121,7 +121,7 @@ func (e *Executor) SaveProfile(mode string) error {
 		return fmt.Errorf(consts.ProfileErrWriteConfigFailedFmt, err)
 	}
 
-	ui.PrintSuccess(fmt.Sprintf(consts.ProfileSuccessSavedSafelyFmt, newFileName))
-	ui.PrintInfo(consts.ProfileMsgConfigSavedAtPrefix + newFilePath)
+	print.PrintSuccess(fmt.Sprintf(consts.ProfileSuccessSavedSafelyFmt, newFileName))
+	print.PrintInfo(consts.ProfileMsgConfigSavedAtPrefix + newFilePath)
 	return nil
 }

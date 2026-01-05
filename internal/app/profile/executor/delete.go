@@ -10,11 +10,11 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
 
@@ -63,7 +63,7 @@ func (e *Executor) deletePaths(paths []string, logSuccessFmt string, showErrorOn
 				}
 			}
 			if showErrorOnFail {
-				ui.PrintError(fmt.Sprintf(consts.ProfileDeleteFailedFmt, p, err))
+				print.PrintError(fmt.Sprintf(consts.ProfileDeleteFailedFmt, p, err))
 			}
 			continue
 		}
@@ -72,12 +72,12 @@ func (e *Executor) deletePaths(paths []string, logSuccessFmt string, showErrorOn
 			e.Log.Info(fmt.Sprintf(logSuccessFmt, p))
 		}
 		// UI success selalu pakai message yang sama seperti sebelumnya.
-		ui.PrintSuccess(fmt.Sprintf(consts.ProfileDeleteDeletedFmt, p))
+		print.PrintSuccess(fmt.Sprintf(consts.ProfileDeleteDeletedFmt, p))
 	}
 }
 
 func (e *Executor) PromptDeleteProfile() error {
-	ui.Headers(consts.ProfileUIHeaderDelete)
+	print.PrintAppHeader(consts.ProfileUIHeaderDelete)
 	isInteractive := e.isInteractiveMode()
 
 	force := false
@@ -110,7 +110,7 @@ func (e *Executor) PromptDeleteProfile() error {
 		}
 
 		if len(validPaths) == 0 {
-			ui.PrintInfo(consts.ProfileDeleteNoValidProfiles)
+			print.PrintInfo(consts.ProfileDeleteNoValidProfiles)
 			return nil
 		}
 
@@ -119,17 +119,17 @@ func (e *Executor) PromptDeleteProfile() error {
 			return nil
 		}
 
-		ui.PrintWarning(consts.ProfileDeleteWillDeleteHeader)
+		print.PrintWarning(consts.ProfileDeleteWillDeleteHeader)
 		for _, d := range displayNames {
-			ui.PrintWarning(consts.ProfileDeleteListPrefix + d)
+			print.PrintWarning(consts.ProfileDeleteListPrefix + d)
 		}
 
-		ok, err := input.AskYesNo(fmt.Sprintf(consts.ProfileDeleteConfirmCountFmt, len(validPaths)), false)
+		ok, err := prompt.Confirm(fmt.Sprintf(consts.ProfileDeleteConfirmCountFmt, len(validPaths)), false)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
 		if !ok {
-			ui.PrintInfo(consts.ProfileDeleteCancelledByUser)
+			print.PrintInfo(consts.ProfileDeleteCancelledByUser)
 			return nil
 		}
 
@@ -145,11 +145,11 @@ func (e *Executor) PromptDeleteProfile() error {
 
 	filtered := filterProfileConfigFiles(files)
 	if len(filtered) == 0 {
-		ui.PrintInfo(consts.ProfileDeleteNoConfigFiles)
+		print.PrintInfo(consts.ProfileDeleteNoConfigFiles)
 		return nil
 	}
 
-	idxs, err := input.ShowMultiSelect(consts.ProfileDeleteSelectFilesPrompt, filtered)
+	_, idxs, err := prompt.SelectMany(consts.ProfileDeleteSelectFilesPrompt, filtered, nil)
 	if err != nil {
 		return validation.HandleInputError(err)
 	}
@@ -162,17 +162,17 @@ func (e *Executor) PromptDeleteProfile() error {
 	}
 
 	if len(selected) == 0 {
-		ui.PrintInfo(consts.ProfileDeleteNoFilesSelected)
+		print.PrintInfo(consts.ProfileDeleteNoFilesSelected)
 		return nil
 	}
 
 	if !force {
-		ok, err := input.AskYesNo(fmt.Sprintf(consts.ProfileDeleteConfirmFilesCountFmt, len(selected)), false)
+		ok, err := prompt.Confirm(fmt.Sprintf(consts.ProfileDeleteConfirmFilesCountFmt, len(selected)), false)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
 		if !ok {
-			ui.PrintInfo(consts.ProfileDeleteCancelledByUser)
+			print.PrintInfo(consts.ProfileDeleteCancelledByUser)
 			return nil
 		}
 	}

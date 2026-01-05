@@ -9,14 +9,15 @@ package cleanup
 import (
 	"fmt"
 	"sfDBTools/internal/app/backup/model/types_backup"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/table"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/global"
-	"sfDBTools/pkg/ui"
 )
 
 // displayCleanupOptions menampilkan konfigurasi cleanup yang akan dijalankan
 func (s *Service) displayCleanupOptions() {
-	ui.PrintSubHeader("Konfigurasi Cleanup")
+	print.PrintSubHeader("Konfigurasi Cleanup")
 
 	data := [][]string{
 		{"Base Directory", s.Config.Backup.Output.BaseDirectory},
@@ -31,7 +32,7 @@ func (s *Service) displayCleanupOptions() {
 		data = append(data, []string{"Schedule", s.Config.Backup.Cleanup.Schedule})
 	}
 
-	ui.FormatTable([]string{"Setting", "Value"}, data)
+	table.Render([]string{"Setting", "Value"}, data)
 }
 
 // logDryRunSummary mencatat ringkasan file yang akan dihapus dalam mode dry-run.

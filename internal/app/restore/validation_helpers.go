@@ -9,9 +9,9 @@ import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/domain"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"strings"
 )
 
@@ -20,7 +20,7 @@ func (s *Service) validateApplicationPassword() error {
 	s.Log.Info("Meminta password aplikasi untuk validasi restore primary")
 
 	// Prompt password
-	password, err := input.PromptPassword("Masukkan password aplikasi untuk melanjutkan restore primary:")
+	password, err := prompt.PromptPassword("Masukkan password aplikasi untuk melanjutkan restore primary:")
 	if err != nil {
 		return fmt.Errorf("gagal membaca password: %w", err)
 	}
@@ -32,7 +32,7 @@ func (s *Service) validateApplicationPassword() error {
 	}
 
 	s.Log.Info("Password aplikasi valid, melanjutkan restore")
-	ui.PrintSuccess("✓ Password aplikasi valid")
+	print.PrintSuccess("✓ Password aplikasi valid")
 
 	return nil
 }

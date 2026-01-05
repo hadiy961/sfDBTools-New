@@ -10,13 +10,13 @@ import (
 	"fmt"
 	"path/filepath"
 	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
 	"strings"
 )
 
 // SetupRestoreSecondarySession melakukan setup untuk restore secondary session
 func (s *Service) SetupRestoreSecondarySession(ctx context.Context) error {
-	ui.Headers("Restore Secondary Database")
+	print.PrintAppHeader("Restore Secondary Database")
 	if s.RestoreSecondaryOpts == nil {
 		return fmt.Errorf("opsi secondary tidak tersedia")
 	}

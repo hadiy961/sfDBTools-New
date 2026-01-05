@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/ui"
 	"strings"
 	"time"
 )
@@ -70,14 +70,14 @@ func (e *SecondaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreR
 	// Dry-run: validate inputs only (no restore)
 	if opts.DryRun {
 		logger.Info("Mode DRY-RUN: validasi file tanpa restore...")
-		ui.PrintInfo(fmt.Sprintf("  Source File: %s", sourceFile))
-		ui.PrintInfo(fmt.Sprintf("  Target DB: %s", opts.TargetDB))
+		print.PrintInfo(fmt.Sprintf("  Source File: %s", sourceFile))
+		print.PrintInfo(fmt.Sprintf("  Target DB: %s", opts.TargetDB))
 		if opts.IncludeDmart {
 			if strings.TrimSpace(companionSourceFile) != "" {
-				ui.PrintInfo(fmt.Sprintf("  Companion File: %s", companionSourceFile))
-				ui.PrintInfo(fmt.Sprintf("  Companion DB: %s", opts.TargetDB+consts.SuffixDmart))
+				print.PrintInfo(fmt.Sprintf("  Companion File: %s", companionSourceFile))
+				print.PrintInfo(fmt.Sprintf("  Companion DB: %s", opts.TargetDB+consts.SuffixDmart))
 			} else {
-				ui.PrintWarning("  Companion (dmart): not available / skipped")
+				print.PrintWarning("  Companion (dmart): not available / skipped")
 			}
 		}
 		result.Success = true

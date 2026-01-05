@@ -14,12 +14,12 @@ import (
 	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 	appconfig "sfDBTools/internal/services/config"
 	applog "sfDBTools/internal/services/log"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/servicehelper"
-	"sfDBTools/pkg/ui"
 )
 
 // Error definitions
@@ -87,7 +87,7 @@ func (s *Service) ExecuteScan(config dbscanmodel.ScanEntryConfig) error {
 
 	// Print success message jika ada
 	if config.SuccessMsg != "" {
-		ui.PrintSuccess(config.SuccessMsg)
+		print.PrintSuccess(config.SuccessMsg)
 	}
 
 	return nil
@@ -116,7 +116,7 @@ func (s *Service) executeScanWithClients(
 	isBackground bool,
 ) (*dbscanmodel.ScanResult, map[string]dbscanmodel.DatabaseDetailInfo, error) {
 	if !isBackground {
-		ui.PrintSubHeader("Memulai Proses Scanning Database")
+		print.PrintSubHeader("Memulai Proses Scanning Database")
 	}
 
 	// Ambil server info

@@ -10,9 +10,9 @@ import (
 
 	"sfDBTools/internal/app/profile/shared"
 	"sfDBTools/internal/domain"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/ui"
 )
 
 func (r *Runner) runCreateFlow(mode string) error {
@@ -29,13 +29,13 @@ func (r *Runner) runCreateFlow(mode string) error {
 		r.ProfileInfo.Name = helper.TrimProfileSuffix(r.ProfileInfo.Name)
 		if r.CheckConfigurationNameUnique != nil {
 			if err := r.CheckConfigurationNameUnique(mode); err != nil {
-				ui.PrintError(err.Error())
+				print.PrintError(err.Error())
 				// Jika nama dari flag/env ternyata bentrok, minta user input nama baru.
 				if err2 := r.promptDBConfigName(mode); err2 != nil {
 					return err2
 				}
 			} else {
-				ui.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + shared.BuildProfileFileName(r.ProfileInfo.Name))
+				print.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + shared.BuildProfileFileName(r.ProfileInfo.Name))
 			}
 		}
 	}

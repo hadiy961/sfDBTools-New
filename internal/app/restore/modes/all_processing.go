@@ -12,7 +12,7 @@ import (
 	"io"
 	"sfDBTools/internal/app/restore/helpers"
 	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
 	"strings"
 	"time"
 )
@@ -65,13 +65,13 @@ func (e *AllExecutor) executeDryRun(ctx context.Context, opts *restoremodel.Rest
 	}
 
 	// Print hasil analisis
-	ui.PrintSuccess("\n📊 Hasil Analisis File Dump:")
-	ui.PrintInfo(fmt.Sprintf("Total database yang akan di-restore: %d", len(dbStats)))
+	print.PrintSuccess("\n📊 Hasil Analisis File Dump:")
+	print.PrintInfo(fmt.Sprintf("Total database yang akan di-restore: %d", len(dbStats)))
 
 	if len(dbStats) > 0 {
-		ui.PrintInfo("\nDatabase yang akan di-restore:")
+		print.PrintInfo("\nDatabase yang akan di-restore:")
 		for db, lines := range dbStats {
-			ui.PrintInfo(fmt.Sprintf("  • %s (%d baris)", db, lines))
+			print.PrintInfo(fmt.Sprintf("  • %s (%d baris)", db, lines))
 		}
 	}
 

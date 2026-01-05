@@ -10,12 +10,13 @@ import (
 	"os"
 	"os/signal"
 	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/services/log"
-	"sfDBTools/pkg/ui"
+	applog "sfDBTools/internal/services/log"
+	"sfDBTools/internal/ui/print"
 	"syscall"
 
-	"github.com/spf13/cobra"
 	restoremodel "sfDBTools/internal/app/restore/model"
+
+	"github.com/spf13/cobra"
 )
 
 type restoreSetupFunc func(ctx context.Context) error
@@ -132,7 +133,7 @@ func executeRestoreCommand(
 
 	show(result)
 
-	ui.PrintSuccess(successMsg)
+	print.PrintSuccess(successMsg)
 	logger.Info(successMsg)
 	return nil
 }

@@ -2,14 +2,14 @@
 // Deskripsi : Engine menu terpusat untuk edit opsi backup (interactive)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-31
-// Last Modified : 2025-12-31
+// Last Modified : 2026-01-05
 
 package setup
 
 import (
 	"fmt"
 
-	"sfDBTools/pkg/input"
+	"sfDBTools/internal/ui/prompt"
 )
 
 type editMenuItem struct {
@@ -27,7 +27,7 @@ func (s *Setup) runEditMenuInteractive(items []editMenuItem) error {
 	}
 	options = append(options, "Kembali")
 
-	choice, err := input.SelectSingleFromList(options, "Pilih opsi yang ingin diubah")
+	choice, _, err := prompt.SelectOne("Pilih opsi yang ingin diubah", options, -1)
 	if err != nil {
 		return fmt.Errorf("gagal memilih opsi untuk diubah: %w", err)
 	}

@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	scriptmodel "sfDBTools/internal/app/script/model"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
 	"strings"
 )
 
@@ -34,7 +34,7 @@ func ExtractBundle(opts scriptmodel.ScriptExtractOptions) error {
 	}
 
 	// Proteksi ganda: setelah key, wajib password aplikasi.
-	password, err := input.PromptPassword("Masukkan password aplikasi untuk melanjutkan extract:")
+	password, err := prompt.AskPassword("Masukkan password aplikasi untuk melanjutkan extract:", nil)
 	if err != nil {
 		return fmt.Errorf("gagal membaca password aplikasi: %w", err)
 	}

@@ -9,8 +9,8 @@ import (
 	"context"
 	"fmt"
 	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/ui"
 	"strings"
 )
 
@@ -82,7 +82,7 @@ func (r *sourceFileResolver) backupCompanionIfExists() (companionSourceFile stri
 	}
 
 	if !exists {
-		ui.PrintWarning(fmt.Sprintf("⚠️  Companion %s tidak ditemukan (skip)", companionDB))
+		print.PrintWarning(fmt.Sprintf("⚠️  Companion %s tidak ditemukan (skip)", companionDB))
 		return "", nil
 	}
 
@@ -92,7 +92,7 @@ func (r *sourceFileResolver) backupCompanionIfExists() (companionSourceFile stri
 		if r.stopOnError {
 			return "", fmt.Errorf("gagal backup companion %s: %w", companionDB, err)
 		}
-		ui.PrintWarning(fmt.Sprintf("⚠️  Gagal backup companion %s: %v", companionDB, err))
+		print.PrintWarning(fmt.Sprintf("⚠️  Gagal backup companion %s: %v", companionDB, err))
 		return "", nil
 	}
 

@@ -10,14 +10,15 @@ import (
 	"fmt"
 	"path/filepath"
 	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
+	"sfDBTools/internal/ui/table"
 	"strings"
 )
 
 // SetupRestoreAllSession melakukan setup untuk restore all databases session
 func (s *Service) SetupRestoreAllSession(ctx context.Context) error {
-	ui.Headers("Restore All Databases")
+	print.PrintAppHeader("Restore All Databases")
 	allowInteractive := !s.RestoreAllOpts.Force
 
 	if err := s.prepareRestoreAllPrereqs(ctx, allowInteractive); err != nil {
@@ -75,7 +76,7 @@ func (s *Service) prepareRestoreAllPrereqs(ctx context.Context, allowInteractive
 
 	if allowInteractive {
 		defaultContinue := !s.RestoreAllOpts.StopOnError
-		cont, err := input.AskYesNo("Lanjutkan meski ada error? (continue-on-error)", defaultContinue)
+		cont, err := prompt.Confirm("Lanjutkan meski ada error? (continue-on-error)", defaultContinue)
 		if err != nil {
 			return fmt.Errorf("gagal resolve opsi continue-on-error: %w", err)
 		}
@@ -95,7 +96,7 @@ func (s *Service) promptSkipGrantsIfInteractive(allowInteractive bool) error {
 	}
 
 	defaultSkip := s.RestoreAllOpts.SkipGrants
-	skip, err := input.AskYesNo("Skip restore user grants?", defaultSkip)
+	skip, err := prompt.Confirm("Skip restore user grants?", defaultSkip)
 	if err != nil {
 		return fmt.Errorf("gagal resolve opsi skip-grants: %w", err)
 	}
@@ -108,8 +109,8 @@ func (s *Service) warnRestoreAll() {
 		return
 	}
 
-	ui.PrintWarning("⚠️  PERINGATAN: Operasi ini akan restore SEMUA database dari file dump!")
-	ui.PrintWarning("    Database yang sudah ada akan ditimpa (jika drop-target aktif)")
+	print.PrintWarning("⚠️  PERINGATAN: Operasi ini akan restore SEMUA database dari file dump!")
+	print.PrintWarning("    Database yang sudah ada akan ditimpa (jika drop-target aktif)")
 	if len(s.RestoreAllOpts.ExcludeDBs) > 0 {
 		s.Log.Infof("Database yang akan di-exclude: %v", s.RestoreAllOpts.ExcludeDBs)
 	}
@@ -120,13 +121,10 @@ func (s *Service) warnRestoreAll() {
 
 func (s *Service) confirmRestoreAllLoop() error {
 	for {
-		ui.PrintSubHeader("Konfirmasi Restore")
-		ui.FormatTable([]string{"Parameter", "Value"}, s.restoreAllSummaryRows())
+		print.PrintSubHeader("Konfirmasi Restore")
+		table.Render([]string{"Parameter", "Value"}, s.restoreAllSummaryRows())
 
-		action, err := input.SelectSingleFromList(
-			[]string{"Lanjutkan", "Ubah opsi", "Batalkan"},
-			"Pilih aksi",
-		)
+		action, _, err := prompt.SelectOne("Pilih aksi", []string{"Lanjutkan", "Ubah opsi", "Batalkan"}, 0)
 		if err != nil {
 			return fmt.Errorf("gagal memilih aksi konfirmasi: %w", err)
 		}
@@ -134,7 +132,7 @@ func (s *Service) confirmRestoreAllLoop() error {
 		switch action {
 		case "Lanjutkan":
 			if strings.TrimSpace(s.RestoreAllOpts.Ticket) == "" {
-				ui.PrintError("Ticket number wajib diisi sebelum melanjutkan.")
+				print.PrintError("Ticket number wajib diisi sebelum melanjutkan.")
 				continue
 			}
 			return nil

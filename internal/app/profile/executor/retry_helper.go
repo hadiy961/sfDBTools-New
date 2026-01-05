@@ -7,21 +7,21 @@
 package executor
 
 import (
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
 
 func (e *Executor) handleConnectionFailedRetry(retryWarningMsg string, cancelInfoMsg string) (bool, error) {
-	retryInput, askErr := input.AskYesNo(consts.ProfilePromptRetryInputConfig, true)
+	retryInput, askErr := prompt.Confirm(consts.ProfilePromptRetryInputConfig, true)
 	if askErr != nil {
 		return false, validation.HandleInputError(askErr)
 	}
 	if retryInput {
-		ui.PrintWarning(retryWarningMsg)
+		print.PrintWarning(retryWarningMsg)
 		return true, nil
 	}
-	ui.PrintInfo(cancelInfoMsg)
+	print.PrintInfo(cancelInfoMsg)
 	return false, validation.ErrUserCancelled
 }

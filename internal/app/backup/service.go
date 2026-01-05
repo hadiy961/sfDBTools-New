@@ -13,13 +13,14 @@ import (
 	"sfDBTools/internal/domain"
 	appconfig "sfDBTools/internal/services/config"
 	applog "sfDBTools/internal/services/log"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/progress"
 	"sfDBTools/pkg/backuphelper"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/servicehelper"
-	"sfDBTools/pkg/ui"
 )
 
 // Service adalah service utama untuk backup operations
@@ -134,19 +135,19 @@ func (s *Service) HandleShutdown() {
 	})
 
 	if shouldRemoveFile {
-		ui.RunWithSpinnerSuspended(func() {
+		progress.RunWithSpinnerSuspended(func() {
 			s.Log.Warn("Proses backup dihentikan, melakukan rollback...")
 			if err := fsops.RemoveFile(fileToRemove); err != nil {
 				s.Log.Errorf("Gagal menghapus file backup: %v", err)
-				ui.PrintError(fmt.Sprintf("⚠ WARNING: File backup partial mungkin masih tersisa: %s", fileToRemove))
-				ui.PrintError("Silakan hapus manual jika diperlukan.")
+				print.PrintError(fmt.Sprintf("⚠ WARNING: File backup partial mungkin masih tersisa: %s", fileToRemove))
+				print.PrintError("Silakan hapus manual jika diperlukan.")
 			} else {
 				s.Log.Infof("File backup yang belum selesai berhasil dihapus: %s", fileToRemove)
 				s.Log.Info("File backup partial berhasil dihapus")
 			}
 		})
 	} else {
-		ui.RunWithSpinnerSuspended(func() {
+		progress.RunWithSpinnerSuspended(func() {
 			s.Log.Warn("Menerima signal interrupt, tidak ada proses backup aktif")
 		})
 	}

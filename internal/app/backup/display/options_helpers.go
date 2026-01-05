@@ -1,8 +1,8 @@
 package display
 
 import (
+	"sfDBTools/internal/ui/text"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/ui"
 )
 
 func (d *OptionsDisplayer) isSingleMode() bool {
@@ -17,7 +17,7 @@ func (d *OptionsDisplayer) getExportUserStatus() string {
 	if d.options.ExcludeUser {
 		return "No"
 	}
-	return ui.ColorText("Yes", consts.UIColorGreen)
+	return text.ColorText("Yes", consts.UIColorGreen)
 }
 
 func (d *OptionsDisplayer) getFilenameLabel() string {

@@ -9,7 +9,7 @@ import (
 	"context"
 	"fmt"
 	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
 	"time"
 )
 
@@ -51,12 +51,12 @@ func (v *dryRunValidator) validateDatabaseStatus(dbName string) (bool, error) {
 
 // printSummary mencetak ringkasan validasi dry-run
 func (v *dryRunValidator) printSummary(info map[string]string, warnings []string) {
-	ui.PrintSuccess("\n✓ Validasi File Backup:")
+	print.PrintSuccess("\n✓ Validasi File Backup:")
 	for key, value := range info {
-		ui.PrintInfo(fmt.Sprintf("  %s: %s", key, value))
+		print.PrintInfo(fmt.Sprintf("  %s: %s", key, value))
 	}
 	for _, warning := range warnings {
-		ui.PrintWarning(fmt.Sprintf("  %s", warning))
+		print.PrintWarning(fmt.Sprintf("  %s", warning))
 	}
 }
 

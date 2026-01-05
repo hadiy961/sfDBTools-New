@@ -12,13 +12,13 @@ import (
 	"strings"
 
 	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/validation"
 )
 
 func pickScopeInteractive(defaultScope scheduler.Scope) (scheduler.Scope, error) {
-	ui.PrintInfo("Pilih scope unit")
+	print.PrintInfo("Pilih scope unit")
 	scopeOptions := []string{"auto", "user", "system", "both"}
 	def := strings.ToLower(string(defaultScope))
 	if def == "" {
@@ -28,11 +28,11 @@ func pickScopeInteractive(defaultScope scheduler.Scope) (scheduler.Scope, error)
 		def = "auto"
 	}
 	orderedScopes := reorderWithDefault(scopeOptions, def)
-	idx, err := input.ShowMenu("Scope unit?", orderedScopes)
+	selectedScopeStr, _, err := prompt.SelectOne("Scope unit?", orderedScopes, 0)
 	if err != nil {
 		return "", validation.HandleInputError(err)
 	}
-	selectedScope, err := scheduler.NormalizeScope(orderedScopes[idx-1])
+	selectedScope, err := scheduler.NormalizeScope(selectedScopeStr)
 	if err != nil {
 		return "", err
 	}
@@ -45,7 +45,7 @@ func pickUnitInteractive(ctx context.Context, scope scheduler.Scope) (string, sc
 		return "", usedScope, err
 	}
 	if len(units) == 0 {
-		ui.PrintWarning("Tidak ada unit sfdbtools ditemukan")
+		print.PrintWarn("Tidak ada unit sfdbtools ditemukan")
 		return "", usedScope, nil
 	}
 
@@ -56,7 +56,7 @@ func pickUnitInteractive(ctx context.Context, scope scheduler.Scope) (string, sc
 		byLabel[u.Label] = u
 	}
 	sort.Strings(labels)
-	picked, err := input.SelectSingleFromList(labels, "Pilih unit")
+	picked, _, err := prompt.SelectOne("Pilih unit", labels, -1)
 	if err != nil {
 		return "", usedScope, validation.HandleInputError(err)
 	}
@@ -79,13 +79,13 @@ func RunInteractiveStatus(ctx context.Context, scope scheduler.Scope, scopeSet b
 	if unit == "" {
 		return nil
 	}
-	ui.PrintInfo(fmt.Sprintf("Scope: %s", usedScope))
+	print.PrintInfo(fmt.Sprintf("Scope: %s", usedScope))
 	out, used, err := Status(ctx, scope, unit)
 	if err != nil {
 		return err
 	}
 	if used != "" && used != usedScope {
-		ui.PrintInfo(fmt.Sprintf("Scope: %s", used))
+		print.PrintInfo(fmt.Sprintf("Scope: %s", used))
 	}
 	fmt.Print(out)
 	return nil
@@ -106,18 +106,18 @@ func RunInteractiveLogs(ctx context.Context, scope scheduler.Scope, scopeSet boo
 	if unit == "" {
 		return nil
 	}
-	ui.PrintInfo(fmt.Sprintf("Scope: %s", usedScope))
+	print.PrintInfo(fmt.Sprintf("Scope: %s", usedScope))
 
 	// Jika user belum set flag, tanya interaktif.
 	if !linesSet {
-		v, askErr := input.AskInt("Jumlah baris log?", lines, nil)
+		v, askErr := prompt.AskInt("Jumlah baris log?", lines, nil)
 		if askErr != nil {
 			return validation.HandleInputError(askErr)
 		}
 		lines = v
 	}
 	if !followSet {
-		v, askErr := input.AskYesNo("Ikuti log realtime (-f)?", follow)
+		v, askErr := prompt.Confirm("Ikuti log realtime (-f)?", follow)
 		if askErr != nil {
 			return validation.HandleInputError(askErr)
 		}
@@ -129,7 +129,7 @@ func RunInteractiveLogs(ctx context.Context, scope scheduler.Scope, scopeSet boo
 		return err
 	}
 	if used != "" && used != usedScope {
-		ui.PrintInfo(fmt.Sprintf("Scope: %s", used))
+		print.PrintInfo(fmt.Sprintf("Scope: %s", used))
 	}
 	fmt.Print(out)
 	return nil
@@ -150,13 +150,13 @@ func RunInteractiveStop(ctx context.Context, scope scheduler.Scope, scopeSet boo
 	if unit == "" {
 		return nil
 	}
-	ui.PrintInfo(fmt.Sprintf("Scope: %s", usedScope))
-	ok, err := input.AskYesNo(fmt.Sprintf("Stop unit %s?", unit), false)
+	print.PrintInfo(fmt.Sprintf("Scope: %s", usedScope))
+	ok, err := prompt.Confirm(fmt.Sprintf("Stop unit %s?", unit), false)
 	if err != nil {
 		return validation.HandleInputError(err)
 	}
 	if !ok {
-		ui.PrintInfo("Dibatalkan")
+		print.PrintInfo("Dibatalkan")
 		return nil
 	}
 
@@ -165,10 +165,10 @@ func RunInteractiveStop(ctx context.Context, scope scheduler.Scope, scopeSet boo
 		return err
 	}
 	if used != "" && used != usedScope {
-		ui.PrintInfo(fmt.Sprintf("Scope: %s", used))
+		print.PrintInfo(fmt.Sprintf("Scope: %s", used))
 	}
 	fmt.Print(out)
-	ui.PrintSuccess("Stop command dikirim")
+	print.PrintSuccess("Stop command dikirim")
 	return nil
 }
 
@@ -187,13 +187,13 @@ func RunInteractiveRemove(ctx context.Context, scope scheduler.Scope, scopeSet b
 	if unit == "" {
 		return "", "", nil
 	}
-	ui.PrintInfo(fmt.Sprintf("Scope: %s", usedScope))
-	ok, err := input.AskYesNo(fmt.Sprintf("Hapus job %s?", unit), false)
+	print.PrintInfo(fmt.Sprintf("Scope: %s", usedScope))
+	ok, err := prompt.Confirm(fmt.Sprintf("Hapus job %s?", unit), false)
 	if err != nil {
 		return "", "", validation.HandleInputError(err)
 	}
 	if !ok {
-		ui.PrintInfo("Dibatalkan")
+		print.PrintInfo("Dibatalkan")
 		return "", "", validation.ErrUserCancelled
 	}
 
@@ -202,12 +202,12 @@ func RunInteractiveRemove(ctx context.Context, scope scheduler.Scope, scopeSet b
 		purge = false
 		if scope == scheduler.ScopeSystem {
 			if isRoot {
-				purge, err = input.AskYesNo("Sekalian hapus unit file (/etc/systemd/system) bila ada?", false)
+				purge, err = prompt.Confirm("Sekalian hapus unit file (/etc/systemd/system) bila ada?", false)
 				if err != nil {
 					return "", "", validation.HandleInputError(err)
 				}
 			} else {
-				ui.PrintInfo("Tip: jalankan dengan sudo untuk --purge")
+				print.PrintInfo("Tip: jalankan dengan sudo untuk --purge")
 			}
 		}
 	}

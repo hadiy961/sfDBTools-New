@@ -8,8 +8,9 @@ import (
 	"sfDBTools/internal/autoupdate"
 	appdeps "sfDBTools/internal/cli/deps"
 	config "sfDBTools/internal/services/config"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/progress"
 	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/ui"
 	"time"
 
 	applog "sfDBTools/internal/services/log"
@@ -50,9 +51,9 @@ func main() {
 		tmpLogger := applog.NewLogger(nil)
 
 		// Tampilkan spinner hanya jika auto-update aktif dan tidak dalam quiet/daemon.
-		var sp *ui.SpinnerWithElapsed
+		var sp *progress.Spinner
 		if autoupdate.AutoUpdateEnabled() && !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) {
-			sp = ui.NewSpinnerWithElapsed("Cek update")
+			sp = progress.NewSpinnerWithElapsed("Cek update")
 			sp.Start()
 		}
 		if err := autoupdate.MaybeAutoUpdate(ctx, tmpLogger); err != nil {
@@ -65,7 +66,7 @@ func main() {
 	}
 
 	if !quiet {
-		ui.Headers("Main Menu")
+		print.PrintAppHeader("Main Menu")
 	}
 
 	// 1. Muat Konfigurasi (skip saat completion/version agar output bersih)

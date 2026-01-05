@@ -12,11 +12,11 @@ import (
 	profilemodel "sfDBTools/internal/app/profile/model"
 	"sfDBTools/internal/app/profile/shared"
 	"sfDBTools/internal/domain"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
 
@@ -83,7 +83,7 @@ func (r *Runner) runEditFlow() error {
 		}
 		r.ProfileShow = prevShow
 
-		action, err := input.SelectSingleFromList([]string{consts.ProfileActionEditData, consts.ProfileActionCancel}, consts.ProfilePromptAction)
+		action, _, err := prompt.SelectOne(consts.ProfilePromptAction, []string{consts.ProfileActionEditData, consts.ProfileActionCancel}, -1)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -101,6 +101,6 @@ func (r *Runner) runEditFlow() error {
 		return err
 	}
 
-	ui.PrintSubHeader(consts.ProfileMsgChangeSummaryPrefix + r.ProfileInfo.Name)
+	print.PrintSubHeader(consts.ProfileMsgChangeSummaryPrefix + r.ProfileInfo.Name)
 	return nil
 }

@@ -2,7 +2,7 @@
 // Deskripsi : Kumpulan handler interaktif untuk opsi backup (ticket, toggle, filter, selection, profile)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-31
-// Last Modified : 2025-12-31
+// Last Modified : 2026-01-05
 
 package setup
 
@@ -13,11 +13,11 @@ import (
 	"time"
 
 	"sfDBTools/internal/app/backup/selection"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	profilehelper "sfDBTools/pkg/helper/profile"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 )
 
 func (s *Setup) changeBackupTicketInteractive() error {
@@ -27,16 +27,20 @@ func (s *Setup) changeBackupTicketInteractive() error {
 		defaultTicket = fmt.Sprintf("bk-%d", time.Now().UnixNano())
 	}
 
-	val, err := input.AskString("Ticket number", defaultTicket, func(ans interface{}) error {
-		v, ok := ans.(string)
-		if !ok {
-			return fmt.Errorf("input tidak valid")
-		}
-		if strings.TrimSpace(v) == "" {
-			return fmt.Errorf("ticket number tidak boleh kosong")
-		}
-		return nil
-	})
+	val, err := prompt.AskText(
+		"Ticket number",
+		prompt.WithDefault(defaultTicket),
+		prompt.WithValidator(func(ans interface{}) error {
+			v, ok := ans.(string)
+			if !ok {
+				return fmt.Errorf("input tidak valid")
+			}
+			if strings.TrimSpace(v) == "" {
+				return fmt.Errorf("ticket number tidak boleh kosong")
+			}
+			return nil
+		}),
+	)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah ticket number: %w", err)
 	}
@@ -46,7 +50,7 @@ func (s *Setup) changeBackupTicketInteractive() error {
 }
 
 func (s *Setup) changeBackupCaptureGTIDInteractive() error {
-	val, err := input.AskYesNo("Capture GTID?", s.Options.CaptureGTID)
+	val, err := prompt.Confirm("Capture GTID?", s.Options.CaptureGTID)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi capture-gtid: %w", err)
 	}
@@ -55,7 +59,7 @@ func (s *Setup) changeBackupCaptureGTIDInteractive() error {
 }
 
 func (s *Setup) changeBackupExportUserGrantsInteractive() error {
-	val, err := input.AskYesNo("Export user grants?", !s.Options.ExcludeUser)
+	val, err := prompt.Confirm("Export user grants?", !s.Options.ExcludeUser)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi export user grants: %w", err)
 	}
@@ -64,7 +68,7 @@ func (s *Setup) changeBackupExportUserGrantsInteractive() error {
 }
 
 func (s *Setup) changeBackupExcludeSystemInteractive() error {
-	val, err := input.AskYesNo("Exclude system databases?", s.Options.Filter.ExcludeSystem)
+	val, err := prompt.Confirm("Exclude system databases?", s.Options.Filter.ExcludeSystem)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi exclude-system: %w", err)
 	}
@@ -73,7 +77,7 @@ func (s *Setup) changeBackupExcludeSystemInteractive() error {
 }
 
 func (s *Setup) changeBackupExcludeEmptyInteractive() error {
-	val, err := input.AskYesNo("Exclude empty databases?", s.Options.Filter.ExcludeEmpty)
+	val, err := prompt.Confirm("Exclude empty databases?", s.Options.Filter.ExcludeEmpty)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi exclude-empty: %w", err)
 	}
@@ -82,7 +86,7 @@ func (s *Setup) changeBackupExcludeEmptyInteractive() error {
 }
 
 func (s *Setup) changeBackupExcludeDataInteractive() error {
-	val, err := input.AskYesNo("Exclude data (schema only)?", s.Options.Filter.ExcludeData)
+	val, err := prompt.Confirm("Exclude data (schema only)?", s.Options.Filter.ExcludeData)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi exclude-data: %w", err)
 	}
@@ -91,7 +95,7 @@ func (s *Setup) changeBackupExcludeDataInteractive() error {
 }
 
 func (s *Setup) changeBackupIncludeDmartInteractive() error {
-	val, err := input.AskYesNo("Include DMart?", s.Options.IncludeDmart)
+	val, err := prompt.Confirm("Include DMart?", s.Options.IncludeDmart)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi include-dmart: %w", err)
 	}
@@ -103,7 +107,7 @@ func (s *Setup) changeBackupIncludeDmartInteractive() error {
 
 func (s *Setup) changeBackupClientCodeInteractive() error {
 	current := strings.TrimSpace(s.Options.ClientCode)
-	val, err := input.AskString("Client code (kosongkan untuk nonaktif)", current, nil)
+	val, err := prompt.AskText("Client code (kosongkan untuk nonaktif)", prompt.WithDefault(current))
 	if err != nil {
 		return fmt.Errorf("gagal mengubah client code: %w", err)
 	}
@@ -123,16 +127,16 @@ func (s *Setup) changeBackupDatabaseSelectionResetInteractive(resetCompanion boo
 	if resetCompanion {
 		s.Options.CompanionStatus = nil
 	}
-	ui.PrintInfo("Database selection di-reset. Anda akan diminta memilih database lagi.")
-	ui.WaitForEnter("Tekan Enter untuk lanjut...")
+	print.PrintInfo("Database selection di-reset. Anda akan diminta memilih database lagi.")
+	prompt.WaitForEnter("Tekan Enter untuk lanjut...")
 	return nil
 }
 
 func (s *Setup) changeBackupIncludeSelectionResetInteractive() error {
 	s.Options.Filter.IncludeDatabases = nil
 	s.Options.Filter.IncludeFile = ""
-	ui.PrintInfo("Include selection di-reset. Mode interaktif (multi-select) akan muncul lagi.")
-	ui.WaitForEnter("Tekan Enter untuk lanjut...")
+	print.PrintInfo("Include selection di-reset. Mode interaktif (multi-select) akan muncul lagi.")
+	prompt.WaitForEnter("Tekan Enter untuk lanjut...")
 	return nil
 }
 
@@ -148,14 +152,14 @@ func (s *Setup) changeBackupIncludeSelectionSelectDatabasesInteractive(ctx conte
 
 	s.Options.Filter.IncludeDatabases = selected
 	s.Options.Filter.IncludeFile = ""
-	ui.PrintInfo(fmt.Sprintf("Dipilih %d database untuk backup", len(selected)))
-	ui.WaitForEnter("Tekan Enter untuk lanjut...")
+	print.PrintInfo(fmt.Sprintf("Dipilih %d database untuk backup", len(selected)))
+	prompt.WaitForEnter("Tekan Enter untuk lanjut...")
 	return nil
 }
 
 func (s *Setup) changeBackupIncludeSelectionIncludeListManualInteractive() error {
 	current := strings.Join(s.Options.Filter.IncludeDatabases, ",")
-	val, err := input.AskString("Include list (pisahkan dengan koma, kosongkan untuk reset)", current, nil)
+	val, err := prompt.AskText("Include list (pisahkan dengan koma, kosongkan untuk reset)", prompt.WithDefault(current))
 	if err != nil {
 		return fmt.Errorf("gagal mengubah include list: %w", err)
 	}
@@ -180,7 +184,7 @@ func (s *Setup) changeBackupIncludeSelectionIncludeListManualInteractive() error
 
 func (s *Setup) changeBackupIncludeSelectionIncludeFileInteractive() error {
 	current := strings.TrimSpace(s.Options.Filter.IncludeFile)
-	val, err := input.AskString("Include file (path; kosongkan untuk reset)", current, nil)
+	val, err := prompt.AskText("Include file (path; kosongkan untuk reset)", prompt.WithDefault(current))
 	if err != nil {
 		return fmt.Errorf("gagal mengubah include file: %w", err)
 	}
@@ -194,7 +198,7 @@ func (s *Setup) changeBackupIncludeSelectionIncludeFileInteractive() error {
 
 func (s *Setup) changeBackupSecondaryInstance() error {
 	current := strings.TrimSpace(s.Options.Instance)
-	val, err := input.AskString("Instance (contoh: 1, 2, 3; kosongkan untuk nonaktif)", current, nil)
+	val, err := prompt.AskText("Instance (contoh: 1, 2, 3; kosongkan untuk nonaktif)", prompt.WithDefault(current))
 	if err != nil {
 		return fmt.Errorf("gagal mengubah instance: %w", err)
 	}

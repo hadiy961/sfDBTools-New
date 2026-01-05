@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"path/filepath"
 	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/ui"
 	"strings"
 	"time"
 )
@@ -42,7 +42,7 @@ func (e *customExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 
 	// For dry-run, validate files exist (already validated in setup), and stop here.
 	if opts.DryRun {
-		ui.PrintWarning("Dry-run: tidak ada perubahan database/user yang dilakukan")
+		print.PrintWarning("Dry-run: tidak ada perubahan database/user yang dilakukan")
 		result.Duration = time.Since(start).String()
 		return result, nil
 	}
@@ -128,7 +128,7 @@ func (e *customExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 		copyGrantsBetweenDatabases(ctx, e.svc, opts.Database, opts.DatabaseDmart)
 	}
 
-	ui.PrintSuccess("Restore custom selesai")
+	print.PrintSuccess("Restore custom selesai")
 	result.Duration = time.Since(start).String()
 	return result, nil
 }

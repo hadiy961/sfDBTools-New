@@ -9,8 +9,8 @@ import (
 	"fmt"
 	defaultVal "sfDBTools/internal/cli/defaults"
 	"sfDBTools/internal/cli/flags"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/validation"
 
 	"github.com/spf13/cobra"
@@ -61,8 +61,7 @@ func getBackupMode(cmd *cobra.Command) (string, error) {
 			"multi-file (pisahkan setiap database ke file terpisah)",
 		}
 
-		var selected string
-		selected, err := input.SelectSingleFromListWithDefault(modeOptions, "Pilih mode backup:", modeOptions[0])
+		selected, _, err := prompt.SelectOne("Pilih mode backup:", modeOptions, 0)
 		if err != nil {
 			return "", fmt.Errorf("mode non-interaktif: set --mode secara eksplisit (single-file/multi-file): %w", validation.HandleInputError(err))
 		}

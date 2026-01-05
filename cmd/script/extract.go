@@ -6,7 +6,7 @@ import (
 	"sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/flags"
 	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/pkg/input"
+	"sfDBTools/internal/ui/prompt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -41,7 +41,7 @@ sfdbtools script extract -f /etc/sfDBTools/scripts/tes.sftools -o ./tes_extracte
 		if strings.TrimSpace(opts.OutDir) == "" {
 			base := strings.TrimSuffix(filepath.Base(opts.FilePath), filepath.Ext(opts.FilePath))
 			defaultOut := "./" + base + "_extracted"
-			out, err := input.AskString("Output directory untuk hasil extract", defaultOut, nil)
+			out, err := prompt.AskText("Output directory untuk hasil extract", prompt.WithDefault(defaultOut))
 			if err != nil {
 				deps.Deps.Logger.Error(err.Error())
 				return

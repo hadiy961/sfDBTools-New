@@ -13,9 +13,9 @@ import (
 	"strings"
 
 	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/pkg/input"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 
 	"github.com/mattn/go-isatty"
@@ -42,8 +42,8 @@ func IsInteractiveAllowed() bool {
 }
 
 func RunInteractive(ctx context.Context, defaultScope scheduler.Scope, isRoot bool) error {
-	ui.PrintInfo("Pilih scope lalu pilih aksi/unit")
-	ui.PrintInfo("Tip: scope=system untuk scheduler via sudo")
+	print.PrintInfo("Pilih scope lalu pilih aksi/unit")
+	print.PrintInfo("Tip: scope=system untuk scheduler via sudo")
 
 	// 1) Scope menu
 	scopeOptions := []string{"auto", "user", "system", "both"}
@@ -55,23 +55,22 @@ func RunInteractive(ctx context.Context, defaultScope scheduler.Scope, isRoot bo
 		def = "auto"
 	}
 	orderedScopes := reorderWithDefault(scopeOptions, def)
-	idx, err := input.ShowMenu("Scope unit?", orderedScopes)
+	selectedScopeStr, _, err := prompt.SelectOne("Scope unit?", orderedScopes, 0)
 	if err != nil {
 		return validation.HandleInputError(err)
 	}
-	selectedScope, err := scheduler.NormalizeScope(orderedScopes[idx-1])
+	selectedScope, err := scheduler.NormalizeScope(selectedScopeStr)
 	if err != nil {
 		return err
 	}
 
 	// 2) Action menu
 	actions := []string{"List", "Status", "Logs", "Stop", "Remove"}
-	aIdx, err := input.ShowMenu("Aksi?", actions)
+	action, _, err := prompt.SelectOne("Aksi?", actions, -1)
 	if err != nil {
 		return validation.HandleInputError(err)
 	}
-	action := actions[aIdx-1]
-	ui.PrintSubHeader(action)
+	print.PrintSubHeader(action)
 
 	// 3) Execute
 	switch action {
@@ -82,9 +81,9 @@ func RunInteractive(ctx context.Context, defaultScope scheduler.Scope, isRoot bo
 		if err != nil {
 			return err
 		}
-		ui.PrintInfo(fmt.Sprintf("Scope: %s", usedScope))
+		print.PrintInfo(fmt.Sprintf("Scope: %s", usedScope))
 		if len(units) == 0 {
-			ui.PrintWarning("Tidak ada unit sfdbtools ditemukan")
+			print.PrintWarn("Tidak ada unit sfdbtools ditemukan")
 			return nil
 		}
 
@@ -95,7 +94,7 @@ func RunInteractive(ctx context.Context, defaultScope scheduler.Scope, isRoot bo
 			byLabel[u.Label] = u
 		}
 		sort.Strings(labels)
-		picked, err := input.SelectSingleFromList(labels, "Pilih unit")
+		picked, _, err := prompt.SelectOne("Pilih unit", labels, -1)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -108,19 +107,19 @@ func RunInteractive(ctx context.Context, defaultScope scheduler.Scope, isRoot bo
 				return err
 			}
 			if used != "" && used != usedScope {
-				ui.PrintInfo(fmt.Sprintf("Scope: %s", used))
+				print.PrintInfo(fmt.Sprintf("Scope: %s", used))
 			}
 			fmt.Print(out)
 			return nil
 		case "Logs":
 			lines := 200
 			follow := false
-			if v, askErr := input.AskInt("Jumlah baris log?", 200, nil); askErr == nil {
+			if v, askErr := prompt.AskInt("Jumlah baris log?", 200, nil); askErr == nil {
 				lines = v
 			} else {
 				return validation.HandleInputError(askErr)
 			}
-			if v, askErr := input.AskYesNo("Ikuti log realtime (-f)?", false); askErr == nil {
+			if v, askErr := prompt.Confirm("Ikuti log realtime (-f)?", false); askErr == nil {
 				follow = v
 			} else {
 				return validation.HandleInputError(askErr)
@@ -130,17 +129,17 @@ func RunInteractive(ctx context.Context, defaultScope scheduler.Scope, isRoot bo
 				return err
 			}
 			if used != "" && used != usedScope {
-				ui.PrintInfo(fmt.Sprintf("Scope: %s", used))
+				print.PrintInfo(fmt.Sprintf("Scope: %s", used))
 			}
 			fmt.Print(out)
 			return nil
 		case "Stop":
-			ok, err := input.AskYesNo(fmt.Sprintf("Stop unit %s?", pickedUnit), false)
+			ok, err := prompt.Confirm(fmt.Sprintf("Stop unit %s?", pickedUnit), false)
 			if err != nil {
 				return validation.HandleInputError(err)
 			}
 			if !ok {
-				ui.PrintInfo("Dibatalkan")
+				print.PrintInfo("Dibatalkan")
 				return nil
 			}
 			out, used, err := Stop(ctx, selectedScope, pickedUnit)
@@ -148,18 +147,18 @@ func RunInteractive(ctx context.Context, defaultScope scheduler.Scope, isRoot bo
 				return err
 			}
 			if used != "" && used != usedScope {
-				ui.PrintInfo(fmt.Sprintf("Scope: %s", used))
+				print.PrintInfo(fmt.Sprintf("Scope: %s", used))
 			}
 			fmt.Print(out)
-			ui.PrintSuccess("Stop command dikirim")
+			print.PrintSuccess("Stop command dikirim")
 			return nil
 		case "Remove":
-			ok, err := input.AskYesNo(fmt.Sprintf("Hapus job %s?", pickedUnit), false)
+			ok, err := prompt.Confirm(fmt.Sprintf("Hapus job %s?", pickedUnit), false)
 			if err != nil {
 				return validation.HandleInputError(err)
 			}
 			if !ok {
-				ui.PrintInfo("Dibatalkan")
+				print.PrintInfo("Dibatalkan")
 				return nil
 			}
 
@@ -167,12 +166,12 @@ func RunInteractive(ctx context.Context, defaultScope scheduler.Scope, isRoot bo
 			if selectedScope == scheduler.ScopeSystem {
 				// Purge butuh root untuk hapus file unit.
 				if isRoot {
-					purge, err = input.AskYesNo("Sekalian hapus unit file (/etc/systemd/system) bila ada?", false)
+					purge, err = prompt.Confirm("Sekalian hapus unit file (/etc/systemd/system) bila ada?", false)
 					if err != nil {
 						return validation.HandleInputError(err)
 					}
 				} else {
-					ui.PrintInfo("Tip: jalankan dengan sudo untuk --purge")
+					print.PrintInfo("Tip: jalankan dengan sudo untuk --purge")
 				}
 			}
 
@@ -181,12 +180,12 @@ func RunInteractive(ctx context.Context, defaultScope scheduler.Scope, isRoot bo
 				return err
 			}
 			if used != "" && used != usedScope {
-				ui.PrintInfo(fmt.Sprintf("Scope: %s", used))
+				print.PrintInfo(fmt.Sprintf("Scope: %s", used))
 			}
 			if out != "" {
 				fmt.Print(out)
 			}
-			ui.PrintSuccess("Remove selesai")
+			print.PrintSuccess("Remove selesai")
 			return nil
 		}
 	}

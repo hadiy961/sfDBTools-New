@@ -10,13 +10,13 @@ import (
 	"fmt"
 	"sfDBTools/internal/app/restore/helpers"
 	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 )
 
 // SetupRestorePrimarySession melakukan setup untuk restore primary session
 func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
-	ui.Headers("Restore Primary Database")
+	print.PrintAppHeader("Restore Primary Database")
 	if s.RestorePrimaryOpts == nil {
 		return fmt.Errorf("opsi primary tidak tersedia")
 	}
@@ -135,7 +135,7 @@ func (s *Service) resolveAndValidatePrimaryDB(ctx context.Context) error {
 // retryPrimaryDatabaseInput memberikan kesempatan user untuk input ulang nama database primary
 func (s *Service) retryPrimaryDatabaseInput(initialErr error) error {
 	for {
-		retry, askErr := input.AskYesNo("Nama target database tidak valid. Input ulang?", true)
+		retry, askErr := prompt.Confirm("Nama target database tidak valid. Input ulang?", true)
 		if askErr != nil || !retry {
 			return initialErr
 		}
@@ -143,10 +143,10 @@ func (s *Service) retryPrimaryDatabaseInput(initialErr error) error {
 		prefix := inferPrimaryPrefixFromTargetOrFile(s.RestorePrimaryOpts.TargetDB, s.RestorePrimaryOpts.File)
 		defaultClientCode := extractClientCodeFromDB(s.RestorePrimaryOpts.TargetDB, prefix)
 
-		newClientCode, inErr := input.AskString(
+		newClientCode, inErr := prompt.AskText(
 			"Masukkan client-code target (contoh: tes123_tes)",
-			defaultClientCode,
-			validatePrimaryClientCodeInput(prefix),
+			prompt.WithDefault(defaultClientCode),
+			prompt.WithValidator(validatePrimaryClientCodeInput(prefix)),
 		)
 		if inErr != nil {
 			return fmt.Errorf("gagal mendapatkan nama database: %w", inErr)
@@ -198,10 +198,10 @@ func (s *Service) resolveTargetDatabasePrimary(ctx context.Context) error {
 	defaultClientCode := extractDefaultClientCodeFromFile(s.RestorePrimaryOpts.File)
 	prefix := inferPrimaryPrefixFromTargetOrFile("", s.RestorePrimaryOpts.File)
 
-	clientCode, err := input.AskString(
+	clientCode, err := prompt.AskText(
 		"Masukkan client-code target (contoh: tes123_tes)",
-		defaultClientCode,
-		validatePrimaryClientCodeInput(prefix),
+		prompt.WithDefault(defaultClientCode),
+		prompt.WithValidator(validatePrimaryClientCodeInput(prefix)),
 	)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan client-code: %w", err)

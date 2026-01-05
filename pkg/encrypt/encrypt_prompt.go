@@ -2,7 +2,7 @@ package encrypt
 
 import (
 	"os"
-	"sfDBTools/pkg/input"
+	"sfDBTools/internal/ui/prompt"
 
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -20,6 +20,6 @@ func PromptPassword(envVar, promptMsg string) (password, source string, err erro
 	if pw := os.Getenv(envVar); pw != "" {
 		return pw, "env", nil
 	}
-	pw, err := input.AskPassword(promptMsg, survey.Required)
+	pw, err := prompt.AskPassword(promptMsg, survey.Required)
 	return pw, "prompt", err
 }

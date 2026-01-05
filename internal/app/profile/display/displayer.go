@@ -11,10 +11,11 @@ import (
 
 	profilemodel "sfDBTools/internal/app/profile/model"
 	"sfDBTools/internal/domain"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
+	"sfDBTools/internal/ui/table"
 	"sfDBTools/pkg/consts"
 	profilehelper "sfDBTools/pkg/helper/profile"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -33,12 +34,12 @@ func (d *Displayer) DisplayProfileDetails() {
 			if title == "" && d.ProfileInfo != nil {
 				title = d.ProfileInfo.Name
 			}
-			ui.PrintSubHeader(consts.ProfileDisplayShowPrefix + title)
+			print.PrintSubHeader(consts.ProfileDisplayShowPrefix + title)
 			d.printShowDetails()
 			return
 		}
 		if d.ProfileInfo != nil {
-			ui.PrintSubHeader(consts.ProfileDisplayShowPrefix + d.ProfileInfo.Name)
+			print.PrintSubHeader(consts.ProfileDisplayShowPrefix + d.ProfileInfo.Name)
 		}
 		d.printCreateSummary()
 		return
@@ -46,14 +47,14 @@ func (d *Displayer) DisplayProfileDetails() {
 
 	if d.OriginalProfileInfo != nil {
 		if d.ProfileInfo != nil {
-			ui.PrintSubHeader(consts.ProfileMsgChangeSummaryPrefix + d.ProfileInfo.Name)
+			print.PrintSubHeader(consts.ProfileMsgChangeSummaryPrefix + d.ProfileInfo.Name)
 		}
 		d.printChangeSummary()
 		return
 	}
 
 	if d.ProfileInfo != nil {
-		ui.PrintSubHeader(consts.ProfileDisplayCreatePrefix + d.ProfileInfo.Name)
+		print.PrintSubHeader(consts.ProfileDisplayCreatePrefix + d.ProfileInfo.Name)
 	}
 	d.printCreateSummary()
 }
@@ -61,7 +62,7 @@ func (d *Displayer) DisplayProfileDetails() {
 func (d *Displayer) printShowDetails() {
 	orig := d.OriginalProfileInfo
 	if orig == nil {
-		ui.PrintInfo(consts.ProfileDisplayNoConfigLoaded)
+		print.PrintInfo(consts.ProfileDisplayNoConfigLoaded)
 		return
 	}
 
@@ -92,7 +93,7 @@ func (d *Displayer) printShowDetails() {
 		rows = append(rows, []string{"13", consts.ProfileLabelSSHPassword, sshPwState})
 	}
 
-	ui.FormatTable([]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderValue}, rows)
+	table.Render([]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderValue}, rows)
 
 	if d.ProfileShow != nil && d.ProfileShow.RevealPassword && d.ProfileShow.Interactive {
 		d.revealPasswordConfirmAndShow(orig)
@@ -101,17 +102,17 @@ func (d *Displayer) printShowDetails() {
 
 func (d *Displayer) revealPasswordConfirmAndShow(orig *domain.ProfileInfo) {
 	if orig.Path == "" {
-		ui.PrintWarning(consts.ProfileDisplayNoFileForVerify)
+		print.PrintWarning(consts.ProfileDisplayNoFileForVerify)
 		return
 	}
 
-	key, err := input.AskPassword(consts.ProfileDisplayVerifyKeyPrompt, survey.Required)
+	key, err := prompt.AskPassword(consts.ProfileDisplayVerifyKeyPrompt, survey.Required)
 	if err != nil {
-		ui.PrintWarning(consts.ProfileDisplayVerifyKeyFailedPrefix + err.Error())
+		print.PrintWarning(consts.ProfileDisplayVerifyKeyFailedPrefix + err.Error())
 		return
 	}
 	if key == "" {
-		ui.PrintWarning(consts.ProfileDisplayNoKeyProvided)
+		print.PrintWarning(consts.ProfileDisplayNoKeyProvided)
 		return
 	}
 
@@ -122,7 +123,7 @@ func (d *Displayer) revealPasswordConfirmAndShow(orig *domain.ProfileInfo) {
 		RequireProfile: true,
 	})
 	if err != nil {
-		ui.PrintWarning(consts.ProfileDisplayInvalidKeyOrCorrupt)
+		print.PrintWarning(consts.ProfileDisplayInvalidKeyOrCorrupt)
 		return
 	}
 
@@ -132,8 +133,8 @@ func (d *Displayer) revealPasswordConfirmAndShow(orig *domain.ProfileInfo) {
 		display = realPw
 	}
 
-	ui.PrintSubHeader(consts.ProfileDisplayRevealedPasswordTitle)
-	ui.FormatTable(
+	print.PrintSubHeader(consts.ProfileDisplayRevealedPasswordTitle)
+	table.Render(
 		[]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderValue},
 		[][]string{{"1", consts.ProfileLabelDBPassword, display}},
 	)
@@ -141,7 +142,7 @@ func (d *Displayer) revealPasswordConfirmAndShow(orig *domain.ProfileInfo) {
 
 func (d *Displayer) printCreateSummary() {
 	if d.ProfileInfo == nil {
-		ui.PrintInfo(consts.ProfileDisplayNoProfileInfo)
+		print.PrintInfo(consts.ProfileDisplayNoProfileInfo)
 		return
 	}
 	rows := [][]string{
@@ -172,13 +173,13 @@ func (d *Displayer) printCreateSummary() {
 		rows = append(rows, []string{"8", consts.ProfileLabelSSHPassword, sshPwState})
 	}
 
-	ui.FormatTable([]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderValue}, rows)
+	table.Render([]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderValue}, rows)
 }
 
 func (d *Displayer) printChangeSummary() {
 	orig := d.OriginalProfileInfo
 	if orig == nil || d.ProfileInfo == nil {
-		ui.PrintInfo(consts.ProfileDisplayNoChangeInfo)
+		print.PrintInfo(consts.ProfileDisplayNoChangeInfo)
 		return
 	}
 
@@ -226,9 +227,9 @@ func (d *Displayer) printChangeSummary() {
 	}
 
 	if len(rows) == 0 {
-		ui.PrintInfo(consts.ProfileDisplayNoChangesDetected)
+		print.PrintInfo(consts.ProfileDisplayNoChangesDetected)
 		return
 	}
 
-	ui.FormatTable([]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderBefore, consts.ProfileDisplayTableHeaderAfter}, rows)
+	table.Render([]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderBefore, consts.ProfileDisplayTableHeaderAfter}, rows)
 }

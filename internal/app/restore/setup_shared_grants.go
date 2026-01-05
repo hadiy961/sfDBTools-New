@@ -2,7 +2,7 @@
 // Deskripsi : Helper pemilihan file user grants untuk restore
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 
 package restore
 
@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 )
 
 func (s *Service) resolveGrantsFile(skipGrants *bool, grantsFile *string, backupFile string, allowInteractive bool, stopOnError bool) error {
@@ -36,7 +36,7 @@ func (s *Service) resolveGrantsFile(skipGrants *bool, grantsFile *string, backup
 				s.Log.Warnf("Mode non-interaktif: skip restore user grants (%v)", err)
 				return nil
 			}
-			ui.PrintWarning(fmt.Sprintf("⚠️  %v", err))
+			print.PrintWarning(fmt.Sprintf("⚠️  %v", err))
 			*grantsFile = ""
 		} else {
 			s.Log.Infof("File grants (user-specified): %s", *grantsFile)
@@ -71,7 +71,7 @@ func (s *Service) confirmGrantsFileSelection(autoGrantsFile string, skipGrants *
 		"📁 [ Browse / pilih file grants lain ]",
 		"⏭️  [ Skip restore user grants ]",
 	}
-	selected, err := input.SelectSingleFromList(options, "Grants file ditemukan. Gunakan file ini atau pilih yang lain?")
+	selected, _, err := prompt.SelectOne("Grants file ditemukan. Gunakan file ini atau pilih yang lain?", options, 0)
 	if err == nil && selected == options[0] {
 		*grantsFile = autoGrantsFile
 		s.Log.Infof("Grants file dipakai (auto-detect): %s", filepath.Base(autoGrantsFile))
@@ -93,12 +93,12 @@ func (s *Service) selectGrantsFileInteractive(skipGrants *bool, grantsFile *stri
 	matches, err := filepath.Glob(filepath.Join(backupDir, "*"+consts.UsersSQLSuffix))
 	if err == nil && len(matches) > 0 {
 		s.Log.Infof("Ditemukan %d file user grants di folder: %s", len(matches), backupDir)
-		ui.PrintInfo(fmt.Sprintf("📁 Ditemukan %d file user grants di folder yang sama", len(matches)))
+		print.PrintInfo(fmt.Sprintf("📁 Ditemukan %d file user grants di folder yang sama", len(matches)))
 
 		options := []string{"⏭️  [ Skip restore user grants ]", "📁 [ Browse file grants secara manual ]"}
 		options = append(options, s.toBaseNames(matches)...)
 
-		selected, err := input.SelectSingleFromList(options, "Pilih file user grants untuk di-restore")
+		selected, _, err := prompt.SelectOne("Pilih file user grants untuk di-restore", options, 0)
 		if err != nil {
 			s.Log.Warnf("Gagal memilih file grants: %v, skip restore grants", err)
 			return nil
@@ -128,9 +128,9 @@ func (s *Service) selectGrantsFileInteractive(skipGrants *bool, grantsFile *stri
 
 func (s *Service) browseGrantsFileManually(skipGrants *bool, grantsFile *string, backupDir string) error {
 	s.Log.Infof("Tidak ada file user grants terdeteksi di folder: %s", backupDir)
-	ui.PrintInfo("💡 File user grants tidak ditemukan atau Anda ingin pilih file lain")
+	print.PrintInfo("💡 File user grants tidak ditemukan atau Anda ingin pilih file lain")
 
-	confirmed, err := input.PromptConfirm("Apakah Anda ingin memilih file user grants secara manual?")
+	confirmed, err := prompt.PromptConfirm("Apakah Anda ingin memilih file user grants secara manual?")
 	if err != nil || !confirmed {
 		if skipGrants != nil {
 			*skipGrants = true
@@ -139,7 +139,7 @@ func (s *Service) browseGrantsFileManually(skipGrants *bool, grantsFile *string,
 		return nil
 	}
 
-	selectedFile, err := input.SelectFileInteractive(backupDir, "Masukkan path directory atau file user grants", []string{consts.ExtSQL})
+	selectedFile, err := prompt.SelectFile(backupDir, "Masukkan path directory atau file user grants", []string{consts.ExtSQL})
 	if err != nil {
 		s.Log.Warnf("Gagal memilih file grants: %v, skip restore grants", err)
 		return nil

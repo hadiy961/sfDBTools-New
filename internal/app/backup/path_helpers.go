@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"sfDBTools/internal/app/backup/modes"
 	"sfDBTools/internal/domain"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	pkghelper "sfDBTools/pkg/helper"
-	"sfDBTools/pkg/ui"
 	"strings"
 )
 
@@ -105,7 +105,7 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Clie
 			TotalExcluded:     len(allDatabases) - len(dbFiltered),
 			ExcludedDatabases: s.excludedDatabases,
 		}
-		ui.DisplayFilterStats(stats, consts.FeatureBackup, s.Log)
+		print.PrintFilterStats(stats, consts.FeatureBackup, s.Log)
 	}
 
 	// Jika user set custom filename untuk mode all/combined, treat sebagai base name tanpa ekstensi.

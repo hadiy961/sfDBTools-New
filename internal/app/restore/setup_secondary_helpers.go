@@ -9,8 +9,8 @@ import (
 	"context"
 	"fmt"
 	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/input"
 	"strings"
 )
 
@@ -19,7 +19,7 @@ func (s *Service) resolveSecondaryFrom(opts *restoremodel.RestoreSecondaryOption
 	from := normalizeRestoreSource(opts.From)
 	if from == "" {
 		if allowInteractive {
-			selected, err := input.SelectSingleFromList(validSecondarySources(), "Pilih mode restore secondary (source)")
+			selected, _, err := prompt.SelectOne("Pilih mode restore secondary (source)", validSecondarySources(), 0)
 			if err != nil {
 				return fmt.Errorf("gagal memilih mode restore secondary: %w", err)
 			}
@@ -33,7 +33,7 @@ func (s *Service) resolveSecondaryFrom(opts *restoremodel.RestoreSecondaryOption
 		if !allowInteractive {
 			return fmt.Errorf("nilai --from tidak valid: %s (gunakan: primary atau file)", from)
 		}
-		selected, err := input.SelectSingleFromList(validSecondarySources(), "Pilih sumber restore secondary")
+		selected, _, err := prompt.SelectOne("Pilih sumber restore secondary", validSecondarySources(), 0)
 		if err != nil {
 			return fmt.Errorf("gagal memilih --from: %w", err)
 		}
@@ -52,7 +52,7 @@ func (s *Service) resolveSecondaryClientCode(opts *restoremodel.RestoreSecondary
 	if !allowInteractive {
 		return fmt.Errorf("client code wajib diisi (--client-code) pada mode non-interaktif (--force)")
 	}
-	cc, err := input.AskString("Masukkan client code: ", "", validateClientCodeInput)
+	cc, err := prompt.AskText("Masukkan client code: ", prompt.WithValidator(validateClientCodeInput))
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan client code: %w", err)
 	}
@@ -76,7 +76,7 @@ func (s *Service) resolveSecondaryEncryptionKey(opts *restoremodel.RestoreSecond
 		return fmt.Errorf("encryption key wajib diisi (--encryption-key) karena backup encryption aktif")
 	}
 
-	k, err := input.AskString("Masukkan encryption key untuk file backup (SFDB_BACKUP_ENCRYPTION_KEY): ", "", validateClientCodeInput)
+	k, err := prompt.AskText("Masukkan encryption key untuk file backup (SFDB_BACKUP_ENCRYPTION_KEY): ", prompt.WithValidator(validateClientCodeInput))
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan encryption key: %w", err)
 	}

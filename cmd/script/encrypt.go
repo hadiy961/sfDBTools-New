@@ -8,7 +8,7 @@ import (
 	"sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/flags"
 	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/pkg/input"
+	"sfDBTools/internal/ui/prompt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -36,10 +36,7 @@ SFDB_SCRIPT_KEY="mypassword" sfdbtools script encrypt --file scripts/sftr_sf7_ma
 
 		// Interaktif: pilih mode jika user tidak mengisi --mode/-m.
 		if !cmd.Flags().Changed("mode") {
-			selectedMode, err := input.SelectSingleFromList(
-				[]string{"bundle", "single"},
-				"Pilih mode encrypt",
-			)
+			selectedMode, _, err := prompt.SelectOne("Pilih mode encrypt", []string{"bundle", "single"}, -1)
 			if err != nil {
 				deps.Deps.Logger.Error(err.Error())
 				return
@@ -48,7 +45,7 @@ SFDB_SCRIPT_KEY="mypassword" sfdbtools script encrypt --file scripts/sftr_sf7_ma
 		}
 
 		if strings.TrimSpace(opts.FilePath) == "" {
-			p, err := input.SelectFileInteractive(".", "Pilih entrypoint script (.sh) yang akan dienkripsi", []string{".sh"})
+			p, err := prompt.SelectFile(".", "Pilih entrypoint script (.sh) yang akan dienkripsi", []string{".sh"})
 			if err != nil {
 				deps.Deps.Logger.Error(err.Error())
 				return
@@ -87,10 +84,10 @@ SFDB_SCRIPT_KEY="mypassword" sfdbtools script encrypt --file scripts/sftr_sf7_ma
 
 		// Interaktif: custom output filename (tanpa ekstensi), jika user belum set --output.
 		if !cmd.Flags().Changed("output") {
-			outputName, err := input.AskString(
+			outputName, err := prompt.AskText(
 				"Nama output file (tanpa ekstensi, otomatis .sftools)",
-				defaultOutputName,
-				func(ans interface{}) error {
+				prompt.WithDefault(defaultOutputName),
+				prompt.WithValidator(func(ans interface{}) error {
 					s, _ := ans.(string)
 					s = strings.TrimSpace(s)
 					if s == "" {
@@ -100,7 +97,7 @@ SFDB_SCRIPT_KEY="mypassword" sfdbtools script encrypt --file scripts/sftr_sf7_ma
 						return fmt.Errorf("nama file tidak boleh mengandung path")
 					}
 					return nil
-				},
+				}),
 			)
 			if err != nil {
 				deps.Deps.Logger.Error(err.Error())
@@ -121,7 +118,7 @@ SFDB_SCRIPT_KEY="mypassword" sfdbtools script encrypt --file scripts/sftr_sf7_ma
 			if mode == "single" {
 				targetLabel = opts.FilePath
 			}
-			wantDelete, err := input.AskYesNo(
+			wantDelete, err := prompt.Confirm(
 				fmt.Sprintf("Hapus sumber setelah encrypt berhasil? (%s)", targetLabel),
 				false,
 			)
@@ -140,16 +137,15 @@ SFDB_SCRIPT_KEY="mypassword" sfdbtools script encrypt --file scripts/sftr_sf7_ma
 				opts.OutputPath = filepath.Join(".", filepath.Base(opts.OutputPath))
 			}
 
-			confirm, err := input.AskString(
+			confirm, err := prompt.AskText(
 				"Ketik DELETE untuk konfirmasi penghapusan sumber",
-				"",
-				func(ans interface{}) error {
+				prompt.WithValidator(func(ans interface{}) error {
 					s, _ := ans.(string)
 					if strings.TrimSpace(s) != "DELETE" {
 						return fmt.Errorf("konfirmasi tidak cocok")
 					}
 					return nil
-				},
+				}),
 			)
 			if err != nil {
 				deps.Deps.Logger.Error(err.Error())

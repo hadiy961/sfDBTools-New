@@ -2,21 +2,21 @@
 // Deskripsi : Eksekusi pembuatan profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package executor
 
 import (
 	"fmt"
 
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
 
 func (e *Executor) CreateProfile() error {
-	ui.Headers(consts.ProfileUIHeaderCreate)
+	print.PrintAppHeader(consts.ProfileUIHeaderCreate)
 	if e.Log != nil {
 		e.Log.Info(consts.ProfileLogCreateStarted)
 	}
@@ -57,7 +57,7 @@ func (e *Executor) CreateProfile() error {
 
 		if e.CheckConfigurationNameUnique != nil {
 			if err := e.CheckConfigurationNameUnique(consts.ProfileModeCreate); err != nil {
-				ui.PrintError(err.Error())
+				print.PrintError(err.Error())
 				return err
 			}
 		}

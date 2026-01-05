@@ -11,7 +11,8 @@ import (
 	"io"
 	"sfDBTools/internal/app/restore/helpers"
 	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/progress"
 	"sort"
 	"strings"
 	"time"
@@ -98,7 +99,7 @@ func (e *AllExecutor) handlePreRestoreOperations(ctx context.Context, opts *rest
 func (e *AllExecutor) performStreamingRestore(ctx context.Context, opts *restoremodel.RestoreAllOptions) error {
 	logger := e.service.GetLogger()
 	restoreStart := time.Now()
-	spin := ui.NewSpinnerWithElapsed("Memulai proses restore...")
+	spin := progress.NewSpinnerWithElapsed("Memulai proses restore...")
 	spin.Start()
 
 	// Buat pipe reader untuk streaming processing
@@ -153,14 +154,14 @@ func (e *AllExecutor) performStreamingRestore(ctx context.Context, opts *restore
 	logger.Infof("Durasi restore: %s", restoreDuration)
 
 	if stats := <-statsCh; stats != nil {
-		ui.PrintSuccess(fmt.Sprintf("✓ Total database restored: %d", stats.RestoredCount))
+		print.PrintSuccess(fmt.Sprintf("✓ Total database restored: %d", stats.RestoredCount))
 	}
 
 	return nil
 }
 
 // handleProgressUpdates handles spinner updates from progress channel
-func (e *AllExecutor) handleProgressUpdates(spin *ui.SpinnerWithElapsed, progressCh <-chan string, done chan<- bool) {
+func (e *AllExecutor) handleProgressUpdates(spin *progress.Spinner, progressCh <-chan string, done chan<- bool) {
 	var lastDB string
 	var startTime time.Time
 
@@ -169,22 +170,18 @@ func (e *AllExecutor) handleProgressUpdates(spin *ui.SpinnerWithElapsed, progres
 			if lastDB != "" {
 				duration := time.Since(startTime)
 				successMsg := fmt.Sprintf("✓ Database %s restored (%s)", lastDB, duration.Round(time.Millisecond))
-				spin.SuspendAndRun(func() {
-					fmt.Println(successMsg)
-				})
+				progress.RunWithSpinnerSuspended(func() { fmt.Println(successMsg) })
 			}
 			lastDB = currentDB
 			startTime = time.Now()
 		}
-		spin.UpdateMessage(fmt.Sprintf("Restoring database: %s", currentDB))
+		spin.Update(fmt.Sprintf("Restoring database: %s", currentDB))
 	}
 
 	if lastDB != "" {
 		duration := time.Since(startTime)
 		msg := fmt.Sprintf("✓ Database %s restored (%s)", lastDB, duration.Round(time.Millisecond))
-		spin.SuspendAndRun(func() {
-			fmt.Println(msg)
-		})
+		progress.RunWithSpinnerSuspended(func() { fmt.Println(msg) })
 	}
 	done <- true
 }

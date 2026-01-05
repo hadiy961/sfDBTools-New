@@ -10,10 +10,10 @@ import (
 
 	profilemodel "sfDBTools/internal/app/profile/model"
 	"sfDBTools/internal/domain"
-	"sfDBTools/internal/services/log"
+	applog "sfDBTools/internal/services/log"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
 
@@ -58,7 +58,7 @@ func (r *Runner) Run(mode string) error {
 			r.DisplayProfileDetails()
 		}
 
-		confirmSave, err := input.AskYesNo(consts.ProfilePromptConfirmSave, true)
+		confirmSave, err := prompt.Confirm(consts.ProfilePromptConfirmSave, true)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -66,18 +66,18 @@ func (r *Runner) Run(mode string) error {
 			break
 		}
 
-		confirmRetry, err := input.AskYesNo(consts.ProfilePromptConfirmRetry, false)
+		confirmRetry, err := prompt.Confirm(consts.ProfilePromptConfirmRetry, false)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
 		if confirmRetry {
-			ui.PrintWarning(consts.ProfileWizardMsgRestart)
+			print.PrintWarning(consts.ProfileWizardMsgRestart)
 			continue
 		}
 		return validation.ErrUserCancelled
 	}
 
-	ui.PrintSuccess(consts.ProfileWizardMsgConfirmAccepted)
+	print.PrintSuccess(consts.ProfileWizardMsgConfirmAccepted)
 
 	if r.ResolveProfileEncryptionKey == nil {
 		return fmt.Errorf(consts.ProfileErrResolveEncryptionKeyUnavailable)

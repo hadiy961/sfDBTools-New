@@ -18,8 +18,8 @@ import (
 	restorecmd "sfDBTools/cmd/restore"
 	scriptcmd "sfDBTools/cmd/script"
 	appdeps "sfDBTools/internal/cli/deps"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/ui"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -72,7 +72,7 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Silakan jalankan 'sfdbtools --help' untuk melihat perintah yang tersedia.")
-		ui.PrintSeparator()
+		print.PrintSeparator()
 		cmd.Help()
 	},
 }

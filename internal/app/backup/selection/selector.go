@@ -8,11 +8,11 @@ import (
 	"sfDBTools/internal/app/backup/model/types_backup"
 	"sfDBTools/internal/domain"
 	applog "sfDBTools/internal/services/log"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/backuphelper"
 	"sfDBTools/pkg/consts"
 	pkghelper "sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 )
 
 // DatabaseLister is the minimal interface needed to list databases.
@@ -69,7 +69,7 @@ func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, clie
 		return nil, stats, fmt.Errorf("tidak ada database non-system yang tersedia untuk dipilih")
 	}
 
-	ui.PrintSubHeader("Pilih Database untuk Backup")
+	print.PrintSubHeader("Pilih Database untuk Backup")
 	selectedDBs, err := s.selectMultipleDatabases(nonSystemDBs)
 	if err != nil {
 		return nil, stats, err
@@ -100,20 +100,13 @@ func (s *Selector) selectMultipleDatabases(databases []string) ([]string, error)
 	s.Log.Info(fmt.Sprintf("Tersedia %d database non-system", len(databases)))
 	s.Log.Info("Gunakan [Space] untuk memilih/membatalkan, [Enter] untuk konfirmasi")
 
-	indices, err := input.ShowMultiSelect("Pilih database untuk backup:", databases)
+	selectedDBs, _, err := prompt.SelectMany("Pilih database untuk backup:", databases, nil)
 	if err != nil {
 		return nil, fmt.Errorf("pemilihan database dibatalkan: %w", err)
 	}
 
-	if len(indices) == 0 {
+	if len(selectedDBs) == 0 {
 		return nil, fmt.Errorf("tidak ada database yang dipilih")
-	}
-
-	selectedDBs := make([]string, 0, len(indices))
-	for _, idx := range indices {
-		if idx > 0 && idx <= len(databases) {
-			selectedDBs = append(selectedDBs, databases[idx-1])
-		}
 	}
 
 	s.Log.Info(fmt.Sprintf("Dipilih %d database: %s", len(selectedDBs), strings.Join(selectedDBs, ", ")))
@@ -205,11 +198,14 @@ func (s *Selector) SelectDatabaseAndBuildList(ctx context.Context, client Databa
 		}
 
 		if selectedDB == "" {
-			choice, choiceErr := input.ShowMenu("Pilih database yang akan di-backup:", candidates)
+			_, idx, choiceErr := prompt.SelectOne("Pilih database yang akan di-backup:", candidates, -1)
 			if choiceErr != nil {
 				return nil, "", nil, choiceErr
 			}
-			selectedDB = candidates[choice-1]
+			if idx < 0 || idx >= len(candidates) {
+				return nil, "", nil, fmt.Errorf("pemilihan database dibatalkan")
+			}
+			selectedDB = candidates[idx]
 		}
 	}
 
@@ -275,7 +271,7 @@ func (s *Selector) HandleSingleModeSetup(ctx context.Context, client DatabaseLis
 		TotalIncluded: len(companionDbs),
 		TotalExcluded: len(allDatabases) - len(companionDbs),
 	}
-	ui.DisplayFilterStats(stats, consts.FeatureBackup, s.Log)
+	print.PrintFilterStats(stats, consts.FeatureBackup, s.Log)
 
 	s.Options.DBName = selectedDB
 	s.Options.CompanionStatus = companionStatus

@@ -10,9 +10,9 @@ import (
 	"os"
 	"path/filepath"
 	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"strings"
 )
 
@@ -61,13 +61,13 @@ func (s *Service) ensureValidCompanionPath(opts *restoremodel.RestoreSecondaryOp
 		if opts.StopOnError {
 			return fmt.Errorf("dmart file (_dmart) tidak ditemukan/invalid: %s", opts.CompanionFile)
 		}
-		ui.PrintWarning("⚠️  Skip restore companion database (_dmart) karena dmart file invalid")
+		print.PrintWarning("⚠️  Skip restore companion database (_dmart) karena dmart file invalid")
 		opts.IncludeDmart = false
 		opts.CompanionFile = ""
 		return nil
 	}
 
-	ui.PrintWarning(fmt.Sprintf("⚠️  Dmart file tidak valid: %s", opts.CompanionFile))
+	print.PrintWarning(fmt.Sprintf("⚠️  Dmart file tidak valid: %s", opts.CompanionFile))
 	opts.CompanionFile = ""
 	return nil
 }
@@ -79,7 +79,7 @@ func (s *Service) enforceForceWithoutDetect(opts *restoremodel.RestoreSecondaryO
 	if opts.StopOnError {
 		return fmt.Errorf("auto-detect dmart dimatikan (dmart-detect=false) dan mode non-interaktif (--force) aktif")
 	}
-	ui.PrintWarning("⚠️  Skip restore companion database (_dmart) (non-interaktif, companion tidak ditentukan)")
+	print.PrintWarning("⚠️  Skip restore companion database (_dmart) (non-interaktif, companion tidak ditentukan)")
 	opts.IncludeDmart = false
 	return nil
 }
@@ -89,7 +89,7 @@ func (s *Service) handleManualCompanionSelection(opts *restoremodel.RestoreSecon
 		return nil
 	}
 
-	confirmed, err := input.AskYesNo("Pilih file companion (_dmart) secara manual?", true)
+	confirmed, err := prompt.Confirm("Pilih file companion (_dmart) secara manual?", true)
 	if err != nil || !confirmed {
 		opts.IncludeDmart = false
 		return nil
@@ -117,7 +117,7 @@ func (s *Service) handleCompanionNotFound(opts *restoremodel.RestoreSecondaryOpt
 		if opts.StopOnError {
 			return fmt.Errorf("dmart file (_dmart) tidak ditemukan secara otomatis")
 		}
-		ui.PrintWarning("⚠️  Skip restore companion database (_dmart) (companion tidak ditemukan)")
+		print.PrintWarning("⚠️  Skip restore companion database (_dmart) (companion tidak ditemukan)")
 		opts.IncludeDmart = false
 		return nil
 	}
@@ -141,7 +141,7 @@ func (s *Service) handleCompanionNotFound(opts *restoremodel.RestoreSecondaryOpt
 
 func (s *Service) selectDmartFileInteractive(dir string) (string, error) {
 	validExtensions := helper.ValidBackupFileExtensionsForSelection()
-	selectedFile, err := input.SelectFileInteractive(dir, "Masukkan path directory atau file dmart", validExtensions)
+	selectedFile, err := prompt.SelectFile(dir, "Masukkan path directory atau file dmart", validExtensions)
 	if err != nil {
 		return "", fmt.Errorf("gagal memilih dmart file: %w", err)
 	}
@@ -149,11 +149,11 @@ func (s *Service) selectDmartFileInteractive(dir string) (string, error) {
 }
 
 func decideSecondaryCompanionNotFoundInteractive() (bool, error) {
-	ui.PrintWarning("⚠️  Companion (_dmart) file tidak ditemukan secara otomatis")
-	selected, err := input.SelectSingleFromList([]string{
+	print.PrintWarning("⚠️  Companion (_dmart) file tidak ditemukan secara otomatis")
+	selected, _, err := prompt.SelectOne("Pilih tindakan untuk companion (_dmart)", []string{
 		"📁 [ Browse / pilih dmart file ]",
 		"⏭️  [ Skip restore companion database (_dmart) ]",
-	}, "Pilih tindakan untuk companion (_dmart)")
+	}, 0)
 	if err != nil {
 		return false, fmt.Errorf("gagal memilih opsi companion: %w", err)
 	}

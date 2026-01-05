@@ -9,7 +9,7 @@ import (
 	"context"
 	"fmt"
 	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/pkg/input"
+	"sfDBTools/internal/ui/prompt"
 	"strings"
 )
 
@@ -27,7 +27,7 @@ func (s *Service) editRestoreSingleOptionsInteractive() error {
 		"Kembali",
 	}
 
-	choice, err := input.SelectSingleFromList(options, "Pilih opsi yang ingin diubah")
+	choice, _, err := prompt.SelectOne("Pilih opsi yang ingin diubah", options, 0)
 	if err != nil {
 		return fmt.Errorf("gagal memilih opsi untuk diubah: %w", err)
 	}
@@ -114,7 +114,7 @@ func (s *Service) changeSingleTicket() error {
 }
 
 func (s *Service) changeSingleDropTarget() error {
-	val, err := input.AskYesNo("Drop target database sebelum restore?", s.RestoreOpts.DropTarget)
+	val, err := prompt.Confirm("Drop target database sebelum restore?", s.RestoreOpts.DropTarget)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi drop-target: %w", err)
 	}
@@ -123,7 +123,7 @@ func (s *Service) changeSingleDropTarget() error {
 }
 
 func (s *Service) changeSingleSkipGrants() error {
-	skip, err := input.AskYesNo("Skip restore user grants?", s.RestoreOpts.SkipGrants)
+	skip, err := prompt.Confirm("Skip restore user grants?", s.RestoreOpts.SkipGrants)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi skip-grants: %w", err)
 	}
@@ -139,7 +139,7 @@ func (s *Service) changeSingleSkipGrants() error {
 }
 
 func (s *Service) changeSingleSkipBackup() error {
-	skip, err := input.AskYesNo("Skip backup sebelum restore?", s.RestoreOpts.SkipBackup)
+	skip, err := prompt.Confirm("Skip backup sebelum restore?", s.RestoreOpts.SkipBackup)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi skip-backup: %w", err)
 	}
@@ -168,7 +168,7 @@ func (s *Service) changeSingleBackupDirectory() error {
 		}
 	}
 
-	dir, err := input.AskString("Direktori backup pre-restore", current, nil)
+	dir, err := prompt.AskText("Direktori backup pre-restore", prompt.WithDefault(current))
 	if err != nil {
 		return fmt.Errorf("gagal mengubah direktori backup: %w", err)
 	}

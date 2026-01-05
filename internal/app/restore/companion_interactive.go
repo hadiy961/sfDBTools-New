@@ -2,16 +2,16 @@
 // Deskripsi : Helper interaktif untuk pemilihan companion (_dmart) file
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 
 package restore
 
 import (
 	"fmt"
 	"path/filepath"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"strings"
 )
 
@@ -26,7 +26,7 @@ func (s *Service) useOrSelectDetectedCompanionInteractive(detectedPath string) e
 		"📁 [ Browse / pilih dmart file lain ]",
 		"⏭️  [ Skip restore companion database (_dmart) ]",
 	}
-	selected, err := input.SelectSingleFromList(options, "Companion (dmart) file ditemukan. Gunakan file ini atau pilih yang lain?")
+	selected, _, err := prompt.SelectOne("Companion (dmart) file ditemukan. Gunakan file ini atau pilih yang lain?", options, 0)
 	if err == nil && selected == options[0] {
 		s.RestorePrimaryOpts.CompanionFile = detectedPath
 		s.Log.Infof("Companion file dipakai (auto-detect): %s", filepath.Base(detectedPath))
@@ -36,7 +36,7 @@ func (s *Service) useOrSelectDetectedCompanionInteractive(detectedPath string) e
 		s.RestorePrimaryOpts.CompanionFile = ""
 		s.RestorePrimaryOpts.IncludeDmart = false
 		s.Log.Info("Companion database tidak akan di-restore (user memilih skip)")
-		ui.PrintWarning("⚠️  Skip restore companion database (_dmart)")
+		print.PrintWarning("⚠️  Skip restore companion database (_dmart)")
 		return nil
 	}
 
@@ -49,14 +49,14 @@ func (s *Service) useOrSelectDetectedCompanionInteractive(detectedPath string) e
 }
 
 func (s *Service) selectCompanionFileInteractive() error {
-	confirm, err := input.PromptConfirm("Apakah Anda ingin memilih file companion database (_dmart) secara manual?")
+	confirm, err := prompt.PromptConfirm("Apakah Anda ingin memilih file companion database (_dmart) secara manual?")
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan konfirmasi: %w", err)
 	}
 
 	if !confirm {
 		s.Log.Info("User memilih untuk skip restore companion database")
-		ui.PrintWarning("⚠️  Skip restore companion database")
+		print.PrintWarning("⚠️  Skip restore companion database")
 		s.RestorePrimaryOpts.IncludeDmart = false
 		return nil
 	}
@@ -81,11 +81,9 @@ func (s *Service) browseCompanionFileInteractive() (string, error) {
 		return "", fmt.Errorf("tidak ada file backup ditemukan di direktori: %s", dir)
 	}
 
-	choice, err := input.ShowMenu("Pilih file companion database:", files)
+	selected, _, err := prompt.SelectOne("Pilih file companion database:", files, 0)
 	if err != nil {
 		return "", fmt.Errorf("gagal memilih file: %w", err)
 	}
-
-	selected := strings.TrimSpace(files[choice-1])
-	return filepath.Join(dir, selected), nil
+	return filepath.Join(dir, strings.TrimSpace(selected)), nil
 }

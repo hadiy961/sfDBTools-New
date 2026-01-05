@@ -9,14 +9,15 @@ package display
 import (
 	"errors"
 	"fmt"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
+	"sfDBTools/internal/ui/table"
 	"sort"
 )
 
 // DisplayConfirmation menampilkan konfirmasi sebelum restore
 func DisplayConfirmation(opts map[string]string) error {
-	ui.PrintSubHeader("Konfirmasi Restore")
+	print.PrintSubHeader("Konfirmasi Restore")
 	fmt.Println()
 
 	keys := make([]string, 0, len(opts))
@@ -30,10 +31,10 @@ func DisplayConfirmation(opts map[string]string) error {
 		rows = append(rows, []string{k, opts[k]})
 	}
 
-	ui.FormatTable([]string{"Parameter", "Value"}, rows)
+	table.Render([]string{"Parameter", "Value"}, rows)
 	fmt.Println()
 
-	confirmed, err := input.PromptConfirm("Lanjutkan restore?")
+	confirmed, err := prompt.PromptConfirm("Lanjutkan restore?")
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan konfirmasi: %w", err)
 	}

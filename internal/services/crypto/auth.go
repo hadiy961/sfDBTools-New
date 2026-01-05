@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/input"
 )
 
 // ValidatePassword meminta password dari user dan memvalidasi dengan ENV_PASSWORD_APP.
@@ -14,7 +15,7 @@ func ValidatePassword() error {
 	expectedPassword := consts.ENV_PASSWORD_APP
 
 	for {
-		password, err := input.AskPassword("Masukkan password untuk crypto utilities", nil)
+		password, err := prompt.AskPassword("Masukkan password untuk crypto utilities", nil)
 		if err != nil {
 			return fmt.Errorf("gagal membaca password: %w", err)
 		}
@@ -23,8 +24,8 @@ func ValidatePassword() error {
 			return nil
 		}
 
-		fmt.Println("✗ Password salah! Coba lagi atau tekan Ctrl+C untuk batal.")
-		fmt.Println()
+		print.PrintError("Password salah! Coba lagi atau tekan Ctrl+C untuk batal.")
+		print.Println()
 	}
 }
 
@@ -32,9 +33,9 @@ func ValidatePassword() error {
 // Digunakan untuk command yang membutuhkan password mandatory.
 func MustValidatePassword() {
 	if err := ValidatePassword(); err != nil {
-		fmt.Fprintf(os.Stderr, "✗ Autentikasi gagal: %v\n", err)
+		print.PrintError(fmt.Sprintf("Autentikasi gagal: %v", err))
 		os.Exit(1)
 	}
-	fmt.Println("✓ Autentikasi berhasil")
-	fmt.Println()
+	print.PrintSuccess("Autentikasi berhasil")
+	print.Println()
 }

@@ -12,7 +12,7 @@ import (
 
 	internaljobs "sfDBTools/internal/jobs"
 	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/validation"
 
 	"github.com/spf13/cobra"
@@ -27,7 +27,7 @@ var CmdJobs = &cobra.Command{
 
 Default akan menampilkan daftar service dan timer yang relevan tanpa user perlu mengetik systemctl/journalctl manual.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ui.Headers("SYSTEMD JOBS")
+		print.PrintAppHeader("SYSTEMD JOBS")
 		if internaljobs.IsInteractiveAllowed() {
 			scope, err := getScope(cmd)
 			if err != nil {
@@ -47,8 +47,8 @@ var cmdJobsList = &cobra.Command{
 	Use:   "list",
 	Short: "Tampilkan daftar unit service & timer",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ui.Headers("SYSTEMD JOBS")
-		ui.PrintSubHeader("List")
+		print.PrintAppHeader("SYSTEMD JOBS")
+		print.PrintSubHeader("List")
 		scope, err := getScope(cmd)
 		if err != nil {
 			return err
@@ -66,8 +66,8 @@ var cmdJobsStatus = &cobra.Command{
 	Short: "Tampilkan status detail unit",
 	Args:  cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ui.Headers("SYSTEMD JOBS")
-		ui.PrintSubHeader("Status")
+		print.PrintAppHeader("SYSTEMD JOBS")
+		print.PrintSubHeader("Status")
 		scope, err := getScope(cmd)
 		if err != nil {
 			return err
@@ -83,7 +83,7 @@ var cmdJobsStatus = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		ui.PrintInfo(fmt.Sprintf("Scope: %s", used))
+		print.PrintInfo(fmt.Sprintf("Scope: %s", used))
 		fmt.Print(out)
 		return nil
 	},
@@ -94,8 +94,8 @@ var cmdJobsLogs = &cobra.Command{
 	Short: "Tampilkan log unit (journalctl)",
 	Args:  cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ui.Headers("SYSTEMD JOBS")
-		ui.PrintSubHeader("Logs")
+		print.PrintAppHeader("SYSTEMD JOBS")
+		print.PrintSubHeader("Logs")
 		scope, err := getScope(cmd)
 		if err != nil {
 			return err
@@ -113,7 +113,7 @@ var cmdJobsLogs = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		ui.PrintInfo(fmt.Sprintf("Scope: %s", used))
+		print.PrintInfo(fmt.Sprintf("Scope: %s", used))
 		fmt.Print(out)
 		return nil
 	},
@@ -124,8 +124,8 @@ var cmdJobsStop = &cobra.Command{
 	Short: "Stop unit",
 	Args:  cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ui.Headers("SYSTEMD JOBS")
-		ui.PrintSubHeader("Stop")
+		print.PrintAppHeader("SYSTEMD JOBS")
+		print.PrintSubHeader("Stop")
 		scope, err := getScope(cmd)
 		if err != nil {
 			return err
@@ -141,9 +141,9 @@ var cmdJobsStop = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		ui.PrintInfo(fmt.Sprintf("Scope: %s", used))
+		print.PrintInfo(fmt.Sprintf("Scope: %s", used))
 		fmt.Print(out)
-		ui.PrintSuccess("Stop command dikirim")
+		print.PrintSuccess("Stop command dikirim")
 		return nil
 	},
 }
@@ -153,8 +153,8 @@ var cmdJobsRemove = &cobra.Command{
 	Short: "Hapus job (stop/disable + reset-failed + optional purge unit file)",
 	Args:  cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ui.Headers("SYSTEMD JOBS")
-		ui.PrintSubHeader("Remove")
+		print.PrintAppHeader("SYSTEMD JOBS")
+		print.PrintSubHeader("Remove")
 		scope, err := getScope(cmd)
 		if err != nil {
 			return err
@@ -174,7 +174,7 @@ var cmdJobsRemove = &cobra.Command{
 				if out != "" {
 					fmt.Print(out)
 				}
-				ui.PrintSuccess("Remove selesai")
+				print.PrintSuccess("Remove selesai")
 				return nil
 			}
 			return fmt.Errorf("mode non-interaktif (--quiet): unit wajib diisi; contoh: sfdbtools jobs remove <unit>: %w", validation.ErrNonInteractive)
@@ -183,11 +183,11 @@ var cmdJobsRemove = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		ui.PrintInfo(fmt.Sprintf("Scope: %s", used))
+		print.PrintInfo(fmt.Sprintf("Scope: %s", used))
 		if out != "" {
 			fmt.Print(out)
 		}
-		ui.PrintSuccess("Remove selesai")
+		print.PrintSuccess("Remove selesai")
 		return nil
 	},
 }

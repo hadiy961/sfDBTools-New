@@ -13,11 +13,11 @@ import (
 
 	"sfDBTools/internal/app/backup/display"
 	"sfDBTools/internal/domain"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	profilehelper "sfDBTools/pkg/helper/profile"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
 
@@ -26,7 +26,7 @@ type PathGenerator func(ctx context.Context, client *database.Client, dbFiltered
 // PrepareBackupSession runs the whole pre-backup preparation flow.
 func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, nonInteractive bool, genPaths PathGenerator) (client *database.Client, dbFiltered []string, err error) {
 	if headerTitle != "" {
-		ui.Headers(headerTitle)
+		print.PrintAppHeader(headerTitle)
 	}
 
 	// Normalisasi input awal (misalnya dari flag/ENV)
@@ -82,7 +82,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 		dbFiltered, stats, err = s.GetFilteredDatabases(ctx, client)
 		if err != nil {
 			if stats != nil {
-				ui.DisplayFilterStats(stats, consts.FeatureBackup, s.Log)
+				print.PrintFilterStats(stats, consts.FeatureBackup, s.Log)
 			}
 			return nil, nil, fmt.Errorf("gagal mendapatkan daftar database: %w", err)
 		}
@@ -96,8 +96,8 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 		}
 
 		if len(dbFiltered) == 0 {
-			ui.DisplayFilterStats(stats, consts.FeatureBackup, s.Log)
-			ui.PrintError("Tidak ada database yang tersedia setelah filtering!")
+			print.PrintFilterStats(stats, consts.FeatureBackup, s.Log)
+			print.PrintError("Tidak ada database yang tersedia setelah filtering!")
 			if stats != nil {
 				s.DisplayFilterWarnings(stats)
 			}
@@ -147,9 +147,10 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 		displayer := display.NewOptionsDisplayer(s.Options)
 		displayer.Render()
 
-		action, selErr := input.SelectSingleFromList(
-			[]string{"Lanjutkan", "Ubah opsi", "Batalkan"},
+		action, _, selErr := prompt.SelectOne(
 			"Pilih aksi",
+			[]string{"Lanjutkan", "Ubah opsi", "Batalkan"},
+			-1,
 		)
 		if selErr != nil {
 			return nil, nil, selErr
@@ -158,16 +159,16 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 		switch action {
 		case "Lanjutkan":
 			if s.Options.Ticket == "" {
-				ui.PrintError("Ticket number belum diisi.")
-				ui.PrintError("Pilih 'Ubah opsi' untuk mengisi ticket, atau isi via flag --ticket.")
-				ui.WaitForEnter("Tekan Enter untuk kembali ke opsi...")
+				print.PrintError("Ticket number belum diisi.")
+				print.PrintError("Pilih 'Ubah opsi' untuk mengisi ticket, atau isi via flag --ticket.")
+				prompt.WaitForEnter("Tekan Enter untuk kembali ke opsi...")
 				continue
 			}
 			// validasi minimal: jika encryption aktif, backup key wajib tersedia
 			if s.Options.Encryption.Enabled && s.Options.Encryption.Key == "" {
-				ui.PrintError("Encryption diaktifkan tapi backup key belum tersedia.")
-				ui.PrintError("Isi via flag --backup-key, ENV SFDB_BACKUP_ENCRYPTION_KEY, atau pilih 'Ubah opsi' untuk input interaktif.")
-				ui.WaitForEnter("Tekan Enter untuk kembali ke opsi...")
+				print.PrintError("Encryption diaktifkan tapi backup key belum tersedia.")
+				print.PrintError("Isi via flag --backup-key, ENV SFDB_BACKUP_ENCRYPTION_KEY, atau pilih 'Ubah opsi' untuk input interaktif.")
+				prompt.WaitForEnter("Tekan Enter untuk kembali ke opsi...")
 				continue
 			}
 			success = true

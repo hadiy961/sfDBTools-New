@@ -6,20 +6,20 @@ import (
 	"strings"
 	"time"
 
-	"sfDBTools/internal/services/log"
-	"sfDBTools/pkg/ui"
+	applog "sfDBTools/internal/services/log"
+	"sfDBTools/internal/ui/progress"
 )
 
 // databaseMonitorWriter wraps an io.Writer to track mysqldump progress per database.
 type databaseMonitorWriter struct {
 	target    io.Writer
-	spinner   *ui.SpinnerWithElapsed
+	spinner   *progress.Spinner
 	log       applog.Logger
 	currentDB string
 	startTime time.Time
 }
 
-func newDatabaseMonitorWriter(target io.Writer, spinner *ui.SpinnerWithElapsed, log applog.Logger) *databaseMonitorWriter {
+func newDatabaseMonitorWriter(target io.Writer, spinner *progress.Spinner, log applog.Logger) *databaseMonitorWriter {
 	return &databaseMonitorWriter{target: target, spinner: spinner, log: log}
 }
 
@@ -60,7 +60,7 @@ func (w *databaseMonitorWriter) onDatabaseSwitch(newDB string) {
 		w.log.Infof("Processing database: %s", newDB)
 	}
 	if w.spinner != nil {
-		w.spinner.UpdateMessage(fmt.Sprintf("Processing %s", newDB))
+		w.spinner.Update(fmt.Sprintf("Processing %s", newDB))
 	}
 }
 

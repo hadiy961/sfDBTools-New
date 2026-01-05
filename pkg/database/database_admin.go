@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/progress"
 )
 
 // CheckDatabaseExists mengecek apakah database sudah ada
@@ -33,7 +33,7 @@ func (c *Client) CheckDatabaseExists(ctx context.Context, dbName string) (bool, 
 
 // DropDatabase menghapus database
 func (c *Client) DropDatabase(ctx context.Context, dbName string) error {
-	spin := ui.NewSpinnerWithElapsed(fmt.Sprintf("Drop database %s", dbName))
+	spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Drop database %s", dbName))
 	spin.Start()
 	defer spin.Stop()
 

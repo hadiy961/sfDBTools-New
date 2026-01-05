@@ -12,12 +12,12 @@ import (
 	"sfDBTools/internal/app/dbscan/helpers"
 	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 	"sfDBTools/internal/domain"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
 	profilehelper "sfDBTools/pkg/helper/profile"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
 
@@ -86,7 +86,7 @@ func (s *Service) setupScanConnections(ctx context.Context, headerTitle string, 
 // Meload config, connect ke source, dan filter database.
 func (s *Service) prepareScanSession(ctx context.Context, headerTitle string, showOptions bool) (*database.Client, []string, error) {
 	if headerTitle != "" {
-		ui.Headers(headerTitle)
+		print.PrintAppHeader(headerTitle)
 		s.Log.Infof("=== %s ===", headerTitle)
 	}
 
