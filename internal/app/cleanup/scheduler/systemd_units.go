@@ -26,7 +26,7 @@ const (
 )
 
 func Start(ctx context.Context, deps *appdeps.Dependencies, dryRun bool) error {
-	if err := schedulerutil.EnsureLinux(); err != nil {
+	if err := scheduler.EnsureLinux(); err != nil {
 		return err
 	}
 	if err := ensureRoot(); err != nil {
@@ -53,31 +53,31 @@ func Start(ctx context.Context, deps *appdeps.Dependencies, dryRun bool) error {
 		return err
 	}
 
-	if err := schedulerutil.Systemctl(ctx, "daemon-reload"); err != nil {
+	if err := scheduler.Systemctl(ctx, "daemon-reload"); err != nil {
 		return err
 	}
-	if err := schedulerutil.Systemctl(ctx, "enable", "--now", cleanupTimerUnit); err != nil {
+	if err := scheduler.Systemctl(ctx, "enable", "--now", cleanupTimerUnit); err != nil {
 		return err
 	}
 	return nil
 }
 
 func Stop(ctx context.Context, _ *appdeps.Dependencies, killRunning bool) error {
-	if err := schedulerutil.EnsureLinux(); err != nil {
+	if err := scheduler.EnsureLinux(); err != nil {
 		return err
 	}
 	if err := ensureRoot(); err != nil {
 		return err
 	}
-	_ = schedulerutil.Systemctl(ctx, "disable", "--now", cleanupTimerUnit)
+	_ = scheduler.Systemctl(ctx, "disable", "--now", cleanupTimerUnit)
 	if killRunning {
-		_ = schedulerutil.Systemctl(ctx, "stop", cleanupServiceUnit)
+		_ = scheduler.Systemctl(ctx, "stop", cleanupServiceUnit)
 	}
 	return nil
 }
 
 func Status(ctx context.Context, deps *appdeps.Dependencies) error {
-	if err := schedulerutil.EnsureLinux(); err != nil {
+	if err := scheduler.EnsureLinux(); err != nil {
 		return err
 	}
 	enabledCfg, schedule, err := getCleanupConfig(deps)
@@ -85,8 +85,8 @@ func Status(ctx context.Context, deps *appdeps.Dependencies) error {
 		return err
 	}
 
-	active, _ := schedulerutil.SystemctlOutput(ctx, "is-active", cleanupTimerUnit)
-	enabled, _ := schedulerutil.SystemctlOutput(ctx, "is-enabled", cleanupTimerUnit)
+	active, _ := scheduler.SystemctlOutput(ctx, "is-active", cleanupTimerUnit)
+	enabled, _ := scheduler.SystemctlOutput(ctx, "is-enabled", cleanupTimerUnit)
 	deps.Logger.Info("Status scheduler cleanup (systemd timer)")
 	deps.Logger.Infof("- config.enabled=%v | schedule=%s | systemd: %s/%s", enabledCfg, strings.TrimSpace(schedule), strings.TrimSpace(enabled), strings.TrimSpace(active))
 	return nil
@@ -134,7 +134,7 @@ func writeServiceUnit(dryRun bool) error {
 }
 
 func writeTimerUnit(cron string) error {
-	onCalendar, err := schedulerutil.CronToOnCalendar(cron)
+	onCalendar, err := scheduler.CronToOnCalendar(cron)
 	if err != nil {
 		return fmt.Errorf("schedule cleanup tidak valid: %w", err)
 	}

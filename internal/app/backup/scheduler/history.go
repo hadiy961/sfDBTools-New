@@ -25,7 +25,7 @@ type HistoryOptions struct {
 }
 
 func History(ctx context.Context, deps *appdeps.Dependencies, jobName string, opt HistoryOptions) error {
-	if err := schedulerutil.EnsureLinux(); err != nil {
+	if err := scheduler.EnsureLinux(); err != nil {
 		return err
 	}
 	jobName = strings.TrimSpace(jobName)

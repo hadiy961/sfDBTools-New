@@ -206,9 +206,9 @@ func init() {
 	CmdJobs.AddCommand(cmdJobsRemove)
 }
 
-func getScope(cmd *cobra.Command) (schedulerutil.Scope, error) {
+func getScope(cmd *cobra.Command) (scheduler.Scope, error) {
 	val, _ := cmd.Flags().GetString("scope")
-	s, err := schedulerutil.NormalizeScope(val)
+	s, err := scheduler.NormalizeScope(val)
 	if err != nil {
 		return "", err
 	}
