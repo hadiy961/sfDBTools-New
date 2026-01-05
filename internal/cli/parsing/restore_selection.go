@@ -1,7 +1,7 @@
 // File : internal/cli/parsing/restore_selection.go
 // Deskripsi : Parsing flags untuk restore selection (CSV)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-19
+// Tanggal : 19 Desember 2025
 
 package parsing
 

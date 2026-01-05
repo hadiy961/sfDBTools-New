@@ -1,7 +1,7 @@
 // File : internal/restore/modes/custom.go
 // Deskripsi : Executor untuk restore custom (SFCola account detail)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-24
+// Tanggal : 24 Desember 2025
 
 package modes
 

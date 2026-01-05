@@ -1,8 +1,8 @@
 // File : pkg/runtimecfg/runtimecfg.go
 // Deskripsi : Konfigurasi runtime berbasis flag (tanpa env) untuk quiet/daemon
 // Author : Hadiyatna Muflihun
-// Tanggal : 2026-01-04
-// Last Modified : 2026-01-04
+// Tanggal : 4 Januari 2026
+// Last Modified : 4 Januari 2026
 
 package runtimecfg
 

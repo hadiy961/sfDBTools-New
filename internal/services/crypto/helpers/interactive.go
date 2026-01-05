@@ -1,8 +1,8 @@
 // File : internal/services/crypto/helpers/interactive.go
 // Deskripsi : Helper functions untuk interactive mode input
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-11-11
-// Last Modified :  2026-01-05
+// Tanggal : 11 November 2025
+// Last Modified : 5 Januari 2026
 package helpers
 
 import (

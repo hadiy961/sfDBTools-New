@@ -1,8 +1,8 @@
 // File : internal/app/restore/model/types_restore.go
 // Deskripsi : Type definitions untuk restore operations
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-16
-// Last Modified : 2026-01-05
+// Tanggal : 16 Desember 2025
+// Last Modified : 5 Januari 2026
 
 package types
 

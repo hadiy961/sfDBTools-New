@@ -2,7 +2,7 @@
 // Deskripsi : Display functions untuk database scanning results
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 2026-01-05
+// Last Modified : 5 Januari 2026
 
 package dbscan
 

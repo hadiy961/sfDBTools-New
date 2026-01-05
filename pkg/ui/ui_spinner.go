@@ -2,7 +2,7 @@
 // Deskripsi : Helper untuk spinner dengan elapsed time tracking
 // Author : Hadiyatna Muflihun
 // Tanggal : 11 November 2025
-// Last Modified : 2026-01-04
+// Last Modified : 4 Januari 2026
 
 package ui
 

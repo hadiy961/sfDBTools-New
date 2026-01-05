@@ -1,8 +1,8 @@
 // File : internal/app/cleanup/command.go
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-16
-// Last Modified : 2026-01-05
+// Tanggal : 16 Desember 2025
+// Last Modified : 5 Januari 2026
 package cleanup
 
 import (

@@ -1,8 +1,8 @@
 // File : internal/restore/setup_validators.go
 // Deskripsi : Validation functions untuk setup restore operations
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified :  2026-01-05
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (

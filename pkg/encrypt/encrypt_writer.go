@@ -1,8 +1,8 @@
 // File : pkg/encrypt/encrypt_writer.go
 // Deskripsi : Writer untuk enkripsi streaming AES
 // Author : Hadiyatna Muflihun
-// Tanggal : 2024-10-14
-// Last Modified : 2025-11-14
+// Tanggal : 14 Oktober 2024
+// Last Modified : 14 November 2025
 package encrypt
 
 import (

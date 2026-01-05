@@ -1,8 +1,8 @@
 // File : internal/restore/modes/all.go
 // Deskripsi : Executor untuk restore all databases dengan streaming filtering
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-18
-// Last Modified :  2026-01-05
+// Tanggal : 18 Desember 2025
+// Last Modified : 5 Januari 2026
 package modes
 
 import (

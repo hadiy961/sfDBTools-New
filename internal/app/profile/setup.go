@@ -2,7 +2,7 @@
 // Deskripsi : Setup, configuration helpers, and path management
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 2026-01-05
+// Last Modified : 5 Januari 2026
 package profile
 
 import (

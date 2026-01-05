@@ -1,8 +1,8 @@
 // File : cmd/cmd_completion.go
 // Deskripsi : Perintah untuk menghasilkan script shell completion (bash/zsh/fish/powershell)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-11-14
-// Last Modified : 2025-11-14
+// Tanggal : 14 November 2025
+// Last Modified : 14 November 2025
 package cmd
 
 import (

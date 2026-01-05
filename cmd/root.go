@@ -1,8 +1,8 @@
 // File : cmd/cmd_root.go
 // Deskripsi : Root command untuk aplikasi sfDBTools
 // Author : Hadiyatna Muflihun
-// Tanggal : 2024-10-03
-// Last Modified : 2026-01-05
+// Tanggal : 3 Oktober 2024
+// Last Modified : 5 Januari 2026
 package cmd
 
 import (

@@ -3,8 +3,8 @@ package spinnerguard
 // File : pkg/spinnerguard/spinner_guard.go
 // Deskripsi : Guard untuk suspend output spinner saat ada write ke console
 // Author : Hadiyatna Muflihun
-// Tanggal : 2026-01-02
-// Last Modified : 2026-01-02
+// Tanggal : 2 Januari 2026
+// Last Modified : 2 Januari 2026
 
 import "sync"
 

@@ -1,8 +1,8 @@
 // File : cmd/cmd_update.go
 // Deskripsi : Sub-command untuk update binary sfDBTools dari GitHub Release terbaru
 // Author : Hadiyatna Muflihun
-// Tanggal : 2026-01-05
-// Last Modified : 2026-01-05
+// Tanggal : 5 Januari 2026
+// Last Modified : 5 Januari 2026
 package cmd
 
 import (

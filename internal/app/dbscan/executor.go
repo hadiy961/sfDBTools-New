@@ -2,7 +2,7 @@
 // Deskripsi : Background executor dan local sizing logic
 // Author : Hadiyatna Muflihun
 // Tanggal : 15 Oktober 2025
-// Last Modified : 05 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package dbscan
 

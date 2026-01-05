@@ -1,10 +1,10 @@
-package display
-
 // File : internal/app/profile/display/displayer.go
 // Deskripsi : Tampilan detail profil (show/create/edit summary)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 05 Januari 2026
+// Last Modified : 5 Januari 2026
+
+package display
 
 import (
 	"fmt"

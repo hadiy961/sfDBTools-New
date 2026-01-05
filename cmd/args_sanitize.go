@@ -1,8 +1,8 @@
 // File : cmd/args_sanitize.go
 // Deskripsi : Sanitizer argumen CLI untuk logging (masking nilai sensitif)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2026-01-02
-// Last Modified : 2026-01-02
+// Tanggal : 2 Januari 2026
+// Last Modified : 2 Januari 2026
 
 package cmd
 

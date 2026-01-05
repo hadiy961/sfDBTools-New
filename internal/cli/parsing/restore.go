@@ -1,8 +1,8 @@
 // File : pkg/parsing/parsing_restore.go
 // Deskripsi : Parsing functions untuk restore options
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-16
-// Last Modified : 2025-12-16
+// Tanggal : 16 Desember 2025
+// Last Modified : 16 Desember 2025
 
 package parsing
 

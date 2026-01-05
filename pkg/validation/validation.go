@@ -2,7 +2,7 @@
 // Deskripsi : Fungsi fungsi untuk validasi ada disini
 // Author : Hadiyatna Muflihun
 // Tanggal : 11 November 2025
-// Last Modified : 05 January 2026
+// Last Modified : 5 Januari 2026
 package validation
 
 import (

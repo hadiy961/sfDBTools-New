@@ -1,8 +1,8 @@
 // File : cmd/cmd_restore/cmd_restore_main.go
 // Deskripsi : Root command untuk restore operations
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-16
-// Last Modified : 2025-12-16
+// Tanggal : 16 Desember 2025
+// Last Modified : 16 Desember 2025
 
 package restorecmd
 

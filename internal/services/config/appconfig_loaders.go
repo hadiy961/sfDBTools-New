@@ -1,8 +1,8 @@
 // File : internal/services/config/appconfig_loaders.go
 // Deskripsi : Fungsi untuk memuat konfigurasi dari file YAML dan variabel lingkungan
 // Author : Hadiyatna Muflihun
-// Tanggal : 2024-10-03
-// Last Modified : 2026-01-05
+// Tanggal : 3 Oktober 2024
+// Last Modified : 5 Januari 2026
 package appconfig
 
 import (

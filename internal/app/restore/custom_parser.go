@@ -1,7 +1,7 @@
 // File : internal/restore/custom_parser.go
 // Deskripsi : Parser untuk format paste account detail (SFCola)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-24
+// Tanggal : 24 Desember 2025
 
 package restore
 

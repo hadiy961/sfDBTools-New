@@ -1,8 +1,8 @@
 // File : internal/services/config/appconfig_yaml.go
 // Deskripsi : Helper YAML marshal/unmarshal untuk config
 // Author : Hadiyatna Muflihun
-// Tanggal : 2026-01-02
-// Last Modified : 2026-01-05
+// Tanggal : 2 Januari 2026
+// Last Modified : 5 Januari 2026
 package appconfig
 
 import "gopkg.in/yaml.v3"

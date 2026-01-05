@@ -1,8 +1,8 @@
 // File : internal/restore/modes/bulk_helpers.go
 // Deskripsi : Helper functions untuk bulk/batch database operations
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified :  2026-01-05
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package modes
 
 import (

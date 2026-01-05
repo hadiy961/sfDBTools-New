@@ -2,7 +2,7 @@
 // Deskripsi : Helper functions untuk menampilkan hasil scanning (general purpose)
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 05 Januari 2026
+// Last Modified : 5 Januari 2026
 package helpers
 
 import (

@@ -1,8 +1,8 @@
 // File : internal/cleanup/scheduler/systemd_units.go
 // Deskripsi : Generator unit systemd untuk scheduler cleanup
 // Author : Hadiyatna Muflihun
-// Tanggal : 2026-01-02
-// Last Modified : 2026-01-05
+// Tanggal : 2 Januari 2026
+// Last Modified : 5 Januari 2026
 package scheduler
 
 import (

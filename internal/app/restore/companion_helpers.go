@@ -1,8 +1,8 @@
 // File : internal/restore/companion_helpers.go
 // Deskripsi : Helper functions untuk companion database detection
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-19
-// Last Modified : 2025-12-30
+// Tanggal : 19 Desember 2025
+// Last Modified : 30 Desember 2025
 
 package restore
 

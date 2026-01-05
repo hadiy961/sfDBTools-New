@@ -1,8 +1,8 @@
 // File : internal/restore/modes/primary.go
 // Deskripsi : Executor untuk restore primary database dengan companion
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-17
-// Last Modified :  2026-01-05
+// Tanggal : 17 Desember 2025
+// Last Modified : 5 Januari 2026
 package modes
 
 import (

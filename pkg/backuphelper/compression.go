@@ -1,8 +1,8 @@
 // File : pkg/backuphelper/compression.go
 // Deskripsi : Shared helper untuk backup compression settings
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-23
-// Last Modified : 2025-12-23
+// Tanggal : 23 Desember 2025
+// Last Modified : 23 Desember 2025
 
 package backuphelper
 

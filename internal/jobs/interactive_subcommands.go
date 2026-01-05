@@ -1,8 +1,8 @@
 // File : internal/jobs/interactive_subcommands.go
 // Deskripsi : Mode interaktif untuk subcommand jobs saat argumen belum lengkap
 // Author : Hadiyatna Muflihun
-// Tanggal : 2026-01-04
-// Last Modified : 2026-01-05
+// Tanggal : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 package jobs
 
 import (

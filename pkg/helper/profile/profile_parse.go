@@ -1,8 +1,8 @@
 // File : pkg/helper/profile/profile_parse.go
 // Deskripsi : Utility untuk load dan parse profil terenkripsi
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-05
-// Last Modified : 2026-01-05
+// Tanggal : 5 Desember 2025
+// Last Modified : 5 Januari 2026
 package profile
 
 import (

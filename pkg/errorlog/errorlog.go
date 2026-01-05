@@ -1,8 +1,8 @@
 // File : pkg/errorlog/errorlog.go
 // Deskripsi : Error logging utility untuk semua fitur (backup, dbscan, cleanup)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-11-10
-// Last Modified : 2026-01-05
+// Tanggal : 10 November 2025
+// Last Modified : 5 Januari 2026
 package errorlog
 
 import (

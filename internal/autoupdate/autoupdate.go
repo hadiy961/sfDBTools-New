@@ -1,8 +1,8 @@
 // File : internal/autoupdate/autoupdate.go
 // Deskripsi : Fitur auto-update binary sfDBTools via GitHub Releases
 // Author : Hadiyatna Muflihun
-// Tanggal : 2026-01-05
-// Last Modified : 2026-01-05
+// Tanggal : 5 Januari 2026
+// Last Modified : 5 Januari 2026
 package autoupdate
 
 import (

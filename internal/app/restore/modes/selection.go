@@ -1,7 +1,7 @@
 // File : internal/restore/modes/selection.go
 // Deskripsi : Executor untuk restore selection berbasis CSV
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-19
+// Tanggal : 19 Desember 2025
 
 package modes
 

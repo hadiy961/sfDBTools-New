@@ -1,8 +1,8 @@
 // File : internal/restore/modes/factory.go
 // Deskripsi : Factory untuk pembuatan RestoreExecutor berdasarkan tipe restore
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-17
-// Last Modified : 2025-12-17
+// Tanggal : 17 Desember 2025
+// Last Modified : 17 Desember 2025
 
 package modes
 

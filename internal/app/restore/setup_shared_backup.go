@@ -8,8 +8,8 @@ import (
 // File : internal/restore/setup_shared_backup.go
 // Deskripsi : Helper konfigurasi backup pre-restore
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified :  2026-01-05
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 func (s *Service) setupBackupOptions(backupOpts *restoremodel.RestoreBackupOptions, encryptionKey string, allowInteractive bool) {
 	if backupOpts.OutputDir == "" {
 		backupOpts.OutputDir = s.getBackupDirectory(allowInteractive)

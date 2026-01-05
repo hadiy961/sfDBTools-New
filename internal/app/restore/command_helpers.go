@@ -1,8 +1,8 @@
 // File : internal/restore/command_helpers.go
 // Deskripsi : Helper untuk command layer restore (signal handling + lifecycle)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2025-12-30
-// Last Modified :  2026-01-05
+// Tanggal : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 package restore
 
 import (
