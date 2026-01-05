@@ -2,8 +2,7 @@
 // Deskripsi : Remove/cleanup unit systemd sfDBTools (stop/disable/reset-failed + optional purge unit file)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-04
-// Last Modified : 2026-01-04
-
+// Last Modified :  2026-01-05
 package jobs
 
 import (
@@ -14,7 +13,7 @@ import (
 	"regexp"
 	"strings"
 
-	"sfDBTools/internal/schedulerutil"
+	"sfDBTools/internal/services/scheduler"
 )
 
 const systemdSystemUnitDir = "/etc/systemd/system"

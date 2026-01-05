@@ -2,8 +2,7 @@
 // Deskripsi : Command terpusat untuk monitoring job background & scheduler systemd
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-04
-// Last Modified : 2026-01-04
-
+// Last Modified :  2026-01-05
 package jobs
 
 import (
@@ -12,7 +11,7 @@ import (
 	"os"
 
 	internaljobs "sfDBTools/internal/jobs"
-	"sfDBTools/internal/schedulerutil"
+	"sfDBTools/internal/services/scheduler"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 

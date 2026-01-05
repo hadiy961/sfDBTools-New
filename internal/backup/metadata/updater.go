@@ -2,15 +2,14 @@
 // Deskripsi : Metadata update operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-22
-// Last Modified : 2025-12-22
-
+// Last Modified :  2026-01-05
 package metadata
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
 )

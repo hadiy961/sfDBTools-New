@@ -2,13 +2,12 @@
 // Deskripsi : Command untuk backup database secondary
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package backupcmd
 
 import (
-	defaultVal "sfDBTools/internal/defaultval"
-	"sfDBTools/internal/flags"
+	defaultVal "sfDBTools/internal/cli/defaults"
+	"sfDBTools/internal/cli/flags"
 	"sfDBTools/pkg/consts"
 
 	"github.com/spf13/cobra"

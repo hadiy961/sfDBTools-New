@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/appconfig"
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/config"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"

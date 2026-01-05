@@ -2,8 +2,7 @@
 // Deskripsi : Mode interaktif untuk monitoring job systemd sfDBTools
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-04
-// Last Modified : 2026-01-04
-
+// Last Modified :  2026-01-05
 package jobs
 
 import (
@@ -13,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"sfDBTools/internal/schedulerutil"
+	"sfDBTools/internal/services/scheduler"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"

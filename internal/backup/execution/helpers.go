@@ -2,15 +2,14 @@
 // Deskripsi : Shared utility functions untuk backup execution
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package execution
 
 import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/backup/gtid"
 	"sfDBTools/internal/backup/metadata"
 	"sfDBTools/internal/types/types_backup"

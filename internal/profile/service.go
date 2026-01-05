@@ -2,14 +2,13 @@
 // Deskripsi : Service utama implementation untuk profile operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 4 Januari 2026
-
+// Last Modified : 5 Januari 2026
 package profile
 
 import (
 	"errors"
-	"sfDBTools/internal/appconfig"
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/config"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 )

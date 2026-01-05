@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"

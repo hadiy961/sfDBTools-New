@@ -3,7 +3,7 @@ package gtid
 import (
 	"context"
 
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/pkg/database"
 )
 

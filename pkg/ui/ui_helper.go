@@ -5,9 +5,9 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"sfDBTools/internal/appconfig"
-	app_log "sfDBTools/internal/applog"
-	appdeps "sfDBTools/internal/deps"
+	"sfDBTools/internal/services/config"
+	app_log "sfDBTools/internal/services/log"
+	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/pkg/runtimecfg"
 	"strings"
 

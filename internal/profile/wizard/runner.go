@@ -2,14 +2,13 @@
 // Deskripsi : Runner wizard interaktif untuk create/edit profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
-
+// Last Modified : 5 Januari 2026
 package wizard
 
 import (
 	"fmt"
 
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/input"

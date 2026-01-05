@@ -2,14 +2,13 @@
 // Deskripsi : Mode interaktif khusus untuk subcommand jobs list
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-04
-// Last Modified : 2026-01-04
-
+// Last Modified :  2026-01-05
 package jobs
 
 import (
 	"context"
 
-	"sfDBTools/internal/schedulerutil"
+	"sfDBTools/internal/services/scheduler"
 )
 
 func RunInteractiveList(ctx context.Context, defaultScope schedulerutil.Scope, isRoot bool) error {

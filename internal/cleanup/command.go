@@ -2,19 +2,17 @@
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-16
-// Last Modified : 2026-01-04
-
+// Last Modified : 2026-01-05
 package cleanup
-
 import (
 	"context"
 	"fmt"
 	"os"
 	"time"
 
-	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/internal/parsing"
-	"sfDBTools/internal/schedulerutil"
+	appdeps "sfDBTools/internal/cli/deps"
+	"sfDBTools/internal/cli/parsing"
+	"sfDBTools/internal/services/scheduler"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/runtimecfg"

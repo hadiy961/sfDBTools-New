@@ -2,8 +2,7 @@
 // Deskripsi : Helper untuk daemon/background process scanning
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 2026-01-03
-
+// Last Modified :  2026-01-05
 package helpers
 
 import (
@@ -13,7 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"sfDBTools/internal/schedulerutil"
+	"sfDBTools/internal/services/scheduler"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"

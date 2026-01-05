@@ -2,13 +2,12 @@
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-16
-// Last Modified : 2026-01-04
-
+// Last Modified :  2026-01-05
 package profile
 
 import (
-	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/internal/parsing"
+	appdeps "sfDBTools/internal/cli/deps"
+	"sfDBTools/internal/cli/parsing"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"

@@ -2,14 +2,13 @@
 // Deskripsi : Service utama untuk backup operations dengan interface implementation
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package backup
 
 import (
 	"fmt"
-	"sfDBTools/internal/appconfig"
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/config"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/backup/gtid"
 	"sfDBTools/internal/backup/modes"
 	"sfDBTools/internal/types"

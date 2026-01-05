@@ -3,9 +3,7 @@
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
 // Last Modified : 2026-01-05
-
 package scheduler
-
 import (
 	"context"
 	"fmt"
@@ -15,8 +13,8 @@ import (
 
 	"github.com/joho/godotenv"
 
-	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/internal/schedulerutil"
+	appdeps "sfDBTools/internal/cli/deps"
+	"sfDBTools/internal/services/scheduler"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 )

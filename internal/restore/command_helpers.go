@@ -2,16 +2,14 @@
 // Deskripsi : Helper untuk command layer restore (signal handling + lifecycle)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified : 2026-01-05
 package restore
-
 import (
 	"context"
 	"os"
 	"os/signal"
-	"sfDBTools/internal/applog"
-	appdeps "sfDBTools/internal/deps"
+	"sfDBTools/internal/services/log"
+	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/ui"
 	"syscall"

@@ -2,10 +2,8 @@
 // Deskripsi : Eksekusi job scheduler (dipanggil oleh systemd service)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-02
-
+// Last Modified : 2026-01-05
 package scheduler
-
 import (
 	"context"
 	"errors"
@@ -16,11 +14,11 @@ import (
 	"syscall"
 	"time"
 
-	appconfig "sfDBTools/internal/appconfig"
+	appconfig "sfDBTools/internal/services/config"
 	"sfDBTools/internal/backup"
 	"sfDBTools/internal/cleanup"
-	defaultVal "sfDBTools/internal/defaultval"
-	appdeps "sfDBTools/internal/deps"
+	defaultVal "sfDBTools/internal/cli/defaults"
+	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"

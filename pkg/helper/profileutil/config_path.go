@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfDBTools/internal/appconfig"
+	"sfDBTools/internal/services/config"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/validation"
 )

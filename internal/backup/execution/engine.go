@@ -2,16 +2,15 @@
 // Deskripsi : Main backup execution engine dengan orchestration logic
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2026-01-02
-
+// Last Modified :  2026-01-05
 package execution
 
 import (
 	"context"
 	"fmt"
 
-	"sfDBTools/internal/appconfig"
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/config"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/backup/gtid"
 	"sfDBTools/internal/backup/writer"
 	"sfDBTools/internal/types/types_backup"

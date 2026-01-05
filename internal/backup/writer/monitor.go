@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/pkg/ui"
 )
 

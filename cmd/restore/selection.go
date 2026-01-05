@@ -7,8 +7,8 @@ package restorecmd
 
 import (
 	"fmt"
-	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/internal/flags"
+	appdeps "sfDBTools/internal/cli/deps"
+	"sfDBTools/internal/cli/flags"
 	"sfDBTools/internal/restore"
 
 	"github.com/spf13/cobra"

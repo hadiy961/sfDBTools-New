@@ -2,14 +2,13 @@
 // Deskripsi : Service utama implementation untuk cleanup operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 04 Januari 2026
-
+// Last Modified : 05 Januari 2026
 package cleanup
 
 import (
 	"errors"
-	"sfDBTools/internal/appconfig"
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/config"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types"
 )
 

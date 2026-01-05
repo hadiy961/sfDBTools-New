@@ -2,12 +2,11 @@
 // Deskripsi : Executor untuk operasi profile (create/edit/show/delete/save)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
-
+// Last Modified : 5 Januari 2026
 package executor
 
 import (
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types"
 )
 

@@ -1,8 +1,8 @@
 package profilecmd
 
 import (
-	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/internal/flags"
+	appdeps "sfDBTools/internal/cli/deps"
+	"sfDBTools/internal/cli/flags"
 	"sfDBTools/internal/profile"
 	"sfDBTools/pkg/consts"
 

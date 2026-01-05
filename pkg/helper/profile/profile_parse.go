@@ -2,8 +2,7 @@
 // Deskripsi : Utility untuk load dan parse profil terenkripsi
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2026-01-02
-
+// Last Modified :  2026-01-05
 package profile
 
 import (
@@ -13,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"sfDBTools/internal/parsing"
+	"sfDBTools/internal/cli/parsing"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"

@@ -2,13 +2,12 @@
 // Deskripsi : Command untuk mengelola scheduler backup (systemd timer)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-02
-
+// Last Modified :  2026-01-05
 package backupcmd
 
 import (
 	"sfDBTools/internal/backup/scheduler"
-	appdeps "sfDBTools/internal/deps"
+	appdeps "sfDBTools/internal/cli/deps"
 
 	"github.com/spf13/cobra"
 )
