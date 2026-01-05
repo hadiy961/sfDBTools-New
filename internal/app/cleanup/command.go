@@ -14,7 +14,7 @@ import (
 	cleanupmodel "sfDBTools/internal/app/cleanup/model"
 	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/parsing"
-	schedulerutil "sfDBTools/internal/services/scheduler"
+	"sfDBTools/internal/services/scheduler"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
@@ -59,9 +59,9 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 		wd, _ := os.Getwd()
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		res, runErr := schedulerutil.SpawnSelfInBackground(ctx, schedulerutil.SpawnSelfOptions{
+		res, runErr := scheduler.SpawnSelfInBackground(ctx, scheduler.SpawnSelfOptions{
 			UnitPrefix:    "sfdbtools-cleanup",
-			Mode:          schedulerutil.RunModeAuto,
+			Mode:          scheduler.RunModeAuto,
 			EnvFile:       "/etc/sfDBTools/.env",
 			WorkDir:       wd,
 			Collect:       true,
@@ -74,7 +74,7 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 		ui.PrintHeader("CLEANUP - BACKGROUND MODE")
 		ui.PrintSuccess("Background cleanup dimulai via systemd")
 		ui.PrintInfo(fmt.Sprintf("Unit: %s", ui.ColorText(res.UnitName, consts.UIColorCyan)))
-		if res.Mode == schedulerutil.RunModeUser {
+		if res.Mode == scheduler.RunModeUser {
 			ui.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
 			ui.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
 		} else {

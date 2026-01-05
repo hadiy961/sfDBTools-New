@@ -17,7 +17,7 @@ import (
 	"sfDBTools/pkg/validation"
 )
 
-func pickScopeInteractive(defaultScope schedulerutil.Scope) (schedulerutil.Scope, error) {
+func pickScopeInteractive(defaultScope scheduler.Scope) (scheduler.Scope, error) {
 	ui.PrintInfo("Pilih scope unit")
 	scopeOptions := []string{"auto", "user", "system", "both"}
 	def := strings.ToLower(string(defaultScope))
@@ -32,14 +32,14 @@ func pickScopeInteractive(defaultScope schedulerutil.Scope) (schedulerutil.Scope
 	if err != nil {
 		return "", validation.HandleInputError(err)
 	}
-	selectedScope, err := schedulerutil.NormalizeScope(orderedScopes[idx-1])
+	selectedScope, err := scheduler.NormalizeScope(orderedScopes[idx-1])
 	if err != nil {
 		return "", err
 	}
 	return selectedScope, nil
 }
 
-func pickUnitInteractive(ctx context.Context, scope schedulerutil.Scope) (string, schedulerutil.Scope, error) {
+func pickUnitInteractive(ctx context.Context, scope scheduler.Scope) (string, scheduler.Scope, error) {
 	units, usedScope, err := collectUnits(ctx, scope)
 	if err != nil {
 		return "", usedScope, err
@@ -64,7 +64,7 @@ func pickUnitInteractive(ctx context.Context, scope schedulerutil.Scope) (string
 	return pickedUnit, usedScope, nil
 }
 
-func RunInteractiveStatus(ctx context.Context, scope schedulerutil.Scope, scopeSet bool) error {
+func RunInteractiveStatus(ctx context.Context, scope scheduler.Scope, scopeSet bool) error {
 	if !scopeSet {
 		picked, err := pickScopeInteractive(scope)
 		if err != nil {
@@ -91,7 +91,7 @@ func RunInteractiveStatus(ctx context.Context, scope schedulerutil.Scope, scopeS
 	return nil
 }
 
-func RunInteractiveLogs(ctx context.Context, scope schedulerutil.Scope, scopeSet bool, lines int, follow bool, linesSet bool, followSet bool) error {
+func RunInteractiveLogs(ctx context.Context, scope scheduler.Scope, scopeSet bool, lines int, follow bool, linesSet bool, followSet bool) error {
 	if !scopeSet {
 		picked, err := pickScopeInteractive(scope)
 		if err != nil {
@@ -135,7 +135,7 @@ func RunInteractiveLogs(ctx context.Context, scope schedulerutil.Scope, scopeSet
 	return nil
 }
 
-func RunInteractiveStop(ctx context.Context, scope schedulerutil.Scope, scopeSet bool) error {
+func RunInteractiveStop(ctx context.Context, scope scheduler.Scope, scopeSet bool) error {
 	if !scopeSet {
 		picked, err := pickScopeInteractive(scope)
 		if err != nil {
@@ -172,7 +172,7 @@ func RunInteractiveStop(ctx context.Context, scope schedulerutil.Scope, scopeSet
 	return nil
 }
 
-func RunInteractiveRemove(ctx context.Context, scope schedulerutil.Scope, scopeSet bool, isRoot bool, purgeFlag bool, purgeSet bool) (string, schedulerutil.Scope, error) {
+func RunInteractiveRemove(ctx context.Context, scope scheduler.Scope, scopeSet bool, isRoot bool, purgeFlag bool, purgeSet bool) (string, scheduler.Scope, error) {
 	if !scopeSet {
 		picked, err := pickScopeInteractive(scope)
 		if err != nil {
@@ -200,7 +200,7 @@ func RunInteractiveRemove(ctx context.Context, scope schedulerutil.Scope, scopeS
 	purge := purgeFlag
 	if !purgeSet {
 		purge = false
-		if scope == schedulerutil.ScopeSystem {
+		if scope == scheduler.ScopeSystem {
 			if isRoot {
 				purge, err = input.AskYesNo("Sekalian hapus unit file (/etc/systemd/system) bila ada?", false)
 				if err != nil {

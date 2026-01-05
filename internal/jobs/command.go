@@ -16,22 +16,22 @@ import (
 
 type ListOutput struct {
 	Timers       string
-	UsedTimers   schedulerutil.Scope
+	UsedTimers   scheduler.Scope
 	Services     string
-	UsedServices schedulerutil.Scope
+	UsedServices scheduler.Scope
 }
 
-func List(ctx context.Context, scope schedulerutil.Scope) (ListOutput, error) {
-	timers, usedTimers, err := schedulerutil.TryWithScopes(scope, func(s schedulerutil.Scope) (string, error) {
-		return schedulerutil.ListTimers(ctx, s)
+func List(ctx context.Context, scope scheduler.Scope) (ListOutput, error) {
+	timers, usedTimers, err := scheduler.TryWithScopes(scope, func(s scheduler.Scope) (string, error) {
+		return scheduler.ListTimers(ctx, s)
 	})
 	if err != nil {
 		// tetap lanjut list services di bawah, supaya user tetap dapat info
 		usedTimers = ""
 	}
 
-	services, usedServices, sErr := schedulerutil.TryWithScopes(scope, func(s schedulerutil.Scope) (string, error) {
-		return schedulerutil.ListServices(ctx, s)
+	services, usedServices, sErr := scheduler.TryWithScopes(scope, func(s scheduler.Scope) (string, error) {
+		return scheduler.ListServices(ctx, s)
 	})
 	if sErr != nil {
 		// jika dua-duanya error, return error pertama
@@ -49,13 +49,13 @@ func List(ctx context.Context, scope schedulerutil.Scope) (ListOutput, error) {
 	}, nil
 }
 
-func PrintList(ctx context.Context, scope schedulerutil.Scope, isRoot bool) error {
+func PrintList(ctx context.Context, scope scheduler.Scope, isRoot bool) error {
 	return PrintListBody(ctx, scope, isRoot)
 }
 
 // PrintListBody menampilkan list jobs tanpa mencetak header utama.
 // Dipakai oleh mode interaktif agar header tidak dobel.
-func PrintListBody(ctx context.Context, scope schedulerutil.Scope, isRoot bool) error {
+func PrintListBody(ctx context.Context, scope scheduler.Scope, isRoot bool) error {
 	ui.PrintInfo("Menampilkan unit sfdbtools (service + timer)")
 	ui.PrintInfo("Tip: gunakan --scope=system bila scheduler dijalankan via sudo")
 
@@ -89,29 +89,29 @@ func PrintListBody(ctx context.Context, scope schedulerutil.Scope, isRoot bool) 
 	}
 
 	// Hint untuk system scope.
-	if !isRoot && (scope == schedulerutil.ScopeSystem || scope == schedulerutil.ScopeBoth) {
+	if !isRoot && (scope == scheduler.ScopeSystem || scope == scheduler.ScopeBoth) {
 		ui.PrintInfo("Jika ada error permission saat akses system scope, jalankan dengan sudo.")
 	}
 	return nil
 }
 
-func Status(ctx context.Context, scope schedulerutil.Scope, unit string) (string, schedulerutil.Scope, error) {
-	out, used, err := schedulerutil.TryWithScopes(scope, func(s schedulerutil.Scope) (string, error) {
-		return schedulerutil.StatusUnit(ctx, s, unit)
+func Status(ctx context.Context, scope scheduler.Scope, unit string) (string, scheduler.Scope, error) {
+	out, used, err := scheduler.TryWithScopes(scope, func(s scheduler.Scope) (string, error) {
+		return scheduler.StatusUnit(ctx, s, unit)
 	})
 	return out, used, err
 }
 
-func Logs(ctx context.Context, scope schedulerutil.Scope, unit string, lines int, follow bool) (string, schedulerutil.Scope, error) {
-	out, used, err := schedulerutil.TryWithScopes(scope, func(s schedulerutil.Scope) (string, error) {
-		return schedulerutil.LogsUnit(ctx, s, unit, lines, follow)
+func Logs(ctx context.Context, scope scheduler.Scope, unit string, lines int, follow bool) (string, scheduler.Scope, error) {
+	out, used, err := scheduler.TryWithScopes(scope, func(s scheduler.Scope) (string, error) {
+		return scheduler.LogsUnit(ctx, s, unit, lines, follow)
 	})
 	return out, used, err
 }
 
-func Stop(ctx context.Context, scope schedulerutil.Scope, unit string) (string, schedulerutil.Scope, error) {
-	out, used, err := schedulerutil.TryWithScopes(scope, func(s schedulerutil.Scope) (string, error) {
-		return schedulerutil.StopUnit(ctx, s, unit)
+func Stop(ctx context.Context, scope scheduler.Scope, unit string) (string, scheduler.Scope, error) {
+	out, used, err := scheduler.TryWithScopes(scope, func(s scheduler.Scope) (string, error) {
+		return scheduler.StopUnit(ctx, s, unit)
 	})
 	return out, used, err
 }

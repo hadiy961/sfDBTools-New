@@ -15,7 +15,7 @@ import (
 	"sfDBTools/internal/app/backup/model/types_backup"
 	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/parsing"
-	schedulerutil "sfDBTools/internal/services/scheduler"
+	"sfDBTools/internal/services/scheduler"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
@@ -113,9 +113,9 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 		wd, _ := os.Getwd()
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		res, runErr := schedulerutil.SpawnSelfInBackground(ctx, schedulerutil.SpawnSelfOptions{
+		res, runErr := scheduler.SpawnSelfInBackground(ctx, scheduler.SpawnSelfOptions{
 			UnitPrefix:    "sfdbtools-backup",
-			Mode:          schedulerutil.RunModeAuto,
+			Mode:          scheduler.RunModeAuto,
 			EnvFile:       "/etc/sfDBTools/.env",
 			WorkDir:       wd,
 			Collect:       true,
@@ -130,7 +130,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 		ui.PrintHeader("DB BACKUP - BACKGROUND MODE")
 		ui.PrintSuccess("Background backup dimulai via systemd")
 		ui.PrintInfo(fmt.Sprintf("Unit: %s", ui.ColorText(res.UnitName, consts.UIColorCyan)))
-		if res.Mode == schedulerutil.RunModeUser {
+		if res.Mode == scheduler.RunModeUser {
 			ui.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
 			ui.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
 		} else {

@@ -11,7 +11,7 @@ import (
 	"sfDBTools/internal/services/scheduler"
 )
 
-func RunInteractiveList(ctx context.Context, defaultScope schedulerutil.Scope, isRoot bool) error {
+func RunInteractiveList(ctx context.Context, defaultScope scheduler.Scope, isRoot bool) error {
 	scope, err := pickScopeInteractive(defaultScope)
 	if err != nil {
 		return err

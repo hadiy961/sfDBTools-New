@@ -16,7 +16,7 @@ import (
 
 	appdeps "sfDBTools/internal/cli/deps"
 	appconfig "sfDBTools/internal/services/config"
-	schedulerutil "sfDBTools/internal/services/scheduler"
+	"sfDBTools/internal/services/scheduler"
 	"sfDBTools/pkg/consts"
 )
 
@@ -28,7 +28,7 @@ const (
 )
 
 func Start(ctx context.Context, deps *appdeps.Dependencies, jobName string) error {
-	if err := schedulerutil.EnsureLinux(); err != nil {
+	if err := scheduler.EnsureLinux(); err != nil {
 		return err
 	}
 	if err := ensureRoot(); err != nil {
@@ -54,7 +54,7 @@ func Start(ctx context.Context, deps *appdeps.Dependencies, jobName string) erro
 		}
 	}
 
-	if err := schedulerutil.Systemctl(ctx, "daemon-reload"); err != nil {
+	if err := scheduler.Systemctl(ctx, "daemon-reload"); err != nil {
 		return err
 	}
 
@@ -63,10 +63,10 @@ func Start(ctx context.Context, deps *appdeps.Dependencies, jobName string) erro
 		// Preventive: start bisa dipanggil berulang kali.
 		// - `enable` idempotent
 		// - `restart` memastikan perubahan timer (OnCalendar) ter-apply walaupun timer sudah aktif
-		if err := schedulerutil.Systemctl(ctx, "enable", timerUnit); err != nil {
+		if err := scheduler.Systemctl(ctx, "enable", timerUnit); err != nil {
 			return err
 		}
-		if err := schedulerutil.Systemctl(ctx, "restart", timerUnit); err != nil {
+		if err := scheduler.Systemctl(ctx, "restart", timerUnit); err != nil {
 			return err
 		}
 	}
@@ -75,7 +75,7 @@ func Start(ctx context.Context, deps *appdeps.Dependencies, jobName string) erro
 }
 
 func Stop(ctx context.Context, deps *appdeps.Dependencies, jobName string, killRunning bool) error {
-	if err := schedulerutil.EnsureLinux(); err != nil {
+	if err := scheduler.EnsureLinux(); err != nil {
 		return err
 	}
 	if err := ensureRoot(); err != nil {
@@ -94,10 +94,10 @@ func Stop(ctx context.Context, deps *appdeps.Dependencies, jobName string, killR
 
 	for _, job := range jobs {
 		timerUnit := fmt.Sprintf("sfdbtools-backup@%s.timer", job.Name)
-		_ = schedulerutil.Systemctl(ctx, "disable", "--now", timerUnit)
+		_ = scheduler.Systemctl(ctx, "disable", "--now", timerUnit)
 		if killRunning {
 			serviceUnit := fmt.Sprintf("sfdbtools-backup@%s.service", job.Name)
-			_ = schedulerutil.Systemctl(ctx, "stop", serviceUnit)
+			_ = scheduler.Systemctl(ctx, "stop", serviceUnit)
 		}
 	}
 
@@ -105,7 +105,7 @@ func Stop(ctx context.Context, deps *appdeps.Dependencies, jobName string, killR
 }
 
 func Status(ctx context.Context, deps *appdeps.Dependencies, jobName string) error {
-	if err := schedulerutil.EnsureLinux(); err != nil {
+	if err := scheduler.EnsureLinux(); err != nil {
 		return err
 	}
 	jobs, err := getTargetJobs(deps, jobName, false)
@@ -119,8 +119,8 @@ func Status(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	deps.Logger.Info("Status scheduler backup (systemd timer)")
 	for _, job := range jobs {
 		timerUnit := fmt.Sprintf("sfdbtools-backup@%s.timer", job.Name)
-		active, _ := schedulerutil.SystemctlOutput(ctx, "is-active", timerUnit)
-		enabled, _ := schedulerutil.SystemctlOutput(ctx, "is-enabled", timerUnit)
+		active, _ := scheduler.SystemctlOutput(ctx, "is-active", timerUnit)
+		enabled, _ := scheduler.SystemctlOutput(ctx, "is-enabled", timerUnit)
 		deps.Logger.Infof("- %s | config.enabled=%v | systemd: %s/%s | schedule=%s", job.Name, job.Enabled, strings.TrimSpace(enabled), strings.TrimSpace(active), job.Schedule)
 	}
 	return nil
@@ -206,7 +206,7 @@ func writeTimerForJob(job appconfig.BackupSchedulerJob) error {
 	if strings.TrimSpace(job.Schedule) == "" {
 		return fmt.Errorf("schedule untuk job '%s' tidak boleh kosong", job.Name)
 	}
-	onCalendar, err := schedulerutil.CronToOnCalendar(job.Schedule)
+	onCalendar, err := scheduler.CronToOnCalendar(job.Schedule)
 	if err != nil {
 		return fmt.Errorf("schedule job '%s' tidak valid: %w", job.Name, err)
 	}
@@ -274,7 +274,7 @@ func validateJobsForStart(deps *appdeps.Dependencies, jobs []appconfig.BackupSch
 		if strings.TrimSpace(job.Schedule) == "" {
 			return fmt.Errorf("schedule untuk job '%s' tidak boleh kosong", job.Name)
 		}
-		if _, err := schedulerutil.CronToOnCalendar(job.Schedule); err != nil {
+		if _, err := scheduler.CronToOnCalendar(job.Schedule); err != nil {
 			return fmt.Errorf("schedule job '%s' tidak valid: %w", job.Name, err)
 		}
 

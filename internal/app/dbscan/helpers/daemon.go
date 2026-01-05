@@ -13,13 +13,13 @@ import (
 	"time"
 
 	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	schedulerutil "sfDBTools/internal/services/scheduler"
+	"sfDBTools/internal/services/scheduler"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 )
 
-func detectUserModeText(mode schedulerutil.RunMode) string {
-	if mode == schedulerutil.RunModeUser {
+func detectUserModeText(mode scheduler.RunMode) string {
+	if mode == scheduler.RunModeUser {
 		return "user"
 	}
 	return "system"
@@ -33,9 +33,9 @@ func SpawnScanDaemon(config dbscanmodel.ScanEntryConfig) error {
 	wd, _ := os.Getwd()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	res, err := schedulerutil.SpawnSelfInBackground(ctx, schedulerutil.SpawnSelfOptions{
+	res, err := scheduler.SpawnSelfInBackground(ctx, scheduler.SpawnSelfOptions{
 		UnitPrefix:    "sfdbtools-dbscan",
-		Mode:          schedulerutil.RunModeAuto,
+		Mode:          scheduler.RunModeAuto,
 		EnvFile:       "/etc/sfDBTools/.env",
 		WorkDir:       wd,
 		Collect:       true,
@@ -52,7 +52,7 @@ func SpawnScanDaemon(config dbscanmodel.ScanEntryConfig) error {
 	ui.PrintInfo(fmt.Sprintf("Unit: %s", ui.ColorText(res.UnitName, consts.UIColorCyan)))
 	ui.PrintInfo(fmt.Sprintf("Mode: %s", ui.ColorText(detectUserModeText(res.Mode), consts.UIColorCyan)))
 	ui.PrintInfo(fmt.Sprintf("Log dir: %s", ui.ColorText(logDir, consts.UIColorCyan)))
-	if res.Mode == schedulerutil.RunModeUser {
+	if res.Mode == scheduler.RunModeUser {
 		ui.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
 		ui.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
 	} else {

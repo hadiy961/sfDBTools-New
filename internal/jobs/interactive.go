@@ -41,7 +41,7 @@ func IsInteractiveAllowed() bool {
 	return IsInteractiveTTY()
 }
 
-func RunInteractive(ctx context.Context, defaultScope schedulerutil.Scope, isRoot bool) error {
+func RunInteractive(ctx context.Context, defaultScope scheduler.Scope, isRoot bool) error {
 	ui.PrintInfo("Pilih scope lalu pilih aksi/unit")
 	ui.PrintInfo("Tip: scope=system untuk scheduler via sudo")
 
@@ -59,7 +59,7 @@ func RunInteractive(ctx context.Context, defaultScope schedulerutil.Scope, isRoo
 	if err != nil {
 		return validation.HandleInputError(err)
 	}
-	selectedScope, err := schedulerutil.NormalizeScope(orderedScopes[idx-1])
+	selectedScope, err := scheduler.NormalizeScope(orderedScopes[idx-1])
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func RunInteractive(ctx context.Context, defaultScope schedulerutil.Scope, isRoo
 			}
 
 			purge := false
-			if selectedScope == schedulerutil.ScopeSystem {
+			if selectedScope == scheduler.ScopeSystem {
 				// Purge butuh root untuk hapus file unit.
 				if isRoot {
 					purge, err = input.AskYesNo("Sekalian hapus unit file (/etc/systemd/system) bila ada?", false)
@@ -214,7 +214,7 @@ func reorderWithDefault(options []string, def string) []string {
 	return out
 }
 
-func collectUnits(ctx context.Context, scope schedulerutil.Scope) ([]unitInfo, schedulerutil.Scope, error) {
+func collectUnits(ctx context.Context, scope scheduler.Scope) ([]unitInfo, scheduler.Scope, error) {
 	out, err := List(ctx, scope)
 	if err != nil {
 		return nil, "", err
