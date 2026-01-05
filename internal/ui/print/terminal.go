@@ -1,10 +1,17 @@
-package ui
+// File : internal/ui/print/terminal.go
+// Deskripsi : Helper terminal (size, separator, wait)
+// Author : Hadiyatna Muflihun
+// Tanggal : 3 Oktober 2024
+// Last Modified : 5 Januari 2026
+
+package print
 
 import (
 	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
+	"sfDBTools/internal/ui/progress"
 	"strings"
 )
 
@@ -59,7 +66,9 @@ func PrintBorder(char rune, width int) {
 	}
 
 	border := strings.Repeat(string(char), width)
-	fmt.Println(border)
+	progress.RunWithSpinnerSuspended(func() {
+		fmt.Println(border)
+	})
 }
 
 // PrintSeparator prints a separator line

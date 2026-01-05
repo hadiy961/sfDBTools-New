@@ -1,16 +1,25 @@
-package ui
+// File : internal/ui/print/filter_stats.go
+// Deskripsi : Tampilkan statistik filtering database (UI output)
+// Author : Hadiyatna Muflihun
+// Tanggal : 11 November 2025
+// Last Modified : 5 Januari 2026
+
+package print
 
 import (
 	"fmt"
 	"sfDBTools/internal/domain"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/pkg/consts"
+	"sfDBTools/internal/ui/style"
+	"sfDBTools/internal/ui/table"
+	"sfDBTools/internal/ui/text"
+
+	"github.com/sirupsen/logrus"
 )
 
 // DisplayFilterStats menampilkan statistik hasil pemfilteran database secara reusable.
 // Context parameter untuk menyesuaikan label (contoh: "Akan di-backup" atau "Akan di-scan")
 // Logger parameter opsional untuk logging (bisa nil)
-func DisplayFilterStats(stats *domain.FilterStats, konteks string, logger applog.Logger) {
+func PrintFilterStats(stats *domain.FilterStats, konteks string, logger logrus.FieldLogger) {
 	PrintSubHeader("Statistik Filtering Database")
 
 	// Hitung total excluded
@@ -26,7 +35,7 @@ func DisplayFilterStats(stats *domain.FilterStats, konteks string, logger applog
 
 	// Log statistik filtering
 	if logger != nil {
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"context":          konteks,
 			"total_found":      stats.TotalFound,
 			"total_included":   stats.TotalIncluded,
@@ -40,14 +49,14 @@ func DisplayFilterStats(stats *domain.FilterStats, konteks string, logger applog
 
 	data := [][]string{
 		{"Total Ditemukan", fmt.Sprintf("%d", stats.TotalFound)},
-		{actionLabel, ColorText(fmt.Sprintf("%d", stats.TotalIncluded), consts.UIColorGreen)},
-		{"Total Dikecualikan", ColorText(fmt.Sprintf("%d", totalExcluded), consts.UIColorYellow)},
+		{actionLabel, text.Color(fmt.Sprintf("%d", stats.TotalIncluded), style.ColorGreen)},
+		{"Total Dikecualikan", text.Color(fmt.Sprintf("%d", totalExcluded), style.ColorYellow)},
 	}
 
 	// Tampilkan detail exclusion jika ada yang dikecualikan
 	if totalExcluded > 0 {
 		data = append(data, []string{"", ""}) // Empty row for separation
-		data = append(data, []string{ColorText("Detail Exclusion:", consts.UIColorCyan), ""})
+		data = append(data, []string{text.Color("Detail Exclusion:", style.ColorCyan), ""})
 
 		if stats.ExcludedSystem > 0 {
 			data = append(data, []string{"  - Sistem Database", fmt.Sprintf("%d", stats.ExcludedSystem)})
@@ -63,7 +72,7 @@ func DisplayFilterStats(stats *domain.FilterStats, konteks string, logger applog
 		}
 	}
 
-	FormatTable([]string{"Kategori", "Jumlah"}, data)
+	table.Render([]string{"Kategori", "Jumlah"}, data)
 
 	// Tampilkan warning untuk database yang tidak ditemukan di server
 	hasWarnings := len(stats.NotFoundInInclude) > 0 || len(stats.NotFoundInExclude) > 0 || len(stats.NotFoundInWhitelist) > 0 || len(stats.NotFoundInBlacklist) > 0
@@ -73,7 +82,7 @@ func DisplayFilterStats(stats *domain.FilterStats, konteks string, logger applog
 
 		// Log warning tentang database tidak ditemukan
 		if logger != nil {
-			logger.WithFields(map[string]interface{}{
+			logger.WithFields(logrus.Fields{
 				"not_found_in_include":   stats.NotFoundInInclude,
 				"not_found_in_exclude":   stats.NotFoundInExclude,
 				"not_found_in_whitelist": stats.NotFoundInWhitelist,

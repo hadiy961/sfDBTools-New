@@ -1,10 +1,10 @@
-// File : pkg/ui/ui_spinner.go
+// File : internal/ui/progress/spinner_elapsed.go
 // Deskripsi : Helper untuk spinner dengan elapsed time tracking
 // Author : Hadiyatna Muflihun
 // Tanggal : 11 November 2025
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
-package ui
+package progress
 
 import (
 	"fmt"
@@ -18,8 +18,9 @@ import (
 	"github.com/briandowns/spinner"
 )
 
-// SpinnerWithElapsed adalah wrapper untuk spinner dengan elapsed time tracking
-type SpinnerWithElapsed struct {
+// elapsedSpinner adalah implementasi spinner dengan elapsed time tracking.
+// Unexported karena API yang dipakai codebase adalah `progress.Spinner`.
+type elapsedSpinner struct {
 	spin      *spinner.Spinner
 	done      chan bool
 	message   string
@@ -27,7 +28,7 @@ type SpinnerWithElapsed struct {
 }
 
 var (
-	activeSpinner *SpinnerWithElapsed
+	activeSpinner *elapsedSpinner
 	activeMu      sync.Mutex
 )
 
@@ -37,12 +38,11 @@ func init() {
 	spinnerguard.SetSuspender(RunWithSpinnerSuspended)
 }
 
-// NewSpinnerWithElapsed membuat spinner baru dengan elapsed time tracking
-func NewSpinnerWithElapsed(message string) *SpinnerWithElapsed {
+func newElapsedSpinner(message string) *elapsedSpinner {
 	// Saat berjalan di background/daemon atau quiet, spinner bikin output tumpang tindih dengan logs.
 	// Jadi dimatikan dan diganti no-op.
 	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
-		return &SpinnerWithElapsed{message: message, startTime: time.Now()}
+		return &elapsedSpinner{message: message, startTime: time.Now()}
 	}
 
 	spin := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
@@ -50,7 +50,7 @@ func NewSpinnerWithElapsed(message string) *SpinnerWithElapsed {
 	// Write spinner to stderr so it doesn't interleave with stdout logs
 	spin.Writer = os.Stderr
 
-	s := &SpinnerWithElapsed{
+	s := &elapsedSpinner{
 		spin:      spin,
 		done:      make(chan bool, 1),
 		message:   message,
@@ -61,7 +61,7 @@ func NewSpinnerWithElapsed(message string) *SpinnerWithElapsed {
 }
 
 // Start memulai spinner dan elapsed time updater
-func (s *SpinnerWithElapsed) Start() {
+func (s *elapsedSpinner) Start() {
 	if s == nil || s.spin == nil {
 		return
 	}
@@ -88,7 +88,7 @@ func (s *SpinnerWithElapsed) Start() {
 }
 
 // Stop menghentikan spinner dan elapsed time updater
-func (s *SpinnerWithElapsed) Stop() {
+func (s *elapsedSpinner) Stop() {
 	if s == nil || s.spin == nil {
 		return
 	}
@@ -104,7 +104,7 @@ func (s *SpinnerWithElapsed) Stop() {
 }
 
 // UpdateMessage mengubah message spinner tanpa restart
-func (s *SpinnerWithElapsed) UpdateMessage(message string) {
+func (s *elapsedSpinner) UpdateMessage(message string) {
 	if s == nil || s.spin == nil {
 		return
 	}
@@ -114,7 +114,7 @@ func (s *SpinnerWithElapsed) UpdateMessage(message string) {
 }
 
 // SuspendAndRun stops the spinner, runs action, then restarts the spinner preserving elapsed time
-func (s *SpinnerWithElapsed) SuspendAndRun(action func()) {
+func (s *elapsedSpinner) SuspendAndRun(action func()) {
 	if s == nil || s.spin == nil {
 		action()
 		return

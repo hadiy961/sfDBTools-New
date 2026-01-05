@@ -1,45 +1,40 @@
-// File : pkg/ui/ui_formatting.go
+// File : internal/ui/print/formatting.go
 // Deskripsi : Fungsi utilitas untuk output format di terminal
 // Author : Hadiyatna Muflihun
 // Tanggal : 3 Oktober 2024
-// Last Modified : 4 Januari 2026
-package ui
+// Last Modified : 5 Januari 2026
+
+package print
 
 import (
 	"fmt"
-	"os"
-	"sfDBTools/pkg/consts"
+	"sfDBTools/internal/ui/progress"
+	"sfDBTools/internal/ui/style"
+	"sfDBTools/internal/ui/text"
 	"sfDBTools/pkg/runtimecfg"
 	"strings"
-
-	"github.com/olekukonko/tablewriter"
 )
 
-// ColorText applies color to text
-func ColorText(text, color string) string {
-	return color + text + consts.UIColorReset
-}
-
 // PrintColoredLine prints a line with the specified color
-func PrintColoredLine(text, color string) {
-	RunWithSpinnerSuspended(func() {
-		fmt.Println(ColorText(text, color))
+func PrintColoredLine(msg string, color style.Color) {
+	progress.RunWithSpinnerSuspended(func() {
+		fmt.Println(text.Color(msg, color))
 	})
 }
 
 // PrintSuccess prints success message in green
 func PrintSuccess(message string) {
-	PrintColoredLine("✅ "+message, consts.UIColorGreen)
+	PrintColoredLine("✅ "+message, style.ColorGreen)
 }
 
 // PrintWarning prints warning message in yellow
 func PrintWarning(message string) {
-	PrintColoredLine(message, consts.UIColorYellow)
+	PrintColoredLine(message, style.ColorYellow)
 }
 
 // PrintInfo prints info message in blue
 func PrintInfo(message string) {
-	PrintColoredLine(message, consts.UIColorBlue)
+	PrintColoredLine(message, style.ColorBlue)
 }
 
 // PrintHeader prints a header with border
@@ -65,15 +60,15 @@ func PrintHeader(title string) {
 	rightPad := strings.Repeat(" ", width-titleLen-2-padding)
 
 	fmt.Println()
-	PrintColoredLine(border, consts.UIColorCyan)
-	PrintColoredLine("|"+leftPad+title+rightPad+"|", consts.UIColorCyan)
-	PrintColoredLine(border, consts.UIColorCyan)
+	PrintColoredLine(border, style.ColorCyan)
+	PrintColoredLine("|"+leftPad+title+rightPad+"|", style.ColorCyan)
+	PrintColoredLine(border, style.ColorCyan)
 	fmt.Println()
 }
 
 // PrintError prints error message in red
 func PrintError(message string) {
-	PrintColoredLine("❌ "+message, consts.UIColorRed)
+	PrintColoredLine("❌ "+message, style.ColorRed)
 }
 
 // PrintSubHeader prints a sub-header
@@ -83,23 +78,11 @@ func PrintSubHeader(title string) {
 	}
 
 	fmt.Println()
-	PrintColoredLine("📋 "+title, consts.UIColorBold)
+	PrintColoredLine("📋 "+title, style.ColorBold)
 	PrintDashedSeparator()
 }
 
-// FormatTable formats data as a table using tablewriter library for better appearance
-func FormatTable(headers []string, rows [][]string) {
-	if len(headers) == 0 || len(rows) == 0 {
-		return
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-
-	// Set table headers using the correct method
-	table.Header(headers)
-
-	table.Bulk(rows)
-
-	// Render the table
-	table.Render()
+// PrintWarn adalah alias kompatibilitas untuk PrintWarning.
+func PrintWarn(message string) {
+	PrintWarning(message)
 }

@@ -49,7 +49,7 @@ func (s *Service) DisplayScanOptions() (bool, error) {
 	return true, nil
 }
 
-// Wrapper methods for pkg/dbscanhelper and pkg/ui display functions
+// Wrapper methods untuk helper display
 
 func (s *Service) DisplayFilterStats(stats *domain.FilterStats) {
 	print.PrintFilterStats(stats, "scan", s.Log)
