@@ -2,7 +2,7 @@
 // Deskripsi : Command untuk backup database secondary
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified :  2026-01-05
+// Last Modified : 2026-01-05
 package backupcmd
 
 import (

@@ -2,7 +2,7 @@
 // Deskripsi : Service utama implementation untuk database scanning operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 15 Oktober 2025
-// Last Modified :  2026-01-05
+// Last Modified : 2026-01-05
 package dbscan
 
 import (

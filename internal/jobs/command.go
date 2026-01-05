@@ -2,7 +2,7 @@
 // Deskripsi : Logic command untuk monitoring systemd jobs (list/status/logs/stop)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-04
-// Last Modified :  2026-01-05
+// Last Modified : 2026-01-05
 package jobs
 
 import (

@@ -2,7 +2,7 @@
 // Deskripsi : Helper untuk daemon/background process scanning
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified :  2026-01-05
+// Last Modified : 2026-01-05
 package helpers
 
 import (
