@@ -59,11 +59,15 @@ func PrintHeader(title string) {
 	leftPad := strings.Repeat(" ", padding)
 	rightPad := strings.Repeat(" ", width-titleLen-2-padding)
 
-	fmt.Println()
+	progress.RunWithSpinnerSuspended(func() {
+		fmt.Println()
+	})
 	PrintColoredLine(border, style.ColorCyan)
 	PrintColoredLine("|"+leftPad+title+rightPad+"|", style.ColorCyan)
 	PrintColoredLine(border, style.ColorCyan)
-	fmt.Println()
+	progress.RunWithSpinnerSuspended(func() {
+		fmt.Println()
+	})
 }
 
 // PrintError prints error message in red
@@ -77,7 +81,9 @@ func PrintSubHeader(title string) {
 		return
 	}
 
-	fmt.Println()
+	progress.RunWithSpinnerSuspended(func() {
+		fmt.Println()
+	})
 	PrintColoredLine("📋 "+title, style.ColorBold)
 	PrintDashedSeparator()
 }

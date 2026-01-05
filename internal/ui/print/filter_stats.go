@@ -16,7 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// DisplayFilterStats menampilkan statistik hasil pemfilteran database secara reusable.
+// PrintFilterStats menampilkan statistik hasil pemfilteran database secara reusable.
 // Context parameter untuk menyesuaikan label (contoh: "Akan di-backup" atau "Akan di-scan")
 // Logger parameter opsional untuk logging (bisa nil)
 func PrintFilterStats(stats *domain.FilterStats, konteks string, logger logrus.FieldLogger) {
