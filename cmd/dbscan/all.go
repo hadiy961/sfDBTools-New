@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"sfDBTools/internal/app/dbscan"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/flags"
 	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/validation"
 
 	"github.com/spf13/cobra"
@@ -47,7 +47,7 @@ Contoh penggunaan:
 		svc := dbscan.NewDBScanService(appdeps.Deps.Config, logger, parsedOpts)
 
 		// Execute scan
-		scanConfig := types.ScanEntryConfig{
+		scanConfig := dbscanmodel.ScanEntryConfig{
 			HeaderTitle: "Database Scanning - Semua Database",
 			ShowOptions: parsedOpts.ShowOptions,
 			SuccessMsg:  "Proses scanning database selesai.",

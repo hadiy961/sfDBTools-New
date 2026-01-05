@@ -2,13 +2,12 @@
 // Deskripsi : Adapter untuk memanggil subpackage executor dari Service
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
-
+// Last Modified : 2026-01-05
 package profile
 
 import (
 	"sfDBTools/internal/app/profile/executor"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 )
 
 func (s *Service) buildExecutor() *executor.Executor {
@@ -62,7 +61,7 @@ func (s *Service) buildExecutor() *executor.Executor {
 		return err
 	}
 
-	e.LoadSnapshotFromPath = func(absPath string) (*types.ProfileInfo, error) {
+	e.LoadSnapshotFromPath = func(absPath string) (*domain.ProfileInfo, error) {
 		err := s.loadSnapshotFromPath(absPath)
 		e.OriginalProfileName = s.OriginalProfileName
 		e.OriginalProfileInfo = s.OriginalProfileInfo

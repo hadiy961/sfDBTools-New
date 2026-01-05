@@ -1,4 +1,4 @@
-// File : internal/backup/scheduler/run_job.go
+// File : internal/app/backup/scheduler/run_job.go
 // Deskripsi : Eksekusi job scheduler (dipanggil oleh systemd service)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
@@ -16,12 +16,12 @@ import (
 	"time"
 
 	"sfDBTools/internal/app/backup"
+	"sfDBTools/internal/app/backup/model/types_backup"
 	"sfDBTools/internal/app/cleanup"
+	cleanupmodel "sfDBTools/internal/app/cleanup/model"
 	defaultVal "sfDBTools/internal/cli/defaults"
 	appdeps "sfDBTools/internal/cli/deps"
 	appconfig "sfDBTools/internal/services/config"
-	"sfDBTools/internal/types"
-	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 )
@@ -164,7 +164,7 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 		cfgCopy.Backup.Cleanup.Enabled = true
 		cfgCopy.Backup.Cleanup.Days = job.Cleanup.RetentionDays
 
-		cleanupSvc := cleanup.NewCleanupService(&cfgCopy, deps.Logger, types.CleanupOptions{
+		cleanupSvc := cleanup.NewCleanupService(&cfgCopy, deps.Logger, cleanupmodel.CleanupOptions{
 			Enabled:    true,
 			Days:       job.Cleanup.RetentionDays,
 			Background: false,

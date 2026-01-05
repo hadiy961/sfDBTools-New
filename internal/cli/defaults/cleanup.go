@@ -1,15 +1,15 @@
 package defaultVal
 
 import (
-	"sfDBTools/internal/services/config"
-	"sfDBTools/internal/types"
+	cleanupmodel "sfDBTools/internal/app/cleanup/model"
+	appconfig "sfDBTools/internal/services/config"
 )
 
 // DefaultCleanupOptions mengembalikan opsi default untuk pembersihan backup.
 // Aman dipanggil saat inisialisasi (init) karena tidak akan panic jika konfigurasi belum tersedia.
-func DefaultCleanupOptions() types.CleanupOptions {
+func DefaultCleanupOptions() cleanupmodel.CleanupOptions {
 	// Inisialisasi dengan nilai paling aman (disabled) agar tidak ada operasi berbahaya terjadi tanpa konfigurasi.
-	opts := types.CleanupOptions{
+	opts := cleanupmodel.CleanupOptions{
 		Enabled:         false,
 		Days:            0,
 		CleanupSchedule: "",

@@ -2,17 +2,17 @@ package defaultVal
 
 import (
 	"os"
-	"sfDBTools/internal/services/config"
-	"sfDBTools/internal/types"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
+	appconfig "sfDBTools/internal/services/config"
 	"sfDBTools/pkg/consts"
 )
 
 // GetDefaultScanOptions mengembalikan default options untuk database scan
-func GetDefaultScanOptions(mode string) types.ScanOptions {
+func GetDefaultScanOptions(mode string) dbscanmodel.ScanOptions {
 	// Muat konfigurasi aplikasi untuk mendapatkan direktori konfigurasi
 	cfg, _ := appconfig.LoadConfigFromEnv()
 
-	opts := types.ScanOptions{}
+	opts := dbscanmodel.ScanOptions{}
 
 	// Database Configuration
 	opts.ProfileInfo.Path = os.Getenv(consts.ENV_SOURCE_PROFILE)

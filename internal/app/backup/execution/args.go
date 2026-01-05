@@ -1,8 +1,8 @@
-// File : internal/backup/execution/args.go
+// File : internal/app/backup/execution/args.go
 // Deskripsi : Mysqldump arguments builder dan password masking
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2026-01-02
+// Last Modified : 2026-01-05
 
 package execution
 
@@ -10,15 +10,15 @@ import (
 	"strconv"
 	"strings"
 
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 )
 
 // BuildMysqldumpArgs membuat argumen mysqldump dari konfigurasi backup.
 // Function ini pure logic tanpa wrapper - langsung menggunakan types yang sudah ada.
 func BuildMysqldumpArgs(
 	baseDumpArgs string,
-	dbInfo types.DBInfo,
-	filter types.FilterOptions,
+	dbInfo domain.DBInfo,
+	filter domain.FilterOptions,
 	dbFiltered []string,
 	singleDB string,
 	totalDBFound int,

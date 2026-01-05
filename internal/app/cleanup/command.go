@@ -1,19 +1,20 @@
-// File : internal/cleanup/command.go
+// File : internal/app/cleanup/command.go
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-16
 // Last Modified : 2026-01-05
 package cleanup
+
 import (
 	"context"
 	"fmt"
 	"os"
 	"time"
 
+	cleanupmodel "sfDBTools/internal/app/cleanup/model"
 	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/internal/types"
+	schedulerutil "sfDBTools/internal/services/scheduler"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
@@ -41,7 +42,7 @@ func ExecuteCleanup(cmd *cobra.Command, deps *appdeps.Dependencies, mode string)
 // =============================================================================
 
 // executeCleanupWithConfig adalah helper function yang menjalankan cleanup dengan configuration
-func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, config types.CleanupEntryConfig) error {
+func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, config cleanupmodel.CleanupEntryConfig) error {
 	logger := deps.Logger
 	logger.Info("Memulai proses cleanup - " + config.Mode)
 
@@ -115,8 +116,8 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 }
 
 // GetExecutionConfig mengembalikan konfigurasi untuk mode cleanup tertentu
-func GetExecutionConfig(mode string) (types.CleanupEntryConfig, error) {
-	configs := map[string]types.CleanupEntryConfig{
+func GetExecutionConfig(mode string) (cleanupmodel.CleanupEntryConfig, error) {
+	configs := map[string]cleanupmodel.CleanupEntryConfig{
 		"run": {
 			HeaderTitle: "Cleanup Old Backup Files",
 			Mode:        "run",
@@ -135,7 +136,7 @@ func GetExecutionConfig(mode string) (types.CleanupEntryConfig, error) {
 
 	config, ok := configs[mode]
 	if !ok {
-		return types.CleanupEntryConfig{}, ErrInvalidCleanupMode
+		return cleanupmodel.CleanupEntryConfig{}, ErrInvalidCleanupMode
 	}
 
 	return config, nil

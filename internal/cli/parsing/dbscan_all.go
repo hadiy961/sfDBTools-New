@@ -1,8 +1,8 @@
 package parsing
 
 import (
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 	defaultVal "sfDBTools/internal/cli/defaults"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/helper"
 
 	"github.com/spf13/cobra"
@@ -11,7 +11,7 @@ import (
 // ParsingScanAllOptions membaca flag untuk perintah `dbscan all` dengan
 // nama flag yang konsisten dengan perintah `dbscan filter`.
 // Mengembalikan ScanOptions yang siap dipakai service.
-func ParsingScanAllOptions(cmd *cobra.Command) (types.ScanOptions, error) {
+func ParsingScanAllOptions(cmd *cobra.Command) (dbscanmodel.ScanOptions, error) {
 	// Mulai dari default untuk mode all
 	opts := defaultVal.GetDefaultScanOptions("all")
 

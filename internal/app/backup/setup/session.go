@@ -1,8 +1,8 @@
-// File : internal/backup/setup/session.go
+// File : internal/app/backup/setup/session.go
 // Deskripsi : Setup session backup (termasuk loop interaktif untuk mode ALL)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2026-01-02
+// Last Modified : 2026-01-05
 
 package setup
 
@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"sfDBTools/internal/app/backup/display"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	profilehelper "sfDBTools/pkg/helper/profile"
@@ -78,7 +78,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 
 	// Interactive edit loop khusus untuk backup all & single-variant modes (hanya jika interaktif)
 	for {
-		var stats *types.FilterStats
+		var stats *domain.FilterStats
 		dbFiltered, stats, err = s.GetFilteredDatabases(ctx, client)
 		if err != nil {
 			if stats != nil {

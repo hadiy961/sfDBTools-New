@@ -7,8 +7,8 @@ package modes
 
 import (
 	"context"
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/internal/app/backup/model/types_backup"
+	applog "sfDBTools/internal/services/log"
 )
 
 // ModeExecutor interface untuk semua mode backup

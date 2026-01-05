@@ -2,15 +2,14 @@
 // Deskripsi : Common helper functions untuk semua restore executors
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package modes
 
 import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/app/restore/helpers"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 	"strings"
@@ -27,7 +26,7 @@ type commonRestoreFlow struct {
 	skipBackup    bool
 	dropTarget    bool
 	stopOnError   bool
-	backupOpts    *types.RestoreBackupOptions
+	backupOpts    *restoremodel.RestoreBackupOptions
 }
 
 // execute menjalankan alur restore umum dan mengembalikan path file backup serta error
@@ -125,8 +124,8 @@ func validateFileForDryRun(file, encryptionKey string) error {
 }
 
 // createResultWithDefaults membuat RestoreResult dengan nilai default umum
-func createResultWithDefaults(targetDB, sourceFile string, startTime time.Time) *types.RestoreResult {
-	return &types.RestoreResult{
+func createResultWithDefaults(targetDB, sourceFile string, startTime time.Time) *restoremodel.RestoreResult {
+	return &restoremodel.RestoreResult{
 		TargetDB:   targetDB,
 		SourceFile: sourceFile,
 		Success:    false, // Akan di-set true jika berhasil
@@ -134,7 +133,7 @@ func createResultWithDefaults(targetDB, sourceFile string, startTime time.Time) 
 }
 
 // finalizeResult mengatur status sukses dan durasi untuk hasil restore
-func finalizeResult(result *types.RestoreResult, startTime time.Time, success bool) {
+func finalizeResult(result *restoremodel.RestoreResult, startTime time.Time, success bool) {
 	result.Success = success
 	result.Duration = time.Since(startTime).Round(time.Second).String()
 }

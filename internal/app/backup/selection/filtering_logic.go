@@ -3,7 +3,7 @@ package selection
 import (
 	"strings"
 
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 )
 
@@ -14,7 +14,7 @@ func FilterCandidatesByMode(dbFiltered []string, mode string) []string {
 	for _, db := range dbFiltered {
 		dbLower := strings.ToLower(db)
 
-		if _, isSystemDB := types.SystemDatabases[dbLower]; isSystemDB {
+		if _, isSystemDB := domain.SystemDatabases[dbLower]; isSystemDB {
 			continue
 		}
 

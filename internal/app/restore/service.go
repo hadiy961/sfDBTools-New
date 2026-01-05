@@ -2,14 +2,15 @@
 // Deskripsi : Service utama untuk restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-16
-// Last Modified : 2026-01-05
+// Last Modified :  2026-01-05
 package restore
 
 import (
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/internal/app/restore/modes"
+	"sfDBTools/internal/domain"
 	appconfig "sfDBTools/internal/services/config"
 	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
@@ -23,13 +24,13 @@ type Service struct {
 	Config               *appconfig.Config
 	Log                  applog.Logger
 	ErrorLog             *errorlog.ErrorLogger
-	Profile              *types.ProfileInfo
-	RestoreOpts          *types.RestoreSingleOptions
-	RestorePrimaryOpts   *types.RestorePrimaryOptions
-	RestoreSecondaryOpts *types.RestoreSecondaryOptions
-	RestoreAllOpts       *types.RestoreAllOptions
-	RestoreSelOpts       *types.RestoreSelectionOptions
-	RestoreCustomOpts    *types.RestoreCustomOptions
+	Profile              *domain.ProfileInfo
+	RestoreOpts          *restoremodel.RestoreSingleOptions
+	RestorePrimaryOpts   *restoremodel.RestorePrimaryOptions
+	RestoreSecondaryOpts *restoremodel.RestoreSecondaryOptions
+	RestoreAllOpts       *restoremodel.RestoreAllOptions
+	RestoreSelOpts       *restoremodel.RestoreSelectionOptions
+	RestoreCustomOpts    *restoremodel.RestoreCustomOptions
 	TargetClient         *database.Client
 
 	// Restore-specific state
@@ -38,7 +39,7 @@ type Service struct {
 }
 
 // NewRestoreService membuat instance baru Service dengan generic options
-// Accepts: *types.RestoreSingleOptions, *types.RestorePrimaryOptions, *types.RestoreAllOptions, *types.RestoreSelectionOptions
+// Accepts: *restoremodel.RestoreSingleOptions, *restoremodel.RestorePrimaryOptions, *restoremodel.RestoreAllOptions, *restoremodel.RestoreSelectionOptions
 func NewRestoreService(logs applog.Logger, cfg *appconfig.Config, restore interface{}) *Service {
 	logDir := cfg.Log.Output.File.Dir
 	if logDir == "" {
@@ -53,22 +54,22 @@ func NewRestoreService(logs applog.Logger, cfg *appconfig.Config, restore interf
 
 	if restore != nil {
 		switch v := restore.(type) {
-		case *types.RestoreSingleOptions:
+		case *restoremodel.RestoreSingleOptions:
 			svc.RestoreOpts = v
 			svc.Profile = &v.Profile
-		case *types.RestorePrimaryOptions:
+		case *restoremodel.RestorePrimaryOptions:
 			svc.RestorePrimaryOpts = v
 			svc.Profile = &v.Profile
-		case *types.RestoreSecondaryOptions:
+		case *restoremodel.RestoreSecondaryOptions:
 			svc.RestoreSecondaryOpts = v
 			svc.Profile = &v.Profile
-		case *types.RestoreAllOptions:
+		case *restoremodel.RestoreAllOptions:
 			svc.RestoreAllOpts = v
 			svc.Profile = &v.Profile
-		case *types.RestoreSelectionOptions:
+		case *restoremodel.RestoreSelectionOptions:
 			svc.RestoreSelOpts = v
 			svc.Profile = &v.Profile
-		case *types.RestoreCustomOptions:
+		case *restoremodel.RestoreCustomOptions:
 			svc.RestoreCustomOpts = v
 			svc.Profile = &v.Profile
 		default:
@@ -135,31 +136,31 @@ func (s *Service) GetTargetClient() *database.Client {
 	return s.TargetClient
 }
 
-func (s *Service) GetProfile() *types.ProfileInfo {
+func (s *Service) GetProfile() *domain.ProfileInfo {
 	return s.Profile
 }
 
-func (s *Service) GetSingleOptions() *types.RestoreSingleOptions {
+func (s *Service) GetSingleOptions() *restoremodel.RestoreSingleOptions {
 	return s.RestoreOpts
 }
 
-func (s *Service) GetPrimaryOptions() *types.RestorePrimaryOptions {
+func (s *Service) GetPrimaryOptions() *restoremodel.RestorePrimaryOptions {
 	return s.RestorePrimaryOpts
 }
 
-func (s *Service) GetSecondaryOptions() *types.RestoreSecondaryOptions {
+func (s *Service) GetSecondaryOptions() *restoremodel.RestoreSecondaryOptions {
 	return s.RestoreSecondaryOpts
 }
 
-func (s *Service) GetAllOptions() *types.RestoreAllOptions {
+func (s *Service) GetAllOptions() *restoremodel.RestoreAllOptions {
 	return s.RestoreAllOpts
 }
 
-func (s *Service) GetSelectionOptions() *types.RestoreSelectionOptions {
+func (s *Service) GetSelectionOptions() *restoremodel.RestoreSelectionOptions {
 	return s.RestoreSelOpts
 }
 
-func (s *Service) GetCustomOptions() *types.RestoreCustomOptions {
+func (s *Service) GetCustomOptions() *restoremodel.RestoreCustomOptions {
 	return s.RestoreCustomOpts
 }
 

@@ -2,17 +2,15 @@
 // Deskripsi : Handler interaktif untuk mengubah opsi restore-single
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package restore
 
 import (
 	"context"
 	"fmt"
-	"strings"
-
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/input"
+	"strings"
 )
 
 func (s *Service) editRestoreSingleOptionsInteractive() error {
@@ -151,7 +149,7 @@ func (s *Service) changeSingleSkipBackup() error {
 	}
 
 	if s.RestoreOpts.BackupOptions == nil {
-		s.RestoreOpts.BackupOptions = &types.RestoreBackupOptions{}
+		s.RestoreOpts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 	}
 	s.setupBackupOptions(s.RestoreOpts.BackupOptions, s.RestoreOpts.EncryptionKey, true)
 	return nil
@@ -159,7 +157,7 @@ func (s *Service) changeSingleSkipBackup() error {
 
 func (s *Service) changeSingleBackupDirectory() error {
 	if s.RestoreOpts.BackupOptions == nil {
-		s.RestoreOpts.BackupOptions = &types.RestoreBackupOptions{}
+		s.RestoreOpts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 	}
 
 	current := s.RestoreOpts.BackupOptions.OutputDir

@@ -3,7 +3,7 @@ package profile
 import (
 	"fmt"
 
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/helper/env"
 	"sfDBTools/pkg/helper/profileutil"
 )
@@ -22,7 +22,7 @@ type ProfileLoadOptions struct {
 }
 
 // ResolveAndLoadProfile me-resolve dan load profile dengan fallback ke environment variables.
-func ResolveAndLoadProfile(opts ProfileLoadOptions) (*types.ProfileInfo, error) {
+func ResolveAndLoadProfile(opts ProfileLoadOptions) (*domain.ProfileInfo, error) {
 	profilePath := opts.ProfilePath
 	profileKey := opts.ProfileKey
 
@@ -79,7 +79,7 @@ func ResolveAndLoadProfile(opts ProfileLoadOptions) (*types.ProfileInfo, error) 
 }
 
 // LoadSourceProfile loads source profile untuk backup/dbscan operations dengan interactive mode.
-func LoadSourceProfile(configDir, profilePath, profileKey string, allowInteractive bool) (*types.ProfileInfo, error) {
+func LoadSourceProfile(configDir, profilePath, profileKey string, allowInteractive bool) (*domain.ProfileInfo, error) {
 	return ResolveAndLoadProfile(ProfileLoadOptions{
 		ConfigDir:         configDir,
 		ProfilePath:       profilePath,

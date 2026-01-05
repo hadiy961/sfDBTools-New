@@ -6,16 +6,16 @@ import (
 	"sync"
 	"time"
 
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
+	applog "sfDBTools/internal/services/log"
 	"sfDBTools/pkg/database"
 
 	"github.com/dustin/go-humanize"
 )
 
-func collectSingleDatabaseDetail(ctx context.Context, client *database.Client, logger applog.Logger, dbName string, sizeProvider func(context.Context, string) (int64, error)) types.DatabaseDetailInfo {
+func collectSingleDatabaseDetail(ctx context.Context, client *database.Client, logger applog.Logger, dbName string, sizeProvider func(context.Context, string) (int64, error)) dbscanmodel.DatabaseDetailInfo {
 	startTime := time.Now()
-	detail := types.DatabaseDetailInfo{
+	detail := dbscanmodel.DatabaseDetailInfo{
 		DatabaseName:   dbName,
 		CollectionTime: startTime.Format("2006-01-02 15:04:05"),
 	}

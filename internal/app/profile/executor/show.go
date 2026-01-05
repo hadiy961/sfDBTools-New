@@ -2,21 +2,19 @@
 // Deskripsi : Eksekusi tampilkan profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
-
+// Last Modified : 2026-01-05
 package executor
 
 import (
 	"fmt"
-	"strings"
-
-	"sfDBTools/internal/types"
+	profilemodel "sfDBTools/internal/app/profile/model"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
 	profilehelper "sfDBTools/pkg/helper/profile"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
+	"strings"
 )
 
 func (e *Executor) ShowProfile() error {
@@ -50,7 +48,7 @@ func (e *Executor) ShowProfile() error {
 			return err
 		}
 		if e.ProfileShow == nil {
-			e.ProfileShow = &types.ProfileShowOptions{}
+			e.ProfileShow = &profilemodel.ProfileShowOptions{}
 		}
 		e.ProfileShow.Path = e.ProfileInfo.Path
 		e.ProfileShow.RevealPassword = revealPassword

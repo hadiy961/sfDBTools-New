@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/process"
@@ -16,9 +16,9 @@ import (
 
 // EffectiveDBInfo mengembalikan DBInfo yang efektif untuk koneksi.
 // Jika SSH tunnel aktif dan sudah memiliki ResolvedLocalPort, koneksi diarahkan ke localhost.
-func EffectiveDBInfo(profile *types.ProfileInfo) types.DBInfo {
+func EffectiveDBInfo(profile *domain.ProfileInfo) domain.DBInfo {
 	if profile == nil {
-		return types.DBInfo{}
+		return domain.DBInfo{}
 	}
 	info := profile.DBInfo
 	if profile.SSHTunnel.Enabled && profile.SSHTunnel.ResolvedLocalPort > 0 {
@@ -29,7 +29,7 @@ func EffectiveDBInfo(profile *types.ProfileInfo) types.DBInfo {
 }
 
 // ConnectWithProfile membuat koneksi database menggunakan ProfileInfo.
-func ConnectWithProfile(profile *types.ProfileInfo, initialDB string) (*database.Client, error) {
+func ConnectWithProfile(profile *domain.ProfileInfo, initialDB string) (*database.Client, error) {
 	if profile == nil {
 		return nil, fmt.Errorf("profile tidak boleh nil")
 	}

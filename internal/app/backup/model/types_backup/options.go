@@ -1,13 +1,13 @@
-// File : internal/types/types_backup/options.go
+// File : internal/app/backup/model/types_backup/options.go
 // Deskripsi : Options dan config structs untuk backup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-30
+// Last Modified : 2026-01-05
 
 package types_backup
 
 import (
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"time"
 )
 
@@ -24,10 +24,10 @@ type BackupExecutionConfig struct {
 
 // BackupDBOptions menyimpan opsi konfigurasi untuk proses backup database.
 type BackupDBOptions struct {
-	Filter          types.FilterOptions
-	Profile         types.ProfileInfo
-	Compression     types.CompressionOptions
-	Encryption      types.EncryptionOptions
+	Filter          domain.FilterOptions
+	Profile         domain.ProfileInfo
+	Compression     domain.CompressionOptions
+	Encryption      domain.EncryptionOptions
 	DryRun          bool
 	OutputDir       string
 	Mode            string         // "separated" atau "combined"

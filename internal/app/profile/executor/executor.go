@@ -2,34 +2,35 @@
 // Deskripsi : Executor untuk operasi profile (create/edit/show/delete/save)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 2026-01-05
 package executor
 
 import (
+	profilemodel "sfDBTools/internal/app/profile/model"
+	"sfDBTools/internal/domain"
 	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
 )
 
 type Executor struct {
 	Log       applog.Logger
 	ConfigDir string
 
-	ProfileInfo *types.ProfileInfo
+	ProfileInfo *domain.ProfileInfo
 
-	ProfileCreate *types.ProfileCreateOptions
-	ProfileEdit   *types.ProfileEditOptions
-	ProfileShow   *types.ProfileShowOptions
-	ProfileDelete *types.ProfileDeleteOptions
+	ProfileCreate *profilemodel.ProfileCreateOptions
+	ProfileEdit   *profilemodel.ProfileEditOptions
+	ProfileShow   *profilemodel.ProfileShowOptions
+	ProfileDelete *profilemodel.ProfileDeleteOptions
 
 	OriginalProfileName string
-	OriginalProfileInfo *types.ProfileInfo
+	OriginalProfileInfo *domain.ProfileInfo
 
 	RunWizard                    func(mode string) error
 	DisplayProfileDetails        func()
 	CheckConfigurationNameUnique func(mode string) error
-	ValidateProfileInfo          func(p *types.ProfileInfo) error
+	ValidateProfileInfo          func(p *domain.ProfileInfo) error
 	PromptSelectExistingConfig   func() error
-	LoadSnapshotFromPath         func(absPath string) (*types.ProfileInfo, error)
+	LoadSnapshotFromPath         func(absPath string) (*domain.ProfileInfo, error)
 
 	FormatConfigToINI           func() string
 	ResolveProfileEncryptionKey func(existing string, allowPrompt bool) (key string, source string, err error)

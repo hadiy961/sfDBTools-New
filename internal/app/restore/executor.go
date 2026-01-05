@@ -2,19 +2,18 @@
 // Deskripsi : Factory/Wrapper untuk membuat executor berdasarkan mode restore
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-17
-// Last Modified : 2025-12-17
-
+// Last Modified :  2026-01-05
 package restore
 
 import (
 	"context"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/internal/app/restore/modes"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 )
 
 // ExecuteRestoreSingle menjalankan restore single database
-func (s *Service) ExecuteRestoreSingle(ctx context.Context) (*types.RestoreResult, error) {
+func (s *Service) ExecuteRestoreSingle(ctx context.Context) (*restoremodel.RestoreResult, error) {
 	executor, err := modes.GetExecutor(consts.ModeSingle, s)
 	if err != nil {
 		return nil, err
@@ -23,7 +22,7 @@ func (s *Service) ExecuteRestoreSingle(ctx context.Context) (*types.RestoreResul
 }
 
 // ExecuteRestorePrimary menjalankan restore primary database
-func (s *Service) ExecuteRestorePrimary(ctx context.Context) (*types.RestoreResult, error) {
+func (s *Service) ExecuteRestorePrimary(ctx context.Context) (*restoremodel.RestoreResult, error) {
 	executor, err := modes.GetExecutor(consts.ModePrimary, s)
 	if err != nil {
 		return nil, err
@@ -32,7 +31,7 @@ func (s *Service) ExecuteRestorePrimary(ctx context.Context) (*types.RestoreResu
 }
 
 // ExecuteRestoreSecondary menjalankan restore secondary database
-func (s *Service) ExecuteRestoreSecondary(ctx context.Context) (*types.RestoreResult, error) {
+func (s *Service) ExecuteRestoreSecondary(ctx context.Context) (*restoremodel.RestoreResult, error) {
 	executor, err := modes.GetExecutor(consts.ModeSecondary, s)
 	if err != nil {
 		return nil, err
@@ -41,7 +40,7 @@ func (s *Service) ExecuteRestoreSecondary(ctx context.Context) (*types.RestoreRe
 }
 
 // ExecuteRestoreAll menjalankan restore all databases dengan streaming filtering
-func (s *Service) ExecuteRestoreAll(ctx context.Context) (*types.RestoreResult, error) {
+func (s *Service) ExecuteRestoreAll(ctx context.Context) (*restoremodel.RestoreResult, error) {
 	executor, err := modes.GetExecutor(consts.ModeAll, s)
 	if err != nil {
 		return nil, err
@@ -50,7 +49,7 @@ func (s *Service) ExecuteRestoreAll(ctx context.Context) (*types.RestoreResult, 
 }
 
 // ExecuteRestoreSelection menjalankan restore selection berbasis CSV
-func (s *Service) ExecuteRestoreSelection(ctx context.Context) (*types.RestoreResult, error) {
+func (s *Service) ExecuteRestoreSelection(ctx context.Context) (*restoremodel.RestoreResult, error) {
 	executor, err := modes.GetExecutor(consts.ModeSelection, s)
 	if err != nil {
 		return nil, err
@@ -59,7 +58,7 @@ func (s *Service) ExecuteRestoreSelection(ctx context.Context) (*types.RestoreRe
 }
 
 // ExecuteRestoreCustom menjalankan restore custom (SFCola account detail)
-func (s *Service) ExecuteRestoreCustom(ctx context.Context) (*types.RestoreResult, error) {
+func (s *Service) ExecuteRestoreCustom(ctx context.Context) (*restoremodel.RestoreResult, error) {
 	executor, err := modes.GetExecutor(consts.ModeCustom, s)
 	if err != nil {
 		return nil, err

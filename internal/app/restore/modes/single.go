@@ -2,14 +2,13 @@
 // Deskripsi : Executor untuk restore single database
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-17
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package modes
 
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"time"
 )
 
@@ -24,7 +23,7 @@ func NewSingleExecutor(svc RestoreService) *SingleExecutor {
 }
 
 // Execute executes single database restore
-func (e *SingleExecutor) Execute(ctx context.Context) (*types.RestoreResult, error) {
+func (e *SingleExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResult, error) {
 	startTime := time.Now()
 	opts := e.service.GetSingleOptions()
 	logger := e.service.GetLogger()
@@ -74,7 +73,7 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*types.RestoreResult, err
 }
 
 // executeDryRun melakukan validasi file backup tanpa restore
-func (e *SingleExecutor) executeDryRun(ctx context.Context, opts *types.RestoreSingleOptions, result *types.RestoreResult, startTime time.Time) (*types.RestoreResult, error) {
+func (e *SingleExecutor) executeDryRun(ctx context.Context, opts *restoremodel.RestoreSingleOptions, result *restoremodel.RestoreResult, startTime time.Time) (*restoremodel.RestoreResult, error) {
 	validator := newDryRunValidator(e.service, ctx, result, startTime)
 
 	// Validate file can be opened

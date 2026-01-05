@@ -2,14 +2,13 @@
 // Deskripsi : Dry-run validation helpers untuk semua restore executors
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package modes
 
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/ui"
 	"time"
 )
@@ -18,12 +17,12 @@ import (
 type dryRunValidator struct {
 	service   RestoreService
 	ctx       context.Context
-	result    *types.RestoreResult
+	result    *restoremodel.RestoreResult
 	startTime time.Time
 }
 
 // newDryRunValidator membuat dry-run validator baru
-func newDryRunValidator(service RestoreService, ctx context.Context, result *types.RestoreResult, startTime time.Time) *dryRunValidator {
+func newDryRunValidator(service RestoreService, ctx context.Context, result *restoremodel.RestoreResult, startTime time.Time) *dryRunValidator {
 	return &dryRunValidator{
 		service:   service,
 		ctx:       ctx,
@@ -62,7 +61,7 @@ func (v *dryRunValidator) printSummary(info map[string]string, warnings []string
 }
 
 // finalize mengatur result sebagai sukses dan mengembalikannya
-func (v *dryRunValidator) finalize() (*types.RestoreResult, error) {
+func (v *dryRunValidator) finalize() (*restoremodel.RestoreResult, error) {
 	finalizeResult(v.result, v.startTime, true)
 	return v.result, nil
 }

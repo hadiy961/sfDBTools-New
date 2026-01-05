@@ -1,5 +1,7 @@
 package types
 
+import "sfDBTools/internal/domain"
+
 // ScanEntryConfig untuk konfigurasi scan entry point
 type ScanEntryConfig struct {
 	HeaderTitle string
@@ -21,7 +23,7 @@ type ScanResult struct {
 // ScanOptions berisi opsi untuk database scan
 type ScanOptions struct {
 	// Database Configuration
-	ProfileInfo ProfileInfo
+	ProfileInfo domain.ProfileInfo
 	LocalScan   bool
 	// Encryption
 	Encryption struct {

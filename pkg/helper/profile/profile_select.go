@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper/profileutil"
 	"sfDBTools/pkg/input"
@@ -13,10 +13,10 @@ import (
 	"sfDBTools/pkg/validation"
 )
 
-func SelectExistingDBConfig(configDir, purpose string) (types.ProfileInfo, error) {
+func SelectExistingDBConfig(configDir, purpose string) (domain.ProfileInfo, error) {
 	ui.PrintSubHeader(purpose)
 
-	ProfileInfo := types.ProfileInfo{}
+	ProfileInfo := domain.ProfileInfo{}
 
 	files, err := fsops.ReadDirFiles(configDir)
 	if err != nil {

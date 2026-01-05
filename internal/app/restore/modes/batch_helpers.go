@@ -2,14 +2,13 @@
 // Deskripsi : Helper functions untuk batch restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package modes
 
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 )
 
 // batchRestoreTracker melacak jumlah sukses/gagal untuk operasi batch
@@ -59,7 +58,7 @@ type singleDatabaseRestore struct {
 	skipBackup    bool
 	dropTarget    bool
 	stopOnError   bool
-	backupOpts    *types.RestoreBackupOptions
+	backupOpts    *restoremodel.RestoreBackupOptions
 }
 
 // execute melakukan restore untuk single database dalam mode batch

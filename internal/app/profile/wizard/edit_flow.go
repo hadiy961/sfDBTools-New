@@ -2,16 +2,16 @@
 // Deskripsi : Flow wizard untuk edit profile (honor flag overrides)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
-
+// Last Modified : 2026-01-05
 package wizard
 
 import (
 	"fmt"
 	"strings"
 
+	profilemodel "sfDBTools/internal/app/profile/model"
 	"sfDBTools/internal/app/profile/shared"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
@@ -22,8 +22,8 @@ import (
 
 func (r *Runner) runEditFlow() error {
 	// Simpan override dari flag/env sebelum load snapshot.
-	overrideDB := types.DBInfo{}
-	overrideSSH := types.SSHTunnelConfig{}
+	overrideDB := domain.DBInfo{}
+	overrideSSH := domain.SSHTunnelConfig{}
 	if r.ProfileInfo != nil {
 		overrideDB = r.ProfileInfo.DBInfo
 		overrideSSH = r.ProfileInfo.SSHTunnel
@@ -77,7 +77,7 @@ func (r *Runner) runEditFlow() error {
 	if !hasFlagEdits {
 		// Tampilkan isi profil terlebih dahulu
 		prevShow := r.ProfileShow
-		r.ProfileShow = &types.ProfileShowOptions{}
+		r.ProfileShow = &profilemodel.ProfileShowOptions{}
 		if r.DisplayProfileDetails != nil {
 			r.DisplayProfileDetails()
 		}

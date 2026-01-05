@@ -1,4 +1,4 @@
-// File : internal/cleanup/service.go
+// File : internal/app/cleanup/service.go
 // Deskripsi : Service utama implementation untuk cleanup operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
@@ -7,9 +7,10 @@ package cleanup
 
 import (
 	"errors"
-	"sfDBTools/internal/services/config"
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
+
+	cleanupmodel "sfDBTools/internal/app/cleanup/model"
+	appconfig "sfDBTools/internal/services/config"
+	applog "sfDBTools/internal/services/log"
 )
 
 // Error definitions
@@ -21,11 +22,11 @@ var (
 type Service struct {
 	Config         *appconfig.Config
 	Log            applog.Logger
-	CleanupOptions types.CleanupOptions
+	CleanupOptions cleanupmodel.CleanupOptions
 }
 
 // NewCleanupService membuat instance baru dari Service dengan proper dependency injection
-func NewCleanupService(config *appconfig.Config, logger applog.Logger, opts types.CleanupOptions) *Service {
+func NewCleanupService(config *appconfig.Config, logger applog.Logger, opts cleanupmodel.CleanupOptions) *Service {
 	return &Service{
 		Config:         config,
 		Log:            logger,
@@ -34,7 +35,7 @@ func NewCleanupService(config *appconfig.Config, logger applog.Logger, opts type
 }
 
 // ExecuteCleanupCommand adalah entry point utama untuk cleanup execution
-func (s *Service) ExecuteCleanupCommand(config types.CleanupEntryConfig) error {
+func (s *Service) ExecuteCleanupCommand(config cleanupmodel.CleanupEntryConfig) error {
 	// Log prefix untuk tracking
 	if config.LogPrefix != "" {
 		s.Log.Infof("[%s] Memulai cleanup dengan mode: %s", config.LogPrefix, config.Mode)

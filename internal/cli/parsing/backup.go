@@ -2,8 +2,8 @@ package parsing
 
 import (
 	"fmt"
+	"sfDBTools/internal/app/backup/model/types_backup"
 	defaultVal "sfDBTools/internal/cli/defaults"
-	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"

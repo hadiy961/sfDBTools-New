@@ -2,14 +2,15 @@
 // Deskripsi : Service utama implementation untuk profile operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 2026-01-05
 package profile
 
 import (
 	"errors"
+	profilemodel "sfDBTools/internal/app/profile/model"
+	"sfDBTools/internal/domain"
 	"sfDBTools/internal/services/config"
 	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 )
 
@@ -21,17 +22,17 @@ var (
 type Service struct {
 	Config        *appconfig.Config
 	Log           applog.Logger
-	ProfileCreate *types.ProfileCreateOptions
-	ProfileInfo   *types.ProfileInfo
-	ProfileShow   *types.ProfileShowOptions
-	ProfileDelete *types.ProfileDeleteOptions
-	ProfileEdit   *types.ProfileEditOptions
-	DBInfo        *types.DBInfo
+	ProfileCreate *profilemodel.ProfileCreateOptions
+	ProfileInfo   *domain.ProfileInfo
+	ProfileShow   *profilemodel.ProfileShowOptions
+	ProfileDelete *profilemodel.ProfileDeleteOptions
+	ProfileEdit   *profilemodel.ProfileEditOptions
+	DBInfo        *domain.DBInfo
 
 	// OriginalProfileName menyimpan nama file profil yang dibuka untuk mode edit.
 	OriginalProfileName string
 	// OriginalProfileInfo menyimpan salinan data profil sebelum diedit (jika tersedia)
-	OriginalProfileInfo *types.ProfileInfo
+	OriginalProfileInfo *domain.ProfileInfo
 }
 
 func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interface{}) *Service {
@@ -40,32 +41,32 @@ func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interf
 		Config: cfg,
 	}
 
-	setProfileRefs := func(info *types.ProfileInfo) {
+	setProfileRefs := func(info *domain.ProfileInfo) {
 		svc.ProfileInfo = info
 		svc.DBInfo = &info.DBInfo
 	}
 
 	if profile != nil {
 		switch v := profile.(type) {
-		case *types.ProfileCreateOptions:
+		case *profilemodel.ProfileCreateOptions:
 			svc.ProfileCreate = v
 			setProfileRefs(&v.ProfileInfo)
-		case *types.ProfileShowOptions:
+		case *profilemodel.ProfileShowOptions:
 			svc.ProfileShow = v
 			setProfileRefs(&v.ProfileInfo)
-		case *types.ProfileEditOptions:
+		case *profilemodel.ProfileEditOptions:
 			svc.ProfileEdit = v
 			setProfileRefs(&v.ProfileInfo)
 			// If user provided a file/path via flags, store it as OriginalProfileName
 			if v.ProfileInfo.Path != "" {
 				svc.OriginalProfileName = v.ProfileInfo.Path
 			}
-		case *types.ProfileDeleteOptions:
+		case *profilemodel.ProfileDeleteOptions:
 			svc.ProfileDelete = v
 			setProfileRefs(&v.ProfileInfo)
 		default:
 			logs.Warn(consts.ProfileLogUnknownProfileTypeInService)
-			svc.ProfileInfo = &types.ProfileInfo{}
+			svc.ProfileInfo = &domain.ProfileInfo{}
 		}
 	} else {
 		logs.Warn(consts.ProfileLogUnknownProfileTypeInService)
@@ -75,7 +76,7 @@ func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interf
 }
 
 // ExecuteProfileCommand adalah entry point utama untuk profile execution
-func (s *Service) ExecuteProfileCommand(config types.ProfileEntryConfig) error {
+func (s *Service) ExecuteProfileCommand(config profilemodel.ProfileEntryConfig) error {
 	// Log prefix untuk tracking
 	if config.LogPrefix != "" {
 		s.Log.Infof(consts.ProfileLogStartOperationWithPrefixFmt, config.LogPrefix, config.Mode)

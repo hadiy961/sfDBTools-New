@@ -6,14 +6,14 @@ import (
 	"os"
 	"strings"
 
-	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/services/crypto/helpers"
-	"sfDBTools/internal/types"
+	cryptomodel "sfDBTools/internal/services/crypto/model"
+	applog "sfDBTools/internal/services/log"
 	"sfDBTools/pkg/ui"
 )
 
 // ExecuteBase64Encode menangani logic base64 encode
-func ExecuteBase64Encode(logger applog.Logger, opts types.Base64EncodeOptions) error {
+func ExecuteBase64Encode(logger applog.Logger, opts cryptomodel.Base64EncodeOptions) error {
 	// Coba baca input dari flag atau pipe, fallback ke interactive
 	b, err := helpers.GetInput(opts.InputText, true, "📝 Masukkan teks yang akan di-encode:")
 	if err != nil {
@@ -36,7 +36,7 @@ func ExecuteBase64Encode(logger applog.Logger, opts types.Base64EncodeOptions) e
 }
 
 // ExecuteBase64Decode menangani logic base64 decode
-func ExecuteBase64Decode(logger applog.Logger, opts types.Base64DecodeOptions) error {
+func ExecuteBase64Decode(logger applog.Logger, opts cryptomodel.Base64DecodeOptions) error {
 	// Coba baca input dari flag atau pipe, fallback ke interactive
 	data, err := helpers.GetInput(opts.InputData, true, "📝 Masukkan base64 yang akan di-decode:")
 	if err != nil {

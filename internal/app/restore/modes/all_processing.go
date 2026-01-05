@@ -2,8 +2,7 @@
 // Deskripsi : Processing functions untuk AllExecutor (streaming, dry-run)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package modes
 
 import (
@@ -12,7 +11,7 @@ import (
 	"fmt"
 	"io"
 	"sfDBTools/internal/app/restore/helpers"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/ui"
 	"strings"
 	"time"
@@ -24,7 +23,7 @@ type restoreStats struct {
 }
 
 // executeDryRun melakukan analisis file dump tanpa restore
-func (e *AllExecutor) executeDryRun(ctx context.Context, opts *types.RestoreAllOptions, result *types.RestoreResult) (*types.RestoreResult, error) {
+func (e *AllExecutor) executeDryRun(ctx context.Context, opts *restoremodel.RestoreAllOptions, result *restoremodel.RestoreResult) (*restoremodel.RestoreResult, error) {
 	logger := e.service.GetLogger()
 	start := time.Now()
 	logger.Info("Membuka dan menganalisis file dump...")
@@ -82,7 +81,7 @@ func (e *AllExecutor) executeDryRun(ctx context.Context, opts *types.RestoreAllO
 }
 
 // processStreamWithFiltering membaca file, filter, dan tulis ke MySQL stdin
-func (e *AllExecutor) processStreamWithFiltering(ctx context.Context, opts *types.RestoreAllOptions, output io.Writer, progressCh chan<- string) (*restoreStats, error) {
+func (e *AllExecutor) processStreamWithFiltering(ctx context.Context, opts *restoremodel.RestoreAllOptions, output io.Writer, progressCh chan<- string) (*restoreStats, error) {
 	reader, closers, err := helpers.OpenAndPrepareReader(opts.File, opts.EncryptionKey)
 	if err != nil {
 		return nil, err

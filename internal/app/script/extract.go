@@ -6,16 +6,15 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"sfDBTools/internal/types"
+	scriptmodel "sfDBTools/internal/app/script/model"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
+	"strings"
 )
 
-func ExtractBundle(opts types.ScriptExtractOptions) error {
+func ExtractBundle(opts scriptmodel.ScriptExtractOptions) error {
 	bundlePath := strings.TrimSpace(opts.FilePath)
 	if bundlePath == "" {
 		return fmt.Errorf("--file wajib diisi")

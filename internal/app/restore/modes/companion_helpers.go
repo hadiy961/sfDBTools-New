@@ -2,14 +2,13 @@
 // Deskripsi : Helper functions untuk companion database handling
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package modes
 
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 	"strings"
@@ -25,7 +24,7 @@ type companionRestoreFlow struct {
 	skipBackup    bool
 	dropTarget    bool
 	stopOnError   bool
-	backupOpts    *types.RestoreBackupOptions
+	backupOpts    *restoremodel.RestoreBackupOptions
 }
 
 // execute menjalankan alur restore companion dan mengembalikan file backup, error
@@ -79,7 +78,7 @@ func (f *companionRestoreFlow) execute() (backupFile string, err error) {
 }
 
 // backupPrimaryCompanionIfNeeded membuat backup dari companion database milik primary
-func backupPrimaryCompanionIfNeeded(ctx context.Context, service RestoreService, primaryDB string, skipBackup bool, stopOnError bool, backupOpts *types.RestoreBackupOptions) (backupFile string, err error) {
+func backupPrimaryCompanionIfNeeded(ctx context.Context, service RestoreService, primaryDB string, skipBackup bool, stopOnError bool, backupOpts *restoremodel.RestoreBackupOptions) (backupFile string, err error) {
 	if skipBackup {
 		return "", nil
 	}

@@ -13,12 +13,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-	"time"
-
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/ui"
+	"strings"
+	"time"
 )
 
 type selectionExecutor struct {
@@ -27,7 +26,7 @@ type selectionExecutor struct {
 
 func NewSelectionExecutor(svc RestoreService) RestoreExecutor { return &selectionExecutor{svc: svc} }
 
-func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, error) {
+func (e *selectionExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResult, error) {
 	opts := e.svc.GetSelectionOptions()
 	if opts == nil {
 		return nil, fmt.Errorf("opsi selection tidak tersedia")
@@ -51,7 +50,7 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 	for idx, ent := range entries {
 		select {
 		case <-ctx.Done():
-			return &types.RestoreResult{Success: false, SourceFile: filepath.Base(opts.CSV), Duration: time.Since(start).String()}, ctx.Err()
+			return &restoremodel.RestoreResult{Success: false, SourceFile: filepath.Base(opts.CSV), Duration: time.Since(start).String()}, ctx.Err()
 		default:
 		}
 
@@ -138,14 +137,14 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*types.RestoreResult, 
 		ui.PrintWarning("Hasil: " + summary)
 	}
 
-	return &types.RestoreResult{
+	return &restoremodel.RestoreResult{
 		Success:    tracker.isAllSuccess(),
 		SourceFile: opts.CSV,
 		Duration:   time.Since(start).String(),
 	}, nil
 }
 
-func (e *selectionExecutor) readCSV(path string) ([]types.RestoreSelectionEntry, error) {
+func (e *selectionExecutor) readCSV(path string) ([]restoremodel.RestoreSelectionEntry, error) {
 	if strings.TrimSpace(path) == "" {
 		return nil, errors.New("path CSV wajib diisi (--csv)")
 	}
@@ -166,10 +165,10 @@ func (e *selectionExecutor) readCSV(path string) ([]types.RestoreSelectionEntry,
 		return nil, fmt.Errorf("gagal membaca CSV: %w", err)
 	}
 	if len(records) == 0 {
-		return []types.RestoreSelectionEntry{}, nil
+		return []restoremodel.RestoreSelectionEntry{}, nil
 	}
 
-	entries := make([]types.RestoreSelectionEntry, 0, len(records))
+	entries := make([]restoremodel.RestoreSelectionEntry, 0, len(records))
 
 	startIdx := 0
 	// Header-aware: if first row starts with filename, assume header
@@ -217,7 +216,7 @@ func (e *selectionExecutor) readCSV(path string) ([]types.RestoreSelectionEntry,
 			grants = filepath.Join(csvDir, grants)
 		}
 
-		entry := types.RestoreSelectionEntry{
+		entry := restoremodel.RestoreSelectionEntry{
 			File:       file,
 			DBName:     dbName,
 			EncKey:     encKey,

@@ -1,4 +1,4 @@
-// File : internal/backup/scheduler/systemd_units.go
+// File : internal/app/backup/scheduler/systemd_units.go
 // Deskripsi : Generator unit systemd untuk scheduler backup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
@@ -15,8 +15,8 @@ import (
 	"github.com/joho/godotenv"
 
 	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/internal/types"
+	appconfig "sfDBTools/internal/services/config"
+	schedulerutil "sfDBTools/internal/services/scheduler"
 	"sfDBTools/pkg/consts"
 )
 
@@ -126,12 +126,12 @@ func Status(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	return nil
 }
 
-func getTargetJobs(deps *appdeps.Dependencies, jobName string, onlyEnabled bool) ([]types.BackupSchedulerJob, error) {
+func getTargetJobs(deps *appdeps.Dependencies, jobName string, onlyEnabled bool) ([]appconfig.BackupSchedulerJob, error) {
 	if deps == nil || deps.Config == nil {
 		return nil, fmt.Errorf("config belum tersedia")
 	}
 	jobs := deps.Config.Backup.Scheduler.Jobs
-	var out []types.BackupSchedulerJob
+	var out []appconfig.BackupSchedulerJob
 
 	if strings.TrimSpace(jobName) != "" {
 		for _, j := range jobs {
@@ -139,7 +139,7 @@ func getTargetJobs(deps *appdeps.Dependencies, jobName string, onlyEnabled bool)
 				if onlyEnabled && !j.Enabled {
 					return nil, fmt.Errorf("job '%s' tidak enabled di config", jobName)
 				}
-				return []types.BackupSchedulerJob{j}, nil
+				return []appconfig.BackupSchedulerJob{j}, nil
 			}
 		}
 		return nil, fmt.Errorf("job '%s' tidak ditemukan di config", jobName)
@@ -199,7 +199,7 @@ func detectBinaryPathForSystemd() string {
 	return defaultPath
 }
 
-func writeTimerForJob(job types.BackupSchedulerJob) error {
+func writeTimerForJob(job appconfig.BackupSchedulerJob) error {
 	if strings.TrimSpace(job.Name) == "" {
 		return fmt.Errorf("job name tidak boleh kosong")
 	}
@@ -242,7 +242,7 @@ func ensureRoot() error {
 	return nil
 }
 
-func validateJobsForStart(deps *appdeps.Dependencies, jobs []types.BackupSchedulerJob) error {
+func validateJobsForStart(deps *appdeps.Dependencies, jobs []appconfig.BackupSchedulerJob) error {
 	if deps == nil || deps.Config == nil {
 		return fmt.Errorf("config belum tersedia")
 	}

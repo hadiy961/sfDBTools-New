@@ -1,4 +1,4 @@
-package types
+package domain
 
 import "time"
 
@@ -92,4 +92,14 @@ type CompressionOptions struct {
 type EncryptionOptions struct {
 	Enabled bool
 	Key     string
+}
+
+// SystemDatabases adalah canonical list dari database sistem MySQL/MariaDB.
+// Menggunakan map untuk O(1) lookup performance.
+var SystemDatabases = map[string]struct{}{
+	"information_schema": {},
+	"mysql":              {},
+	"performance_schema": {},
+	"sys":                {},
+	"innodb":             {},
 }

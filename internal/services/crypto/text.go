@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/services/crypto/helpers"
-	"sfDBTools/internal/types"
+	cryptomodel "sfDBTools/internal/services/crypto/model"
+	applog "sfDBTools/internal/services/log"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
@@ -16,7 +16,7 @@ import (
 )
 
 // ExecuteEncryptText menangani logic encrypt text
-func ExecuteEncryptText(logger applog.Logger, opts types.EncryptTextOptions) error {
+func ExecuteEncryptText(logger applog.Logger, opts cryptomodel.EncryptTextOptions) error {
 	quiet := helpers.SetupQuietMode(logger)
 
 	// Password authentication
@@ -61,7 +61,7 @@ func ExecuteEncryptText(logger applog.Logger, opts types.EncryptTextOptions) err
 }
 
 // ExecuteDecryptText menangani logic decrypt text
-func ExecuteDecryptText(logger applog.Logger, opts types.DecryptTextOptions) error {
+func ExecuteDecryptText(logger applog.Logger, opts cryptomodel.DecryptTextOptions) error {
 	quiet := helpers.SetupQuietMode(logger)
 
 	// Password authentication

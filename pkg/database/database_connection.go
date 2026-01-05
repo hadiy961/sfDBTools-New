@@ -3,8 +3,8 @@ package database
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
+	applog "sfDBTools/internal/services/log"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	"time"
@@ -43,7 +43,7 @@ func ConnectToAppDatabase() (*Client, error) {
 }
 
 // connectWithSpinner adalah helper untuk membuat koneksi dengan spinner UI.
-func connectWithSpinner(info types.DBInfo, database, label string, timeout time.Duration) (*Client, error) {
+func connectWithSpinner(info domain.DBInfo, database, label string, timeout time.Duration) (*Client, error) {
 	spin := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 	spin.Suffix = fmt.Sprintf(" Menghubungkan ke database %s %s:%d...", label, info.Host, info.Port)
 	spin.Start()
@@ -68,18 +68,18 @@ func connectWithSpinner(info types.DBInfo, database, label string, timeout time.
 	return client, nil
 }
 
-func ConnectToSourceDatabase(creds types.SourceDBConnection) (*Client, error) {
+func ConnectToSourceDatabase(creds domain.SourceDBConnection) (*Client, error) {
 	return connectWithSpinner(creds.DBInfo, creds.Database, "sumber", 10*time.Second)
 }
 
-func ConnectToDestinationDatabase(creds types.DestinationDBConnection) (*Client, error) {
+func ConnectToDestinationDatabase(creds domain.DestinationDBConnection) (*Client, error) {
 	return connectWithSpinner(creds.DBInfo, creds.Database, "tujuan", 5*time.Second)
 }
 
 // ConnectionTest - Menguji koneksi database berdasarkan informasi yang diberikan
-func ConnectionTest(dbInfo *types.DBInfo, applog applog.Logger) error {
+func ConnectionTest(dbInfo *domain.DBInfo, applog applog.Logger) error {
 	applog.Info("Memeriksa koneksi database ke " + dbInfo.Host + ":" + fmt.Sprintf("%d", dbInfo.Port) + "...")
-	connectionInfo := types.DestinationDBConnection{
+	connectionInfo := domain.DestinationDBConnection{
 		DBInfo:   *dbInfo,
 		Database: "mysql", // Tidak perlu database spesifik untuk tes koneksi
 	}

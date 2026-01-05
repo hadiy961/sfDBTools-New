@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"sfDBTools/internal/app/dbscan"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/flags"
 	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/validation"
 
 	"github.com/spf13/cobra"
@@ -54,7 +54,7 @@ Catatan:
 		// Inisialisasi service dengan pattern baru
 		svc := dbscan.NewDBScanService(cfg, logger, scanOpts)
 
-		scanConfig := types.ScanEntryConfig{
+		scanConfig := dbscanmodel.ScanEntryConfig{
 			HeaderTitle: "Database Scanning - Filter",
 			ShowOptions: true,
 			SuccessMsg:  "Proses scanning database (filter) selesai.",

@@ -2,14 +2,15 @@
 // Deskripsi : Runner wizard interaktif untuk create/edit profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 2026-01-05
 package wizard
 
 import (
 	"fmt"
 
+	profilemodel "sfDBTools/internal/app/profile/model"
+	"sfDBTools/internal/domain"
 	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
@@ -20,15 +21,15 @@ type Runner struct {
 	Log       applog.Logger
 	ConfigDir string
 
-	ProfileInfo         *types.ProfileInfo
-	ProfileEdit         *types.ProfileEditOptions
-	ProfileShow         *types.ProfileShowOptions
+	ProfileInfo         *domain.ProfileInfo
+	ProfileEdit         *profilemodel.ProfileEditOptions
+	ProfileShow         *profilemodel.ProfileShowOptions
 	OriginalProfileName string
-	OriginalProfileInfo *types.ProfileInfo
+	OriginalProfileInfo *domain.ProfileInfo
 
 	DisplayProfileDetails        func()
 	CheckConfigurationNameUnique func(mode string) error
-	LoadSnapshotFromPath         func(absPath string) (*types.ProfileInfo, error)
+	LoadSnapshotFromPath         func(absPath string) (*domain.ProfileInfo, error)
 	ResolveProfileEncryptionKey  func(existing string, allowPrompt bool) (key string, source string, err error)
 }
 

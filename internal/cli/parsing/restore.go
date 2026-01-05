@@ -8,7 +8,7 @@ package parsing
 
 import (
 	"path/filepath"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	"strings"
@@ -17,8 +17,8 @@ import (
 )
 
 // ParsingRestoreSingleOptions melakukan parsing opsi untuk restore single
-func ParsingRestoreSingleOptions(cmd *cobra.Command) (types.RestoreSingleOptions, error) {
-	opts := types.RestoreSingleOptions{
+func ParsingRestoreSingleOptions(cmd *cobra.Command) (restoremodel.RestoreSingleOptions, error) {
+	opts := restoremodel.RestoreSingleOptions{
 		DropTarget:  true,  // Default true
 		SkipBackup:  false, // Default false
 		StopOnError: true,  // Default: stop pada error pertama
@@ -51,7 +51,7 @@ func ParsingRestoreSingleOptions(cmd *cobra.Command) (types.RestoreSingleOptions
 	PopulateRestoreGrantsFlags(cmd, &opts.GrantsFile, &opts.SkipGrants)
 
 	// Backup options untuk pre-restore backup
-	opts.BackupOptions = &types.RestoreBackupOptions{}
+	opts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 
 	// Backup directory
 	PopulateRestoreBackupDir(cmd, opts.BackupOptions)
@@ -60,8 +60,8 @@ func ParsingRestoreSingleOptions(cmd *cobra.Command) (types.RestoreSingleOptions
 }
 
 // ParsingRestorePrimaryOptions melakukan parsing opsi untuk restore primary
-func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptions, error) {
-	opts := types.RestorePrimaryOptions{
+func ParsingRestorePrimaryOptions(cmd *cobra.Command) (restoremodel.RestorePrimaryOptions, error) {
+	opts := restoremodel.RestorePrimaryOptions{
 		DropTarget:         true,  // Default true
 		SkipBackup:         false, // Default false
 		IncludeDmart:       true,  // Default true
@@ -143,7 +143,7 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptio
 	}
 
 	// Backup options untuk pre-restore backup
-	opts.BackupOptions = &types.RestoreBackupOptions{}
+	opts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 
 	// Backup directory
 	PopulateRestoreBackupDir(cmd, opts.BackupOptions)
@@ -152,8 +152,8 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (types.RestorePrimaryOptio
 }
 
 // ParsingRestoreAllOptions melakukan parsing opsi untuk restore all
-func ParsingRestoreAllOptions(cmd *cobra.Command) (types.RestoreAllOptions, error) {
-	opts := types.RestoreAllOptions{
+func ParsingRestoreAllOptions(cmd *cobra.Command) (restoremodel.RestoreAllOptions, error) {
+	opts := restoremodel.RestoreAllOptions{
 		SkipBackup:    false,
 		SkipSystemDBs: true, // Default true demi keamanan
 		StopOnError:   true,
@@ -172,7 +172,7 @@ func ParsingRestoreAllOptions(cmd *cobra.Command) (types.RestoreAllOptions, erro
 
 	// 4. Ticket & Backup Dir
 	PopulateRestoreTicket(cmd, &opts.Ticket)
-	opts.BackupOptions = &types.RestoreBackupOptions{}
+	opts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 	PopulateRestoreBackupDir(cmd, opts.BackupOptions)
 	PopulateRestoreGrantsFlags(cmd, &opts.GrantsFile, &opts.SkipGrants)
 
@@ -180,8 +180,8 @@ func ParsingRestoreAllOptions(cmd *cobra.Command) (types.RestoreAllOptions, erro
 }
 
 // ParsingRestoreSecondaryOptions melakukan parsing opsi untuk restore secondary
-func ParsingRestoreSecondaryOptions(cmd *cobra.Command) (types.RestoreSecondaryOptions, error) {
-	opts := types.RestoreSecondaryOptions{
+func ParsingRestoreSecondaryOptions(cmd *cobra.Command) (restoremodel.RestoreSecondaryOptions, error) {
+	opts := restoremodel.RestoreSecondaryOptions{
 		DropTarget:      true,
 		SkipBackup:      false,
 		StopOnError:     true,
@@ -237,7 +237,7 @@ func ParsingRestoreSecondaryOptions(cmd *cobra.Command) (types.RestoreSecondaryO
 	}
 
 	// Backup options
-	opts.BackupOptions = &types.RestoreBackupOptions{}
+	opts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 	PopulateRestoreBackupDir(cmd, opts.BackupOptions)
 
 	return opts, nil

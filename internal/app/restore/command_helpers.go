@@ -2,7 +2,7 @@
 // Deskripsi : Helper untuk command layer restore (signal handling + lifecycle)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2026-01-05
+// Last Modified :  2026-01-05
 package restore
 
 import (
@@ -11,21 +11,21 @@ import (
 	"os/signal"
 	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
 	"sfDBTools/pkg/ui"
 	"syscall"
 
 	"github.com/spf13/cobra"
+	restoremodel "sfDBTools/internal/app/restore/model"
 )
 
 type restoreSetupFunc func(ctx context.Context) error
-type restoreExecFunc func(ctx context.Context) (*types.RestoreResult, error)
+type restoreExecFunc func(ctx context.Context) (*restoremodel.RestoreResult, error)
 
 type restoreParseFunc func(cmd *cobra.Command) (interface{}, error)
 
 type restoreSetupMethod func(svc *Service, ctx context.Context) error
-type restoreExecMethod func(svc *Service, ctx context.Context) (*types.RestoreResult, error)
-type restoreShowFunc func(result *types.RestoreResult)
+type restoreExecMethod func(svc *Service, ctx context.Context) (*restoremodel.RestoreResult, error)
+type restoreShowFunc func(result *restoremodel.RestoreResult)
 
 func runRestoreWithLifecycle(
 	logger applog.Logger,
@@ -35,7 +35,7 @@ func runRestoreWithLifecycle(
 	cancelMsg string,
 	errMsgPrefix string,
 	errFunction string,
-) (*types.RestoreResult, error) {
+) (*restoremodel.RestoreResult, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -116,7 +116,7 @@ func executeRestoreCommand(
 		func(ctx context.Context) error {
 			return setup(svc, ctx)
 		},
-		func(ctx context.Context) (*types.RestoreResult, error) {
+		func(ctx context.Context) (*restoremodel.RestoreResult, error) {
 			return exec(svc, ctx)
 		},
 		cancelMsg,

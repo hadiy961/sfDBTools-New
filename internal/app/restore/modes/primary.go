@@ -2,14 +2,13 @@
 // Deskripsi : Executor untuk restore primary database dengan companion
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-17
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package modes
 
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 	"strings"
@@ -27,11 +26,11 @@ func NewPrimaryExecutor(svc RestoreService) *PrimaryExecutor {
 }
 
 // Execute executes primary database restore with companion
-func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, error) {
+func (e *PrimaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResult, error) {
 	startTime := time.Now()
 	opts := e.service.GetPrimaryOptions()
 
-	result := &types.RestoreResult{
+	result := &restoremodel.RestoreResult{
 		TargetDB:   opts.TargetDB,
 		SourceFile: opts.File,
 	}
@@ -110,7 +109,7 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*types.RestoreResult, er
 }
 
 // restoreCompanionDatabase handles backup, drop, and restore for companion database
-func (e *PrimaryExecutor) restoreCompanionDatabase(ctx context.Context, opts *types.RestorePrimaryOptions, result *types.RestoreResult) error {
+func (e *PrimaryExecutor) restoreCompanionDatabase(ctx context.Context, opts *restoremodel.RestorePrimaryOptions, result *restoremodel.RestoreResult) error {
 	companionDB := opts.TargetDB + consts.SuffixDmart
 	result.CompanionFile = opts.CompanionFile
 	result.CompanionDB = companionDB
@@ -142,7 +141,7 @@ func (e *PrimaryExecutor) restoreCompanionDatabase(ctx context.Context, opts *ty
 }
 
 // executeDryRun melakukan validasi file backup tanpa restore
-func (e *PrimaryExecutor) executeDryRun(ctx context.Context, opts *types.RestorePrimaryOptions, result *types.RestoreResult, startTime time.Time) (*types.RestoreResult, error) {
+func (e *PrimaryExecutor) executeDryRun(ctx context.Context, opts *restoremodel.RestorePrimaryOptions, result *restoremodel.RestoreResult, startTime time.Time) (*restoremodel.RestoreResult, error) {
 	validator := newDryRunValidator(e.service, ctx, result, startTime)
 
 	// Validate primary file

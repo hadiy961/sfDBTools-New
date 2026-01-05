@@ -3,8 +3,9 @@ package parsing
 import (
 	"fmt"
 	"os"
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
+	profilemodel "sfDBTools/internal/app/profile/model"
+	"sfDBTools/internal/domain"
+	applog "sfDBTools/internal/services/log"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/runtimecfg"
@@ -16,7 +17,7 @@ import (
 )
 
 // ParsingProfile
-func ParsingCreateProfile(cmd *cobra.Command, applog applog.Logger) (*types.ProfileCreateOptions, error) {
+func ParsingCreateProfile(cmd *cobra.Command, logger applog.Logger) (*profilemodel.ProfileCreateOptions, error) {
 	host := helper.GetStringFlagOrEnv(cmd, "host", consts.ENV_TARGET_DB_HOST)
 	port := helper.GetIntFlagOrEnv(cmd, "port", consts.ENV_TARGET_DB_PORT)
 	user := helper.GetStringFlagOrEnv(cmd, "user", consts.ENV_TARGET_DB_USER)
@@ -74,17 +75,17 @@ func ParsingCreateProfile(cmd *cobra.Command, applog applog.Logger) (*types.Prof
 		// Default nilai akan diberikan di layer wizard saat prompt.
 	}
 
-	profileOptions := &types.ProfileCreateOptions{
-		ProfileInfo: types.ProfileInfo{
+	profileOptions := &profilemodel.ProfileCreateOptions{
+		ProfileInfo: domain.ProfileInfo{
 			Name:          name,
 			EncryptionKey: key,
-			DBInfo: types.DBInfo{
+			DBInfo: domain.DBInfo{
 				Host:     host,
 				Port:     port,
 				User:     user,
 				Password: password,
 			},
-			SSHTunnel: types.SSHTunnelConfig{
+			SSHTunnel: domain.SSHTunnelConfig{
 				Enabled:      sshEnabled,
 				Host:         sshHost,
 				Port:         sshPort,
@@ -102,7 +103,7 @@ func ParsingCreateProfile(cmd *cobra.Command, applog applog.Logger) (*types.Prof
 }
 
 // ParsingEditProfile parses flags for the profile edit command and returns ProfileEditOptions
-func ParsingEditProfile(cmd *cobra.Command) (*types.ProfileEditOptions, error) {
+func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, error) {
 	filePath := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE)
 	newName := helper.GetStringFlagOrEnv(cmd, "new-name", "")
 	host := helper.GetStringFlagOrEnv(cmd, "host", consts.ENV_TARGET_DB_HOST)
@@ -148,18 +149,18 @@ func ParsingEditProfile(cmd *cobra.Command) (*types.ProfileEditOptions, error) {
 		sshPort = 22
 	}
 
-	profileOptions := &types.ProfileEditOptions{
-		ProfileInfo: types.ProfileInfo{
+	profileOptions := &profilemodel.ProfileEditOptions{
+		ProfileInfo: domain.ProfileInfo{
 			Path:          filePath,
 			Name:          name,
 			EncryptionKey: key,
-			DBInfo: types.DBInfo{
+			DBInfo: domain.DBInfo{
 				Host:     host,
 				Port:     port,
 				User:     user,
 				Password: password,
 			},
-			SSHTunnel: types.SSHTunnelConfig{
+			SSHTunnel: domain.SSHTunnelConfig{
 				Enabled:      sshEnabled,
 				Host:         sshHost,
 				Port:         sshPort,
@@ -177,7 +178,7 @@ func ParsingEditProfile(cmd *cobra.Command) (*types.ProfileEditOptions, error) {
 }
 
 // ParsingShowProfile
-func ParsingShowProfile(cmd *cobra.Command) (*types.ProfileShowOptions, error) {
+func ParsingShowProfile(cmd *cobra.Command) (*profilemodel.ProfileShowOptions, error) {
 	filePath := helper.GetStringFlagOrEnv(cmd, "profile", "")
 	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
 	if strings.TrimSpace(key) == "" {
@@ -204,10 +205,10 @@ func ParsingShowProfile(cmd *cobra.Command) (*types.ProfileShowOptions, error) {
 		}
 	}
 
-	profileOptions := &types.ProfileShowOptions{
+	profileOptions := &profilemodel.ProfileShowOptions{
 		RevealPassword: RevealPassword,
 		Interactive:    interactive,
-		ProfileInfo: types.ProfileInfo{
+		ProfileInfo: domain.ProfileInfo{
 			Path:          filePath,
 			EncryptionKey: key,
 		},
@@ -217,7 +218,7 @@ func ParsingShowProfile(cmd *cobra.Command) (*types.ProfileShowOptions, error) {
 }
 
 // ParsingDeleteProfile parses flags for the profile delete command and returns ProfileDeleteOptions
-func ParsingDeleteProfile(cmd *cobra.Command) (*types.ProfileDeleteOptions, error) {
+func ParsingDeleteProfile(cmd *cobra.Command) (*profilemodel.ProfileDeleteOptions, error) {
 	profilePaths := helper.GetStringSliceFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE)
 	force := helper.GetBoolFlagOrEnv(cmd, "force", "")
 	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
@@ -240,8 +241,8 @@ func ParsingDeleteProfile(cmd *cobra.Command) (*types.ProfileDeleteOptions, erro
 		}
 	}
 
-	profileOptions := &types.ProfileDeleteOptions{
-		ProfileInfo: types.ProfileInfo{
+	profileOptions := &profilemodel.ProfileDeleteOptions{
+		ProfileInfo: domain.ProfileInfo{
 			EncryptionKey: "",
 		},
 		Profiles:    profilePaths,

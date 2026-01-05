@@ -2,21 +2,19 @@
 // Deskripsi : Helper untuk penentuan instance pada restore secondary
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package restore
 
 import (
 	"context"
 	"fmt"
-	"strings"
-
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/input"
+	"strings"
 )
 
-func (s *Service) resolveSecondaryInstance(ctx context.Context, opts *types.RestoreSecondaryOptions, primaryDB string, allowInteractive bool) error {
+func (s *Service) resolveSecondaryInstance(ctx context.Context, opts *restoremodel.RestoreSecondaryOptions, primaryDB string, allowInteractive bool) error {
 	inst := strings.TrimSpace(opts.Instance)
 	if inst != "" {
 		return applyValidatedSecondaryInstance(opts, primaryDB, inst)
@@ -82,7 +80,7 @@ func askSecondaryInstanceManual(primaryDB string) (string, error) {
 	return trimmed, nil
 }
 
-func applyValidatedSecondaryInstance(opts *types.RestoreSecondaryOptions, primaryDB, inst string) error {
+func applyValidatedSecondaryInstance(opts *restoremodel.RestoreSecondaryOptions, primaryDB, inst string) error {
 	if err := validateSecondaryInstanceName(primaryDB, inst); err != nil {
 		return err
 	}

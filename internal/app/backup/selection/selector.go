@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
-	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/internal/app/backup/model/types_backup"
+	"sfDBTools/internal/domain"
+	applog "sfDBTools/internal/services/log"
 	"sfDBTools/pkg/backuphelper"
 	"sfDBTools/pkg/consts"
 	pkghelper "sfDBTools/pkg/helper"
@@ -36,13 +36,13 @@ func (s *Selector) buildCompressionSettings() types_backup.CompressionSettings {
 }
 
 // GetFilteredDatabasesWithMultiSelect shows interactive multi-select for databases.
-func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, client DatabaseLister) ([]string, *types.FilterStats, error) {
+func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, client DatabaseLister) ([]string, *domain.FilterStats, error) {
 	allDatabases, err := client.GetDatabaseList(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("gagal mengambil daftar database: %w", err)
 	}
 
-	stats := &types.FilterStats{
+	stats := &domain.FilterStats{
 		TotalFound:    len(allDatabases),
 		TotalIncluded: 0,
 		TotalExcluded: 0,
@@ -55,7 +55,7 @@ func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, clie
 	nonSystemDBs := make([]string, 0, len(allDatabases))
 	for _, db := range allDatabases {
 		dbLower := strings.ToLower(db)
-		if _, isSystem := types.SystemDatabases[dbLower]; isSystem {
+		if _, isSystem := domain.SystemDatabases[dbLower]; isSystem {
 			continue
 		}
 		// Backup tidak lagi mendukung database *_temp dan *_archive.
@@ -270,7 +270,7 @@ func (s *Selector) HandleSingleModeSetup(ctx context.Context, client DatabaseLis
 		return nil, selErr
 	}
 
-	stats := &types.FilterStats{
+	stats := &domain.FilterStats{
 		TotalFound:    len(allDatabases),
 		TotalIncluded: len(companionDbs),
 		TotalExcluded: len(allDatabases) - len(companionDbs),

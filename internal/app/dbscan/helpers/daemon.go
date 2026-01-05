@@ -1,4 +1,4 @@
-// File : internal/dbscan/helpers/daemon.go
+// File : internal/app/dbscan/helpers/daemon.go
 // Deskripsi : Helper untuk daemon/background process scanning
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/internal/types"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
+	schedulerutil "sfDBTools/internal/services/scheduler"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"
 )
@@ -26,7 +26,7 @@ func detectUserModeText(mode schedulerutil.RunMode) string {
 }
 
 // SpawnScanDaemon spawns new process sebagai background daemon untuk scanning
-func SpawnScanDaemon(config types.ScanEntryConfig) error {
+func SpawnScanDaemon(config dbscanmodel.ScanEntryConfig) error {
 	// Scan ID hanya untuk tampilan
 	scanID := fmt.Sprintf("scan_%s", time.Now().Format("20060102_150405"))
 	logDir := filepath.Join("logs", "dbscan")

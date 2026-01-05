@@ -2,13 +2,12 @@
 // Deskripsi : Adapter untuk memanggil subpackage wizard dari Service
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
-
+// Last Modified : 2026-01-05
 package profile
 
 import (
 	"sfDBTools/internal/app/profile/wizard"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 )
 
 func (s *Service) runWizard(mode string) error {
@@ -41,7 +40,7 @@ func (s *Service) runWizard(mode string) error {
 		return s.CheckConfigurationNameUnique(mode)
 	}
 
-	w.LoadSnapshotFromPath = func(absPath string) (*types.ProfileInfo, error) {
+	w.LoadSnapshotFromPath = func(absPath string) (*domain.ProfileInfo, error) {
 		s.ProfileInfo = w.ProfileInfo
 		err := s.loadSnapshotFromPath(absPath)
 		w.OriginalProfileInfo = s.OriginalProfileInfo

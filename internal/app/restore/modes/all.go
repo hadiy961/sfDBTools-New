@@ -2,13 +2,12 @@
 // Deskripsi : Executor untuk restore all databases dengan streaming filtering
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-18
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package modes
 
 import (
 	"context"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"time"
 )
 
@@ -23,11 +22,11 @@ func NewAllExecutor(svc RestoreService) *AllExecutor {
 }
 
 // Execute executes all databases restore dengan streaming processing
-func (e *AllExecutor) Execute(ctx context.Context) (*types.RestoreResult, error) {
+func (e *AllExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResult, error) {
 	startTime := time.Now()
 	opts := e.service.GetAllOptions()
 
-	result := &types.RestoreResult{
+	result := &restoremodel.RestoreResult{
 		TargetDB:   "ALL_DATABASES",
 		SourceFile: opts.File,
 		Success:    false,

@@ -1,8 +1,8 @@
-// File : internal/backup/bridges.go
+// File : internal/app/backup/bridges.go
 // Deskripsi : Bridge methods untuk menghubungkan service backup dengan sub-modul
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2026-01-02
+// Last Modified : 2026-01-05
 
 package backup
 
@@ -12,10 +12,10 @@ import (
 	"sfDBTools/internal/app/backup/execution"
 	"sfDBTools/internal/app/backup/grants"
 	"sfDBTools/internal/app/backup/gtid"
+	"sfDBTools/internal/app/backup/model/types_backup"
 	"sfDBTools/internal/app/backup/selection"
 	"sfDBTools/internal/app/backup/setup"
-	"sfDBTools/internal/types"
-	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/database"
 )
 
@@ -41,7 +41,7 @@ func (s *Service) SetupBackupExecution() error {
 	return setup.New(s.Log, s.Config, s.BackupDBOptions, &s.excludedDatabases).SetupBackupExecution()
 }
 
-func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Client) ([]string, *types.FilterStats, error) {
+func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Client) ([]string, *domain.FilterStats, error) {
 	return setup.New(s.Log, s.Config, s.BackupDBOptions, &s.excludedDatabases).GetFilteredDatabases(ctx, client)
 }
 

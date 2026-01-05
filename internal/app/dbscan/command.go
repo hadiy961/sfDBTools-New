@@ -1,17 +1,17 @@
-// File : internal/dbscan/command.go
+// File : internal/app/dbscan/command.go
 // Deskripsi : Command execution layer untuk database scanning
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 16 Desember 2025
+// Last Modified : 05 Januari 2026
 
 package dbscan
 
 import (
-	"sfDBTools/internal/types"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 )
 
 // ExecuteScanCommand adalah fungsi wrapper untuk menjalankan scan command
 // Pattern ini konsisten dengan backup dan cleanup packages
-func ExecuteScanCommand(svc *Service, config types.ScanEntryConfig) error {
+func ExecuteScanCommand(svc *Service, config dbscanmodel.ScanEntryConfig) error {
 	return svc.ExecuteScan(config)
 }

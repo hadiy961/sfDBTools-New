@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	cryptokey "sfDBTools/pkg/helper/crypto"
@@ -22,14 +22,14 @@ import (
 
 // LoadAndParseProfile membaca file terenkripsi, mendapatkan kunci (jika tidak diberikan),
 // mendekripsi, dan mem-parsing isi INI menjadi ProfileInfo (tanpa metadata file).
-func LoadAndParseProfile(absPath string, key string) (*types.ProfileInfo, error) {
+func LoadAndParseProfile(absPath string, key string) (*domain.ProfileInfo, error) {
 	data, err := os.ReadFile(absPath)
 	if err != nil {
 		return nil, err
 	}
 
 	k := strings.TrimSpace(key)
-	info := &types.ProfileInfo{}
+	info := &domain.ProfileInfo{}
 	if k == "" {
 		var src string
 		k, src, err = cryptokey.ResolveEncryptionKey(key, consts.ENV_SOURCE_PROFILE_KEY)
@@ -81,7 +81,7 @@ func LoadAndParseProfile(absPath string, key string) (*types.ProfileInfo, error)
 	}
 
 	if sshParsed != nil {
-		ssh := types.SSHTunnelConfig{}
+		ssh := domain.SSHTunnelConfig{}
 		if v, ok := sshParsed["enabled"]; ok {
 			switch strings.ToLower(strings.TrimSpace(v)) {
 			case "1", "true", "yes", "y", "on":

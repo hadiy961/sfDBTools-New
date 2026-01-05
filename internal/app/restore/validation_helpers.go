@@ -2,14 +2,13 @@
 // Deskripsi : Helper functions untuk validation operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-19
-// Last Modified : 2025-12-19
-
+// Last Modified : 2026-01-05
 package restore
 
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
@@ -51,7 +50,7 @@ func (s *Service) DropAllDatabases(ctx context.Context) error {
 
 	for _, dbName := range dbList {
 		// Skip system databases
-		if _, isSystem := types.SystemDatabases[strings.ToLower(dbName)]; isSystem {
+		if _, isSystem := domain.SystemDatabases[strings.ToLower(dbName)]; isSystem {
 			continue
 		}
 

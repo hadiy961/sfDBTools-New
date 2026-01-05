@@ -1,4 +1,4 @@
-// File : internal/backup/service.go
+// File : internal/app/backup/service.go
 // Deskripsi : Service utama untuk backup operations dengan interface implementation
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
@@ -8,11 +8,11 @@ package backup
 import (
 	"fmt"
 	"sfDBTools/internal/app/backup/gtid"
+	"sfDBTools/internal/app/backup/model/types_backup"
 	"sfDBTools/internal/app/backup/modes"
+	"sfDBTools/internal/domain"
 	appconfig "sfDBTools/internal/services/config"
 	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
-	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/backuphelper"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
@@ -29,8 +29,8 @@ type Service struct {
 	Config          *appconfig.Config
 	Log             applog.Logger
 	ErrorLog        *errorlog.ErrorLogger
-	DBInfo          *types.DBInfo
-	Profile         *types.ProfileInfo
+	DBInfo          *domain.DBInfo
+	Profile         *domain.ProfileInfo
 	BackupDBOptions *types_backup.BackupDBOptions
 	BackupEntry     *types_backup.BackupEntryConfig
 	Client          *database.Client

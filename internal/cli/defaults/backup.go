@@ -1,8 +1,8 @@
 package defaultVal
 
 import (
-	"sfDBTools/internal/services/config"
-	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/internal/app/backup/model/types_backup"
+	appconfig "sfDBTools/internal/services/config"
 	"sfDBTools/pkg/helper"
 )
 

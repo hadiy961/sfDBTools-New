@@ -16,12 +16,13 @@ import (
 	"time"
 
 	"sfDBTools/internal/app/dbscan/helpers"
-	"sfDBTools/internal/types"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 )
 
 // executeScanInBackground menjalankan scanning dalam mode background (tanpa UI).
 // Menggunakan file locking untuk mencegah multiple instance berjalan bersamaan.
-func (s *Service) executeScanInBackground(ctx context.Context, config types.ScanEntryConfig) error {
+func (s *Service) executeScanInBackground(ctx context.Context, config dbscanmodel.ScanEntryConfig) error {
+	_ = config
 	scanID := fmt.Sprintf("scan_%s", time.Now().Format("20060102_150405"))
 
 	s.Log.Infof("[%s] === START BACKGROUND SCAN ===", scanID)

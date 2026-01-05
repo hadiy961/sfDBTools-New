@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 
+	"sfDBTools/internal/app/backup/model/types_backup"
 	"sfDBTools/internal/app/backup/selection"
-	"sfDBTools/internal/types"
-	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/ui"
 )
 
 // GetFilteredDatabases fetches and filters DB list.
 // For 'filter' command without include flags, it shows a multi-select.
-func (s *Setup) GetFilteredDatabases(ctx context.Context, client *database.Client) ([]string, *types.FilterStats, error) {
+func (s *Setup) GetFilteredDatabases(ctx context.Context, client *database.Client) ([]string, *domain.FilterStats, error) {
 	hasIncludeFlags := len(s.Options.Filter.IncludeDatabases) > 0 || s.Options.Filter.IncludeFile != ""
 	if hasIncludeFlags {
 		return filterFromBackupOptions(ctx, client, s.Options)
@@ -27,8 +27,8 @@ func (s *Setup) GetFilteredDatabases(ctx context.Context, client *database.Clien
 	return filterFromBackupOptions(ctx, client, s.Options)
 }
 
-func filterFromBackupOptions(ctx context.Context, client *database.Client, opts *types_backup.BackupDBOptions) ([]string, *types.FilterStats, error) {
-	filterOpts := types.FilterOptions{
+func filterFromBackupOptions(ctx context.Context, client *database.Client, opts *types_backup.BackupDBOptions) ([]string, *domain.FilterStats, error) {
+	filterOpts := domain.FilterOptions{
 		ExcludeSystem:    opts.Filter.ExcludeSystem,
 		ExcludeDatabases: opts.Filter.ExcludeDatabases,
 		ExcludeDBFile:    opts.Filter.ExcludeDBFile,
@@ -43,7 +43,7 @@ func filterFromBackupOptions(ctx context.Context, client *database.Client, opts 
 	return dbFiltered, stats, nil
 }
 
-func (s *Setup) DisplayFilterWarnings(stats *types.FilterStats) {
+func (s *Setup) DisplayFilterWarnings(stats *domain.FilterStats) {
 	ui.PrintWarning("Kemungkinan penyebab:")
 
 	if stats.TotalExcluded == stats.TotalFound {

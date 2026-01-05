@@ -2,14 +2,13 @@
 // Deskripsi : Helper functions untuk bulk/batch database operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package modes
 
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"strings"
 	"time"
 )
@@ -19,7 +18,7 @@ type bulkBackupHelper struct {
 	service     RestoreService
 	ctx         context.Context
 	databases   []string
-	backupOpts  *types.RestoreBackupOptions
+	backupOpts  *restoremodel.RestoreBackupOptions
 	stopOnError bool
 }
 

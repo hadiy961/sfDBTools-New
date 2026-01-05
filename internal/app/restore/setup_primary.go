@@ -2,15 +2,14 @@
 // Deskripsi : Setup untuk restore primary database mode
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified :  2026-01-05
 package restore
 
 import (
 	"context"
 	"fmt"
 	"sfDBTools/internal/app/restore/helpers"
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"
 )
@@ -61,7 +60,7 @@ func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 func (s *Service) finalizePrimarySetup(allowInteractive bool) error {
 	if !s.RestorePrimaryOpts.SkipBackup {
 		if s.RestorePrimaryOpts.BackupOptions == nil {
-			s.RestorePrimaryOpts.BackupOptions = &types.RestoreBackupOptions{}
+			s.RestorePrimaryOpts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 		}
 		s.setupBackupOptions(s.RestorePrimaryOpts.BackupOptions, s.RestorePrimaryOpts.EncryptionKey, allowInteractive)
 	}

@@ -2,8 +2,7 @@
 // Deskripsi : Helper functions untuk MySQL restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-17
-// Last Modified : 2025-12-17
-
+// Last Modified : 2026-01-05
 package helpers
 
 import (
@@ -14,7 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
@@ -25,7 +24,7 @@ import (
 )
 
 // BuildMySQLArgs membuat argument list untuk mysql command
-func BuildMySQLArgs(profile *types.ProfileInfo, database string, extraArgs ...string) []string {
+func BuildMySQLArgs(profile *domain.ProfileInfo, database string, extraArgs ...string) []string {
 	eff := profilehelper.EffectiveDBInfo(profile)
 	args := []string{
 		fmt.Sprintf("--host=%s", eff.Host),
@@ -66,7 +65,7 @@ func ExecuteMySQLCommand(ctx context.Context, args []string, stdin io.Reader) er
 }
 
 // RestoreFromFile melakukan restore database dari file backup
-func RestoreFromFile(ctx context.Context, filePath string, targetDB string, profile *types.ProfileInfo, encryptionKey string) error {
+func RestoreFromFile(ctx context.Context, filePath string, targetDB string, profile *domain.ProfileInfo, encryptionKey string) error {
 	spin := ui.NewSpinnerWithElapsed(fmt.Sprintf("Restore database %s dari %s", targetDB, filepath.Base(filePath)))
 	spin.Start()
 	defer spin.Stop()
@@ -138,7 +137,7 @@ func CloseReaders(closers []io.Closer) {
 }
 
 // RestoreUserGrants melakukan restore user grants dari file
-func RestoreUserGrants(ctx context.Context, grantsFile string, profile *types.ProfileInfo) error {
+func RestoreUserGrants(ctx context.Context, grantsFile string, profile *domain.ProfileInfo) error {
 	if grantsFile == "" {
 		return nil
 	}

@@ -10,7 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/types"
+	appconfig "sfDBTools/internal/services/config"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/spinnerguard"
 	"strings"
@@ -67,13 +67,13 @@ func Time(key string, t time.Time) Field {
 //
 // NOTE: Logger tidak lagi me-load konfigurasi sendiri untuk menghindari import cycle.
 // Caller bertanggung jawab mengirimkan config (boleh nil).
-func NewLogger(appCfg *types.Config) Logger {
+func NewLogger(appCfg *appconfig.Config) Logger {
 	// Quiet mode berbasis parameter (tanpa env): log ke stderr (bukan stdout) supaya pipeline aman,
 	// tapi tetap boleh tulis ke file jika file logging diaktifkan.
 	quiet := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
 
 	// Default config (aman untuk mode completion / tanpa config)
-	cfg := types.LogConfig{
+	cfg := appconfig.LogConfig{
 		Format:   "text",
 		Level:    "info",
 		Timezone: "Local",

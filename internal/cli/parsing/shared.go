@@ -1,7 +1,8 @@
 package parsing
 
 import (
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"
 
@@ -9,7 +10,7 @@ import (
 )
 
 // PopulateProfileFlags membaca flag profile dan mengupdate struct.
-func PopulateProfileFlags(cmd *cobra.Command, opts *types.ProfileInfo) {
+func PopulateProfileFlags(cmd *cobra.Command, opts *domain.ProfileInfo) {
 	if v := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE); v != "" {
 		opts.Path = v
 	}
@@ -19,7 +20,7 @@ func PopulateProfileFlags(cmd *cobra.Command, opts *types.ProfileInfo) {
 }
 
 // PopulateEncryptionFlags membaca flag encryption dan mengupdate struct.
-func PopulateEncryptionFlags(cmd *cobra.Command, opts *types.EncryptionOptions) {
+func PopulateEncryptionFlags(cmd *cobra.Command, opts *domain.EncryptionOptions) {
 	if v := helper.GetStringFlagOrEnv(cmd, "backup-key", consts.ENV_BACKUP_ENCRYPTION_KEY); v != "" {
 		opts.Key = v
 		opts.Enabled = true
@@ -27,7 +28,7 @@ func PopulateEncryptionFlags(cmd *cobra.Command, opts *types.EncryptionOptions) 
 }
 
 // PopulateFilterFlags membaca flag filter dan mengupdate struct.
-func PopulateFilterFlags(cmd *cobra.Command, opts *types.FilterOptions) {
+func PopulateFilterFlags(cmd *cobra.Command, opts *domain.FilterOptions) {
 	if v := helper.GetStringArrayFlagOrEnv(cmd, "db", ""); len(v) > 0 {
 		opts.IncludeDatabases = v
 	}
@@ -51,7 +52,7 @@ func PopulateFilterFlags(cmd *cobra.Command, opts *types.FilterOptions) {
 // -------------------- restore helpers --------------------
 
 // PopulateTargetProfileFlags membaca flag profile target (restore) dan mengupdate struct.
-func PopulateTargetProfileFlags(cmd *cobra.Command, opts *types.ProfileInfo) {
+func PopulateTargetProfileFlags(cmd *cobra.Command, opts *domain.ProfileInfo) {
 	if v := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_TARGET_PROFILE); v != "" {
 		opts.Path = v
 	}
@@ -91,7 +92,7 @@ func PopulateRestoreTicket(cmd *cobra.Command, ticket *string) {
 }
 
 // PopulateRestoreBackupDir membaca flag backup-dir ke RestoreBackupOptions.
-func PopulateRestoreBackupDir(cmd *cobra.Command, opts *types.RestoreBackupOptions) {
+func PopulateRestoreBackupDir(cmd *cobra.Command, opts *restoremodel.RestoreBackupOptions) {
 	if v := helper.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {
 		opts.OutputDir = v
 	}

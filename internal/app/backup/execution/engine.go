@@ -10,10 +10,10 @@ import (
 	"fmt"
 
 	"sfDBTools/internal/app/backup/gtid"
+	"sfDBTools/internal/app/backup/model/types_backup"
 	"sfDBTools/internal/app/backup/writer"
 	appconfig "sfDBTools/internal/services/config"
 	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/errorlog"
 	pkghelper "sfDBTools/pkg/helper"

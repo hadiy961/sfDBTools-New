@@ -2,19 +2,18 @@
 // Deskripsi : Common types untuk setup restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
-
+// Last Modified : 2026-01-05
 package restore
 
 import (
-	"sfDBTools/internal/types"
+	"sfDBTools/internal/domain"
 )
 
 // basicSetupOptions contains common setup options for all modes
 type basicSetupOptions struct {
 	file          *string
 	encryptionKey *string
-	profile       *types.ProfileInfo
+	profile       *domain.ProfileInfo
 	interactive   bool
 }
 

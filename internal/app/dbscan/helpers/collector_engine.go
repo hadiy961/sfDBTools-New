@@ -7,25 +7,25 @@ import (
 	"sync/atomic"
 	"time"
 
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/types"
+	dbscanmodel "sfDBTools/internal/app/dbscan/model"
+	applog "sfDBTools/internal/services/log"
 	"sfDBTools/pkg/database"
 )
 
 // CollectDatabaseDetails mengumpulkan detail informasi untuk semua database secara concurrent
 // dan memanggil callback onDetail setiap kali hasil untuk sebuah database tersedia.
 // Jika onDetail mengembalikan error, proses akan dihentikan (early-cancel) dan error dikembalikan.
-func CollectDatabaseDetails(ctx context.Context, client *database.Client, dbNames []string, logger applog.Logger, onDetail func(types.DatabaseDetailInfo) error) (map[string]types.DatabaseDetailInfo, error) {
+func CollectDatabaseDetails(ctx context.Context, client *database.Client, dbNames []string, logger applog.Logger, onDetail func(dbscanmodel.DatabaseDetailInfo) error) (map[string]dbscanmodel.DatabaseDetailInfo, error) {
 	return CollectDatabaseDetailsWithOptions(ctx, client, dbNames, logger, nil, onDetail)
 }
 
 // CollectDatabaseDetailsWithOptions sama seperti CollectDatabaseDetails namun menerima opsi tambahan.
-func CollectDatabaseDetailsWithOptions(ctx context.Context, client *database.Client, dbNames []string, logger applog.Logger, opts *DetailCollectOptions, onDetail func(types.DatabaseDetailInfo) error) (map[string]types.DatabaseDetailInfo, error) {
+func CollectDatabaseDetailsWithOptions(ctx context.Context, client *database.Client, dbNames []string, logger applog.Logger, opts *DetailCollectOptions, onDetail func(dbscanmodel.DatabaseDetailInfo) error) (map[string]dbscanmodel.DatabaseDetailInfo, error) {
 	const jobTimeout = 300 * time.Second // Increase overall timeout
 
 	if len(dbNames) == 0 {
 		logger.Infof("No databases to collect details for")
-		return map[string]types.DatabaseDetailInfo{}, nil
+		return map[string]dbscanmodel.DatabaseDetailInfo{}, nil
 	}
 
 	maxWorkers := runtime.NumCPU()
@@ -48,7 +48,7 @@ func CollectDatabaseDetailsWithOptions(ctx context.Context, client *database.Cli
 	defer cancel()
 
 	jobs := make(chan DatabaseDetailJob)
-	results := make(chan types.DatabaseDetailInfo, maxWorkers*2)
+	results := make(chan dbscanmodel.DatabaseDetailInfo, maxWorkers*2)
 
 	var wg sync.WaitGroup
 	for w := 0; w < maxWorkers; w++ {
@@ -76,7 +76,7 @@ func CollectDatabaseDetailsWithOptions(ctx context.Context, client *database.Cli
 		close(results)
 	}()
 
-	detailMap := make(map[string]types.DatabaseDetailInfo)
+	detailMap := make(map[string]dbscanmodel.DatabaseDetailInfo)
 	var firstErr error
 	for result := range results {
 		detailMap[result.DatabaseName] = result
@@ -103,7 +103,7 @@ func databaseDetailWorker(
 	client *database.Client,
 	logger applog.Logger,
 	jobs <-chan DatabaseDetailJob,
-	results chan<- types.DatabaseDetailInfo,
+	results chan<- dbscanmodel.DatabaseDetailInfo,
 	wg *sync.WaitGroup,
 	timeout time.Duration,
 	started *int32,

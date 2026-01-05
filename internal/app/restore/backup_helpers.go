@@ -2,8 +2,7 @@
 // Deskripsi : Helper functions untuk backup pre-restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-19
-// Last Modified : 2025-12-19
-
+// Last Modified :  2026-01-05
 package restore
 
 import (
@@ -12,8 +11,9 @@ import (
 	"os"
 	"path/filepath"
 	"sfDBTools/internal/app/backup"
-	"sfDBTools/internal/types"
-	"sfDBTools/internal/types/types_backup"
+	"sfDBTools/internal/app/backup/model/types_backup"
+	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/domain"
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
 	"time"
@@ -22,7 +22,7 @@ import (
 // BackupDatabasesSingleFileIfNeeded membuat backup gabungan (single-file/combined)
 // untuk sekumpulan database sebelum restore (dipakai oleh restore all).
 // Konsepnya mengikuti backup filter --mode single-file.
-func (s *Service) BackupDatabasesSingleFileIfNeeded(ctx context.Context, dbNames []string, skipBackup bool, backupOpts *types.RestoreBackupOptions) (string, error) {
+func (s *Service) BackupDatabasesSingleFileIfNeeded(ctx context.Context, dbNames []string, skipBackup bool, backupOpts *restoremodel.RestoreBackupOptions) (string, error) {
 	if skipBackup {
 		return "", nil
 	}
@@ -41,14 +41,14 @@ func (s *Service) BackupDatabasesSingleFileIfNeeded(ctx context.Context, dbNames
 // mode: "single" atau "all"
 // dbName: nama database (untuk single mode)
 // dbList: list of databases (untuk all mode)
-func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName string, dbList []string, backupOpts *types.RestoreBackupOptions) (string, error) {
+func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName string, dbList []string, backupOpts *restoremodel.RestoreBackupOptions) (string, error) {
 	// Defensive defaulting: backupOpts can be nil if caller didn't run restore setup.
 	// Use config defaults in that case.
 	if backupOpts == nil {
-		backupOpts = &types.RestoreBackupOptions{}
+		backupOpts = &restoremodel.RestoreBackupOptions{}
 	}
 	if backupOpts.Compression.Type == "" {
-		backupOpts.Compression = types.CompressionOptions{
+		backupOpts.Compression = domain.CompressionOptions{
 			Enabled: s.Config.Backup.Compression.Enabled,
 			Type:    s.Config.Backup.Compression.Type,
 			Level:   s.Config.Backup.Compression.Level,
@@ -56,7 +56,7 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 	}
 	if backupOpts.Encryption.Key == "" {
 		// For pre-restore backups, default to backup encryption settings.
-		backupOpts.Encryption = types.EncryptionOptions{
+		backupOpts.Encryption = domain.EncryptionOptions{
 			Enabled: s.Config.Backup.Encryption.Enabled,
 			Key:     s.Config.Backup.Encryption.Key,
 		}
@@ -122,16 +122,16 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 		File: types_backup.BackupFileInfo{
 			Filename: filename,
 		},
-		Compression: types.CompressionOptions{
+		Compression: domain.CompressionOptions{
 			Enabled: backupOpts.Compression.Enabled,
 			Type:    backupOpts.Compression.Type,
 			Level:   backupOpts.Compression.Level,
 		},
-		Encryption: types.EncryptionOptions{
+		Encryption: domain.EncryptionOptions{
 			Enabled: backupOpts.Encryption.Enabled,
 			Key:     backupOpts.Encryption.Key,
 		},
-		Filter: types.FilterOptions{},
+		Filter: domain.FilterOptions{},
 		Ticket: ticket,
 	}
 
@@ -183,12 +183,12 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 }
 
 // BackupTargetDatabase melakukan backup database target menggunakan backup service
-func (s *Service) BackupTargetDatabase(ctx context.Context, dbName string, backupOpts *types.RestoreBackupOptions) (string, error) {
+func (s *Service) BackupTargetDatabase(ctx context.Context, dbName string, backupOpts *restoremodel.RestoreBackupOptions) (string, error) {
 	return s.backupDatabaseGeneric(ctx, consts.ModeSingle, dbName, []string{dbName}, backupOpts)
 }
 
 // BackupAllDatabases melakukan backup semua database sebelum restore all
-func (s *Service) BackupAllDatabases(ctx context.Context, backupOpts *types.RestoreBackupOptions) (string, error) {
+func (s *Service) BackupAllDatabases(ctx context.Context, backupOpts *restoremodel.RestoreBackupOptions) (string, error) {
 	// Get DB list for count
 	dbList, err := s.TargetClient.GetDatabaseList(ctx)
 	if err != nil {

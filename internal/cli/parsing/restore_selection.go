@@ -6,15 +6,15 @@
 package parsing
 
 import (
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 	"sfDBTools/pkg/helper"
 
 	"github.com/spf13/cobra"
 )
 
 // ParsingRestoreSelectionOptions melakukan parsing opsi untuk restore selection
-func ParsingRestoreSelectionOptions(cmd *cobra.Command) (types.RestoreSelectionOptions, error) {
-	opts := types.RestoreSelectionOptions{
+func ParsingRestoreSelectionOptions(cmd *cobra.Command) (restoremodel.RestoreSelectionOptions, error) {
+	opts := restoremodel.RestoreSelectionOptions{
 		DropTarget:  true,
 		SkipBackup:  false,
 		StopOnError: true, // default stop pada error pertama
@@ -36,7 +36,7 @@ func ParsingRestoreSelectionOptions(cmd *cobra.Command) (types.RestoreSelectionO
 	PopulateRestoreTicket(cmd, &opts.Ticket)
 
 	// Backup options
-	opts.BackupOptions = &types.RestoreBackupOptions{}
+	opts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 	PopulateRestoreBackupDir(cmd, opts.BackupOptions)
 
 	return opts, nil

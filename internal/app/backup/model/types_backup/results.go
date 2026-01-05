@@ -1,8 +1,8 @@
-// File : internal/types/types_backup/results.go
+// File : internal/app/backup/model/types_backup/results.go
 // Deskripsi : Result structs untuk backup operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-08
+// Last Modified : 2026-01-05
 
 package types_backup
 

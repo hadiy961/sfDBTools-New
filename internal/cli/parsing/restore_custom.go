@@ -6,15 +6,15 @@
 package parsing
 
 import (
-	"sfDBTools/internal/types"
+	restoremodel "sfDBTools/internal/app/restore/model"
 
 	"github.com/spf13/cobra"
 )
 
 // ParsingRestoreCustomOptions melakukan parsing opsi untuk restore custom.
 // Catatan: detail account (database/user/password) diprompt secara interaktif saat setup session.
-func ParsingRestoreCustomOptions(cmd *cobra.Command) (types.RestoreCustomOptions, error) {
-	opts := types.RestoreCustomOptions{
+func ParsingRestoreCustomOptions(cmd *cobra.Command) (restoremodel.RestoreCustomOptions, error) {
+	opts := restoremodel.RestoreCustomOptions{
 		DropTarget:  true,
 		SkipBackup:  false,
 		StopOnError: true,
@@ -34,7 +34,7 @@ func ParsingRestoreCustomOptions(cmd *cobra.Command) (types.RestoreCustomOptions
 	PopulateRestoreTicket(cmd, &opts.Ticket)
 
 	// Backup options untuk pre-restore backup
-	opts.BackupOptions = &types.RestoreBackupOptions{}
+	opts.BackupOptions = &restoremodel.RestoreBackupOptions{}
 	PopulateRestoreBackupDir(cmd, opts.BackupOptions)
 
 	return opts, nil
