@@ -2,11 +2,11 @@
 // Deskripsi : Command untuk mengelola scheduler cleanup (systemd timer)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified :  2026-01-05
+// Last Modified : 2026-01-05
 package cleanupcmd
 
 import (
-	"sfDBTools/internal/cleanup/scheduler"
+	"sfDBTools/internal/app/cleanup/scheduler"
 	appdeps "sfDBTools/internal/cli/deps"
 
 	"github.com/spf13/cobra"

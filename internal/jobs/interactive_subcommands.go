@@ -2,7 +2,7 @@
 // Deskripsi : Mode interaktif untuk subcommand jobs saat argumen belum lengkap
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-04
-// Last Modified :  2026-01-05
+// Last Modified : 2026-01-05
 package jobs
 
 import (

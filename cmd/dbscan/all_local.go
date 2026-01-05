@@ -3,7 +3,7 @@ package dbscancmd
 import (
 	"errors"
 	"fmt"
-	"sfDBTools/internal/dbscan"
+	"sfDBTools/internal/app/dbscan"
 	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/flags"
 	"sfDBTools/internal/cli/parsing"

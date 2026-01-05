@@ -1,8 +1,8 @@
-// File : internal/profile/wizard/edit_flow.go
+// File : internal/app/profile/wizard/edit_flow.go
 // Deskripsi : Flow wizard untuk edit profile (honor flag overrides)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package wizard
 
@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/profile/shared"
+	"sfDBTools/internal/app/profile/shared"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"

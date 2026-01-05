@@ -2,7 +2,7 @@
 // Deskripsi : Error logging utility untuk semua fitur (backup, dbscan, cleanup)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-11-10
-// Last Modified :  2026-01-05
+// Last Modified : 2026-01-05
 package errorlog
 
 import (

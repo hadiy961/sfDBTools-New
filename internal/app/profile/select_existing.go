@@ -1,14 +1,14 @@
-// File : internal/profile/select_existing.go
+// File : internal/app/profile/select_existing.go
 // Deskripsi : Pemilihan profile secara interaktif (shared untuk show/edit)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package profile
 
 import (
 	"fmt"
-	"sfDBTools/internal/profile/shared"
+	"sfDBTools/internal/app/profile/shared"
 	"sfDBTools/pkg/consts"
 	profilehelper "sfDBTools/pkg/helper/profile"
 )

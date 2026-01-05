@@ -1,8 +1,8 @@
-// File : internal/dbscan/service.go
+// File : internal/app/dbscan/service.go
 // Deskripsi : Service utama implementation untuk database scanning operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 15 Oktober 2025
-// Last Modified :  2026-01-05
+// Last Modified : 2026-01-05
 package dbscan
 
 import (
@@ -10,9 +10,9 @@ import (
 	"errors"
 	"fmt"
 
-	"sfDBTools/internal/services/config"
-	"sfDBTools/internal/services/log"
-	"sfDBTools/internal/dbscan/helpers"
+	"sfDBTools/internal/app/dbscan/helpers"
+	appconfig "sfDBTools/internal/services/config"
+	applog "sfDBTools/internal/services/log"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"

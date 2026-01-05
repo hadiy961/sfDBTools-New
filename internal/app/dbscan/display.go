@@ -1,14 +1,14 @@
-// File : internal/dbscan/display.go
+// File : internal/app/dbscan/display.go
 // Deskripsi : Display functions untuk database scanning results
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 2026-01-04
+// Last Modified : 2026-01-05
 
 package dbscan
 
 import (
 	"fmt"
-	"sfDBTools/internal/dbscan/helpers"
+	"sfDBTools/internal/app/dbscan/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/ui"

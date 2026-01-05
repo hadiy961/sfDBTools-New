@@ -1,8 +1,8 @@
-// File : internal/profile/setup.go
+// File : internal/app/profile/setup.go
 // Deskripsi : Setup, configuration helpers, and path management
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package profile
 
@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/profile/shared"
+	"sfDBTools/internal/app/profile/shared"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"

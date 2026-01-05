@@ -2,7 +2,7 @@
 // Deskripsi : Interface definitions untuk backup modes (ISP-compliant)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified :  2026-01-05
+// Last Modified : 2026-01-05
 package modes
 
 import (

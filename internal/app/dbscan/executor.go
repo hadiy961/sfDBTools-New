@@ -1,8 +1,8 @@
-// File : internal/dbscan/executor.go
+// File : internal/app/dbscan/executor.go
 // Deskripsi : Background executor dan local sizing logic
 // Author : Hadiyatna Muflihun
 // Tanggal : 15 Oktober 2025
-// Last Modified : 17 Desember 2025
+// Last Modified : 05 Januari 2026
 
 package dbscan
 
@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	"sfDBTools/internal/dbscan/helpers"
+	"sfDBTools/internal/app/dbscan/helpers"
 	"sfDBTools/internal/types"
 )
 

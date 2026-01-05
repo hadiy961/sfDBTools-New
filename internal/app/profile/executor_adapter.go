@@ -1,13 +1,13 @@
-// File : internal/profile/executor_adapter.go
+// File : internal/app/profile/executor_adapter.go
 // Deskripsi : Adapter untuk memanggil subpackage executor dari Service
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 
 package profile
 
 import (
-	"sfDBTools/internal/profile/executor"
+	"sfDBTools/internal/app/profile/executor"
 	"sfDBTools/internal/types"
 )
 

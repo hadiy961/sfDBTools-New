@@ -2,7 +2,7 @@
 // Deskripsi : Fungsi untuk export dan menyimpan user grants
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified :  2026-01-05
+// Last Modified : 2026-01-05
 package metadata
 
 import (
