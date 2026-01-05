@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 
-	internaljobs "sfDBTools/internal/jobs"
+	internaljobs "sfDBTools/internal/app/jobs"
 	"sfDBTools/internal/services/scheduler"
 	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
