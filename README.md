@@ -413,12 +413,12 @@ sfdbtools <command> <subcommand> --help
 Mulai UI-1, seluruh code internal wajib lewat facade `internal/ui/*`:
 
 - Gunakan `internal/ui/print`, `internal/ui/prompt`, `internal/ui/table`, `internal/ui/progress`, `internal/ui/text`, `internal/ui/style`.
-- Package legacy `pkg/ui` dan `pkg/input` hanya boleh di-import oleh facade `internal/ui/*`.
+- Per UI-2, implementasi UI output sudah berada di `internal/ui/*` (tidak ada lagi pemakaian paket UI legacy).
+- Legacy yang masih tersisa hanya `pkg/input` untuk prompt (akan ditangani di UI-3).
 
 Rencana deprecation bertahap:
 
-- UI-2: pindahkan implementasi UI dari `pkg/ui` / `pkg/input` ke `internal/ui/*` (tanpa mengubah UX), facade tidak lagi sekadar delegasi.
-- UI-3: tandai `pkg/ui` / `pkg/input` sebagai deprecated (doc + lint/CI), lalu phase-out pemakaian internal sepenuhnya.
+- UI-3: pindahkan prompt/validator dari `pkg/input` ke `internal/ui/prompt`, lalu tandai `pkg/input` sebagai deprecated (doc + lint/CI) dan phase-out pemakaian internal sepenuhnya.
 
 ## Lisensi
 

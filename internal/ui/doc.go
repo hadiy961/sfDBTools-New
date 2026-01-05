@@ -7,7 +7,6 @@
 // Package ui adalah entry point facade UI.
 //
 // NOTE: Pada PR UI-1, implementasi masih mendelegasikan ke legacy:
-// - sfDBTools/pkg/ui
 // - sfDBTools/pkg/input
 //
 // Package internal ini menjadi pintu tunggal UI untuk layer app/cli/services.

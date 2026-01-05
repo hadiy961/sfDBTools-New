@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"sfDBTools/pkg/runtimecfg"
-	legacyui "sfDBTools/pkg/ui"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -19,7 +18,7 @@ import (
 // Spinner adalah wrapper spinner yang expose API sederhana.
 type Spinner struct {
 	noElapsed *spinner.Spinner
-	elapsed   *legacyui.SpinnerWithElapsed
+	elapsed   *elapsedSpinner
 }
 
 // NewSpinner membuat spinner tanpa elapsed time.
@@ -37,7 +36,7 @@ func NewSpinner(label string) *Spinner {
 
 // NewSpinnerWithElapsed membuat spinner dengan elapsed time tracking.
 func NewSpinnerWithElapsed(label string) *Spinner {
-	return &Spinner{elapsed: legacyui.NewSpinnerWithElapsed(label)}
+	return &Spinner{elapsed: newElapsedSpinner(label)}
 }
 
 func (s *Spinner) Start() {
@@ -77,9 +76,4 @@ func (s *Spinner) Update(label string) {
 	if s.noElapsed != nil {
 		s.noElapsed.Suffix = fmt.Sprintf(" %s...", label)
 	}
-}
-
-// RunWithSpinnerSuspended menjalankan action dengan spinner aktif (jika ada) disuspend.
-func RunWithSpinnerSuspended(action func()) {
-	legacyui.RunWithSpinnerSuspended(action)
 }

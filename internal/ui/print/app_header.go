@@ -1,26 +1,24 @@
-package ui
+// File : internal/ui/print/app_header.go
+// Deskripsi : Helper clear screen + app header (judul aplikasi)
+// Author : Hadiyatna Muflihun
+// Tanggal : 11 November 2025
+// Last Modified : 5 Januari 2026
+
+package print
 
 import (
 	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
-	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/services/config"
-	app_log "sfDBTools/internal/services/log"
 	"sfDBTools/pkg/runtimecfg"
-	"strings"
+	"sfDBTools/pkg/version"
 
 	"github.com/mattn/go-isatty"
 )
 
 // ClearScreen clears the terminal screen using platform-specific commands
 func ClearScreen() error {
-	lg := app_log.NewLogger(nil)
-	if appdeps.Deps != nil && appdeps.Deps.Logger != nil {
-		lg = appdeps.Deps.Logger
-	}
-
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
@@ -32,7 +30,6 @@ func ClearScreen() error {
 
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
-		lg.Warnf("Failed to clear screen using system command, falling back to ANSI escape sequences - os=%s: %v", runtime.GOOS, err)
 		return ClearScreenANSI()
 	}
 
@@ -42,20 +39,9 @@ func ClearScreen() error {
 
 // ClearScreenANSI clears the terminal screen using ANSI escape sequences
 func ClearScreenANSI() error {
-	lg := app_log.NewLogger(nil)
-	if appdeps.Deps != nil && appdeps.Deps.Logger != nil {
-		lg = appdeps.Deps.Logger
-	}
-
 	// ANSI escape sequence to clear screen and move cursor to top-left
 	_, err := fmt.Print("\033[2J\033[H")
-	if err != nil {
-		lg.Errorf("Failed to clear screen using ANSI escape sequences: %v", err)
-		return err
-	}
-
-	// Only log if there are issues, not for successful operations
-	return nil
+	return err
 }
 
 // ClearWithMessage clears screen and displays a message
@@ -78,30 +64,17 @@ func ClearAndShowHeader(title string) error {
 	return nil
 }
 
-func Headers(title string) {
+// PrintAppHeader menampilkan header aplikasi dan melakukan clear screen bila output TTY.
+func PrintAppHeader(title string) {
 	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
 		return
 	}
 
-	cfg, err := appconfig.LoadConfigFromEnv()
-	if err != nil {
-		PrintError(fmt.Sprintf("Error loading config: %v", err))
-		return
-	}
-
-	fullTitle := cfg.General.AppName + " v" + cfg.General.Version + " - " + title
+	fullTitle := fmt.Sprintf("%s v%s - %s", "sfDBTools", version.Version, title)
 	// Kalau stdout bukan TTY (misal di-pipe), jangan clear screen.
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		_ = ClearAndShowHeader(fullTitle)
 		return
 	}
 	PrintHeader(fullTitle)
-}
-
-// FormatStringSlice converts a slice of strings into a comma-separated string
-func FormatStringSlice(slice []string) string {
-	if len(slice) == 0 {
-		return "None"
-	}
-	return strings.Join(slice, ", ")
 }

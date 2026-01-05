@@ -6,9 +6,20 @@
 
 package table
 
-import legacyui "sfDBTools/pkg/ui"
+import (
+	"os"
+
+	"github.com/olekukonko/tablewriter"
+)
 
 // Render merender tabel ke stdout.
 func Render(headers []string, rows [][]string) {
-	legacyui.FormatTable(headers, rows)
+	if len(headers) == 0 || len(rows) == 0 {
+		return
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.Header(headers)
+	table.Bulk(rows)
+	table.Render()
 }
