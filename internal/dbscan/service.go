@@ -2,8 +2,7 @@
 // Deskripsi : Service utama implementation untuk database scanning operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 15 Oktober 2025
-// Last Modified : 2026-01-04
-
+// Last Modified :  2026-01-05
 package dbscan
 
 import (
@@ -11,8 +10,8 @@ import (
 	"errors"
 	"fmt"
 
-	"sfDBTools/internal/appconfig"
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/config"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/dbscan/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"

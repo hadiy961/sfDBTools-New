@@ -2,12 +2,11 @@
 // Deskripsi : Metadata config structs (tanpa method)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-05
-
+// Last Modified :  2026-01-05
 package types_backup
 
 import (
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"time"
 )
 

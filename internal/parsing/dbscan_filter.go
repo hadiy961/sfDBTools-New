@@ -1,7 +1,7 @@
 package parsing
 
 import (
-	"sfDBTools/internal/appconfig"
+	"sfDBTools/internal/services/config"
 	defaultVal "sfDBTools/internal/defaultval"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/helper"

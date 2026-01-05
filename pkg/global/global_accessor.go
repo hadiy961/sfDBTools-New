@@ -1,8 +1,8 @@
 package global
 
 import (
-	"sfDBTools/internal/appconfig"
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/config"
+	"sfDBTools/internal/services/log"
 	appdeps "sfDBTools/internal/deps"
 )
 

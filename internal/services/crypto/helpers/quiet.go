@@ -1,15 +1,14 @@
-// File : internal/crypto/helpers/quiet.go
+// File : internal/services/crypto/helpers/quiet.go
 // Deskripsi : Helper functions untuk quiet mode setup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-11-11
-// Last Modified : 2026-01-04
-
+// Last Modified :  2026-01-05
 package helpers
 
 import (
 	"os"
 
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/pkg/runtimecfg"
 )
 

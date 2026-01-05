@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"sfDBTools/internal/applog"
-	"sfDBTools/internal/crypto/helpers"
+	"sfDBTools/internal/services/log"
+	"sfDBTools/internal/services/crypto/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/ui"
 )

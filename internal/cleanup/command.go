@@ -2,8 +2,7 @@
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-16
-// Last Modified : 2026-01-04
-
+// Last Modified :  2026-01-05
 package cleanup
 
 import (
@@ -14,7 +13,7 @@ import (
 
 	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/parsing"
-	"sfDBTools/internal/schedulerutil"
+	"sfDBTools/internal/services/scheduler"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/runtimecfg"

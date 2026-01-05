@@ -2,8 +2,7 @@
 // Deskripsi : Generator unit systemd untuk scheduler backup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-05
-
+// Last Modified :  2026-01-05
 package scheduler
 
 import (
@@ -16,7 +15,7 @@ import (
 	"github.com/joho/godotenv"
 
 	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/internal/schedulerutil"
+	"sfDBTools/internal/services/scheduler"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 )

@@ -2,13 +2,12 @@
 // Deskripsi : Service utama untuk restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-16
-// Last Modified : 2025-12-17
-
+// Last Modified :  2026-01-05
 package restore
 
 import (
-	"sfDBTools/internal/appconfig"
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/config"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/restore/modes"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"

@@ -2,8 +2,7 @@
 // Deskripsi : Fungsi untuk export dan menyimpan user grants
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-05
-
+// Last Modified :  2026-01-05
 package metadata
 
 import (
@@ -11,7 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/helper"

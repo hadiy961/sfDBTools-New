@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"os"
 	"sfDBTools/cmd"
-	config "sfDBTools/internal/appconfig"
+	config "sfDBTools/internal/services/config"
 	"sfDBTools/internal/autoupdate"
 	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/pkg/runtimecfg"
 	"sfDBTools/pkg/ui"
 	"time"
 
-	applog "sfDBTools/internal/applog"
+	applog "sfDBTools/internal/services/log"
 )
 
 // Inisialisasi awal untuk Config dan Logger.

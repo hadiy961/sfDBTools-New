@@ -1,7 +1,7 @@
 package cryptocmd
 
 import (
-	"sfDBTools/internal/crypto"
+	"sfDBTools/internal/services/crypto"
 	appdeps "sfDBTools/internal/deps"
 	"sfDBTools/internal/flags"
 	"sfDBTools/internal/parsing"

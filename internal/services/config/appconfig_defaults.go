@@ -1,8 +1,8 @@
-// File : internal/appconfig/appconfig_defaults.go
+// File : internal/services/config/appconfig_defaults.go
 // Deskripsi : Default config + auto-init config file (zero-config first run)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-02
+// Last Modified : 2026-01-05
 package appconfig
 
 import (

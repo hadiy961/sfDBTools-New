@@ -1,7 +1,7 @@
 package deps
 
 import (
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types"
 )
 

@@ -2,8 +2,7 @@
 // Deskripsi : Error logging utility untuk semua fitur (backup, dbscan, cleanup)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-11-10
-// Last Modified : 2025-11-10
-
+// Last Modified :  2026-01-05
 package errorlog
 
 import (
@@ -12,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 )
 
 // ErrorLogger mencatat error ke file log terpisah untuk setiap fitur

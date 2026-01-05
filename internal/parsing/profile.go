@@ -3,7 +3,7 @@ package parsing
 import (
 	"fmt"
 	"os"
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/helper"

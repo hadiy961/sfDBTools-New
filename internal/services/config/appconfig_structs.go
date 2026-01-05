@@ -1,8 +1,8 @@
-// File : internal/appconfig/appconfig_types.go
+// File : internal/services/config/appconfig_types.go
 // Deskripsi : Struct untuk konfigurasi aplikasi yang di-load dari file YAML
 // Author : Hadiyatna Muflihun
 // Tanggal : 2024-10-03
-// Last Modified : 2024-10-03
+// Last Modified : 2026-01-05
 package appconfig
 
 import "sfDBTools/internal/types"

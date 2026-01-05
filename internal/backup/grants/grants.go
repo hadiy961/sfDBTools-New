@@ -3,7 +3,7 @@ package grants
 import (
 	"context"
 
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/backup/metadata"
 	"sfDBTools/pkg/database"
 )

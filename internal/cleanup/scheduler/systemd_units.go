@@ -2,8 +2,7 @@
 // Deskripsi : Generator unit systemd untuk scheduler cleanup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-05
-
+// Last Modified :  2026-01-05
 package scheduler
 
 import (
@@ -14,7 +13,7 @@ import (
 	"strings"
 
 	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/internal/schedulerutil"
+	"sfDBTools/internal/services/scheduler"
 )
 
 const (

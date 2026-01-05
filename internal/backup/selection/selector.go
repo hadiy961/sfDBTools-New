@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types"
 	"sfDBTools/internal/types/types_backup"
 	"sfDBTools/pkg/backuphelper"

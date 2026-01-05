@@ -2,8 +2,7 @@
 // Deskripsi : Helper untuk menampilkan history job scheduler (journalctl)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-02
-
+// Last Modified :  2026-01-05
 package scheduler
 
 import (
@@ -14,7 +13,7 @@ import (
 	"strings"
 
 	appdeps "sfDBTools/internal/deps"
-	"sfDBTools/internal/schedulerutil"
+	"sfDBTools/internal/services/scheduler"
 )
 
 type HistoryOptions struct {

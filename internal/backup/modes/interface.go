@@ -2,13 +2,12 @@
 // Deskripsi : Interface definitions untuk backup modes (ISP-compliant)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-23
-
+// Last Modified :  2026-01-05
 package modes
 
 import (
 	"context"
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types/types_backup"
 )
 

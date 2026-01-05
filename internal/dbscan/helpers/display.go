@@ -2,14 +2,13 @@
 // Deskripsi : Helper functions untuk menampilkan hasil scanning (general purpose)
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 16 Desember 2025
-
+// Last Modified : 05 Januari 2026
 package helpers
 
 import (
 	"fmt"
 
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/ui"

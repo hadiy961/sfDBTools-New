@@ -2,8 +2,7 @@
 // Deskripsi : Helper functions untuk eksekusi scanning database (general purpose)
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 16 Desember 2025
-
+// Last Modified : 05 Januari 2026
 package helpers
 
 import (
@@ -11,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"sfDBTools/internal/applog"
+	"sfDBTools/internal/services/log"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/helper"

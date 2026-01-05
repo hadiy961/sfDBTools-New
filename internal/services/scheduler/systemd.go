@@ -1,9 +1,8 @@
-// File : internal/schedulerutil/systemd.go
+// File : internal/services/scheduler/systemd.go
 // Deskripsi : Helper systemd (systemctl) untuk scheduler
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-02
-
+// Last Modified :  2026-01-05
 package schedulerutil
 
 import (

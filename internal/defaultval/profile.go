@@ -2,7 +2,7 @@ package defaultVal
 
 import (
 	"fmt"
-	"sfDBTools/internal/appconfig"
+	"sfDBTools/internal/services/config"
 	"sfDBTools/internal/types"
 )
 

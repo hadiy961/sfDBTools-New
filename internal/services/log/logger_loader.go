@@ -1,8 +1,8 @@
-// File : internal/applog/logger_loader.go
+// File : internal/services/log/logger_loader.go
 // Deskripsi : Fungsi untuk memuat dan menginisialisasi logger aplikasi
 // Author : Hadiyatna Muflihun
 // Tanggal : 2024-10-03
-// Last Modified : 2026-01-04
+// Last Modified : 2026-01-05
 package applog
 
 import (
