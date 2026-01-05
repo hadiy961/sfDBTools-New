@@ -10,26 +10,28 @@ import (
 
 	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 	applog "sfDBTools/internal/services/log"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/table"
+	"sfDBTools/internal/ui/text"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/ui"
 )
 
 // DisplayScanResult menampilkan hasil scanning ke UI
 func DisplayScanResult(result *dbscanmodel.ScanResult) {
-	ui.PrintHeader("HASIL SCANNING")
+	print.PrintHeader("HASIL SCANNING")
 
 	data := [][]string{
 		{"Total Database", fmt.Sprintf("%d", result.TotalDatabases)},
-		{"Berhasil", ui.ColorText(fmt.Sprintf("%d", result.SuccessCount), consts.UIColorGreen)},
-		{"Gagal", ui.ColorText(fmt.Sprintf("%d", result.FailedCount), consts.UIColorRed)},
+		{"Berhasil", text.ColorText(fmt.Sprintf("%d", result.SuccessCount), consts.UIColorGreen)},
+		{"Gagal", text.ColorText(fmt.Sprintf("%d", result.FailedCount), consts.UIColorRed)},
 		{"Durasi", result.Duration},
 	}
 
 	headers := []string{"Metrik", "Nilai"}
-	ui.FormatTable(headers, data)
+	table.Render(headers, data)
 
 	if len(result.Errors) > 0 {
-		ui.PrintWarning(fmt.Sprintf("Terdapat %d error saat menyimpan ke database:", len(result.Errors)))
+		print.PrintWarn(fmt.Sprintf("Terdapat %d error saat menyimpan ke database:", len(result.Errors)))
 		for _, errMsg := range result.Errors {
 			fmt.Printf("  • %s\n", errMsg)
 		}
@@ -38,15 +40,15 @@ func DisplayScanResult(result *dbscanmodel.ScanResult) {
 
 // DisplayDetailResults menampilkan detail hasil scanning ke UI
 func DisplayDetailResults(detailsMap map[string]dbscanmodel.DatabaseDetailInfo) {
-	ui.PrintHeader("DETAIL HASIL SCANNING")
+	print.PrintHeader("DETAIL HASIL SCANNING")
 
 	headers := []string{"Database", "Size", "Tables", "Procedures", "Functions", "Views", "Grants", "Status"}
 	var rows [][]string
 
 	for _, detail := range detailsMap {
-		status := ui.ColorText("✓ OK", consts.UIColorGreen)
+		status := text.ColorText("✓ OK", consts.UIColorGreen)
 		if detail.Error != "" {
-			status = ui.ColorText("✗ Error", consts.UIColorRed)
+			status = text.ColorText("✗ Error", consts.UIColorRed)
 		}
 
 		rows = append(rows, []string{
@@ -61,7 +63,7 @@ func DisplayDetailResults(detailsMap map[string]dbscanmodel.DatabaseDetailInfo) 
 		})
 	}
 
-	ui.FormatTable(headers, rows)
+	table.Render(headers, rows)
 }
 
 // LogScanResult menulis hasil scanning ke logger (untuk background mode)

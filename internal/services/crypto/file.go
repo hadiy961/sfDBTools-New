@@ -8,10 +8,10 @@ import (
 	"sfDBTools/internal/services/crypto/helpers"
 	cryptomodel "sfDBTools/internal/services/crypto/model"
 	applog "sfDBTools/internal/services/log"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/ui"
 )
 
 // ExecuteEncryptFile menangani logic encrypt file
@@ -22,7 +22,7 @@ func ExecuteEncryptFile(logger applog.Logger, opts cryptomodel.EncryptFileOption
 	MustValidatePassword()
 
 	if !quiet {
-		ui.Headers("Encrypt File")
+		print.PrintAppHeader("Encrypt File")
 	}
 
 	// Interactive mode untuk file paths jika tidak ada flag
@@ -96,7 +96,7 @@ func ExecuteDecryptFile(logger applog.Logger, opts cryptomodel.DecryptFileOption
 	MustValidatePassword()
 
 	if !quiet {
-		ui.Headers("Decrypt File")
+		print.PrintAppHeader("Decrypt File")
 	}
 
 	// Interactive mode untuk file paths jika tidak ada flag

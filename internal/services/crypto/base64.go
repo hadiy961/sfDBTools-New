@@ -9,7 +9,7 @@ import (
 	"sfDBTools/internal/services/crypto/helpers"
 	cryptomodel "sfDBTools/internal/services/crypto/model"
 	applog "sfDBTools/internal/services/log"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
 )
 
 // ExecuteBase64Encode menangani logic base64 encode
@@ -21,11 +21,11 @@ func ExecuteBase64Encode(logger applog.Logger, opts cryptomodel.Base64EncodeOpti
 	}
 
 	enc := base64.StdEncoding.EncodeToString(b)
-	ui.Headers("Base64 Encode")
+	print.PrintAppHeader("Base64 Encode")
 	if strings.TrimSpace(opts.OutputPath) == "" {
-		ui.PrintSubHeader("Output text")
+		print.PrintSubHeader("Output text")
 		fmt.Println(enc)
-		ui.PrintDashedSeparator()
+		print.PrintDashedSeparator()
 		return nil
 	}
 	if err := os.WriteFile(opts.OutputPath, []byte(enc), 0644); err != nil {
@@ -48,11 +48,11 @@ func ExecuteBase64Decode(logger applog.Logger, opts cryptomodel.Base64DecodeOpti
 	if err != nil {
 		return fmt.Errorf("input bukan base64 yang valid: %v", err)
 	}
-	ui.Headers("Base64 Decode")
-	ui.PrintSubHeader("Output Text : ")
+	print.PrintAppHeader("Base64 Decode")
+	print.PrintSubHeader("Output Text : ")
 	if strings.TrimSpace(opts.OutputPath) == "" {
 		fmt.Println(string(b))
-		ui.PrintDashedSeparator()
+		print.PrintDashedSeparator()
 		return nil
 	}
 	if err := os.WriteFile(opts.OutputPath, b, 0644); err != nil {

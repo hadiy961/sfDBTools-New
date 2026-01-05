@@ -12,15 +12,16 @@ import (
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
 	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 	"strings"
 
+	"sfDBTools/internal/domain"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
+
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/mattn/go-isatty"
-	"sfDBTools/internal/domain"
 )
 
 // CheckConfigurationNameUnique memvalidasi apakah nama konfigurasi unik.
@@ -117,8 +118,8 @@ func ValidateDBInfo(db *domain.DBInfo) error {
 				validation.ErrNonInteractive,
 			)
 		}
-		ui.PrintWarning(consts.ProfileWarnDBPasswordPrompting)
-		pw, err := input.AskPassword(fmt.Sprintf(consts.ProfilePromptDBPasswordForUserFmt, db.User), survey.Required)
+		print.PrintWarning(consts.ProfileWarnDBPasswordPrompting)
+		pw, err := prompt.AskPassword(fmt.Sprintf(consts.ProfilePromptDBPasswordForUserFmt, db.User), survey.Required)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}

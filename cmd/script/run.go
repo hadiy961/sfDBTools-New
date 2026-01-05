@@ -8,7 +8,7 @@ import (
 	"sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/flags"
 	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/pkg/input"
+	"sfDBTools/internal/ui/prompt"
 	"sort"
 	"strings"
 
@@ -48,7 +48,7 @@ sfdbtools script run -f tes -k "mypassword" -- --mode 1
 
 			// Interaktif: jika user belum provide args via CLI (`-- ...`), tanyakan args opsional.
 			if len(opts.Args) == 0 {
-				line, err := input.PromptString("Masukkan args untuk script (opsional, pisahkan dengan spasi; kosongkan jika tidak ada)")
+				line, err := prompt.AskText("Masukkan args untuk script (opsional, pisahkan dengan spasi; kosongkan jika tidak ada)")
 				if err != nil {
 					deps.Deps.Logger.Error(err.Error())
 					return
@@ -101,7 +101,7 @@ func selectSFToolsFileInteractive() (string, error) {
 		items, err := listSFToolsFiles(configuredDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
-			return input.SelectFileInteractive(".", "Cari file .sftools yang akan dijalankan", []string{".sftools"})
+			return prompt.SelectFile(".", "Cari file .sftools yang akan dijalankan", []string{".sftools"})
 		}
 		if len(items) > 0 {
 			const browseLabel = "🔎 Cari manual (browse)"
@@ -110,16 +110,16 @@ func selectSFToolsFileInteractive() (string, error) {
 			options := append([]string{}, items...)
 			options = append(options, browseLabel, inputLabel)
 
-			selected, err := selectSingleFromListWithDefault(options, fmt.Sprintf("Pilih file .sftools (default dari config: %s)", configuredDir), items[0])
+			selected, _, err := prompt.SelectOne(fmt.Sprintf("Pilih file .sftools (default dari config: %s)", configuredDir), options, 0)
 			if err != nil {
 				return "", err
 			}
 			switch selected {
 			case browseLabel:
-				return input.SelectFileInteractive(configuredDir, "Cari file .sftools yang akan dijalankan", []string{".sftools"})
+				return prompt.SelectFile(configuredDir, "Cari file .sftools yang akan dijalankan", []string{".sftools"})
 			case inputLabel:
 				for {
-					p, err := input.PromptString("Masukkan path file .sftools")
+					p, err := prompt.AskText("Masukkan path file .sftools")
 					if err != nil {
 						return "", err
 					}
@@ -141,11 +141,7 @@ func selectSFToolsFileInteractive() (string, error) {
 	}
 
 	// Fallback: browse dari current dir (tetap bisa ketik path bebas).
-	return input.SelectFileInteractive(".", "Pilih file .sftools yang akan dijalankan", []string{".sftools"})
-}
-
-func selectSingleFromListWithDefault(items []string, message string, defaultVal string) (string, error) {
-	return input.SelectSingleFromListWithDefault(items, message, defaultVal)
+	return prompt.SelectFile(".", "Pilih file .sftools yang akan dijalankan", []string{".sftools"})
 }
 
 func listSFToolsFiles(dir string) ([]string, error) {

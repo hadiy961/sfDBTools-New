@@ -9,10 +9,10 @@ import (
 	"sfDBTools/internal/services/crypto/helpers"
 	cryptomodel "sfDBTools/internal/services/crypto/model"
 	applog "sfDBTools/internal/services/log"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/encrypt"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/ui"
 )
 
 // ExecuteEncryptText menangani logic encrypt text
@@ -42,12 +42,12 @@ func ExecuteEncryptText(logger applog.Logger, opts cryptomodel.EncryptTextOption
 	if strings.TrimSpace(opts.OutputPath) == "" {
 		// Cetak base64 ke stdout
 		if !quiet {
-			ui.Headers("Encrypt Text")
-			ui.PrintSubHeader("Encrypted text output : ")
+			print.PrintAppHeader("Encrypt Text")
+			print.PrintSubHeader("Encrypted text output : ")
 		}
 		fmt.Println(base64.StdEncoding.EncodeToString(encBytes))
 		if !quiet {
-			ui.PrintDashedSeparator()
+			print.PrintDashedSeparator()
 		}
 		return nil
 	}
@@ -92,12 +92,12 @@ func ExecuteDecryptText(logger applog.Logger, opts cryptomodel.DecryptTextOption
 
 	if strings.TrimSpace(opts.OutputPath) == "" {
 		if !quiet {
-			ui.Headers("Decrypt Text")
-			ui.PrintSubHeader("Decrypted text output : ")
+			print.PrintAppHeader("Decrypt Text")
+			print.PrintSubHeader("Decrypted text output : ")
 		}
 		fmt.Println(string(plain))
 		if !quiet {
-			ui.PrintDashedSeparator()
+			print.PrintDashedSeparator()
 		}
 		return nil
 	}

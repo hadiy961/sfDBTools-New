@@ -9,8 +9,8 @@ import (
 	"context"
 	"fmt"
 	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/ui"
 	"strings"
 	"time"
 )
@@ -55,7 +55,7 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreRes
 			result.CompanionDB = opts.TargetDB + consts.SuffixDmart
 		} else {
 			logger.Warn("Companion (dmart) diaktifkan tapi file tidak tersedia; skip restore companion")
-			ui.PrintWarning("⚠️  Companion (dmart) diaktifkan tapi file tidak tersedia; skip restore companion")
+			print.PrintWarning("⚠️  Companion (dmart) diaktifkan tapi file tidak tersedia; skip restore companion")
 		}
 	}
 
@@ -129,7 +129,7 @@ func (e *PrimaryExecutor) restoreCompanionDatabase(ctx context.Context, opts *re
 
 	backupFile, err := flow.execute()
 	if err != nil {
-		ui.PrintWarning(fmt.Sprintf("⚠️  Gagal restore companion database %s: %v", companionDB, err))
+		print.PrintWarning(fmt.Sprintf("⚠️  Gagal restore companion database %s: %v", companionDB, err))
 		return err
 	}
 

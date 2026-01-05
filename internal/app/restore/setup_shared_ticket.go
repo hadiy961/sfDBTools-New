@@ -2,7 +2,7 @@
 // Deskripsi : Helper ticket dan opsi interaktif keamanan restore
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 
 package restore
 
@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/input"
 )
 
 func (s *Service) resolveTicketNumber(ticket *string, allowInteractive bool) error {
@@ -19,7 +19,7 @@ func (s *Service) resolveTicketNumber(ticket *string, allowInteractive bool) err
 		if !allowInteractive {
 			return fmt.Errorf("ticket number wajib diisi (--ticket) pada mode non-interaktif (--force)")
 		}
-		result, err := input.AskTicket(consts.FeatureRestore)
+		result, err := prompt.AskTicket(consts.FeatureRestore)
 		if err != nil {
 			return fmt.Errorf("gagal mendapatkan ticket number: %w", err)
 		}
@@ -41,7 +41,7 @@ func (s *Service) resolveInteractiveSafetyOptions(dropTarget *bool, skipBackup *
 	if skipBackup != nil {
 		backupDefault = !*skipBackup
 	}
-	shouldBackup, err := input.AskYesNo("Lakukan backup sebelum restore?", backupDefault)
+	shouldBackup, err := prompt.Confirm("Lakukan backup sebelum restore?", backupDefault)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan pilihan backup pre-restore: %w", err)
 	}
@@ -53,7 +53,7 @@ func (s *Service) resolveInteractiveSafetyOptions(dropTarget *bool, skipBackup *
 	if dropTarget != nil {
 		dropDefault = *dropTarget
 	}
-	shouldDrop, err := input.AskYesNo("Drop target database sebelum restore?", dropDefault)
+	shouldDrop, err := prompt.Confirm("Drop target database sebelum restore?", dropDefault)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan pilihan drop target: %w", err)
 	}
@@ -89,7 +89,7 @@ func (s *Service) getBackupDirectory(allowInteractive bool) string {
 	fmt.Printf("   Default directory: %s\n", defaultDir)
 	fmt.Println()
 
-	backupDir, err := input.AskString("Masukkan direktori untuk backup pre-restore (kosongkan untuk default)", defaultDir, nil)
+	backupDir, err := prompt.AskText("Masukkan direktori untuk backup pre-restore (kosongkan untuk default)", prompt.WithDefault(defaultDir))
 	if err != nil {
 		s.Log.Warnf("Gagal mendapatkan input direktori backup, menggunakan default: %v", err)
 		return defaultDir

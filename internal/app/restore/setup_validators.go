@@ -11,9 +11,9 @@ import (
 	"os"
 	"sfDBTools/internal/app/restore/helpers"
 	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"strings"
 )
 
@@ -71,7 +71,7 @@ func (s *Service) validateAndRetryEncryptionKey(filePath string, encryptionKey *
 			if !allowInteractive {
 				return fmt.Errorf("file backup terenkripsi; encryption key wajib diisi (--enc-key atau env) pada mode non-interaktif (--force)")
 			}
-			key, err := input.PromptPassword("Masukkan encryption key untuk decrypt file backup")
+			key, err := prompt.PromptPassword("Masukkan encryption key untuk decrypt file backup")
 			if err != nil {
 				return fmt.Errorf("gagal mendapatkan encryption key: %w", err)
 			}
@@ -85,10 +85,11 @@ func (s *Service) validateAndRetryEncryptionKey(filePath string, encryptionKey *
 				return fmt.Errorf("validasi encryption key gagal: %w", err)
 			}
 
-			ui.PrintError(fmt.Sprintf("Encryption key tidak valid atau file gagal didecrypt: %v", err))
-			action, selErr := input.SelectSingleFromList(
-				[]string{"Ubah key enkripsi", "Batalkan"},
+			print.PrintError(fmt.Sprintf("Encryption key tidak valid atau file gagal didecrypt: %v", err))
+			action, _, selErr := prompt.SelectOne(
 				"Encryption key salah. Pilih aksi:",
+				[]string{"Ubah key enkripsi", "Batalkan"},
+				0,
 			)
 			if selErr != nil {
 				return fmt.Errorf("gagal memilih aksi setelah error encryption key: %w", selErr)
@@ -200,11 +201,11 @@ func (s *Service) validateCompanionFile(opts interface{}, allowInteractive bool)
 		if stopOnError {
 			return fmt.Errorf("dmart file (_dmart) tidak ditemukan/invalid: %s", companionFile)
 		}
-		ui.PrintWarning("⚠️  Skip restore companion database (_dmart) karena dmart file invalid")
+		print.PrintWarning("⚠️  Skip restore companion database (_dmart) karena dmart file invalid")
 		*includeDmart = false
 		return nil
 	}
 
-	ui.PrintWarning(fmt.Sprintf("⚠️  Dmart file tidak valid: %s", companionFile))
+	print.PrintWarning(fmt.Sprintf("⚠️  Dmart file tidak valid: %s", companionFile))
 	return nil
 }

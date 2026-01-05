@@ -1,0 +1,14 @@
+// File : internal/ui/doc.go
+// Deskripsi : Package facade UI untuk seluruh aplikasi (pintu tunggal UI)
+// Author : Hadiyatna Muflihun
+// Tanggal : 5 Januari 2026
+// Last Modified : 5 Januari 2026
+
+// Package ui adalah entry point facade UI.
+//
+// NOTE: Pada PR UI-1, implementasi masih mendelegasikan ke legacy:
+// - sfDBTools/pkg/ui
+// - sfDBTools/pkg/input
+//
+// Package internal ini menjadi pintu tunggal UI untuk layer app/cli/services.
+package ui

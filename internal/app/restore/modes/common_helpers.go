@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"sfDBTools/internal/app/restore/helpers"
 	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/ui"
 	"strings"
 	"time"
 )
@@ -71,7 +71,7 @@ func performPostRestoreOperations(ctx context.Context, service RestoreService, p
 	tempDB, err := service.CreateTempDatabaseIfNeeded(ctx, primaryDB)
 	if err != nil {
 		logger.Warnf("Gagal membuat temp DB: %v", err)
-		ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal membuat temp DB: %v", err))
+		print.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal membuat temp DB: %v", err))
 		return
 	}
 
@@ -82,7 +82,7 @@ func performPostRestoreOperations(ctx context.Context, service RestoreService, p
 	// Copy grants ke temp database
 	if err := service.CopyDatabaseGrants(ctx, primaryDB, tempDB); err != nil {
 		logger.Warnf("Gagal copy grants ke temp DB: %v", err)
-		ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants ke temp DB: %v", err))
+		print.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants ke temp DB: %v", err))
 	}
 }
 
@@ -96,7 +96,7 @@ func performGrantsRestore(ctx context.Context, service RestoreService, grantsFil
 	grantsRestored, err := service.RestoreUserGrantsIfAvailable(ctx, grantsFile)
 	if err != nil {
 		logger.Errorf("Gagal restore user grants: %v", err)
-		ui.PrintWarning(fmt.Sprintf("⚠️  Database berhasil di-restore, tapi gagal restore user grants: %v", err))
+		print.PrintWarning(fmt.Sprintf("⚠️  Database berhasil di-restore, tapi gagal restore user grants: %v", err))
 		return false
 	}
 
@@ -108,7 +108,7 @@ func copyGrantsBetweenDatabases(ctx context.Context, service RestoreService, sou
 	logger := service.GetLogger()
 	if err := service.CopyDatabaseGrants(ctx, sourceDB, targetDB); err != nil {
 		logger.Warnf("Gagal copy grants %s -> %s: %v", sourceDB, targetDB, err)
-		ui.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants %s -> %s: %v", sourceDB, targetDB, err))
+		print.PrintWarning(fmt.Sprintf("⚠️  Restore berhasil, tapi gagal copy grants %s -> %s: %v", sourceDB, targetDB, err))
 	}
 }
 

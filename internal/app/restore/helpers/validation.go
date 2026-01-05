@@ -2,16 +2,16 @@
 // Deskripsi : Helper functions untuk validation
 // Author : Hadiyatna Muflihun
 // Tanggal : 17 Desember 2025
-// Last Modified : 17 Desember 2025
+// Last Modified : 5 Januari 2026
 
 package helpers
 
 import (
 	"context"
 	"fmt"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
-	"sfDBTools/pkg/ui"
 	"strings"
 )
 
@@ -48,10 +48,10 @@ func ValidatePrimaryDatabaseName(dbName string) error {
 		return nil
 	}
 
-	ui.PrintError("⛔ Restore primary hanya diizinkan ke database primary!")
-	ui.PrintError(fmt.Sprintf("   Database: %s", dbName))
-	ui.PrintError("   Pattern: dbsf_nbc_{client-code} atau dbsf_biznet_{client-code}")
-	ui.PrintError("   Catatan: tanpa suffix '_secondary', '_dmart', '_temp', atau '_archive'")
+	print.PrintError("⛔ Restore primary hanya diizinkan ke database primary!")
+	print.PrintError(fmt.Sprintf("   Database: %s", dbName))
+	print.PrintError("   Pattern: dbsf_nbc_{client-code} atau dbsf_biznet_{client-code}")
+	print.PrintError("   Catatan: tanpa suffix '_secondary', '_dmart', '_temp', atau '_archive'")
 	return fmt.Errorf("target database '%s' bukan database primary yang valid", dbName)
 }
 
@@ -62,10 +62,10 @@ func ValidateNotPrimaryDatabaseName(dbName string) error {
 		return nil
 	}
 
-	ui.PrintError("⛔ Restore single ke database primary tidak diizinkan!")
-	ui.PrintError(fmt.Sprintf("   Database: %s", dbName))
-	ui.PrintError("   Pattern primary: dbsf_nbc_{client-code} atau dbsf_biznet_{client-code}")
-	ui.PrintInfo("💡 Saran: gunakan mode 'restore primary' atau restore ke database non-primary (mis: _secondary/_temp/_archive)")
+	print.PrintError("⛔ Restore single ke database primary tidak diizinkan!")
+	print.PrintError(fmt.Sprintf("   Database: %s", dbName))
+	print.PrintError("   Pattern primary: dbsf_nbc_{client-code} atau dbsf_biznet_{client-code}")
+	print.PrintInfo("💡 Saran: gunakan mode 'restore primary' atau restore ke database non-primary (mis: _secondary/_temp/_archive)")
 	return fmt.Errorf("restore single ke database primary '%s' tidak diizinkan", dbName)
 }
 

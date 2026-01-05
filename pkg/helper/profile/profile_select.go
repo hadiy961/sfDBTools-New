@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 
 	"sfDBTools/internal/domain"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper/profileutil"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
 
 func SelectExistingDBConfig(configDir, purpose string) (domain.ProfileInfo, error) {
-	ui.PrintSubHeader(purpose)
+	print.PrintSubHeader(purpose)
 
 	ProfileInfo := domain.ProfileInfo{}
 
@@ -31,20 +31,18 @@ func SelectExistingDBConfig(configDir, purpose string) (domain.ProfileInfo, erro
 	}
 
 	if len(filtered) == 0 {
-		ui.PrintWarning("Tidak ditemukan file konfigurasi di direktori: " + configDir)
-		ui.PrintInfo("Silakan buat file konfigurasi baru terlebih dahulu dengan perintah 'profile create'.")
+		print.PrintWarn("Tidak ditemukan file konfigurasi di direktori: " + configDir)
+		print.PrintInfo("Silakan buat file konfigurasi baru terlebih dahulu dengan perintah 'profile create'.")
 		return ProfileInfo, fmt.Errorf("tidak ada file konfigurasi untuk dipilih")
 	}
 
 	options := make([]string, 0, len(filtered))
 	options = append(options, filtered...)
 
-	idx, err := input.ShowMenu("Pilih file konfigurasi :", options)
+	selected, _, err := prompt.SelectOne("Pilih file konfigurasi :", options, 0)
 	if err != nil {
 		return ProfileInfo, validation.HandleInputError(err)
 	}
-
-	selected := options[idx-1]
 	name := profileutil.TrimProfileSuffix(selected)
 
 	filePath := filepath.Join(configDir, selected)

@@ -9,7 +9,7 @@ import (
 	"context"
 	"fmt"
 	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/pkg/input"
+	"sfDBTools/internal/ui/prompt"
 	"strings"
 )
 
@@ -27,7 +27,7 @@ func (s *Service) editRestoreAllOptionsInteractive() error {
 		"Kembali",
 	}
 
-	choice, err := input.SelectSingleFromList(options, "Pilih opsi yang ingin diubah")
+	choice, _, err := prompt.SelectOne("Pilih opsi yang ingin diubah", options, 0)
 	if err != nil {
 		return fmt.Errorf("gagal memilih opsi untuk diubah: %w", err)
 	}
@@ -106,7 +106,7 @@ func (s *Service) changeAllTicket() error {
 }
 
 func (s *Service) changeAllDropTarget() error {
-	val, err := input.AskYesNo("Drop semua database non-sistem sebelum restore?", s.RestoreAllOpts.DropTarget)
+	val, err := prompt.Confirm("Drop semua database non-sistem sebelum restore?", s.RestoreAllOpts.DropTarget)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi drop-target: %w", err)
 	}
@@ -116,7 +116,7 @@ func (s *Service) changeAllDropTarget() error {
 
 func (s *Service) changeAllContinueOnError() error {
 	defaultContinue := !s.RestoreAllOpts.StopOnError
-	cont, err := input.AskYesNo("Lanjutkan meski ada error? (continue-on-error)", defaultContinue)
+	cont, err := prompt.Confirm("Lanjutkan meski ada error? (continue-on-error)", defaultContinue)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi continue-on-error: %w", err)
 	}
@@ -125,7 +125,7 @@ func (s *Service) changeAllContinueOnError() error {
 }
 
 func (s *Service) changeAllSkipGrants() error {
-	skip, err := input.AskYesNo("Skip restore user grants?", s.RestoreAllOpts.SkipGrants)
+	skip, err := prompt.Confirm("Skip restore user grants?", s.RestoreAllOpts.SkipGrants)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi skip-grants: %w", err)
 	}
@@ -141,7 +141,7 @@ func (s *Service) changeAllSkipGrants() error {
 }
 
 func (s *Service) changeAllSkipBackup() error {
-	skip, err := input.AskYesNo("Skip backup sebelum restore?", s.RestoreAllOpts.SkipBackup)
+	skip, err := prompt.Confirm("Skip backup sebelum restore?", s.RestoreAllOpts.SkipBackup)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi skip-backup: %w", err)
 	}
@@ -170,7 +170,7 @@ func (s *Service) changeAllBackupDirectory() error {
 		}
 	}
 
-	dir, err := input.AskString("Direktori backup pre-restore", current, nil)
+	dir, err := prompt.AskText("Direktori backup pre-restore", prompt.WithDefault(current))
 	if err != nil {
 		return fmt.Errorf("gagal mengubah direktori backup: %w", err)
 	}

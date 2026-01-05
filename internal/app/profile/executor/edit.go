@@ -11,15 +11,15 @@ import (
 	"strings"
 
 	"sfDBTools/internal/app/profile/shared"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
 
 func (e *Executor) EditProfile() error {
-	ui.Headers(consts.ProfileUIHeaderEdit)
+	print.PrintAppHeader(consts.ProfileUIHeaderEdit)
 
 	for {
 		if e.ProfileEdit != nil && e.ProfileEdit.Interactive {
@@ -57,7 +57,7 @@ func (e *Executor) EditProfile() error {
 				return err
 			}
 			if !fsops.PathExists(absPath) {
-				ui.PrintWarning(fmt.Sprintf(consts.ProfileWarnConfigFileNotFoundFmt, absPath))
+				print.PrintWarning(fmt.Sprintf(consts.ProfileWarnConfigFileNotFoundFmt, absPath))
 				return fmt.Errorf(consts.ProfileErrConfigFileNotFoundFmt, absPath)
 			}
 
@@ -70,7 +70,7 @@ func (e *Executor) EditProfile() error {
 			}
 			if e.LoadSnapshotFromPath != nil {
 				if snap, err := e.LoadSnapshotFromPath(absPath); err != nil {
-					ui.PrintWarning(fmt.Sprintf(consts.ProfileWarnLoadFileContentFailedProceedFmt, absPath, err))
+					print.PrintWarning(fmt.Sprintf(consts.ProfileWarnLoadFileContentFailedProceedFmt, absPath, err))
 				} else {
 					e.OriginalProfileInfo = snap
 				}
@@ -112,7 +112,7 @@ func (e *Executor) EditProfile() error {
 
 		if e.CheckConfigurationNameUnique != nil {
 			if err := e.CheckConfigurationNameUnique(consts.ProfileModeEdit); err != nil {
-				ui.PrintError(err.Error())
+				print.PrintError(err.Error())
 				return err
 			}
 		}

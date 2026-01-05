@@ -15,9 +15,10 @@ import (
 	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/parsing"
 	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/pkg/consts"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/style"
+	"sfDBTools/internal/ui/text"
 	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/ui"
 
 	"github.com/spf13/cobra"
 )
@@ -71,15 +72,15 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 		if runErr != nil {
 			return runErr
 		}
-		ui.PrintHeader("CLEANUP - BACKGROUND MODE")
-		ui.PrintSuccess("Background cleanup dimulai via systemd")
-		ui.PrintInfo(fmt.Sprintf("Unit: %s", ui.ColorText(res.UnitName, consts.UIColorCyan)))
+		print.PrintHeader("CLEANUP - BACKGROUND MODE")
+		print.PrintSuccess("Background cleanup dimulai via systemd")
+		print.PrintInfo(fmt.Sprintf("Unit: %s", text.Color(res.UnitName, style.ColorCyan)))
 		if res.Mode == scheduler.RunModeUser {
-			ui.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
-			ui.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
+			print.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
+			print.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
 		} else {
-			ui.PrintInfo(fmt.Sprintf("Status: sudo systemctl status %s", res.UnitName))
-			ui.PrintInfo(fmt.Sprintf("Logs: sudo journalctl -u %s -f", res.UnitName))
+			print.PrintInfo(fmt.Sprintf("Status: sudo systemctl status %s", res.UnitName))
+			print.PrintInfo(fmt.Sprintf("Logs: sudo journalctl -u %s -f", res.UnitName))
 		}
 		return nil
 	}
@@ -96,7 +97,7 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 
 	// Tampilkan header jika ada (skip saat quiet/daemon)
 	if config.HeaderTitle != "" && !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
-		ui.Headers(config.HeaderTitle)
+		print.PrintAppHeader(config.HeaderTitle)
 	}
 
 	// Execute cleanup command
@@ -107,7 +108,7 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 	// Print success message jika ada (skip stdout saat quiet/daemon)
 	if config.SuccessMsg != "" {
 		if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
-			ui.PrintSuccess(config.SuccessMsg)
+			print.PrintSuccess(config.SuccessMsg)
 		}
 		logger.Info(config.SuccessMsg)
 	}

@@ -7,11 +7,11 @@ import (
 	"sfDBTools/internal/app/backup/model/types_backup"
 	appconfig "sfDBTools/internal/services/config"
 	applog "sfDBTools/internal/services/log"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
 	profilehelper "sfDBTools/pkg/helper/profile"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 )
 
 type Setup struct {
@@ -64,14 +64,14 @@ func (s *Setup) CheckAndSelectConfigFile() error {
 
 // SetupBackupExecution prepares common backup execution settings (ticket, output dir, logging).
 func (s *Setup) SetupBackupExecution() error {
-	ui.PrintSubHeader("Persiapan Eksekusi Backup")
+	print.PrintSubHeader("Persiapan Eksekusi Backup")
 
 	if strings.TrimSpace(s.Options.Ticket) == "" {
 		if s.Options.NonInteractive {
 			return fmt.Errorf("ticket wajib diisi pada mode non-interaktif (--quiet): gunakan --ticket")
 		}
 		s.Log.Info("Ticket number tidak ditemukan, meminta input...")
-		ticket, err := input.AskTicket(consts.FeatureBackup)
+		ticket, err := prompt.AskTicket(consts.FeatureBackup)
 		if err != nil {
 			return fmt.Errorf("gagal mendapatkan ticket number: %w", err)
 		}

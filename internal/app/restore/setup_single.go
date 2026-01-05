@@ -14,14 +14,15 @@ import (
 
 	"sfDBTools/internal/app/restore/helpers"
 	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
+	"sfDBTools/internal/ui/table"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 )
 
 // SetupRestoreSession melakukan setup untuk restore single session
 func (s *Service) SetupRestoreSession(ctx context.Context) error {
-	ui.Headers("Restore Single Database")
+	print.PrintAppHeader("Restore Single Database")
 	if s.RestoreOpts == nil {
 		return fmt.Errorf("opsi single tidak tersedia")
 	}
@@ -97,7 +98,7 @@ func (s *Service) promptSkipGrantsSingle(allowInteractive bool) error {
 		return nil
 	}
 
-	skip, err := input.AskYesNo("Skip restore user grants?", s.RestoreOpts.SkipGrants)
+	skip, err := prompt.Confirm("Skip restore user grants?", s.RestoreOpts.SkipGrants)
 	if err != nil {
 		return fmt.Errorf("gagal resolve opsi skip-grants: %w", err)
 	}
@@ -110,18 +111,15 @@ func (s *Service) warnRestoreSingle() {
 		return
 	}
 
-	ui.PrintWarning("⚠️  Restore single database akan menimpa target jika drop-target aktif")
+	print.PrintWarning("⚠️  Restore single database akan menimpa target jika drop-target aktif")
 }
 
 func (s *Service) confirmRestoreSingleLoop() error {
 	for {
-		ui.PrintSubHeader("Konfirmasi Restore")
-		ui.FormatTable([]string{"Parameter", "Value"}, s.restoreSingleSummaryRows())
+		print.PrintSubHeader("Konfirmasi Restore")
+		table.Render([]string{"Parameter", "Value"}, s.restoreSingleSummaryRows())
 
-		action, err := input.SelectSingleFromList(
-			[]string{"Lanjutkan", "Ubah opsi", "Batalkan"},
-			"Pilih aksi",
-		)
+		action, _, err := prompt.SelectOne("Pilih aksi", []string{"Lanjutkan", "Ubah opsi", "Batalkan"}, -1)
 		if err != nil {
 			return fmt.Errorf("gagal memilih aksi konfirmasi: %w", err)
 		}
@@ -129,7 +127,7 @@ func (s *Service) confirmRestoreSingleLoop() error {
 		switch action {
 		case "Lanjutkan":
 			if strings.TrimSpace(s.RestoreOpts.Ticket) == "" {
-				ui.PrintError("Ticket number wajib diisi sebelum melanjutkan.")
+				print.PrintError("Ticket number wajib diisi sebelum melanjutkan.")
 				continue
 			}
 			return nil
@@ -208,7 +206,7 @@ func (s *Service) resolveTargetDatabaseSingle(ctx context.Context) error {
 	}
 
 	// Show selection
-	selectedDB, err := input.SelectSingleFromList(options, "Pilih target database untuk restore")
+	selectedDB, _, err := prompt.SelectOne("Pilih target database untuk restore", options, -1)
 	if err != nil {
 		return fmt.Errorf("gagal memilih database: %w", err)
 	}
@@ -218,19 +216,23 @@ func (s *Service) resolveTargetDatabaseSingle(ctx context.Context) error {
 		s.RestoreOpts.TargetDB = suggestedDBName
 		s.Log.Infof("Akan membuat database baru: %s", s.RestoreOpts.TargetDB)
 	} else if selectedDB == "⌨️  [ Input nama database baru secara manual ]" {
-		dbName, err := input.AskString("Masukkan nama database baru: ", suggestedDBName, func(ans interface{}) error {
-			str, ok := ans.(string)
-			if !ok {
-				return fmt.Errorf("input tidak valid")
-			}
-			if strings.TrimSpace(str) == "" {
-				return fmt.Errorf("nama database tidak boleh kosong")
-			}
-			if !helper.IsValidDatabaseName(str) {
-				return fmt.Errorf("nama database hanya boleh berisi huruf, angka, underscore, dan dash")
-			}
-			return nil
-		})
+		dbName, err := prompt.AskText(
+			"Masukkan nama database baru: ",
+			prompt.WithDefault(suggestedDBName),
+			prompt.WithValidator(func(ans interface{}) error {
+				str, ok := ans.(string)
+				if !ok {
+					return fmt.Errorf("input tidak valid")
+				}
+				if strings.TrimSpace(str) == "" {
+					return fmt.Errorf("nama database tidak boleh kosong")
+				}
+				if !helper.IsValidDatabaseName(str) {
+					return fmt.Errorf("nama database hanya boleh berisi huruf, angka, underscore, dan dash")
+				}
+				return nil
+			}),
+		)
 		if err != nil {
 			return fmt.Errorf("gagal mendapatkan nama database: %w", err)
 		}

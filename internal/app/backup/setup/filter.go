@@ -7,8 +7,8 @@ import (
 	"sfDBTools/internal/app/backup/model/types_backup"
 	"sfDBTools/internal/app/backup/selection"
 	"sfDBTools/internal/domain"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/database"
-	"sfDBTools/pkg/ui"
 )
 
 // GetFilteredDatabases fetches and filters DB list.
@@ -44,37 +44,37 @@ func filterFromBackupOptions(ctx context.Context, client *database.Client, opts 
 }
 
 func (s *Setup) DisplayFilterWarnings(stats *domain.FilterStats) {
-	ui.PrintWarning("Kemungkinan penyebab:")
+	print.PrintWarning("Kemungkinan penyebab:")
 
 	if stats.TotalExcluded == stats.TotalFound {
-		ui.PrintWarning(fmt.Sprintf("  • Semua database (%d) dikecualikan oleh filter exclude", stats.TotalExcluded))
+		print.PrintWarning(fmt.Sprintf("  • Semua database (%d) dikecualikan oleh filter exclude", stats.TotalExcluded))
 	}
 
 	if len(stats.NotFoundInInclude) > 0 {
-		ui.PrintWarning("  • Database yang diminta di include list tidak ditemukan:")
+		print.PrintWarning("  • Database yang diminta di include list tidak ditemukan:")
 		for _, db := range stats.NotFoundInInclude {
-			ui.PrintWarning(fmt.Sprintf("    - %s", db))
+			print.PrintWarning(fmt.Sprintf("    - %s", db))
 		}
 	}
 
 	if len(stats.NotFoundInWhitelist) > 0 {
-		ui.PrintWarning("  • Database dari whitelist file tidak ditemukan:")
+		print.PrintWarning("  • Database dari whitelist file tidak ditemukan:")
 		for _, db := range stats.NotFoundInWhitelist {
-			ui.PrintWarning(fmt.Sprintf("    - %s", db))
+			print.PrintWarning(fmt.Sprintf("    - %s", db))
 		}
 	}
 
 	if len(stats.NotFoundInExclude) > 0 {
-		ui.PrintWarning("  • Database yang diminta di exclude list tidak ditemukan:")
+		print.PrintWarning("  • Database yang diminta di exclude list tidak ditemukan:")
 		for _, db := range stats.NotFoundInExclude {
-			ui.PrintWarning(fmt.Sprintf("    - %s", db))
+			print.PrintWarning(fmt.Sprintf("    - %s", db))
 		}
 	}
 
 	if len(stats.NotFoundInBlacklist) > 0 {
-		ui.PrintWarning("  • Database dari exclude file tidak ditemukan:")
+		print.PrintWarning("  • Database dari exclude file tidak ditemukan:")
 		for _, db := range stats.NotFoundInBlacklist {
-			ui.PrintWarning(fmt.Sprintf("    - %s", db))
+			print.PrintWarning(fmt.Sprintf("    - %s", db))
 		}
 	}
 }

@@ -408,6 +408,18 @@ sfdbtools <command> <subcommand> --help
 - `SFDB_ENCRYPTION_KEY`: default key untuk beberapa perintah `crypto`.
 - `SFDB_SCRIPT_KEY`: key untuk bundle `script`.
 
+## Catatan Pengembang (UI Facade)
+
+Mulai UI-1, seluruh code internal wajib lewat facade `internal/ui/*`:
+
+- Gunakan `internal/ui/print`, `internal/ui/prompt`, `internal/ui/table`, `internal/ui/progress`, `internal/ui/text`, `internal/ui/style`.
+- Package legacy `pkg/ui` dan `pkg/input` hanya boleh di-import oleh facade `internal/ui/*`.
+
+Rencana deprecation bertahap:
+
+- UI-2: pindahkan implementasi UI dari `pkg/ui` / `pkg/input` ke `internal/ui/*` (tanpa mengubah UX), facade tidak lagi sekadar delegasi.
+- UI-3: tandai `pkg/ui` / `pkg/input` sebagai deprecated (doc + lint/CI), lalu phase-out pemakaian internal sepenuhnya.
+
 ## Lisensi
 
 Internal Tool DataOn.

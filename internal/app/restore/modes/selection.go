@@ -14,8 +14,8 @@ import (
 	"os"
 	"path/filepath"
 	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/ui"
 	"strings"
 	"time"
 )
@@ -132,9 +132,9 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*restoremodel.RestoreR
 	// Print summary
 	summary := tracker.getSummary()
 	if tracker.isAllSuccess() {
-		ui.PrintSuccess("Hasil: " + summary)
+		print.PrintSuccess("Hasil: " + summary)
 	} else {
-		ui.PrintWarning("Hasil: " + summary)
+		print.PrintWarning("Hasil: " + summary)
 	}
 
 	return &restoremodel.RestoreResult{

@@ -2,8 +2,9 @@ package display
 
 import (
 	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
+	"sfDBTools/internal/ui/table"
 	"sfDBTools/pkg/validation"
 )
 
@@ -18,7 +19,7 @@ func NewOptionsDisplayer(options *types_backup.BackupDBOptions) *OptionsDisplaye
 }
 
 func (d *OptionsDisplayer) renderTable() {
-	ui.PrintSubHeader("Opsi Backup")
+	print.PrintSubHeader("Opsi Backup")
 
 	data := [][]string{}
 	data = append(data, d.buildGeneralSection()...)
@@ -28,7 +29,7 @@ func (d *OptionsDisplayer) renderTable() {
 	data = append(data, d.buildCompressionSection()...)
 	data = append(data, d.buildEncryptionSection()...)
 
-	ui.FormatTable([]string{"Parameter", "Value"}, data)
+	table.Render([]string{"Parameter", "Value"}, data)
 }
 
 // Render menampilkan backup options tanpa meminta konfirmasi.
@@ -40,7 +41,7 @@ func (d *OptionsDisplayer) Render() {
 func (d *OptionsDisplayer) Display() (bool, error) {
 	d.renderTable()
 
-	confirm, err := input.AskYesNo("Apakah Anda ingin melanjutkan?", true)
+	confirm, err := prompt.Confirm("Apakah Anda ingin melanjutkan?", true)
 	if err != nil {
 		return false, err
 	}

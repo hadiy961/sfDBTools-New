@@ -12,24 +12,24 @@ import (
 	"strings"
 
 	"sfDBTools/internal/app/profile/shared"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 
 	"github.com/AlecAivazis/survey/v2"
 )
 
 func (r *Runner) promptDBConfigName(mode string) error {
-	ui.PrintSubHeader(consts.ProfileWizardSubHeaderConfigName)
+	print.PrintSubHeader(consts.ProfileWizardSubHeaderConfigName)
 
 	for {
-		nameValidator := input.ComposeValidators(survey.Required, input.ValidateFilename)
+		nameValidator := prompt.ComposeValidators(survey.Required, prompt.ValidateFilename)
 		def := strings.TrimSpace(r.ProfileInfo.Name)
 		if def == "" {
 			def = consts.ProfileWizardDefaultConfigName
 		}
-		configName, err := input.AskString(consts.ProfileWizardLabelConfigName, def, nameValidator)
+		configName, err := prompt.AskText(consts.ProfileWizardLabelConfigName, prompt.WithDefault(def), prompt.WithValidator(nameValidator))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -37,7 +37,7 @@ func (r *Runner) promptDBConfigName(mode string) error {
 		r.ProfileInfo.Name = strings.TrimSpace(configName)
 		if r.CheckConfigurationNameUnique != nil {
 			if err = r.CheckConfigurationNameUnique(mode); err != nil {
-				ui.PrintError(err.Error())
+				print.PrintError(err.Error())
 				continue
 			}
 		}
@@ -45,16 +45,16 @@ func (r *Runner) promptDBConfigName(mode string) error {
 	}
 
 	r.ProfileInfo.Name = strings.TrimSpace(r.ProfileInfo.Name)
-	ui.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + shared.BuildProfileFileName(r.ProfileInfo.Name))
+	print.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + shared.BuildProfileFileName(r.ProfileInfo.Name))
 	return nil
 }
 
 func (r *Runner) promptProfileInfo() error {
-	ui.PrintSubHeader(consts.ProfileWizardSubHeaderProfileDetails)
+	print.PrintSubHeader(consts.ProfileWizardSubHeaderProfileDetails)
 
 	// Host
 	if strings.TrimSpace(r.ProfileInfo.DBInfo.Host) == "" {
-		v, err := input.AskString(consts.ProfileLabelDBHost, "localhost", survey.Required)
+		v, err := prompt.AskText(consts.ProfileLabelDBHost, prompt.WithDefault("localhost"), prompt.WithValidator(survey.Required))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -63,7 +63,7 @@ func (r *Runner) promptProfileInfo() error {
 
 	// Port
 	if r.ProfileInfo.DBInfo.Port == 0 {
-		v, err := input.AskInt(consts.ProfileLabelDBPort, 3306, survey.Required)
+		v, err := prompt.AskInt(consts.ProfileLabelDBPort, 3306, survey.Required)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -72,7 +72,7 @@ func (r *Runner) promptProfileInfo() error {
 
 	// User
 	if strings.TrimSpace(r.ProfileInfo.DBInfo.User) == "" {
-		v, err := input.AskString(consts.ProfileLabelDBUser, "root", survey.Required)
+		v, err := prompt.AskText(consts.ProfileLabelDBUser, prompt.WithDefault("root"), prompt.WithValidator(survey.Required))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -87,12 +87,12 @@ func (r *Runner) promptProfileInfo() error {
 			r.ProfileInfo.DBInfo.Password = envPassword
 		} else {
 			if !isEditFlow {
-				ui.PrintWarning(fmt.Sprintf(consts.ProfileWarnEnvVarMissingOrEmptyFmt, consts.ENV_TARGET_DB_PASSWORD, consts.ENV_TARGET_DB_PASSWORD))
+				print.PrintWarning(fmt.Sprintf(consts.ProfileWarnEnvVarMissingOrEmptyFmt, consts.ENV_TARGET_DB_PASSWORD, consts.ENV_TARGET_DB_PASSWORD))
 			}
 			if isEditFlow {
-				ui.PrintInfo(consts.ProfileTipKeepCurrentDBPasswordUpdate)
+				print.PrintInfo(consts.ProfileTipKeepCurrentDBPasswordUpdate)
 			}
-			pw, err := input.AskPassword(consts.ProfileLabelDBPassword, survey.Required)
+			pw, err := prompt.AskPassword(consts.ProfileLabelDBPassword, survey.Required)
 			if err != nil {
 				return validation.HandleInputError(err)
 			}
@@ -110,7 +110,7 @@ func (r *Runner) promptProfileInfo() error {
 func (r *Runner) promptSSHTunnelDetailsIfEnabledOrAsk() error {
 	enabled := r.ProfileInfo.SSHTunnel.Enabled
 	if !enabled {
-		v, err := input.AskYesNo(consts.ProfilePromptUseSSHTunnel, false)
+		v, err := prompt.Confirm(consts.ProfilePromptUseSSHTunnel, false)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -134,7 +134,7 @@ func (r *Runner) promptSSHTunnelDetailsIfEnabled() error {
 	ssh := &r.ProfileInfo.SSHTunnel
 	// Host wajib
 	if strings.TrimSpace(ssh.Host) == "" {
-		v, err := input.AskString(consts.ProfilePromptSSHHost, "", survey.Required)
+		v, err := prompt.AskText(consts.ProfilePromptSSHHost, prompt.WithDefault(""), prompt.WithValidator(survey.Required))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -142,7 +142,7 @@ func (r *Runner) promptSSHTunnelDetailsIfEnabled() error {
 	}
 	// Port default 22
 	if ssh.Port == 0 {
-		v, err := input.AskInt(consts.ProfileLabelSSHPort, 22, survey.Required)
+		v, err := prompt.AskInt(consts.ProfileLabelSSHPort, 22, survey.Required)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -150,7 +150,7 @@ func (r *Runner) promptSSHTunnelDetailsIfEnabled() error {
 	}
 	// User optional
 	if strings.TrimSpace(ssh.User) == "" {
-		v, err := input.AskString(consts.ProfilePromptSSHUser, "", nil)
+		v, err := prompt.AskText(consts.ProfilePromptSSHUser, prompt.WithDefault(""))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -159,8 +159,8 @@ func (r *Runner) promptSSHTunnelDetailsIfEnabled() error {
 
 	// Password opsional
 	if strings.TrimSpace(ssh.Password) == "" {
-		ui.PrintInfo(consts.ProfileTipSSHPasswordOptional)
-		pw, err := input.AskPassword(consts.ProfilePromptSSHPasswordOptional, nil)
+		print.PrintInfo(consts.ProfileTipSSHPasswordOptional)
+		pw, err := prompt.AskPassword(consts.ProfilePromptSSHPasswordOptional, nil)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -171,7 +171,7 @@ func (r *Runner) promptSSHTunnelDetailsIfEnabled() error {
 
 	// Identity file opsional
 	if strings.TrimSpace(ssh.IdentityFile) == "" {
-		v, err := input.AskString(consts.ProfilePromptSSHIdentityFileOptional, "", nil)
+		v, err := prompt.AskText(consts.ProfilePromptSSHIdentityFileOptional, prompt.WithDefault(""))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -180,7 +180,7 @@ func (r *Runner) promptSSHTunnelDetailsIfEnabled() error {
 
 	// Local port opsional
 	if ssh.LocalPort == 0 {
-		v, err := input.AskInt(consts.ProfilePromptSSHLocalPort, 0, nil)
+		v, err := prompt.AskInt(consts.ProfilePromptSSHLocalPort, 0, nil)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}

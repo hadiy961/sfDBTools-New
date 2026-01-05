@@ -14,8 +14,9 @@ import (
 
 	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 	"sfDBTools/internal/services/scheduler"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/text"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/ui"
 )
 
 func detectUserModeText(mode scheduler.RunMode) string {
@@ -46,20 +47,20 @@ func SpawnScanDaemon(config dbscanmodel.ScanEntryConfig) error {
 		return err
 	}
 
-	ui.PrintHeader("DATABASE SCANNING - BACKGROUND MODE")
-	ui.PrintSuccess("Background process dimulai via systemd")
-	ui.PrintInfo(fmt.Sprintf("Scan ID: %s", ui.ColorText(scanID, consts.UIColorCyan)))
-	ui.PrintInfo(fmt.Sprintf("Unit: %s", ui.ColorText(res.UnitName, consts.UIColorCyan)))
-	ui.PrintInfo(fmt.Sprintf("Mode: %s", ui.ColorText(detectUserModeText(res.Mode), consts.UIColorCyan)))
-	ui.PrintInfo(fmt.Sprintf("Log dir: %s", ui.ColorText(logDir, consts.UIColorCyan)))
+	print.PrintHeader("DATABASE SCANNING - BACKGROUND MODE")
+	print.PrintSuccess("Background process dimulai via systemd")
+	print.PrintInfo(fmt.Sprintf("Scan ID: %s", text.ColorText(scanID, consts.UIColorCyan)))
+	print.PrintInfo(fmt.Sprintf("Unit: %s", text.ColorText(res.UnitName, consts.UIColorCyan)))
+	print.PrintInfo(fmt.Sprintf("Mode: %s", text.ColorText(detectUserModeText(res.Mode), consts.UIColorCyan)))
+	print.PrintInfo(fmt.Sprintf("Log dir: %s", text.ColorText(logDir, consts.UIColorCyan)))
 	if res.Mode == scheduler.RunModeUser {
-		ui.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
-		ui.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
+		print.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
+		print.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
 	} else {
-		ui.PrintInfo(fmt.Sprintf("Status: sudo systemctl status %s", res.UnitName))
-		ui.PrintInfo(fmt.Sprintf("Logs: sudo journalctl -u %s -f", res.UnitName))
+		print.PrintInfo(fmt.Sprintf("Status: sudo systemctl status %s", res.UnitName))
+		print.PrintInfo(fmt.Sprintf("Logs: sudo journalctl -u %s -f", res.UnitName))
 	}
-	ui.PrintInfo("Process berjalan di background.")
+	print.PrintInfo("Process berjalan di background.")
 	_ = res // output disimpan untuk troubleshooting bila diperlukan
 	return nil
 }

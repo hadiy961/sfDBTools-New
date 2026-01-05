@@ -16,9 +16,10 @@ import (
 	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/parsing"
 	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/pkg/consts"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/style"
+	"sfDBTools/internal/ui/text"
 	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 	"syscall"
 	"time"
@@ -80,7 +81,7 @@ func (s *Service) ExecuteBackupCommand(ctx context.Context, config types_backup.
 	// Print success message jika ada
 	if config.SuccessMsg != "" {
 		if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
-			ui.PrintSuccess(config.SuccessMsg)
+			print.PrintSuccess(config.SuccessMsg)
 		}
 		s.Log.Info(config.SuccessMsg)
 	}
@@ -127,15 +128,15 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 			return runErr
 		}
 
-		ui.PrintHeader("DB BACKUP - BACKGROUND MODE")
-		ui.PrintSuccess("Background backup dimulai via systemd")
-		ui.PrintInfo(fmt.Sprintf("Unit: %s", ui.ColorText(res.UnitName, consts.UIColorCyan)))
+		print.PrintHeader("DB BACKUP - BACKGROUND MODE")
+		print.PrintSuccess("Background backup dimulai via systemd")
+		print.PrintInfo(fmt.Sprintf("Unit: %s", text.Color(res.UnitName, style.ColorCyan)))
 		if res.Mode == scheduler.RunModeUser {
-			ui.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
-			ui.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
+			print.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
+			print.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
 		} else {
-			ui.PrintInfo(fmt.Sprintf("Status: sudo systemctl status %s", res.UnitName))
-			ui.PrintInfo(fmt.Sprintf("Logs: sudo journalctl -u %s -f", res.UnitName))
+			print.PrintInfo(fmt.Sprintf("Status: sudo systemctl status %s", res.UnitName))
+			print.PrintInfo(fmt.Sprintf("Logs: sudo journalctl -u %s -f", res.UnitName))
 		}
 		return nil
 	}
@@ -165,7 +166,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 	go func() {
 		sig := <-sigChan
 		if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
-			fmt.Println()
+			print.Println()
 		}
 		logger.Warnf("Menerima signal %v, menghentikan backup... (Tekan sekali lagi untuk force exit)", sig)
 		svc.HandleShutdown()
@@ -173,7 +174,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 
 		<-sigChan
 		if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
-			fmt.Println()
+			print.Println()
 		}
 		logger.Warn("Menerima signal kedua, memaksa berhenti (force exit)...")
 		os.Exit(1)

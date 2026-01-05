@@ -8,11 +8,12 @@ package profile
 import (
 	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/parsing"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/ui"
+
+	profilemodel "sfDBTools/internal/app/profile/model"
 
 	"github.com/spf13/cobra"
-	profilemodel "sfDBTools/internal/app/profile/model"
 )
 
 var profileExecutionConfigs = map[string]profilemodel.ProfileEntryConfig{
@@ -95,7 +96,7 @@ func executeProfileWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 
 	// Tampilkan header jika ada
 	if config.HeaderTitle != "" {
-		ui.Headers(config.HeaderTitle)
+		print.PrintAppHeader(config.HeaderTitle)
 	}
 
 	// Execute profile command
@@ -105,7 +106,7 @@ func executeProfileWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 
 	// Print success message jika ada
 	if config.SuccessMsg != "" {
-		ui.PrintSuccess(config.SuccessMsg)
+		print.PrintSuccess(config.SuccessMsg)
 		logger.Info(config.SuccessMsg)
 	}
 

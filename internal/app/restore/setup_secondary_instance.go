@@ -9,8 +9,8 @@ import (
 	"context"
 	"fmt"
 	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
 	"strings"
 )
 
@@ -51,7 +51,7 @@ func (s *Service) fetchExistingSecondaryInstances(ctx context.Context, primaryDB
 func (s *Service) pickSecondaryInstance(instances []string, primaryDB string) (string, error) {
 	options := buildSecondaryInstanceOptions(instances)
 
-	selected, err := input.SelectSingleFromList(options, "Pilih instance secondary")
+	selected, _, err := prompt.SelectOne("Pilih instance secondary", options, 0)
 	if err != nil {
 		return "", fmt.Errorf("gagal memilih instance: %w", err)
 	}
@@ -67,9 +67,11 @@ func (s *Service) pickSecondaryInstance(instances []string, primaryDB string) (s
 }
 
 func askSecondaryInstanceManual(primaryDB string) (string, error) {
-	val, err := input.AskString("Masukkan instance secondary: ", "training", func(ans interface{}) error {
-		return validateSecondaryInstanceInput(primaryDB, ans)
-	})
+	val, err := prompt.AskText(
+		"Masukkan instance secondary: ",
+		prompt.WithDefault("training"),
+		prompt.WithValidator(func(ans interface{}) error { return validateSecondaryInstanceInput(primaryDB, ans) }),
+	)
 	if err != nil {
 		return "", fmt.Errorf("gagal mendapatkan instance: %w", err)
 	}

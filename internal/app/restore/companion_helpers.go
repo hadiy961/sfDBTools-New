@@ -2,7 +2,7 @@
 // Deskripsi : Helper functions untuk companion database detection
 // Author : Hadiyatna Muflihun
 // Tanggal : 19 Desember 2025
-// Last Modified : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 
 package restore
 
@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sfDBTools/internal/ui/print"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/ui"
 	"strings"
 )
 
@@ -56,7 +56,7 @@ func (s *Service) DetectOrSelectCompanionFile() error {
 	s.Log.Debugf("Auto-detect companion gagal: %v", err)
 
 	// Not found, ask user
-	ui.PrintWarning("⚠️  Companion file tidak ditemukan secara otomatis")
+	print.PrintWarning("⚠️  Companion file tidak ditemukan secara otomatis")
 	if opts.Force {
 		err := fmt.Errorf("dmart file (_dmart) tidak ditemukan secara otomatis dan mode non-interaktif (--force) aktif; gunakan --dmart-file untuk set file dmart, atau set --dmart-include=false, atau gunakan --continue-on-error untuk skip dmart")
 		return s.stopOrSkipCompanionNonInteractive(
@@ -79,7 +79,7 @@ func (s *Service) useCompanionFileFromFlagOrDecide() (bool, error) {
 	fi, err := os.Stat(flagPath)
 	if err != nil {
 		s.Log.Warnf("Companion file dari flag tidak ditemukan: %s", flagPath)
-		ui.PrintWarning(fmt.Sprintf("⚠️  Companion file tidak ditemukan: %s", flagPath))
+		print.PrintWarning(fmt.Sprintf("⚠️  Companion file tidak ditemukan: %s", flagPath))
 		if opts.Force {
 			return true, s.stopOrSkipCompanionNonInteractive(
 				fmt.Errorf("companion file (_dmart) tidak ditemukan: %s", flagPath),
@@ -93,7 +93,7 @@ func (s *Service) useCompanionFileFromFlagOrDecide() (bool, error) {
 
 	if fi.IsDir() {
 		s.Log.Warnf("Companion file dari flag adalah direktori (tidak valid): %s", flagPath)
-		ui.PrintWarning(fmt.Sprintf("⚠️  Companion file tidak valid (path adalah direktori): %s", flagPath))
+		print.PrintWarning(fmt.Sprintf("⚠️  Companion file tidak valid (path adalah direktori): %s", flagPath))
 		if opts.Force {
 			return true, s.stopOrSkipCompanionNonInteractive(
 				fmt.Errorf("companion file (_dmart) tidak valid (path adalah direktori): %s", flagPath),
@@ -108,7 +108,7 @@ func (s *Service) useCompanionFileFromFlagOrDecide() (bool, error) {
 	validExtensions := helper.ValidBackupFileExtensionsForSelection()
 	if !isValidBackupFileExtension(flagPath, validExtensions) {
 		s.Log.Warnf("Companion file dari flag tidak valid (ekstensi): %s", flagPath)
-		ui.PrintWarning(fmt.Sprintf("⚠️  Companion file tidak valid (ekstensi tidak didukung): %s", flagPath))
+		print.PrintWarning(fmt.Sprintf("⚠️  Companion file tidak valid (ekstensi tidak didukung): %s", flagPath))
 		if opts.Force {
 			return true, s.stopOrSkipCompanionNonInteractive(
 				fmt.Errorf("companion file (_dmart) tidak valid (ekstensi tidak didukung): %s", flagPath),
@@ -148,7 +148,7 @@ func (s *Service) stopOrSkipCompanionNonInteractive(err error, warnLog string, w
 
 func (s *Service) skipCompanionRestore(warnLog string, warnUI string) {
 	s.Log.Warn(warnLog)
-	ui.PrintWarning(warnUI)
+	print.PrintWarning(warnUI)
 	s.RestorePrimaryOpts.IncludeDmart = false
 	s.RestorePrimaryOpts.CompanionFile = ""
 }

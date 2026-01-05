@@ -2,7 +2,7 @@
 // Deskripsi : Shared setup functions untuk restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 30 Desember 2025
+// Last Modified : 5 Januari 2026
 
 package restore
 
@@ -12,9 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 )
 
 // resolveBackupFile resolve lokasi file backup
@@ -34,7 +34,7 @@ func (s *Service) resolveSelectionCSV(csvPath *string, allowInteractive bool) er
 }
 
 // resolveFileWithPrompt adalah fungsi umum untuk resolve file dengan validasi dan prompt
-func (s *Service) resolveFileWithPrompt(filePath *string, allowInteractive bool, validExtensions []string, purpose, prompt string) error {
+func (s *Service) resolveFileWithPrompt(filePath *string, allowInteractive bool, validExtensions []string, purpose, promptLabel string) error {
 	if strings.TrimSpace(*filePath) == "" {
 		if !allowInteractive {
 			return fmt.Errorf("%s wajib diisi pada mode non-interaktif (--force)", purpose)
@@ -45,7 +45,7 @@ func (s *Service) resolveFileWithPrompt(filePath *string, allowInteractive bool,
 			defaultDir = "."
 		}
 
-		selectedFile, err := input.SelectFileInteractive(defaultDir, prompt, validExtensions)
+		selectedFile, err := prompt.SelectFile(defaultDir, promptLabel, validExtensions)
 		if err != nil {
 			return fmt.Errorf("gagal memilih %s: %w", purpose, err)
 		}
@@ -67,7 +67,7 @@ func (s *Service) resolveFileWithPrompt(filePath *string, allowInteractive bool,
 			return fmt.Errorf("%s tidak valid (path adalah direktori): %s", purpose, *filePath)
 		}
 
-		selectedFile, selErr := input.SelectFileInteractive(*filePath, prompt, validExtensions)
+		selectedFile, selErr := prompt.SelectFile(*filePath, promptLabel, validExtensions)
 		if selErr != nil {
 			return fmt.Errorf("gagal memilih %s: %w", purpose, selErr)
 		}
@@ -78,8 +78,8 @@ func (s *Service) resolveFileWithPrompt(filePath *string, allowInteractive bool,
 		if !allowInteractive {
 			return err
 		}
-		ui.PrintWarning(fmt.Sprintf("⚠️  %s", err.Error()))
-		selectedFile, selErr := input.SelectFileInteractive(filepath.Dir(*filePath), prompt, validExtensions)
+		print.PrintWarning(fmt.Sprintf("⚠️  %s", err.Error()))
+		selectedFile, selErr := prompt.SelectFile(filepath.Dir(*filePath), promptLabel, validExtensions)
 		if selErr != nil {
 			return fmt.Errorf("gagal memilih %s: %w", purpose, selErr)
 		}

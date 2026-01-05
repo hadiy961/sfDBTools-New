@@ -2,15 +2,15 @@ package display
 
 import (
 	"fmt"
+	"sfDBTools/internal/ui/text"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/ui"
 	"sort"
 )
 
 func (d *OptionsDisplayer) buildGeneralSection() [][]string {
 	data := [][]string{
-		{"Mode Backup", ui.ColorText(d.options.Mode, consts.UIColorCyan)},
-		{"Ticket", ui.ColorText(d.options.Ticket, consts.UIColorYellow)},
+		{"Mode Backup", text.ColorText(d.options.Mode, consts.UIColorCyan)},
+		{"Ticket", text.ColorText(d.options.Ticket, consts.UIColorYellow)},
 		{"Output Directory", d.options.OutputDir},
 	}
 
@@ -18,10 +18,10 @@ func (d *OptionsDisplayer) buildGeneralSection() [][]string {
 	// - Mode single/primary/secondary/combined/all: tampilkan filename akurat
 	// - Mode separated dengan filter: tampilkan contoh filename
 	if d.isSeparatedMode() {
-		data = append(data, []string{"Filename Example", ui.ColorText(d.options.File.Path, consts.UIColorCyan)})
+		data = append(data, []string{"Filename Example", text.ColorText(d.options.File.Path, consts.UIColorCyan)})
 	} else if d.isSingleMode() || d.options.Mode == consts.ModeCombined || d.options.Mode == consts.ModeAll {
 		label := d.getFilenameLabel()
-		data = append(data, []string{label, ui.ColorText(d.options.File.Path, consts.UIColorCyan)})
+		data = append(data, []string{label, text.ColorText(d.options.File.Path, consts.UIColorCyan)})
 	}
 
 	data = append(data, []string{"Dry Run", fmt.Sprintf("%v", d.options.DryRun)})
@@ -33,9 +33,9 @@ func (d *OptionsDisplayer) buildModeSpecificSection() [][]string {
 		data := [][]string{}
 
 		if d.options.Mode == consts.ModeAll {
-			data = append(data, []string{"Metode Filter", ui.ColorText("Exclude (semua kecuali yang dikecualikan)", consts.UIColorYellow)})
+			data = append(data, []string{"Metode Filter", text.ColorText("Exclude (semua kecuali yang dikecualikan)", consts.UIColorYellow)})
 		} else if d.options.Mode == consts.ModeCombined {
-			data = append(data, []string{"Metode Filter", ui.ColorText("Include (hanya yang dipilih)", consts.UIColorYellow)})
+			data = append(data, []string{"Metode Filter", text.ColorText("Include (hanya yang dipilih)", consts.UIColorYellow)})
 		}
 
 		if d.options.Mode == consts.ModeCombined || d.options.Mode == consts.ModeAll {
@@ -52,7 +52,7 @@ func (d *OptionsDisplayer) buildModeSpecificSection() [][]string {
 	if dbName == "" {
 		dbName = "<belum dipilih>"
 	}
-	data = append(data, []string{"Database Utama", ui.ColorText(dbName, consts.UIColorYellow)})
+	data = append(data, []string{"Database Utama", text.ColorText(dbName, consts.UIColorYellow)})
 
 	if d.options.File.Filename != "" {
 		data = append(data, []string{"Custom Filename", d.options.File.Filename})
@@ -86,7 +86,7 @@ func (d *OptionsDisplayer) buildCompanionStatus() [][]string {
 			status = "tidak ditemukan"
 			color = consts.UIColorRed
 		}
-		data = append(data, []string{"  - " + name, ui.ColorText(status, color)})
+		data = append(data, []string{"  - " + name, text.ColorText(status, color)})
 	}
 
 	return data
@@ -98,7 +98,7 @@ func (d *OptionsDisplayer) buildProfileSection() [][]string {
 	}
 
 	return [][]string{
-		{"Profile", ui.ColorText(d.options.Profile.Name, consts.UIColorYellow)},
+		{"Profile", text.ColorText(d.options.Profile.Name, consts.UIColorYellow)},
 		{"HostName", d.options.Profile.DBInfo.HostName},
 		{"Host", fmt.Sprintf("%s:%d", d.options.Profile.DBInfo.Host, d.options.Profile.DBInfo.Port)},
 		{"User", d.options.Profile.DBInfo.User},
@@ -108,7 +108,7 @@ func (d *OptionsDisplayer) buildProfileSection() [][]string {
 func (d *OptionsDisplayer) buildFilterSection() [][]string {
 	data := [][]string{
 		{"", ""},
-		{ui.ColorText("Filter Options", consts.UIColorPurple), ""},
+		{text.ColorText("Filter Options", consts.UIColorPurple), ""},
 	}
 
 	if !d.isSingleMode() {
@@ -154,7 +154,7 @@ func (d *OptionsDisplayer) buildDatabaseList(label string, databases []string) [
 func (d *OptionsDisplayer) buildCompressionSection() [][]string {
 	data := [][]string{
 		{"", ""},
-		{ui.ColorText("Compression", consts.UIColorPurple), ""},
+		{text.ColorText("Compression", consts.UIColorPurple), ""},
 		{"Enabled", fmt.Sprintf("%v", d.options.Compression.Enabled)},
 	}
 
@@ -169,14 +169,14 @@ func (d *OptionsDisplayer) buildCompressionSection() [][]string {
 func (d *OptionsDisplayer) buildEncryptionSection() [][]string {
 	data := [][]string{
 		{"", ""},
-		{ui.ColorText("Encryption", consts.UIColorPurple), ""},
+		{text.ColorText("Encryption", consts.UIColorPurple), ""},
 		{"Enabled", fmt.Sprintf("%v", d.options.Encryption.Enabled)},
 	}
 
 	if d.options.Encryption.Enabled {
-		statusText := ui.ColorText("Missing", consts.UIColorRed)
+		statusText := text.ColorText("Missing", consts.UIColorRed)
 		if d.options.Encryption.Key != "" {
-			statusText = ui.ColorText("Configured", consts.UIColorGreen)
+			statusText = text.ColorText("Configured", consts.UIColorGreen)
 		}
 		data = append(data, []string{"Key Status", statusText})
 	}

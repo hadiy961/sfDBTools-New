@@ -8,17 +8,18 @@ package executor
 import (
 	"fmt"
 	profilemodel "sfDBTools/internal/app/profile/model"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/table"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
 	profilehelper "sfDBTools/pkg/helper/profile"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 	"strings"
 )
 
 func (e *Executor) ShowProfile() error {
-	ui.Headers(consts.ProfileUIHeaderShow)
+	print.PrintAppHeader(consts.ProfileUIHeaderShow)
 	isInteractive := e.isInteractiveMode()
 
 	if !isInteractive {
@@ -86,7 +87,7 @@ func (e *Executor) ShowProfile() error {
 	}
 
 	if c, err := profilehelper.ConnectWithProfile(e.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
-		ui.PrintWarning(consts.ProfileWarnDBConnectFailedPrefix + err.Error())
+		print.PrintWarning(consts.ProfileWarnDBConnectFailedPrefix + err.Error())
 	} else {
 		c.Close()
 	}
@@ -115,8 +116,8 @@ func (e *Executor) ShowProfile() error {
 		if strings.TrimSpace(info.DBInfo.Password) != "" {
 			display = info.DBInfo.Password
 		}
-		ui.PrintSubHeader(consts.ProfileDisplayRevealedPasswordTitle)
-		ui.FormatTable(
+		print.PrintSubHeader(consts.ProfileDisplayRevealedPasswordTitle)
+		table.Render(
 			[]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderValue},
 			[][]string{{"1", consts.ProfileLabelDBPassword, display}},
 		)

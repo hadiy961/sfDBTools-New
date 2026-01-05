@@ -7,9 +7,9 @@
 package wizard
 
 import (
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -31,12 +31,12 @@ func (r *Runner) promptEditSelectedFields() error {
 		consts.ProfileLabelSSHLocalPort,
 	}
 
-	idxs, err := input.ShowMultiSelect(consts.ProfilePromptSelectFieldsToChange, fields)
+	_, idxs, err := prompt.SelectMany(consts.ProfilePromptSelectFieldsToChange, fields, nil)
 	if err != nil {
 		return validation.HandleInputError(err)
 	}
 	if len(idxs) == 0 {
-		ui.PrintWarning(consts.ProfileMsgNoFieldsSelected)
+		print.PrintWarning(consts.ProfileMsgNoFieldsSelected)
 		return validation.ErrUserCancelled
 	}
 
@@ -54,7 +54,7 @@ func (r *Runner) promptEditSelectedFields() error {
 	}
 
 	if selected[consts.ProfileLabelDBHost] {
-		v, err := input.AskString(consts.ProfileLabelDBHost, r.ProfileInfo.DBInfo.Host, survey.Required)
+		v, err := prompt.AskText(consts.ProfileLabelDBHost, prompt.WithDefault(r.ProfileInfo.DBInfo.Host), prompt.WithValidator(survey.Required))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -62,7 +62,7 @@ func (r *Runner) promptEditSelectedFields() error {
 	}
 
 	if selected[consts.ProfileLabelDBPort] {
-		v, err := input.AskInt(consts.ProfileLabelDBPort, r.ProfileInfo.DBInfo.Port, survey.Required)
+		v, err := prompt.AskInt(consts.ProfileLabelDBPort, r.ProfileInfo.DBInfo.Port, survey.Required)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -70,7 +70,7 @@ func (r *Runner) promptEditSelectedFields() error {
 	}
 
 	if selected[consts.ProfileLabelDBUser] {
-		v, err := input.AskString(consts.ProfileLabelDBUser, r.ProfileInfo.DBInfo.User, survey.Required)
+		v, err := prompt.AskText(consts.ProfileLabelDBUser, prompt.WithDefault(r.ProfileInfo.DBInfo.User), prompt.WithValidator(survey.Required))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -82,8 +82,8 @@ func (r *Runner) promptEditSelectedFields() error {
 		if r.ProfileInfo != nil {
 			existing = r.ProfileInfo.DBInfo.Password
 		}
-		ui.PrintInfo(consts.ProfileTipKeepCurrentDBPassword)
-		pw, err := input.AskPassword(consts.ProfileLabelDBPassword, nil)
+		print.PrintInfo(consts.ProfileTipKeepCurrentDBPassword)
+		pw, err := prompt.AskPassword(consts.ProfileLabelDBPassword, nil)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -95,7 +95,7 @@ func (r *Runner) promptEditSelectedFields() error {
 	}
 
 	if selected[consts.ProfileFieldSSHTunnelToggle] {
-		enable, err := input.AskYesNo(consts.ProfilePromptUseSSHTunnel, r.ProfileInfo.SSHTunnel.Enabled)
+		enable, err := prompt.Confirm(consts.ProfilePromptUseSSHTunnel, r.ProfileInfo.SSHTunnel.Enabled)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -108,7 +108,7 @@ func (r *Runner) promptEditSelectedFields() error {
 	}
 
 	if selected[consts.ProfileLabelSSHHost] {
-		v, err := input.AskString(consts.ProfilePromptSSHHost, r.ProfileInfo.SSHTunnel.Host, sshRequired)
+		v, err := prompt.AskText(consts.ProfilePromptSSHHost, prompt.WithDefault(r.ProfileInfo.SSHTunnel.Host), prompt.WithValidator(sshRequired))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -120,7 +120,7 @@ func (r *Runner) promptEditSelectedFields() error {
 		if def == 0 {
 			def = 22
 		}
-		v, err := input.AskInt(consts.ProfileLabelSSHPort, def, sshRequired)
+		v, err := prompt.AskInt(consts.ProfileLabelSSHPort, def, sshRequired)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -128,7 +128,7 @@ func (r *Runner) promptEditSelectedFields() error {
 	}
 
 	if selected[consts.ProfileLabelSSHUser] {
-		v, err := input.AskString(consts.ProfilePromptSSHUser, r.ProfileInfo.SSHTunnel.User, nil)
+		v, err := prompt.AskText(consts.ProfilePromptSSHUser, prompt.WithDefault(r.ProfileInfo.SSHTunnel.User))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -140,8 +140,8 @@ func (r *Runner) promptEditSelectedFields() error {
 		if r.ProfileInfo != nil {
 			existing = r.ProfileInfo.SSHTunnel.Password
 		}
-		ui.PrintInfo(consts.ProfileTipKeepCurrentSSHPassword)
-		pw, err := input.AskPassword(consts.ProfilePromptSSHPasswordOptional, nil)
+		print.PrintInfo(consts.ProfileTipKeepCurrentSSHPassword)
+		pw, err := prompt.AskPassword(consts.ProfilePromptSSHPasswordOptional, nil)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -153,7 +153,7 @@ func (r *Runner) promptEditSelectedFields() error {
 	}
 
 	if selected[consts.ProfileLabelSSHIdentityFile] {
-		v, err := input.AskString(consts.ProfilePromptSSHIdentityFileOptional, r.ProfileInfo.SSHTunnel.IdentityFile, nil)
+		v, err := prompt.AskText(consts.ProfilePromptSSHIdentityFileOptional, prompt.WithDefault(r.ProfileInfo.SSHTunnel.IdentityFile))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
@@ -161,7 +161,7 @@ func (r *Runner) promptEditSelectedFields() error {
 	}
 
 	if selected[consts.ProfileLabelSSHLocalPort] {
-		v, err := input.AskInt(consts.ProfilePromptSSHLocalPort, r.ProfileInfo.SSHTunnel.LocalPort, nil)
+		v, err := prompt.AskInt(consts.ProfilePromptSSHLocalPort, r.ProfileInfo.SSHTunnel.LocalPort, nil)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}

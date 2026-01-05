@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
 )
 
 type ListOutput struct {
@@ -56,17 +56,17 @@ func PrintList(ctx context.Context, scope scheduler.Scope, isRoot bool) error {
 // PrintListBody menampilkan list jobs tanpa mencetak header utama.
 // Dipakai oleh mode interaktif agar header tidak dobel.
 func PrintListBody(ctx context.Context, scope scheduler.Scope, isRoot bool) error {
-	ui.PrintInfo("Menampilkan unit sfdbtools (service + timer)")
-	ui.PrintInfo("Tip: gunakan --scope=system bila scheduler dijalankan via sudo")
+	print.PrintInfo("Menampilkan unit sfdbtools (service + timer)")
+	print.PrintInfo("Tip: gunakan --scope=system bila scheduler dijalankan via sudo")
 
 	out, err := List(ctx, scope)
 	if err != nil {
-		ui.PrintWarning(fmt.Sprintf("Gagal list jobs (scope=%s): %v", scope, err))
+		print.PrintWarn(fmt.Sprintf("Gagal list jobs (scope=%s): %v", scope, err))
 		return err
 	}
 
 	if out.Timers != "" {
-		ui.PrintInfo(fmt.Sprintf("Timers (scope=%s)", out.UsedTimers))
+		print.PrintInfo(fmt.Sprintf("Timers (scope=%s)", out.UsedTimers))
 		v := strings.TrimSpace(out.Timers)
 		if v == "" {
 			fmt.Println("- (tidak ada)")
@@ -74,13 +74,13 @@ func PrintListBody(ctx context.Context, scope scheduler.Scope, isRoot bool) erro
 			fmt.Println(v)
 		}
 	} else {
-		ui.PrintInfo("Timers")
+		print.PrintInfo("Timers")
 		fmt.Println("- (tidak ada)")
 	}
 
-	ui.PrintSeparator()
+	print.PrintSeparator()
 
-	ui.PrintInfo(fmt.Sprintf("Services (scope=%s)", out.UsedServices))
+	print.PrintInfo(fmt.Sprintf("Services (scope=%s)", out.UsedServices))
 	v := strings.TrimSpace(out.Services)
 	if v == "" {
 		fmt.Println("- (tidak ada)")
@@ -90,7 +90,7 @@ func PrintListBody(ctx context.Context, scope scheduler.Scope, isRoot bool) erro
 
 	// Hint untuk system scope.
 	if !isRoot && (scope == scheduler.ScopeSystem || scope == scheduler.ScopeBoth) {
-		ui.PrintInfo("Jika ada error permission saat akses system scope, jalankan dengan sudo.")
+		print.PrintInfo("Jika ada error permission saat akses system scope, jalankan dengan sudo.")
 	}
 	return nil
 }

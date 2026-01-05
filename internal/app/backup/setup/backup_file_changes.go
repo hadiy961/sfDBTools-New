@@ -2,7 +2,7 @@
 // Deskripsi : Kumpulan handler interaktif terkait output file backup (dir, filename, encryption, compression)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-31
-// Last Modified : 2025-12-31
+// Last Modified : 2026-01-05
 
 package setup
 
@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"strings"
 
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
 	"sfDBTools/pkg/compress"
 	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
 	"sfDBTools/pkg/validation"
 )
 
@@ -27,7 +27,7 @@ func (s *Setup) changeBackupOutputDirInteractive(customOutputDir *string) error 
 		}
 	}
 
-	val, err := input.AskString("Backup directory", current, nil)
+	val, err := prompt.AskText("Backup directory", prompt.WithDefault(current))
 	if err != nil {
 		return fmt.Errorf("gagal mengubah backup directory: %w", err)
 	}
@@ -44,16 +44,16 @@ func (s *Setup) changeBackupOutputDirInteractive(customOutputDir *string) error 
 }
 
 func (s *Setup) changeBackupFilenameInteractive() error {
-	val, err := input.AskString(
+	val, err := prompt.AskText(
 		"Custom filename (tanpa ekstensi, kosongkan untuk auto)",
-		s.Options.File.Filename,
-		func(ans interface{}) error {
+		prompt.WithDefault(s.Options.File.Filename),
+		prompt.WithValidator(func(ans interface{}) error {
 			v, ok := ans.(string)
 			if !ok {
 				return fmt.Errorf("input tidak valid")
 			}
 			return validation.ValidateCustomFilenameBase(v)
-		},
+		}),
 	)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah filename: %w", err)
@@ -63,7 +63,7 @@ func (s *Setup) changeBackupFilenameInteractive() error {
 }
 
 func (s *Setup) changeBackupEncryptionInteractive() error {
-	enabled, err := input.AskYesNo("Encrypt backup file?", s.Options.Encryption.Enabled)
+	enabled, err := prompt.Confirm("Encrypt backup file?", s.Options.Encryption.Enabled)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi encryption: %w", err)
 	}
@@ -75,12 +75,12 @@ func (s *Setup) changeBackupEncryptionInteractive() error {
 	}
 
 	if strings.TrimSpace(s.Options.Encryption.Key) == "" {
-		key, err := input.AskPassword("Backup Key (required)", nil)
+		key, err := prompt.AskPassword("Backup Key (required)", nil)
 		if err != nil {
 			return fmt.Errorf("gagal mendapatkan backup key: %w", err)
 		}
 		if strings.TrimSpace(key) == "" {
-			ui.PrintError("Backup key tidak boleh kosong saat encryption aktif.")
+			print.PrintError("Backup key tidak boleh kosong saat encryption aktif.")
 			// Fail-safe: jangan biarkan encryption aktif tanpa key.
 			s.Options.Encryption.Enabled = false
 			s.Options.Encryption.Key = ""
@@ -93,7 +93,7 @@ func (s *Setup) changeBackupEncryptionInteractive() error {
 }
 
 func (s *Setup) changeBackupCompressionInteractive() error {
-	enabled, err := input.AskYesNo("Compress backup file?", s.Options.Compression.Enabled)
+	enabled, err := prompt.Confirm("Compress backup file?", s.Options.Compression.Enabled)
 	if err != nil {
 		return fmt.Errorf("gagal mengubah opsi compression: %w", err)
 	}
@@ -105,7 +105,7 @@ func (s *Setup) changeBackupCompressionInteractive() error {
 	}
 
 	types := []string{"zstd", "gzip", "xz", "zlib", "pgzip", "none"}
-	selected, err := input.SelectSingleFromList(types, "Pilih jenis kompresi")
+	selected, _, err := prompt.SelectOne("Pilih jenis kompresi", types, -1)
 	if err != nil {
 		return fmt.Errorf("gagal memilih compression type: %w", err)
 	}
@@ -124,7 +124,7 @@ func (s *Setup) changeBackupCompressionInteractive() error {
 	s.Options.Compression.Enabled = true
 	s.Options.Compression.Type = string(ct)
 
-	lvl, err := input.AskInt("Compression level (1-9)", s.Options.Compression.Level, func(ans interface{}) error {
+	lvl, err := prompt.AskInt("Compression level (1-9)", s.Options.Compression.Level, func(ans interface{}) error {
 		v, ok := ans.(string)
 		if !ok {
 			return fmt.Errorf("input tidak valid")

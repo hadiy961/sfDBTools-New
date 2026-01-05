@@ -11,12 +11,12 @@ import (
 	"path/filepath"
 	"sfDBTools/internal/app/restore/display"
 	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
 )
 
 // SetupRestoreSelectionSession melakukan setup untuk restore selection (CSV)
 func (s *Service) SetupRestoreSelectionSession(ctx context.Context) error {
-	ui.Headers("Restore Selection (CSV)")
+	print.PrintAppHeader("Restore Selection (CSV)")
 	if s.RestoreSelOpts == nil {
 		return fmt.Errorf("opsi selection tidak tersedia")
 	}

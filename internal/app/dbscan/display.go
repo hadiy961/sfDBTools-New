@@ -11,14 +11,15 @@ import (
 	"sfDBTools/internal/app/dbscan/helpers"
 	dbscanmodel "sfDBTools/internal/app/dbscan/model"
 	"sfDBTools/internal/domain"
-	"sfDBTools/pkg/input"
-	"sfDBTools/pkg/ui"
+	"sfDBTools/internal/ui/print"
+	"sfDBTools/internal/ui/prompt"
+	"sfDBTools/internal/ui/table"
 	"sfDBTools/pkg/validation"
 )
 
 // DisplayScanOptions menampilkan opsi scanning aktif dan meminta konfirmasi
 func (s *Service) DisplayScanOptions() (bool, error) {
-	ui.PrintSubHeader("Opsi Scanning")
+	print.PrintSubHeader("Opsi Scanning")
 
 	data := [][]string{
 		{"Exclude System DB", fmt.Sprintf("%v", s.ScanOptions.ExcludeSystem)},
@@ -31,10 +32,10 @@ func (s *Service) DisplayScanOptions() (bool, error) {
 		data = append(data, []string{"Source Database", s.ScanOptions.SourceDatabase})
 	}
 
-	ui.FormatTable([]string{"Parameter", "Value"}, data)
+	table.Render([]string{"Parameter", "Value"}, data)
 
 	// Konfirmasi
-	confirm, err := input.AskYesNo("Apakah Anda ingin melanjutkan?", true)
+	confirm, err := prompt.Confirm("Apakah Anda ingin melanjutkan?", true)
 	if err != nil {
 		s.Log.Error("User confirmation error: " + err.Error())
 		return false, err
@@ -51,7 +52,7 @@ func (s *Service) DisplayScanOptions() (bool, error) {
 // Wrapper methods for pkg/dbscanhelper and pkg/ui display functions
 
 func (s *Service) DisplayFilterStats(stats *domain.FilterStats) {
-	ui.DisplayFilterStats(stats, "scan", s.Log)
+	print.PrintFilterStats(stats, "scan", s.Log)
 }
 
 func (s *Service) DisplayScanResult(result *dbscanmodel.ScanResult) {

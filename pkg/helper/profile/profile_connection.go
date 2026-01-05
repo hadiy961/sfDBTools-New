@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"sfDBTools/internal/domain"
+	"sfDBTools/internal/ui/progress"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
 	"sfDBTools/pkg/process"
 	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/ui"
 )
 
 // EffectiveDBInfo mengembalikan DBInfo yang efektif untuk koneksi.
@@ -54,9 +54,9 @@ func ConnectWithProfile(profile *domain.ProfileInfo, initialDB string) (*databas
 		modeText = "melalui SSH Tunnel"
 	}
 
-	var spin *ui.SpinnerWithElapsed
+	var spin *progress.Spinner
 	if !quiet {
-		spin = ui.NewSpinnerWithElapsed(fmt.Sprintf("Menghubungkan ke %s %s", name, modeText))
+		spin = progress.NewSpinnerWithElapsed(fmt.Sprintf("Menghubungkan ke %s %s", name, modeText))
 		spin.Start()
 		defer spin.Stop()
 	}
