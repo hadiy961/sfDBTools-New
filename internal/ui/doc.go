@@ -6,8 +6,10 @@
 
 // Package ui adalah entry point facade UI.
 //
-// NOTE: Pada PR UI-1, implementasi masih mendelegasikan ke legacy:
-// - sfDBTools/pkg/input
+// Struktur:
+// - internal/ui/print|table|progress|text|style: output
+// - internal/ui/prompt: public API untuk layer app
+// - internal/ui/input: engine prompt (berbasis survey)
 //
 // Package internal ini menjadi pintu tunggal UI untuk layer app/cli/services.
 package ui
