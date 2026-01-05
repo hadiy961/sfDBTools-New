@@ -2,10 +2,10 @@ package scriptcmd
 
 import (
 	"path/filepath"
+	"sfDBTools/internal/app/script"
 	"sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/flags"
 	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/internal/script"
 	"sfDBTools/pkg/input"
 	"strings"
 
