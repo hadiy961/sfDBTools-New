@@ -1,7 +1,7 @@
 package cleanupcmd
 
 import (
-	"sfDBTools/internal/cleanup"
+	"sfDBTools/internal/app/cleanup"
 	defaultVal "sfDBTools/internal/cli/defaults"
 	appdeps "sfDBTools/internal/cli/deps"
 	"sfDBTools/internal/cli/flags"

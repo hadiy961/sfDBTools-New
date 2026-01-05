@@ -6,7 +6,7 @@
 package cleanupcmd
 
 import (
-	"sfDBTools/internal/cleanup/scheduler"
+	"sfDBTools/internal/app/cleanup/scheduler"
 	appdeps "sfDBTools/internal/cli/deps"
 
 	"github.com/spf13/cobra"

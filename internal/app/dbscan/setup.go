@@ -1,15 +1,15 @@
-// File : internal/dbscan/setup.go
+// File : internal/app/dbscan/setup.go
 // Deskripsi : Setup connection, configuration loading, dan session preparation
 // Author : Hadiyatna Muflihun
 // Tanggal : 17 Desember 2025
-// Last Modified : 03 Januari 2026
+// Last Modified : 05 Januari 2026
 
 package dbscan
 
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/dbscan/helpers"
+	"sfDBTools/internal/app/dbscan/helpers"
 	"sfDBTools/internal/types"
 	"sfDBTools/pkg/consts"
 	"sfDBTools/pkg/database"
