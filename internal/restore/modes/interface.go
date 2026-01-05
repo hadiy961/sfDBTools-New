@@ -2,7 +2,7 @@
 // Deskripsi : Interface dan type definitions untuk restore modes
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-17
-// Last Modified :  2026-01-05
+// Last Modified : 2026-01-05
 package modes
 
 import (
