@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sfDBTools/cmd"
-	"sfDBTools/internal/autoupdate"
+	"sfDBTools/internal/app/autoupdate"
 	appdeps "sfDBTools/internal/cli/deps"
 	config "sfDBTools/internal/services/config"
 	"sfDBTools/pkg/runtimecfg"

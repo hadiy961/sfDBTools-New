@@ -4,13 +4,14 @@
 // Tanggal : 2026-01-05
 // Last Modified : 2026-01-05
 package cmd
+
 import (
 	"context"
 	"fmt"
 	"os"
 	"time"
 
-	"sfDBTools/internal/autoupdate"
+	"sfDBTools/internal/app/autoupdate"
 	appdeps "sfDBTools/internal/cli/deps"
 
 	"github.com/spf13/cobra"
