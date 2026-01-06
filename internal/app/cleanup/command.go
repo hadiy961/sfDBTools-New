@@ -11,14 +11,14 @@ import (
 	"os"
 	"time"
 
-	cleanupmodel "sfDBTools/internal/app/cleanup/model"
-	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/style"
-	"sfDBTools/internal/ui/text"
-	"sfDBTools/pkg/runtimecfg"
+	cleanupmodel "sfdbtools/internal/app/cleanup/model"
+	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/cli/parsing"
+	"sfdbtools/internal/services/scheduler"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/style"
+	"sfdbtools/internal/ui/text"
+	"sfdbtools/pkg/runtimecfg"
 
 	"github.com/spf13/cobra"
 )
@@ -63,7 +63,7 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 		res, runErr := scheduler.SpawnSelfInBackground(ctx, scheduler.SpawnSelfOptions{
 			UnitPrefix:    "sfdbtools-cleanup",
 			Mode:          scheduler.RunModeAuto,
-			EnvFile:       "/etc/sfDBTools/.env",
+			EnvFile:       "/etc/sfdbtools/.env",
 			WorkDir:       wd,
 			Collect:       true,
 			NoAskPass:     true,

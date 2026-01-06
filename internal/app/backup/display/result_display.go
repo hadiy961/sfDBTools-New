@@ -8,11 +8,11 @@ package display
 
 import (
 	"fmt"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/table"
-	"sfDBTools/internal/ui/text"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/table"
+	"sfdbtools/internal/ui/text"
+	"sfdbtools/pkg/consts"
 )
 
 // ResultDisplayer handles display of backup results

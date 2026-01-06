@@ -2,9 +2,9 @@ package defaultVal
 
 import (
 	"os"
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	appconfig "sfDBTools/internal/services/config"
-	"sfDBTools/pkg/consts"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	appconfig "sfdbtools/internal/services/config"
+	"sfdbtools/pkg/consts"
 )
 
 // GetDefaultScanOptions mengembalikan default options untuk database scan

@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/fsops"
-	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/fsops"
+	"sfdbtools/pkg/helper"
+	"sfdbtools/pkg/validation"
 )
 
 func filterProfileConfigFiles(files []string) []string {

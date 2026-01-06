@@ -12,15 +12,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfDBTools/internal/app/profile/shared"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/encrypt"
-	"sfDBTools/pkg/fsops"
-	"sfDBTools/pkg/helper"
-	profilehelper "sfDBTools/pkg/helper/profile"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/encrypt"
+	"sfdbtools/pkg/fsops"
+	"sfdbtools/pkg/helper"
+	profilehelper "sfdbtools/pkg/helper/profile"
+	"sfdbtools/pkg/validation"
 )
 
 func (e *Executor) SaveProfile(mode string) error {

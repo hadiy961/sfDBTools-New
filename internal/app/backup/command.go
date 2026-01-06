@@ -11,16 +11,16 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"sfDBTools/internal/app/backup/display"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/style"
-	"sfDBTools/internal/ui/text"
-	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/app/backup/display"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/cli/parsing"
+	"sfdbtools/internal/services/scheduler"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/style"
+	"sfdbtools/internal/ui/text"
+	"sfdbtools/pkg/runtimecfg"
+	"sfdbtools/pkg/validation"
 	"syscall"
 	"time"
 
@@ -117,7 +117,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 		res, runErr := scheduler.SpawnSelfInBackground(ctx, scheduler.SpawnSelfOptions{
 			UnitPrefix:    "sfdbtools-backup",
 			Mode:          scheduler.RunModeAuto,
-			EnvFile:       "/etc/sfDBTools/.env",
+			EnvFile:       "/etc/sfdbtools/.env",
 			WorkDir:       wd,
 			Collect:       true,
 			NoAskPass:     true,

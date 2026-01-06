@@ -6,9 +6,9 @@
 package restore
 
 import (
-	"sfDBTools/internal/app/restore/display"
-	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/cli/parsing"
+	"sfdbtools/internal/app/restore/display"
+	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/cli/parsing"
 
 	"github.com/spf13/cobra"
 )

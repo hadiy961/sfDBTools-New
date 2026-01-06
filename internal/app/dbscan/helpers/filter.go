@@ -3,9 +3,9 @@ package helpers
 import (
 	"context"
 
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	"sfDBTools/internal/domain"
-	"sfDBTools/pkg/database"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	"sfdbtools/internal/domain"
+	"sfdbtools/pkg/database"
 )
 
 // FilterFromScanOptions membuat FilterOptions dari ScanOptions dan menjalankan filtering.

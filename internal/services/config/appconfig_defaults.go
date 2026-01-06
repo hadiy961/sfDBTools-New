@@ -10,11 +10,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"sfDBTools/pkg/version"
+	"sfdbtools/pkg/version"
 )
 
 const (
-	HardcodedAppName    = "sfDBTools"
+	HardcodedAppName    = "sfdbtools"
 	HardcodedAuthor     = "Hadiyatna Muflihun"
 	HardcodedClientCode = "dataon"
 )
@@ -96,11 +96,11 @@ func writeDefaultConfig(configPath string) error {
 func userDefaultConfigPath() (string, error) {
 	// Prefer XDG_CONFIG_HOME if set.
 	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
-		return filepath.Join(xdg, "sfDBTools", "config.yaml"), nil
+		return filepath.Join(xdg, "sfdbtools", "config.yaml"), nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("gagal membaca home dir: %w", err)
 	}
-	return filepath.Join(home, ".config", "sfDBTools", "config.yaml"), nil
+	return filepath.Join(home, ".config", "sfdbtools", "config.yaml"), nil
 }

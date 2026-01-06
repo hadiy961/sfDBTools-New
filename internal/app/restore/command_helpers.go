@@ -9,12 +9,12 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	appdeps "sfDBTools/internal/cli/deps"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/ui/print"
+	appdeps "sfdbtools/internal/cli/deps"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/ui/print"
 	"syscall"
 
-	restoremodel "sfDBTools/internal/app/restore/model"
+	restoremodel "sfdbtools/internal/app/restore/model"
 
 	"github.com/spf13/cobra"
 )

@@ -1,5 +1,5 @@
 // File : internal/jobs/remove.go
-// Deskripsi : Remove/cleanup unit systemd sfDBTools (stop/disable/reset-failed + optional purge unit file)
+// Deskripsi : Remove/cleanup unit systemd sfdbtools (stop/disable/reset-failed + optional purge unit file)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
 // Last Modified : 5 Januari 2026
@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"strings"
 
-	"sfDBTools/internal/services/scheduler"
+	"sfdbtools/internal/services/scheduler"
 )
 
 const systemdSystemUnitDir = "/etc/systemd/system"

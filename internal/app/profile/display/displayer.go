@@ -9,13 +9,13 @@ package display
 import (
 	"fmt"
 
-	profilemodel "sfDBTools/internal/app/profile/model"
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/internal/ui/table"
-	"sfDBTools/pkg/consts"
-	profilehelper "sfDBTools/pkg/helper/profile"
+	profilemodel "sfdbtools/internal/app/profile/model"
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/internal/ui/table"
+	"sfdbtools/pkg/consts"
+	profilehelper "sfdbtools/pkg/helper/profile"
 
 	"github.com/AlecAivazis/survey/v2"
 )

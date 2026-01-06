@@ -11,11 +11,11 @@ import (
 	"os"
 	"strings"
 
-	"sfDBTools/internal/app/profile/shared"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/validation"
 
 	"github.com/AlecAivazis/survey/v2"
 )

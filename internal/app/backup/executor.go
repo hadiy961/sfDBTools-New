@@ -9,10 +9,10 @@ package backup
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/internal/app/backup/modes"
-	"sfDBTools/pkg/database"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/app/backup/modes"
+	"sfdbtools/pkg/database"
+	"sfdbtools/pkg/helper"
 )
 
 // ExecuteBackup melakukan proses backup database - entry point utama

@@ -1,10 +1,10 @@
 package profilecmd
 
 import (
-	"sfDBTools/internal/app/profile"
-	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/cli/flags"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/internal/app/profile"
+	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/cli/flags"
+	"sfdbtools/pkg/consts"
 
 	"github.com/spf13/cobra"
 )
@@ -12,7 +12,7 @@ import (
 var CmdProfileCreate = &cobra.Command{
 	Use:   "create",
 	Short: "Membuat profil koneksi database baru" + consts.ProfileCLIAutoInteractiveSuffix,
-	Long: `Membuat profil koneksi database baru untuk digunakan oleh sfDBTools.
+	Long: `Membuat profil koneksi database baru untuk digunakan oleh sfdbtools.
 
 Command ini akan menyimpan kredensial dan konfigurasi koneksi ke dalam file profil.
 Profil ini nantinya digunakan untuk operasi backup, restore, dan dbscan tanpa perlu memasukkan ulang kredensial.
@@ -22,7 +22,7 @@ Mode:
   - Non-interaktif (--quiet): wajib isi parameter lewat flag/env (tanpa prompt).
 
 Validasi:
-  - sfDBTools akan mencoba koneksi DB sebelum menyimpan profil.
+  - sfdbtools akan mencoba koneksi DB sebelum menyimpan profil.
   - Jika koneksi gagal: mode interaktif bisa pilih lanjut/batal, mode --quiet akan gagal (fail-fast).
 `,
 	Example: `  # 1) Interaktif (wizard)

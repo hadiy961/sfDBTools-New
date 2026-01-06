@@ -11,8 +11,8 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/version"
+	"sfdbtools/pkg/runtimecfg"
+	"sfdbtools/pkg/version"
 
 	"github.com/mattn/go-isatty"
 )

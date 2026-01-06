@@ -9,9 +9,9 @@ package restore
 import (
 	"fmt"
 	"path/filepath"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/helper"
 	"strings"
 )
 

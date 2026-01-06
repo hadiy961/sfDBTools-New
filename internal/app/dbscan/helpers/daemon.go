@@ -12,11 +12,11 @@ import (
 	"path/filepath"
 	"time"
 
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/text"
-	"sfDBTools/pkg/consts"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	"sfdbtools/internal/services/scheduler"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/text"
+	"sfdbtools/pkg/consts"
 )
 
 func detectUserModeText(mode scheduler.RunMode) string {
@@ -37,7 +37,7 @@ func SpawnScanDaemon(config dbscanmodel.ScanEntryConfig) error {
 	res, err := scheduler.SpawnSelfInBackground(ctx, scheduler.SpawnSelfOptions{
 		UnitPrefix:    "sfdbtools-dbscan",
 		Mode:          scheduler.RunModeAuto,
-		EnvFile:       "/etc/sfDBTools/.env",
+		EnvFile:       "/etc/sfdbtools/.env",
 		WorkDir:       wd,
 		Collect:       true,
 		NoAskPass:     true,

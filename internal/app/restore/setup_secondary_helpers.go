@@ -8,9 +8,9 @@ package restore
 import (
 	"context"
 	"fmt"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
 	"strings"
 )
 

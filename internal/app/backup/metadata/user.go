@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/services/log"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/database"
-	"sfDBTools/pkg/helper"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/database"
+	"sfdbtools/pkg/helper"
 	"strings"
 )
 

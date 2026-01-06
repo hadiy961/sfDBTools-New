@@ -6,12 +6,12 @@
 package profile
 
 import (
-	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/consts"
+	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/cli/parsing"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/consts"
 
-	profilemodel "sfDBTools/internal/app/profile/model"
+	profilemodel "sfdbtools/internal/app/profile/model"
 
 	"github.com/spf13/cobra"
 )

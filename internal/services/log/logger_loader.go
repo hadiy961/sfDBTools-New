@@ -10,9 +10,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	appconfig "sfDBTools/internal/services/config"
-	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/spinnerguard"
+	appconfig "sfdbtools/internal/services/config"
+	"sfdbtools/pkg/runtimecfg"
+	"sfdbtools/pkg/spinnerguard"
 	"strings"
 	"time"
 

@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"sfDBTools/internal/app/dbscan/helpers"
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
+	"sfdbtools/internal/app/dbscan/helpers"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 )
 
 // executeScanInBackground menjalankan scanning dalam mode background (tanpa UI).

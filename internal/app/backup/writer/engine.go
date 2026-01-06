@@ -9,14 +9,14 @@ import (
 	"os/exec"
 	"strings"
 
-	"sfDBTools/internal/app/backup/model/types_backup"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/ui/progress"
-	"sfDBTools/pkg/compress"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/encrypt"
-	"sfDBTools/pkg/errorlog"
-	pkghelper "sfDBTools/pkg/helper"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/ui/progress"
+	"sfdbtools/pkg/compress"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/encrypt"
+	"sfdbtools/pkg/errorlog"
+	pkghelper "sfdbtools/pkg/helper"
 )
 
 func summarizeStderr(stderr string, maxLines int, maxChars int) string {

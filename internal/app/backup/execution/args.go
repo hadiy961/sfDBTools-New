@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"sfDBTools/internal/domain"
+	"sfdbtools/internal/domain"
 )
 
 // BuildMysqldumpArgs membuat argumen mysqldump dari konfigurasi backup.

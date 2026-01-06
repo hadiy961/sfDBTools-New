@@ -11,9 +11,9 @@ import (
 	"os"
 	"strings"
 
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/helper"
+	"sfdbtools/pkg/validation"
 )
 
 func resolveProfileEncryptionKey(existing string, allowPrompt bool) (key string, source string, err error) {

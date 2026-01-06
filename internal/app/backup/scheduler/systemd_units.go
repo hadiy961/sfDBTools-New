@@ -14,16 +14,16 @@ import (
 
 	"github.com/joho/godotenv"
 
-	appdeps "sfDBTools/internal/cli/deps"
-	appconfig "sfDBTools/internal/services/config"
-	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/pkg/consts"
+	appdeps "sfdbtools/internal/cli/deps"
+	appconfig "sfdbtools/internal/services/config"
+	"sfdbtools/internal/services/scheduler"
+	"sfdbtools/pkg/consts"
 )
 
 const (
 	systemdUnitDir  = "/etc/systemd/system"
 	defaultLockFile = "/var/lock/sfdbtools-backup.lock"
-	defaultEnvFile  = "/etc/sfDBTools/.env"
+	defaultEnvFile  = "/etc/sfdbtools/.env"
 	serviceTemplate = "sfdbtools-backup@.service"
 )
 
@@ -161,7 +161,7 @@ func writeServiceTemplate() error {
 	binaryPath := detectBinaryPathForSystemd()
 	content := strings.Join([]string{
 		"[Unit]",
-		"Description=sfDBTools Backup Job (%i)",
+		"Description=sfdbtools Backup Job (%i)",
 		"After=network-online.target",
 		"Wants=network-online.target",
 		"",
@@ -188,7 +188,7 @@ func writeServiceTemplate() error {
 
 func detectBinaryPathForSystemd() string {
 	// Default: sesuai scripts/build_run.sh (dan tar installer).
-	defaultPath := "/usr/bin/sfDBTools"
+	defaultPath := "/usr/bin/sfdbtools"
 	if _, err := os.Stat("/usr/bin/sfdbtools"); err == nil {
 		return "/usr/bin/sfdbtools"
 	}
@@ -216,7 +216,7 @@ func writeTimerForJob(job appconfig.BackupSchedulerJob) error {
 
 	content := strings.Join([]string{
 		"[Unit]",
-		fmt.Sprintf("Description=sfDBTools Backup Timer (%s)", job.Name),
+		fmt.Sprintf("Description=sfdbtools Backup Timer (%s)", job.Name),
 		"",
 		"[Timer]",
 		fmt.Sprintf("OnCalendar=%s", onCalendar),

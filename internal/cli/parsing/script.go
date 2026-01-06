@@ -1,8 +1,8 @@
 package parsing
 
 import (
-	scriptmodel "sfDBTools/internal/app/script/model"
-	"sfDBTools/pkg/helper"
+	scriptmodel "sfdbtools/internal/app/script/model"
+	"sfdbtools/pkg/helper"
 	"strings"
 
 	"github.com/spf13/cobra"

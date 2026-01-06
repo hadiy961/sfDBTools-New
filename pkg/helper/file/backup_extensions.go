@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfDBTools/pkg/compress"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/pkg/compress"
+	"sfdbtools/pkg/consts"
 )
 
 var (

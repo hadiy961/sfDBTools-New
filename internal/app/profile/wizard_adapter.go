@@ -6,8 +6,8 @@
 package profile
 
 import (
-	"sfDBTools/internal/app/profile/wizard"
-	"sfDBTools/internal/domain"
+	"sfdbtools/internal/app/profile/wizard"
+	"sfdbtools/internal/domain"
 )
 
 func (s *Service) runWizard(mode string) error {

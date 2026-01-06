@@ -1,10 +1,10 @@
 package profilecmd
 
 import (
-	"sfDBTools/internal/app/profile"
-	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/cli/flags"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/internal/app/profile"
+	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/cli/flags"
+	"sfdbtools/pkg/consts"
 
 	"github.com/spf13/cobra"
 )

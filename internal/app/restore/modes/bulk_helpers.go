@@ -8,7 +8,7 @@ package modes
 import (
 	"context"
 	"fmt"
-	restoremodel "sfDBTools/internal/app/restore/model"
+	restoremodel "sfdbtools/internal/app/restore/model"
 	"strings"
 	"time"
 )

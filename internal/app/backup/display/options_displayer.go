@@ -1,11 +1,11 @@
 package display
 
 import (
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/internal/ui/table"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/internal/ui/table"
+	"sfdbtools/pkg/validation"
 )
 
 // OptionsDisplayer handles display of backup options.

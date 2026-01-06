@@ -7,11 +7,11 @@ package profile
 
 import (
 	"errors"
-	profilemodel "sfDBTools/internal/app/profile/model"
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/services/config"
-	"sfDBTools/internal/services/log"
-	"sfDBTools/pkg/consts"
+	profilemodel "sfdbtools/internal/app/profile/model"
+	"sfdbtools/internal/domain"
+	appconfig "sfdbtools/internal/services/config"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/pkg/consts"
 )
 
 // Error definitions

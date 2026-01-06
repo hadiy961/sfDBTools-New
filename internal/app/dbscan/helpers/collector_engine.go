@@ -7,9 +7,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/pkg/database"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/pkg/database"
 )
 
 // CollectDatabaseDetails mengumpulkan detail informasi untuk semua database secara concurrent

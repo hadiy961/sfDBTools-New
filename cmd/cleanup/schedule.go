@@ -6,8 +6,8 @@
 package cleanupcmd
 
 import (
-	"sfDBTools/internal/app/cleanup/scheduler"
-	appdeps "sfDBTools/internal/cli/deps"
+	"sfdbtools/internal/app/cleanup/scheduler"
+	appdeps "sfdbtools/internal/cli/deps"
 
 	"github.com/spf13/cobra"
 )
@@ -18,7 +18,7 @@ var CmdCleanupSchedule = &cobra.Command{
 	Short: "Kelola scheduler cleanup (systemd timer)",
 	Long: `Kelola scheduler cleanup berbasis systemd.
 
-Perintah ini TIDAK menjalankan daemon internal. sfDBTools akan:
+Perintah ini TIDAK menjalankan daemon internal. sfdbtools akan:
 - Membuat/meng-update unit systemd (service + timer)
 - Enable/disable timer berdasarkan config.yaml
 

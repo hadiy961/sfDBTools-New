@@ -12,12 +12,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfDBTools/internal/app/restore/helpers"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/internal/ui/table"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/app/restore/helpers"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/internal/ui/table"
+	"sfdbtools/pkg/helper"
 )
 
 // SetupRestoreSession melakukan setup untuk restore single session

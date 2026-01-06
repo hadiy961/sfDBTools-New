@@ -13,11 +13,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfDBTools/internal/app/restore/display"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/app/restore/display"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/helper"
 )
 
 func (s *Service) SetupRestoreCustomSession(ctx context.Context) error {

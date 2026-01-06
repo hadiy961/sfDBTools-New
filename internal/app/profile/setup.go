@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/app/profile/shared"
-	"sfDBTools/internal/domain"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/helper"
-	profilehelper "sfDBTools/pkg/helper/profile"
+	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/domain"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/helper"
+	profilehelper "sfdbtools/pkg/helper/profile"
 	"strings"
 )
 

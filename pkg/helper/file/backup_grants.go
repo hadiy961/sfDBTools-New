@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfDBTools/pkg/compress"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/pkg/compress"
+	"sfdbtools/pkg/consts"
 )
 
 // GenerateGrantsFilename generate expected grants filename dari backup filename.

@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"time"
 
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/pkg/database"
-	"sfDBTools/pkg/helper"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/pkg/database"
+	"sfdbtools/pkg/helper"
 
 	"github.com/dustin/go-humanize"
 )

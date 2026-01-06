@@ -1,5 +1,5 @@
 // File : internal/autoupdate/autoupdate.go
-// Deskripsi : Fitur auto-update binary sfDBTools via GitHub Releases
+// Deskripsi : Fitur auto-update binary sfdbtools via GitHub Releases
 // Author : Hadiyatna Muflihun
 // Tanggal : 5 Januari 2026
 // Last Modified : 5 Januari 2026
@@ -25,8 +25,8 @@ import (
 	"syscall"
 	"time"
 
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/version"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/version"
 )
 
 type Logger interface {
@@ -61,7 +61,7 @@ type Release struct {
 func DefaultOptions() Options {
 	return Options{
 		RepoOwner: "hadiy961",
-		RepoName:  "sfDBTools-New",
+		RepoName:  "sfdbtools-New",
 		Timeout:   25 * time.Second,
 		Force:     false,
 		ReExec:    true,
@@ -154,13 +154,13 @@ func UpdateIfNeeded(ctx context.Context, log Logger, opts Options) error {
 		}
 	}
 
-	assetTar, err := findAsset(rel.Assets, "sfDBTools_linux_amd64.tar.gz")
+	assetTar, err := findAsset(rel.Assets, "sfdbtools_linux_amd64.tar.gz")
 	if err != nil {
 		return err
 	}
 
 	// File sha256 versi spesifik bersifat optional.
-	shaName := fmt.Sprintf("sfDBTools_%d.%d.%d_linux_amd64.sha256", latest.Major, latest.Minor, latest.Patch)
+	shaName := fmt.Sprintf("sfdbtools_%d.%d.%d_linux_amd64.sha256", latest.Major, latest.Minor, latest.Patch)
 	assetSHA, _ := findAsset(rel.Assets, shaName)
 
 	if log != nil {
@@ -210,8 +210,8 @@ func UpdateIfNeeded(ctx context.Context, log Logger, opts Options) error {
 		}
 	}
 
-	newBinPath := filepath.Join(tmpDir, "sfDBTools")
-	if err := extractSingleFileFromTarGz(tarPath, "sfDBTools", newBinPath); err != nil {
+	newBinPath := filepath.Join(tmpDir, "sfdbtools")
+	if err := extractSingleFileFromTarGz(tarPath, "sfdbtools", newBinPath); err != nil {
 		return err
 	}
 	if err := os.Chmod(newBinPath, 0o755); err != nil {
@@ -279,7 +279,7 @@ func fetchLatestRelease(ctx context.Context, opts Options) (Release, error) {
 		return rel, fmt.Errorf("gagal membuat request: %w", err)
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "sfDBTools-autoupdate")
+	req.Header.Set("User-Agent", "sfdbtools-autoupdate")
 	if token := strings.TrimSpace(os.Getenv(consts.ENV_GITHUB_TOKEN)); token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -316,7 +316,7 @@ func downloadToFile(ctx context.Context, opts Options, url, dst string) error {
 	if err != nil {
 		return fmt.Errorf("gagal membuat request download: %w", err)
 	}
-	req.Header.Set("User-Agent", "sfDBTools-autoupdate")
+	req.Header.Set("User-Agent", "sfdbtools-autoupdate")
 
 	resp, err := client.Do(req)
 	if err != nil {

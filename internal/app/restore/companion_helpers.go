@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/helper"
 	"strings"
 )
 

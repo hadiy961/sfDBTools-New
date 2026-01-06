@@ -8,9 +8,9 @@ package wizard
 
 import (
 	"fmt"
-	"sfDBTools/internal/app/profile/shared"
-	"sfDBTools/pkg/consts"
-	profilehelper "sfDBTools/pkg/helper/profile"
+	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/pkg/consts"
+	profilehelper "sfdbtools/pkg/helper/profile"
 )
 
 func (r *Runner) promptSelectExistingConfig() error {

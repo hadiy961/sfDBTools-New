@@ -2,7 +2,7 @@ package encrypt
 
 import (
 	"os"
-	"sfDBTools/internal/ui/prompt"
+	"sfdbtools/internal/ui/prompt"
 
 	"github.com/AlecAivazis/survey/v2"
 )

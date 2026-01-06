@@ -7,10 +7,10 @@ package modes
 
 import (
 	"context"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/services/log"
-	"sfDBTools/pkg/database"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/domain"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/pkg/database"
 )
 
 // RestoreExecutor interface untuk semua mode restore

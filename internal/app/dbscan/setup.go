@@ -9,16 +9,16 @@ package dbscan
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/app/dbscan/helpers"
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/database"
-	"sfDBTools/pkg/fsops"
-	"sfDBTools/pkg/helper"
-	profilehelper "sfDBTools/pkg/helper/profile"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/app/dbscan/helpers"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/database"
+	"sfdbtools/pkg/fsops"
+	"sfdbtools/pkg/helper"
+	profilehelper "sfdbtools/pkg/helper/profile"
+	"sfdbtools/pkg/validation"
 )
 
 // ResolveScanLists membaca file include/exclude dari path yang ada di ScanOptions
@@ -63,7 +63,7 @@ func ResolveScanLists(opts *dbscanmodel.ScanOptions) error {
 }
 
 // setupScanConnections mengorkestrasi setup koneksi source database.
-// Catatan: sfDBTools tidak menyimpan hasil scan ke database, jadi tidak ada koneksi target.
+// Catatan: sfdbtools tidak menyimpan hasil scan ke database, jadi tidak ada koneksi target.
 // Returns: sourceClient, dbFiltered, cleanupFunc, error
 func (s *Service) setupScanConnections(ctx context.Context, headerTitle string, showOptions bool) (*database.Client, []string, func(), error) {
 	// Mode Normal: setup standar

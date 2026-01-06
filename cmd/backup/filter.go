@@ -7,11 +7,11 @@ package backupcmd
 
 import (
 	"fmt"
-	defaultVal "sfDBTools/internal/cli/defaults"
-	"sfDBTools/internal/cli/flags"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/validation"
+	defaultVal "sfdbtools/internal/cli/defaults"
+	"sfdbtools/internal/cli/flags"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/validation"
 
 	"github.com/spf13/cobra"
 )

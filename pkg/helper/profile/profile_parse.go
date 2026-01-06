@@ -12,12 +12,12 @@ import (
 	"strconv"
 	"strings"
 
-	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/internal/domain"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/encrypt"
-	cryptokey "sfDBTools/pkg/helper/crypto"
-	"sfDBTools/pkg/helper/profileutil"
+	"sfdbtools/internal/cli/parsing"
+	"sfdbtools/internal/domain"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/encrypt"
+	cryptokey "sfdbtools/pkg/helper/crypto"
+	"sfdbtools/pkg/helper/profileutil"
 )
 
 // LoadAndParseProfile membaca file terenkripsi, mendapatkan kunci (jika tidak diberikan),

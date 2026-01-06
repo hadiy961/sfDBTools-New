@@ -9,9 +9,9 @@ package progress
 import (
 	"fmt"
 	"os"
-	"sfDBTools/pkg/global"
-	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/spinnerguard"
+	"sfdbtools/pkg/global"
+	"sfdbtools/pkg/runtimecfg"
+	"sfdbtools/pkg/spinnerguard"
 	"sync"
 	"time"
 

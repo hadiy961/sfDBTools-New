@@ -9,7 +9,7 @@ package progress
 import (
 	"fmt"
 	"os"
-	"sfDBTools/pkg/runtimecfg"
+	"sfdbtools/pkg/runtimecfg"
 	"time"
 
 	"github.com/briandowns/spinner"

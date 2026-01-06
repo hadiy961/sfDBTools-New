@@ -8,9 +8,9 @@ package cleanup
 import (
 	"errors"
 
-	cleanupmodel "sfDBTools/internal/app/cleanup/model"
-	appconfig "sfDBTools/internal/services/config"
-	applog "sfDBTools/internal/services/log"
+	cleanupmodel "sfdbtools/internal/app/cleanup/model"
+	appconfig "sfdbtools/internal/services/config"
+	applog "sfdbtools/internal/services/log"
 )
 
 // Error definitions

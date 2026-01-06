@@ -1,7 +1,7 @@
 package flags
 
 import (
-	defaultVal "sfDBTools/internal/cli/defaults"
+	defaultVal "sfdbtools/internal/cli/defaults"
 
 	"github.com/spf13/cobra"
 )

@@ -1,7 +1,7 @@
 package profile
 
 import (
-	"sfDBTools/pkg/helper/profileutil"
+	"sfdbtools/pkg/helper/profileutil"
 )
 
 // TrimProfileSuffix menghapus suffix .cnf.enc dari nama jika ada.

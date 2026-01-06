@@ -13,7 +13,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/pkg/consts"
 
 	"golang.org/x/crypto/pbkdf2"
 )

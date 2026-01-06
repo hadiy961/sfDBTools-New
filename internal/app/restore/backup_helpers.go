@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/app/backup"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/domain"
-	"sfDBTools/pkg/compress"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/internal/app/backup"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/domain"
+	"sfdbtools/pkg/compress"
+	"sfdbtools/pkg/consts"
 	"time"
 )
 

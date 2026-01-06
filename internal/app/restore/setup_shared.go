@@ -12,9 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/helper"
 )
 
 // resolveBackupFile resolve lokasi file backup

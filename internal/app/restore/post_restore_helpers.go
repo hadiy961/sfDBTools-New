@@ -3,7 +3,7 @@ package restore
 import (
 	"context"
 	"fmt"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/pkg/consts"
 	"strings"
 )
 

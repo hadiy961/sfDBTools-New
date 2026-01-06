@@ -1,4 +1,4 @@
-module sfDBTools
+module sfdbtools
 
 go 1.25
 

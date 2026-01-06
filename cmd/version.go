@@ -7,7 +7,7 @@ package cmd
 
 import (
 	"fmt"
-	"sfDBTools/pkg/version"
+	"sfdbtools/pkg/version"
 
 	"github.com/spf13/cobra"
 )

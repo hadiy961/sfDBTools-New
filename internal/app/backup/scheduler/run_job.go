@@ -15,15 +15,15 @@ import (
 	"syscall"
 	"time"
 
-	"sfDBTools/internal/app/backup"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/internal/app/cleanup"
-	cleanupmodel "sfDBTools/internal/app/cleanup/model"
-	defaultVal "sfDBTools/internal/cli/defaults"
-	appdeps "sfDBTools/internal/cli/deps"
-	appconfig "sfDBTools/internal/services/config"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/app/backup"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/app/cleanup"
+	cleanupmodel "sfdbtools/internal/app/cleanup/model"
+	defaultVal "sfdbtools/internal/cli/defaults"
+	appdeps "sfdbtools/internal/cli/deps"
+	appconfig "sfdbtools/internal/services/config"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/helper"
 )
 
 func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) error {

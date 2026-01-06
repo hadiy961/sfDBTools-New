@@ -9,7 +9,7 @@ package restore
 import (
 	"fmt"
 	"path/filepath"
-	"sfDBTools/internal/app/restore/display"
+	"sfdbtools/internal/app/restore/display"
 	"strings"
 )
 

@@ -9,7 +9,7 @@ package setup
 import (
 	"fmt"
 
-	"sfDBTools/internal/ui/prompt"
+	"sfdbtools/internal/ui/prompt"
 )
 
 type editMenuItem struct {

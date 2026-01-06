@@ -3,8 +3,8 @@ package gtid
 import (
 	"context"
 
-	"sfDBTools/internal/services/log"
-	"sfDBTools/pkg/database"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/pkg/database"
 )
 
 // Capture fetches GTID info when enabled.

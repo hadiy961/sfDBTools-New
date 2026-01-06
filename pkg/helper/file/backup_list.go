@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"sfDBTools/pkg/consts"
+	"sfdbtools/pkg/consts"
 )
 
 // ListBackupFilesInDirectory membaca daftar file backup di direktori.

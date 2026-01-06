@@ -2,11 +2,11 @@ package scriptcmd
 
 import (
 	"path/filepath"
-	"sfDBTools/internal/app/script"
-	"sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/cli/flags"
-	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/internal/ui/prompt"
+	"sfdbtools/internal/app/script"
+	"sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/cli/flags"
+	"sfdbtools/internal/cli/parsing"
+	"sfdbtools/internal/ui/prompt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -18,7 +18,7 @@ var CmdScriptExtract = &cobra.Command{
 	Long:  "Mendekripsi .sftools lalu mengekstrak isinya ke out-dir. Command ini butuh proteksi ganda: key + password aplikasi.",
 	Example: `
 # Extract bundle untuk diedit
-sfdbtools script extract -f /etc/sfDBTools/scripts/tes.sftools -o ./tes_extracted -k "mypassword"
+sfdbtools script extract -f /etc/sfdbtools/scripts/tes.sftools -o ./tes_extracted -k "mypassword"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		opts := parsing.ParsingScriptExtractOptions(cmd)

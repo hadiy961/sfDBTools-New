@@ -10,16 +10,16 @@ import (
 	"errors"
 	"fmt"
 
-	"sfDBTools/internal/app/dbscan/helpers"
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	appconfig "sfDBTools/internal/services/config"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/database"
-	"sfDBTools/pkg/errorlog"
-	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/servicehelper"
+	"sfdbtools/internal/app/dbscan/helpers"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	appconfig "sfdbtools/internal/services/config"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/database"
+	"sfdbtools/pkg/errorlog"
+	"sfdbtools/pkg/runtimecfg"
+	"sfdbtools/pkg/servicehelper"
 )
 
 // Error definitions

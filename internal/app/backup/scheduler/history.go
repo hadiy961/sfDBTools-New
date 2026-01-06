@@ -12,8 +12,8 @@ import (
 	"os/exec"
 	"strings"
 
-	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/services/scheduler"
+	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/services/scheduler"
 )
 
 type HistoryOptions struct {

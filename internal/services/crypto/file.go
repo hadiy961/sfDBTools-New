@@ -5,13 +5,13 @@ import (
 	"io"
 	"os"
 
-	"sfDBTools/internal/services/crypto/helpers"
-	cryptomodel "sfDBTools/internal/services/crypto/model"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/encrypt"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/services/crypto/helpers"
+	cryptomodel "sfdbtools/internal/services/crypto/model"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/encrypt"
+	"sfdbtools/pkg/helper"
 )
 
 // ExecuteEncryptFile menangani logic encrypt file

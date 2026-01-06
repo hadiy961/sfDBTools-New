@@ -2,11 +2,11 @@ package version
 
 import "fmt"
 
-// AppName adalah nama aplikasi yang dipakai untuk header/UI.
-const AppName = "sfDBTools"
+// AppName adalah nama aplikasi yang digunakan untuk header/UI.
+const AppName = "sfdbtools"
 
 // Version, Commit, dan BuildDate bisa di-inject via -ldflags saat build.
-// Default value dipakai saat development.
+// Default value digunakan saat development.
 var (
 	Version   = "dev"
 	Commit    = "unknown"

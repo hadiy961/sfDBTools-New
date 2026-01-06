@@ -8,7 +8,7 @@ package prompt
 
 import (
 	"fmt"
-	"sfDBTools/internal/ui/input"
+	"sfdbtools/internal/ui/input"
 
 	"github.com/AlecAivazis/survey/v2"
 )

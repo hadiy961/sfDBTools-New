@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/app/profile/shared"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/fsops"
-	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/fsops"
+	"sfdbtools/pkg/helper"
+	"sfdbtools/pkg/validation"
 )
 
 func (e *Executor) EditProfile() error {

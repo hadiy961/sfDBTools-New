@@ -9,20 +9,56 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/fsops"
-	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/fsops"
+	"sfdbtools/pkg/helper"
+	"sfdbtools/pkg/runtimecfg"
+	"sfdbtools/pkg/validation"
 	"strings"
 
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/mattn/go-isatty"
 )
+
+func deriveProfileName(profileInfo *domain.ProfileInfo, originalProfileInfo *domain.ProfileInfo) string {
+	if profileInfo != nil {
+		if v := strings.TrimSpace(helper.TrimProfileSuffix(profileInfo.Name)); v != "" {
+			return v
+		}
+	}
+	if originalProfileInfo != nil {
+		if v := strings.TrimSpace(helper.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
+			return v
+		}
+	}
+	if profileInfo != nil {
+		if p := strings.TrimSpace(profileInfo.Path); p != "" {
+			return strings.TrimSpace(helper.TrimProfileSuffix(filepath.Base(p)))
+		}
+	}
+	return ""
+}
+
+func deriveOriginalProfileName(originalProfileName string, profileInfo *domain.ProfileInfo, originalProfileInfo *domain.ProfileInfo) string {
+	if v := strings.TrimSpace(helper.TrimProfileSuffix(originalProfileName)); v != "" {
+		return v
+	}
+	if originalProfileInfo != nil {
+		if v := strings.TrimSpace(helper.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
+			return v
+		}
+	}
+	if profileInfo != nil {
+		if p := strings.TrimSpace(profileInfo.Path); p != "" {
+			return strings.TrimSpace(helper.TrimProfileSuffix(filepath.Base(p)))
+		}
+	}
+	return ""
+}
 
 // CheckConfigurationNameUnique memvalidasi apakah nama konfigurasi unik.
 func (s *Service) CheckConfigurationNameUnique(mode string) error {
@@ -38,37 +74,15 @@ func (s *Service) CheckConfigurationNameUnique(mode string) error {
 		}
 		return nil
 	case consts.ProfileModeEdit:
-		original := helper.TrimProfileSuffix(s.OriginalProfileName)
-		newName := helper.TrimProfileSuffix(s.ProfileInfo.Name)
-
-		// Hardening: pastikan newName tidak kosong.
-		// Ini mencegah kasus seperti ".cnf.enc" yang ter-trim jadi "" dan memicu error confusing.
-		if strings.TrimSpace(newName) == "" {
-			if s.OriginalProfileInfo != nil && strings.TrimSpace(s.OriginalProfileInfo.Name) != "" {
-				newName = helper.TrimProfileSuffix(s.OriginalProfileInfo.Name)
-			} else if strings.TrimSpace(s.ProfileInfo.Path) != "" {
-				newName = helper.TrimProfileSuffix(filepath.Base(s.ProfileInfo.Path))
-			}
-			newName = strings.TrimSpace(newName)
-			if newName != "" {
-				s.ProfileInfo.Name = newName
-			}
-		}
-		if strings.TrimSpace(newName) == "" {
+		newName := deriveProfileName(s.ProfileInfo, s.OriginalProfileInfo)
+		if newName == "" {
 			return fmt.Errorf(consts.ProfileErrProfileNameEmptyAlt)
 		}
+		s.ProfileInfo.Name = newName
 
-		// Hardening: jika original kosong, coba derive dari snapshot/path.
-		if strings.TrimSpace(original) == "" {
-			if s.OriginalProfileInfo != nil && strings.TrimSpace(s.OriginalProfileInfo.Name) != "" {
-				original = helper.TrimProfileSuffix(s.OriginalProfileInfo.Name)
-			} else if strings.TrimSpace(s.ProfileInfo.Path) != "" {
-				original = helper.TrimProfileSuffix(filepath.Base(s.ProfileInfo.Path))
-			}
-			original = strings.TrimSpace(original)
-			if original != "" {
-				s.OriginalProfileName = original
-			}
+		original := deriveOriginalProfileName(s.OriginalProfileName, s.ProfileInfo, s.OriginalProfileInfo)
+		if original != "" {
+			s.OriginalProfileName = original
 		}
 
 		baseDir := s.Config.ConfigDir.DatabaseProfile

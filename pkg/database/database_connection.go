@@ -3,10 +3,10 @@ package database
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/domain"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/domain"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/helper"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -18,7 +18,7 @@ func ConnectToAppDatabase() (*Client, error) {
 	port := helper.GetEnvOrDefaultInt(consts.ENV_DB_PORT, 3306)
 	user := helper.GetEnvOrDefault(consts.ENV_DB_USER, "root")
 	password := helper.GetEnvOrDefault(consts.ENV_DB_PASSWORD, "DataOn24!!")
-	database := helper.GetEnvOrDefault(consts.ENV_DB_NAME, "sfDBTools")
+	database := helper.GetEnvOrDefault(consts.ENV_DB_NAME, "sfdbtools")
 
 	cfg := Config{
 		Host:                 host,

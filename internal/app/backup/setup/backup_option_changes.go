@@ -12,12 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"sfDBTools/internal/app/backup/selection"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/database"
-	profilehelper "sfDBTools/pkg/helper/profile"
+	"sfdbtools/internal/app/backup/selection"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/database"
+	profilehelper "sfdbtools/pkg/helper/profile"
 )
 
 func (s *Setup) changeBackupTicketInteractive() error {

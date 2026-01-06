@@ -1,9 +1,9 @@
 package defaultVal
 
 import (
-	"sfDBTools/internal/domain"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/domain"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/helper"
 )
 
 // DefaultDBInfo mengembalikan nilai default untuk koneksi database

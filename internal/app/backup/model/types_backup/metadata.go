@@ -6,7 +6,7 @@
 package types_backup
 
 import (
-	applog "sfDBTools/internal/services/log"
+	applog "sfdbtools/internal/services/log"
 	"time"
 )
 

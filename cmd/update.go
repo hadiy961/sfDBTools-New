@@ -1,5 +1,5 @@
 // File : cmd/cmd_update.go
-// Deskripsi : Sub-command untuk update binary sfDBTools dari GitHub Release terbaru
+// Deskripsi : Sub-command untuk update binary sfdbtools dari GitHub Release terbaru
 // Author : Hadiyatna Muflihun
 // Tanggal : 5 Januari 2026
 // Last Modified : 5 Januari 2026
@@ -11,16 +11,16 @@ import (
 	"os"
 	"time"
 
-	"sfDBTools/internal/autoupdate"
-	appdeps "sfDBTools/internal/cli/deps"
+	"sfdbtools/internal/autoupdate"
+	appdeps "sfdbtools/internal/cli/deps"
 
 	"github.com/spf13/cobra"
 )
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update sfDBTools ke versi terbaru",
-	Long: `Update sfDBTools dengan mengambil release terbaru dari GitHub.
+	Short: "Update sfdbtools ke versi terbaru",
+	Long: `Update sfdbtools dengan mengambil release terbaru dari GitHub.
 
 Catatan:
 - Saat ini hanya mendukung binary linux/amd64 (sesuai workflow release).

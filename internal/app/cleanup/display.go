@@ -8,11 +8,11 @@ package cleanup
 
 import (
 	"fmt"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/table"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/global"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/table"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/global"
 )
 
 // displayCleanupOptions menampilkan konfigurasi cleanup yang akan dijalankan

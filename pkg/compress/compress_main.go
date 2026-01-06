@@ -3,7 +3,7 @@ package compress
 import (
 	"fmt"
 	"io"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/pkg/consts"
 )
 
 // NewCompressingWriter creates a new compressing writer

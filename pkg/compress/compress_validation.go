@@ -2,7 +2,7 @@ package compress
 
 import (
 	"fmt"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/pkg/consts"
 	"strings"
 )
 

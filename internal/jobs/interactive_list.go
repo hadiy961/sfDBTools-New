@@ -8,7 +8,7 @@ package jobs
 import (
 	"context"
 
-	"sfDBTools/internal/services/scheduler"
+	"sfdbtools/internal/services/scheduler"
 )
 
 func RunInteractiveList(ctx context.Context, defaultScope scheduler.Scope, isRoot bool) error {

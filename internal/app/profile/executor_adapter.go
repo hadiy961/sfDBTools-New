@@ -6,8 +6,8 @@
 package profile
 
 import (
-	"sfDBTools/internal/app/profile/executor"
-	"sfDBTools/internal/domain"
+	"sfdbtools/internal/app/profile/executor"
+	"sfdbtools/internal/domain"
 )
 
 func (s *Service) buildExecutor() *executor.Executor {

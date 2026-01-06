@@ -6,7 +6,7 @@
 
 package types_backup
 
-import "sfDBTools/pkg/compress"
+import "sfdbtools/pkg/compress"
 
 // CompressionSettings menyimpan konfigurasi compression
 type CompressionSettings struct {

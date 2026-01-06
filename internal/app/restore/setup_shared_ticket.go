@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
 )
 
 func (s *Service) resolveTicketNumber(ticket *string, allowInteractive bool) error {

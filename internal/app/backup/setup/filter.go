@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/internal/app/backup/selection"
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/database"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/app/backup/selection"
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/database"
 )
 
 // GetFilteredDatabases fetches and filters DB list.

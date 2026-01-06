@@ -1,8 +1,8 @@
 package parsing
 
 import (
-	cryptomodel "sfDBTools/internal/services/crypto/model"
-	"sfDBTools/pkg/helper"
+	cryptomodel "sfdbtools/internal/services/crypto/model"
+	"sfdbtools/pkg/helper"
 
 	"github.com/spf13/cobra"
 )

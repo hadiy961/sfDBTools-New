@@ -1,8 +1,8 @@
 package defaultVal
 
 import (
-	cleanupmodel "sfDBTools/internal/app/cleanup/model"
-	appconfig "sfDBTools/internal/services/config"
+	cleanupmodel "sfdbtools/internal/app/cleanup/model"
+	appconfig "sfdbtools/internal/services/config"
 )
 
 // DefaultCleanupOptions mengembalikan opsi default untuk pembersihan backup.

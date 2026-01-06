@@ -10,9 +10,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sfDBTools/internal/app/restore/helpers"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/ui/print"
+	"sfdbtools/internal/app/restore/helpers"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/ui/print"
 	"strings"
 	"time"
 )

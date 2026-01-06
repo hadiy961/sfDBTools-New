@@ -7,14 +7,14 @@ package executor
 
 import (
 	"fmt"
-	profilemodel "sfDBTools/internal/app/profile/model"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/table"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/fsops"
-	"sfDBTools/pkg/helper"
-	profilehelper "sfDBTools/pkg/helper/profile"
-	"sfDBTools/pkg/validation"
+	profilemodel "sfdbtools/internal/app/profile/model"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/table"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/fsops"
+	"sfdbtools/pkg/helper"
+	profilehelper "sfdbtools/pkg/helper/profile"
+	"sfdbtools/pkg/validation"
 	"strings"
 )
 

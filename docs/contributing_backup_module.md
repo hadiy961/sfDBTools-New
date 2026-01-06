@@ -1,6 +1,6 @@
 # Contributing Guide: Extending the Backup Module (`internal/backup`)
 
-This document is for contributors who want to add or modify features in the backup subsystem of **sfDBTools**.
+This document is for contributors who want to add or modify features in the backup subsystem of **sfdbtools**.
 
 Scope: **Go code under `internal/backup/**` and its integration points (CLI commands, flags, parsing, default values, types, and shared packages used by backup).**
 

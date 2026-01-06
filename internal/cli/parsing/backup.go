@@ -2,13 +2,13 @@ package parsing
 
 import (
 	"fmt"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	defaultVal "sfDBTools/internal/cli/defaults"
-	"sfDBTools/pkg/compress"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	defaultVal "sfdbtools/internal/cli/defaults"
+	"sfdbtools/pkg/compress"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/helper"
+	"sfdbtools/pkg/runtimecfg"
+	"sfdbtools/pkg/validation"
 	"strings"
 
 	"github.com/spf13/cobra"

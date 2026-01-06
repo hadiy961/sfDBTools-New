@@ -1,7 +1,7 @@
 package flags
 
 import (
-	cleanupmodel "sfDBTools/internal/app/cleanup/model"
+	cleanupmodel "sfdbtools/internal/app/cleanup/model"
 
 	"github.com/spf13/cobra"
 )

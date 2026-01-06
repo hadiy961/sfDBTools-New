@@ -8,10 +8,10 @@ package print
 
 import (
 	"fmt"
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/ui/style"
-	"sfDBTools/internal/ui/table"
-	"sfDBTools/internal/ui/text"
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/ui/style"
+	"sfdbtools/internal/ui/table"
+	"sfdbtools/internal/ui/text"
 
 	"github.com/sirupsen/logrus"
 )

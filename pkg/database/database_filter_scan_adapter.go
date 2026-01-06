@@ -3,8 +3,8 @@ package database
 import (
 	"context"
 
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	"sfDBTools/internal/domain"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	"sfdbtools/internal/domain"
 )
 
 // FilterFromScanOptions membuat FilterOptions dari ScanOptions dan execute filtering.

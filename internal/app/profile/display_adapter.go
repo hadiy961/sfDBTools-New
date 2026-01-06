@@ -6,7 +6,7 @@
 
 package profile
 
-import "sfDBTools/internal/app/profile/display"
+import "sfdbtools/internal/app/profile/display"
 
 func (s *Service) DisplayProfileDetails() {
 	d := &display.Displayer{

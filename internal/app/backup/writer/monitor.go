@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/ui/progress"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/ui/progress"
 )
 
 // databaseMonitorWriter wraps an io.Writer to track mysqldump progress per database.
