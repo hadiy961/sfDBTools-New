@@ -1,159 +1,88 @@
-# sfdbtools Copilot Instructions
+<!-- Last updated: 2026-01-06 -->
 
-## Project Overview
-**sfdbtools** is a production-grade CLI utility built to simplify and standardize day-to-day work for **Database Administrators (DBAs)** managing **MariaDB/MySQL and Microsoft SQL Server** environments. It supports operational workflows across **SaaS**, **hosting**, and **on‑premise** deployments—focused on repeatability, automation, and reducing human error.
+# sfdbtools — Copilot coding instructions
 
-Built in **Go (Golang)** and aligned with **Clean Architecture**, sfdbtools prioritizes **data safety** and **security**, including **AES‑256** encryption for sensitive assets (such as backups and connection profiles), while keeping execution reliable and suitable for production operations.
+sfdbtools adalah CLI Go untuk operasi MySQL/MariaDB (backup/restore/db-scan/cleanup/crypto/profile). Fokus utama: **streaming pipeline** (hemat RAM), **safety**, dan **otomasi**.
 
-**Core Features**: Backup (multi-mode with encryption/compression), Restore (with companion database handling), Profile management, DB scanning, Cleanup, and Crypto utilities.
+## Big picture (mulai baca dari sini)
+- Entrypoint: [main.go](../main.go) → bootstrap runtime flags → (opsional) auto-update → load config → `cmd.Execute(deps)`.
+- Root CLI (Cobra): [cmd/root.go](../cmd/root.go) menjalankan `PersistentPreRunE`, set runtime mode (`--quiet/-q`, `--daemon`), lalu log `argv` yang sudah dimasking (lihat [cmd/args_sanitize.go](../cmd/args_sanitize.go)).
+- Dependency injection: `*internal/cli/deps.Dependencies` dibuat di `main.go` lalu disimpan global via `cmd.Execute()`; command/service membaca lewat `internal/cli/deps`.
 
-## Go Design Philosophy (CRITICAL)
-Follow these specific principles when writing or refactoring code for this project:
+## Struktur folder & boundary
+- `cmd/`: definisi command + parsing flags (tipis). Contoh: [cmd/backup/main.go](../cmd/backup/main.go), [cmd/restore/main.go](../cmd/restore/main.go).
+- `internal/app/`: orkestrasi workflow per fitur (backup/restore/profile/dbscan/cleanup/script).
+- `internal/services/`: implementasi service (config/logger/crypto/dll).
+- `pkg/`: library reusable (compress/encrypt/consts/helper/runtimecfg/validation/dll).
 
-- **DRY vs. Dependency (The "Go Way")**:
-  - **Principle**: "A little copying is better than a little dependency."
-  - **Guideline**: Do not create a giant shared library just to satisfy DRY. It is better to duplicate a few lines of simple logic in two places than to couple them to a shared function that creates complex dependencies.
-  - **Goal**: Code independence is prioritized over strict deduplication.
+## Konfigurasi (zero-config first run)
+- Loader: [internal/services/config/appconfig_loaders.go](../internal/services/config/appconfig_loaders.go) membaca `SFDB_APPS_CONFIG`; jika kosong pakai default `/etc/sfDBTools/config.yaml` (lihat [pkg/consts/consts_paths.go](../pkg/consts/consts_paths.go)).
+- Jika config belum ada, tool akan auto-generate default; kalau tidak bisa menulis ke `/etc/...` (non-root), fallback ke `XDG_CONFIG_HOME/sfdbtools/config.yaml` atau `~/.config/sfdbtools/config.yaml` (lihat [internal/services/config/appconfig_defaults.go](../internal/services/config/appconfig_defaults.go)).
 
-- **KISS (Keep It Simple, Stupid)**:
-  - **Principle**: Code should be "boring" and explicit.
-  - **Guideline**: Avoid complex Generics (unless absolutely necessary), Reflection, or "clever" one-liners. If you need to open 5 files to understand one function, it is too complex.
-  - **Constraint**: Go does not have ternary operators; do not try to emulate them with complex logic.
+## Pola penting (jangan ubah arah)
+- Streaming backup: `mysqldump` → (opsional) `compress.Writer` → (opsional) `encrypt.Writer` → file. Referensi utama: [internal/app/backup/writer/engine.go](../internal/app/backup/writer/engine.go). Jangan buffer seluruh dump ke memori.
+- Backup modes via factory + interface kecil: [internal/app/backup/modes/interface.go](../internal/app/backup/modes/interface.go), [internal/app/backup/modes/factory.go](../internal/app/backup/modes/factory.go).
+- Restore companion `_dmart`: auto-detect / pilih file + aturan non-interaktif `--force` dan `--continue-on-error`: [internal/app/restore/companion_helpers.go](../internal/app/restore/companion_helpers.go).
 
-- **YAGNI (You Ain't Gonna Need It)**:
-  - **Principle**: Do not design for a hypothetical future.
-  - **Guideline**:
-    - **Do NOT** create an Interface if there is currently only one implementation.
-    - **Do NOT** create deep folder structures for "future expansion."
-    - Refactoring in Go is easy; build for *now*.
+## Output bersih & logging aman
+- `completion`, `version`, `update` harus bisa jalan tanpa config dan tanpa noise (lihat [main.go](../main.go) dan [cmd/root.go](../cmd/root.go)).
+- Jika menambah flag/arg sensitif baru, pastikan term-nya ikut ter-mask di [cmd/args_sanitize.go](../cmd/args_sanitize.go) (pattern `password|token|secret|key` dll).
 
-- **SOLID Adaptation**:
-  - **SRP (Single Responsibility)**: A package must have one clear purpose (e.g., `net/http`).
-  - **ISP (Interface Segregation)**: **Crucial**. Keep interfaces tiny. An interface with 1 method (like `io.Reader`) is far better than one with 10.
-  - **DIP (Dependency Inversion)**: Functions should accept interfaces but return concrete structs (generally).
+## Workflow developer (yang dipakai repo ini)
+- Unit test: `go test ./...`
+- Build+run ke `/usr/bin/sfdbtools` (butuh root): `sudo bash bash/build_run.sh -- --help` (script: [bash/build_run.sh](../bash/build_run.sh)).
+- Installer/uninstaller ada di folder `scripts/` (lihat [README.md](../README.md), [scripts/install.sh](../scripts/install.sh), [scripts/uninstall.sh](../scripts/uninstall.sh)).
 
-## Architecture & Structural Patterns
-- **Clean Architecture Layers**:
-  - `cmd/`: Entry points (Cobra commands). Keep thin—only flag parsing and command setup.
-  - `internal/`: Core business logic (Backup, Restore, Profile, DBScan, Cleanup, Crypto).
-  - `pkg/`: Reusable, domain-agnostic libraries (encryption, compression, database, validation).
+## Env var penting
+- Source of truth: [pkg/consts/consts_env.go](../pkg/consts/consts_env.go)
+- Umum: `SFDB_APPS_CONFIG`, `SFDB_QUIET`, `SFDB_NO_AUTO_UPDATE`, `SFDB_BACKUP_ENCRYPTION_KEY`.
 
-- **Dependency Injection**:
-  - Global dependencies (`Config`, `Logger`) injected via `types.Dependencies`.
-  - Flow: `main.go` → `cmd.Execute(deps)` → `types.Deps` (global) → `PersistentPreRunE` validation.
-  - Each module creates its own Service with injected dependencies (e.g., `backup.NewBackupService(logs, cfg, opts)`).
+## Konvensi repo
+- `--quite` adalah alias deprecated untuk `--quiet` (lihat [cmd/root.go](../cmd/root.go)).
+- Gunakan bahasa Indonesia untuk komentar/dokumentasi, dan update header `Last Modified` jika file Go memilikinya.
 
-- **Strategy Pattern (Backup/Restore Modes)**:
-  - **Location**: `internal/backup/modes/` and `internal/restore/modes/`
-  - **Pattern**: Factory (`GetExecutor(mode)`) returns `ModeExecutor` interface implementations.
-  - **Implementations**:
-    - **Backup**: `CombinedExecutor` (all/combined), `IterativeExecutor` (single/primary/secondary/separated)
-    - **Restore**: `SingleMode`, `PrimaryMode`, `AllMode`, `SelectionMode`
-  - **Key Interface** (`internal/backup/modes/interface.go`): `ModeExecutor.Execute(ctx, databases) Result`
-  - Add new modes by implementing interface + updating factory.
+---
 
-- **Service Layer Pattern**:
-  - Each feature has a `Service` struct (e.g., `backup.Service`, `restore.Service`).
-  - Services embed `servicehelper.BaseService` for common operations (locking, context management).
-  - Services own feature-specific state and orchestrate business logic.
+## Filosofi Desain Go (KRITIKAL)
 
-## Build & Development Workflows
-- **Build Script**: ALWAYS use the helper script at `./scripts/build_run.sh`.
-  - **Build & Run**: `./scripts/build_run.sh -- [args]`
-  - **Build Only**: `./scripts/build_run.sh --skip-run`
-  - **With Race Detector**: `./scripts/build_run.sh --race -- [args]`
-  - **Examples**:
-    - `./scripts/build_run.sh -- backup single --help`
-    - `./scripts/build_run.sh -- profile show --file config/my.cnf.enc`
-  - **Output**: Binary compiled to `/usr/bin/sfdbtools`
+Ikuti prinsip-prinsip spesifik ini saat menulis atau melakukan refaktorisasi kode untuk proyek ini:
 
-- **Environment Variables**:
-  - Defined in `pkg/consts/consts_env.go`
-  - **Key Variables**:
-    - `SFDB_QUIET=1`: Suppresses banners/spinners for pipeline usage (logs to stderr)
-    - `SFDB_SOURCE_PROFILE_KEY`: Encryption key for source profile
-    - `SFDB_TARGET_PROFILE_KEY`: Encryption key for target profile
-    - `SFDB_BACKUP_ENCRYPTION_KEY`: Key for backup file encryption
+### **DRY vs. Dependensi ("The Go Way")**
 
-## Data Flow & Streaming Architecture
-- **Streaming Pipeline Philosophy**: NO large memory buffers—use `io.Reader`/`io.Writer` chains.
-- **Backup Pipeline** (see `internal/backup/execution_helpers.go`):
-  ```
-  mysqldump → compress.Writer → encrypt.Writer → file.Writer
-  ```
-- **Restore Pipeline**:
-  ```
-  file.Reader → decrypt.Reader → decompress.Reader → mysql client stdin
-  ```
-- **Key Packages**:
-  - `pkg/compress/`: Compression writers (zstd, gzip, pgzip, xz, zlib)
-  - `pkg/encrypt/`: Streaming AES-256-GCM encryption (`EncryptingWriter`, `DecryptingReader`)
-  - `pkg/backuphelper/mysqldump.go`: Executes `mysqldump` with streaming stdout
+* **Prinsip**: "Sedikit penyalinan lebih baik daripada sedikit dependensi."
+* **Panduan**: Jangan membuat *library* bersama yang raksasa hanya untuk memenuhi prinsip DRY. Lebih baik menduplikasi beberapa baris logika sederhana di dua tempat daripada menghubungkan keduanya ke fungsi bersama yang menciptakan ketergantungan kompleks.
+* **Tujuan**: Kemandirian kode diprioritaskan di atas deduplikasi yang ketat.
 
-## Domain-Specific Patterns
+### **KISS (Keep It Simple, Stupid)**
 
-### Companion Database Handling
-- **Context**: Production DBs have "companion" databases (e.g., `dbsf_nbc_client` + `dbsf_nbc_client_dmart`)
-- **Suffixes**: `_dmart`, `_temp`, `_archive` are companions
-- **Restore Logic** (`internal/restore/companion_helpers.go`):
-  - Automatically detects and restores companions when restoring primary
-  - Controlled by flags: `--include-dmart`, `--auto-detect-dmart`, `--companion-file`
-- **Safety**: Primary databases (pattern: `dbsf_nbc_*` or `dbsf_biznet_*` WITHOUT suffix) cannot be restored if they already exist.
+* **Prinsip**: Kode harus "membosankan" dan eksplisit.
+* **Panduan**: Hindari *Generics* yang kompleks (kecuali benar-benar diperlukan), *Reflection*, atau kode satu baris yang "cerdas". Jika Anda perlu membuka 5 file untuk memahami satu fungsi, berarti kode tersebut terlalu kompleks.
+* **Batasan**: Go tidak memiliki operator ternary; jangan mencoba menirunya dengan logika yang rumit.
 
-### Validation & Safety (Fail-Fast)
-- **Restore Safety** (`internal/restore/validation_helpers.go`, `internal/restore/helpers/validation.go`):
-  - **Rule**: Cannot restore to existing primary database—prevents accidental data loss.
-  - **Validation**: `ValidateNotPrimaryDatabase()` checks DB existence and naming pattern.
-  - **Application Password**: `restore primary` requires app password (`consts.ENV_PASSWORD_APP`)
-- **Path Validation** (`pkg/validation/validation_backup_dir.go`):
-  - Validates directory patterns against path traversal (`..`), absolute paths
-  - Token validation for dynamic path generation (`{database}`, `{year}`, `{timestamp}`, etc.)
+### **YAGNI (You Ain't Gonna Need It)**
 
-### Path Pattern System
-- **Dynamic Paths** (`pkg/helper/helper_path.go`):
-  - **Tokens**: `{database}`, `{hostname}`, `{year}`, `{month}`, `{day}`, `{hour}`, `{minute}`, `{second}`, `{timestamp}`
-  - **Example Pattern**: `{year}/{month}/{database}_{timestamp}_{hostname}.sql`
-  - **Replacer**: `PathPatternReplacer.ReplacePattern(pattern, excludeHostname)`
-  - **Usage**: Backup file naming and directory structure generation
+* **Prinsip**: Jangan mendesain untuk masa depan yang hipotetis.
+* **Panduan**:
+* **JANGAN** buat *Interface* jika saat ini hanya ada satu implementasi.
+* **JANGAN** buat struktur folder yang dalam untuk "ekspansi masa depan."
+* Refaktorisasi di Go itu mudah; bangunlah untuk kebutuhan *saat ini*.
 
-## Coding Conventions
-- **File Naming**:
-  - Explicit naming: `pkg/helper/encrypt.go` NOT `pkg/helper/helper_encrypt.go`
-  - Types split by domain: `internal/types/types_backup.go`, `types_restore.go`, etc.
+### **Adaptasi SOLID**
 
-- **Logging**:
-  - Use `sfdbtools/internal/applog.Logger` interface
-  - Respect `consts.ENV_QUIET` for pipeline usage (routes logs to stderr)
-  - **Error Logging**: Use `pkg/errorlog.ErrorLogger` for feature-specific error logs
+* **SRP (Single Responsibility)**: Sebuah paket harus memiliki satu tujuan yang jelas (contoh: `net/http`).
+* **ISP (Interface Segregation)**: **Sangat Penting**. Buat *interface* sekecil mungkin. *Interface* dengan 1 metode (seperti `io.Reader`) jauh lebih baik daripada satu *interface* dengan 10 metode.
+* **DIP (Dependency Inversion)**: Fungsi harus menerima *interface* tetapi (umumnya) mengembalikan *concrete struct*.
 
-- **Error Handling**:
-  - **Fail-Fast**: Validate early (connections, file existence, safety rules) before heavy operations
-  - **Context Propagation**: Pass `context.Context` for cancellation support
-  - **Wrapped Errors**: Use `fmt.Errorf("descriptive msg: %w", err)` for error chains
+---
 
-- **Concurrency & Safety**:
-  - Services use `servicehelper.BaseService.WithLock()` for state mutations
-  - Signal handling for graceful shutdown (CTRL+C cleanup)
-  - Context cancellation for long-running operations
+## Konsistensi & Pemeliharaan
+Ikuti panduan berikut untuk menjaga kualitas dan keberlanjutan proyek:
 
-## Key Dependencies (go.mod)
-- **CLI**: `github.com/spf13/cobra` (commands), `github.com/AlecAivazis/survey/v2` (interactive prompts)
-- **Database**: `github.com/go-sql-driver/mysql`
-- **Compression**: `github.com/klauspost/compress` (zstd), `github.com/klauspost/pgzip`, `github.com/ulikunitz/xz`
-- **Logging**: `github.com/sirupsen/logrus`
-- **Display**: `github.com/olekukonko/tablewriter`, `github.com/dustin/go-humanize`
-
-## Testing & Debugging
-- **Manual Testing**: Use `./scripts/build_run.sh -- [command]`
-- **Race Detection**: `./scripts/build_run.sh --race -- [command]`
-- **Quiet Mode Testing**: `SFDB_QUIET=1 ./scripts/build_run.sh -- [command]`
-
-## Consistency & Maintenance
-- Regularly review code for adherence to Go design principles.
-- Refactor services and modes to maintain clarity and simplicity.
-- Update documentation and comments to reflect architectural decisions and patterns.
-- Ensure all new features follow established patterns for ease of maintenance.
-- Keep dependencies minimal and relevant to avoid bloat.
-- Encourage code reviews focusing on design philosophy adherence and code quality.
-- Use indonesian language for comments and documentation where applicable.
-- Update last modified date on each modification on header comments of each file.
+* **Audit Prinsip Desain**: Lakukan peninjauan kode secara berkala untuk memastikan kepatuhan terhadap prinsip desain Go yang telah ditetapkan.
+* **Refaktorisasi Berkala**: Lakukan refaktorisasi pada *service* dan *mode* secara rutin guna menjaga kejelasan serta kesederhanaan logika.
+* **Dokumentasi Arsitektur**: Perbarui dokumentasi dan komentar kode untuk mencerminkan keputusan arsitektur serta pola (*pattern*) yang digunakan.
+* **Standardisasi Fitur Baru**: Pastikan setiap fitur baru mengikuti pola yang sudah ada demi kemudahan pemeliharaan jangka panjang.
+* **Minimalisir Dependensi**: Jaga agar dependensi tetap minimal dan hanya yang relevan untuk menghindari *bloat* (pembengkakan) pada sistem.
+* **Review Filosofis**: Dorong proses *code review* yang berfokus pada kepatuhan terhadap filosofi desain dan kualitas kode.
+* **Bahasa Dokumentasi**: Gunakan **Bahasa Indonesia** untuk penulisan komentar di dalam kode dan dokumentasi teknis lainnya.
+* **Metadata File**: Perbarui tanggal modifikasi terakhir (*last modified date*) pada bagian komentar *header* di setiap file setiap kali melakukan perubahan.
