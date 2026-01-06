@@ -2,7 +2,7 @@
 // Deskripsi : Flow wizard untuk edit profile (honor flag overrides)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package wizard
 
 import (
@@ -18,6 +18,8 @@ import (
 	"sfDBTools/pkg/fsops"
 	"sfDBTools/pkg/helper"
 	"sfDBTools/pkg/validation"
+
+	"github.com/AlecAivazis/survey/v2"
 )
 
 func (r *Runner) runEditFlow() error {
@@ -71,36 +73,57 @@ func (r *Runner) runEditFlow() error {
 	shared.ApplyDBOverrides(r.ProfileInfo, overrideDB)
 	shared.ApplySSHOverrides(r.ProfileInfo, overrideSSH)
 
-	hasFlagEdits := shared.HasAnyDBOverride(overrideDB) || shared.HasAnySSHOverride(overrideSSH) ||
-		(r.ProfileEdit != nil && strings.TrimSpace(r.ProfileEdit.NewName) != "")
+	// Tampilkan isi profil terlebih dahulu (seperti profile show), lalu beri opsi ubah/batal.
+	// Ini tetap dijalankan walaupun ada override flag/env, supaya user selalu lihat kondisi awal.
+	prevShow := r.ProfileShow
+	r.ProfileShow = &profilemodel.ProfileShowOptions{}
+	if r.DisplayProfileDetails != nil {
+		r.DisplayProfileDetails()
+	}
+	r.ProfileShow = prevShow
 
-	if !hasFlagEdits {
-		// Tampilkan isi profil terlebih dahulu
-		prevShow := r.ProfileShow
-		r.ProfileShow = &profilemodel.ProfileShowOptions{}
-		if r.DisplayProfileDetails != nil {
-			r.DisplayProfileDetails()
-		}
-		r.ProfileShow = prevShow
-
-		action, _, err := prompt.SelectOne(consts.ProfilePromptAction, []string{consts.ProfileActionEditData, consts.ProfileActionCancel}, -1)
-		if err != nil {
-			return validation.HandleInputError(err)
-		}
-		if action == consts.ProfileActionCancel {
-			return validation.ErrUserCancelled
-		}
-
-		if err := r.promptEditSelectedFields(); err != nil {
-			return err
-		}
+	action, _, err := prompt.SelectOne(consts.ProfilePromptAction, []string{consts.ProfileActionEditData, consts.ProfileActionCancel}, -1)
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
+	if action == consts.ProfileActionCancel {
+		return validation.ErrUserCancelled
 	}
 
-	// Jika SSH tunnel aktif tapi detail belum ada, minta via wizard.
-	if err := r.promptSSHTunnelDetailsIfEnabled(); err != nil {
+	// Setelah user memilih "Ubah data", langsung minta multi-select field yang ingin diubah.
+	if err := r.promptEditSelectedFields(); err != nil {
+		return err
+	}
+
+	// Jika SSH tunnel aktif, pastikan minimal field penting sudah terisi tanpa memaksa input opsional.
+	if err := r.ensureSSHTunnelMinimumIfEnabled(); err != nil {
 		return err
 	}
 
 	print.PrintSubHeader(consts.ProfileMsgChangeSummaryPrefix + r.ProfileInfo.Name)
+	return nil
+}
+
+// ensureSSHTunnelMinimumIfEnabled memastikan kebutuhan minimal SSH tunnel pada edit flow.
+// Pada edit flow, kita hindari prompt untuk field opsional (identity/local port/password) kecuali user memilihnya manual.
+func (r *Runner) ensureSSHTunnelMinimumIfEnabled() error {
+	if r.ProfileInfo == nil {
+		return nil
+	}
+	if !r.ProfileInfo.SSHTunnel.Enabled {
+		return nil
+	}
+	// Host wajib jika tunnel aktif.
+	if strings.TrimSpace(r.ProfileInfo.SSHTunnel.Host) == "" {
+		v, err := prompt.AskText(consts.ProfilePromptSSHHost, prompt.WithDefault(""), prompt.WithValidator(survey.Required))
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		r.ProfileInfo.SSHTunnel.Host = v
+	}
+	// Port default 22 untuk menghindari prompt tambahan.
+	if r.ProfileInfo.SSHTunnel.Port == 0 {
+		r.ProfileInfo.SSHTunnel.Port = 22
+	}
 	return nil
 }
