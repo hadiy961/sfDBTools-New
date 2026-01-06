@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi edit profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 
 package executor
 
@@ -115,6 +115,13 @@ func (e *Executor) EditProfile() error {
 				print.PrintError(err.Error())
 				return err
 			}
+		}
+
+		// Jika user memilih untuk merubah kunci enkripsi (rotasi), gunakan key baru saat save.
+		// Decrypt snapshot sudah dilakukan sebelumnya memakai key lama.
+		if e.ProfileEdit != nil && strings.TrimSpace(e.ProfileEdit.NewProfileKey) != "" {
+			e.ProfileInfo.EncryptionKey = strings.TrimSpace(e.ProfileEdit.NewProfileKey)
+			e.ProfileInfo.EncryptionSource = strings.TrimSpace(e.ProfileEdit.NewProfileKeySource)
 		}
 
 		if err := e.SaveProfile(consts.ProfileSaveModeEdit); err != nil {

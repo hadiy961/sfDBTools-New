@@ -1,3 +1,9 @@
+// File : cmd/crypto/env_encode.go
+// Deskripsi : Command untuk encode nilai ENV terenkripsi
+// Author : Hadiyatna Muflihun
+// Tanggal : 6 Januari 2026
+// Last Modified : 6 Januari 2026
+
 package cryptocmd
 
 import (
@@ -47,7 +53,7 @@ var CmdEnvEncode = &cobra.Command{
 
 		// Warning: jika key file MariaDB ada tapi tidak readable oleh user ini,
 		// hasil encode akan fallback ke hardcoded saja dan bisa mismatch jika runtime nanti bisa membaca file tsb.
-		const keyFile = "/var/lib/mysql/key_maria_nbc.txt"
+		keyFile := encrypt.GetMariaDBKeyFilePath()
 		if _, statErr := os.Stat(keyFile); statErr == nil {
 			if _, readErr := os.ReadFile(keyFile); readErr != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: %s terdeteksi tapi tidak bisa dibaca (%v).\n", keyFile, readErr)

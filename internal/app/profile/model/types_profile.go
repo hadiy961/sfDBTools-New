@@ -11,9 +11,11 @@ type ProfileCreateOptions struct {
 
 // ProfileEditOptions - Flags for profile edit command
 type ProfileEditOptions struct {
-	ProfileInfo domain.ProfileInfo
-	Interactive bool
-	NewName     string
+	ProfileInfo         domain.ProfileInfo
+	Interactive         bool
+	NewName             string
+	NewProfileKey       string
+	NewProfileKeySource string
 }
 
 // ProfileShowOptions - Flags for profile show and validate commands

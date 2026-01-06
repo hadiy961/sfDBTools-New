@@ -7,6 +7,9 @@
 package wizard
 
 import (
+	"fmt"
+	"strings"
+
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/pkg/consts"
@@ -19,6 +22,7 @@ import (
 func (r *Runner) promptEditSelectedFields() error {
 	fields := []string{
 		consts.ProfileFieldName,
+		consts.ProfileFieldEncryptionKey,
 		consts.ProfileLabelDBHost,
 		consts.ProfileLabelDBPort,
 		consts.ProfileLabelDBUser,
@@ -52,6 +56,25 @@ func (r *Runner) promptEditSelectedFields() error {
 	if selected[consts.ProfileFieldName] {
 		if err := r.promptDBConfigName(consts.ProfileModeEdit); err != nil {
 			return err
+		}
+	}
+
+	if selected[consts.ProfileFieldEncryptionKey] {
+		// Rotasi encryption key untuk file profil (decrypt tetap pakai key lama yang sudah dipakai saat load snapshot).
+		newKey, err := prompt.AskPassword(consts.ProfilePromptNewEncryptionKey, survey.Required)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		confirmKey, err := prompt.AskPassword(consts.ProfilePromptConfirmNewEncryptionKey, survey.Required)
+		if err != nil {
+			return validation.HandleInputError(err)
+		}
+		if strings.TrimSpace(newKey) != strings.TrimSpace(confirmKey) {
+			return validation.HandleInputError(fmt.Errorf(consts.ProfileErrNewEncryptionKeyMismatch))
+		}
+		if r.ProfileEdit != nil {
+			r.ProfileEdit.NewProfileKey = strings.TrimSpace(newKey)
+			r.ProfileEdit.NewProfileKeySource = "prompt"
 		}
 	}
 

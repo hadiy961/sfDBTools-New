@@ -38,6 +38,7 @@ func ProfileEdit(cmd *cobra.Command) {
 	// new-name: apabila diberikan, lakukan rename saat menyimpan
 	cmd.Flags().StringP("new-name", "N", "", "Nama baru untuk file profil (akan merename file saat menyimpan)")
 	cmd.Flags().StringP("profile-key", "k", "", "Kunci enkripsi untuk mendekripsi/enkripsi file profil (ENV: SFDB_TARGET_PROFILE_KEY atau SFDB_SOURCE_PROFILE_KEY)")
+	cmd.Flags().String("new-profile-key", "", "Kunci enkripsi baru untuk menyimpan ulang file profil (opsional; jika kosong, tetap pakai profile-key lama)")
 
 	// SSH tunnel (opsional)
 	cmd.Flags().Bool("ssh", false, "Aktifkan koneksi database melalui SSH tunnel")

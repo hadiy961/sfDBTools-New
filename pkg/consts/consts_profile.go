@@ -222,7 +222,18 @@ const (
 // Label field untuk multi-select edit (wizard)
 const (
 	ProfileFieldName            = "Nama profil"
+	ProfileFieldEncryptionKey   = "Kunci enkripsi profil"
 	ProfileFieldSSHTunnelToggle = "SSH Tunnel (enable/disable)"
+)
+
+// =============================================================================
+// Edit Profile - Change encryption key prompts
+// =============================================================================
+
+const (
+	ProfilePromptNewEncryptionKey        = "Masukkan encryption key baru: "
+	ProfilePromptConfirmNewEncryptionKey = "Konfirmasi encryption key baru: "
+	ProfileErrNewEncryptionKeyMismatch   = "Konfirmasi encryption key baru tidak cocok."
 )
 
 // =============================================================================

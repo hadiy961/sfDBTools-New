@@ -36,7 +36,10 @@ Command ini juga mendukung rename menggunakan flag --new-name.`,
 	sfdbtools profile edit --quiet --profile "old-name" --profile-key "my-key" --new-name "new-name"
 
 	# 5) Profil terenkripsi (opsional)
-	sfdbtools profile edit --quiet --profile "secure-db" --host "1.2.3.4" --profile-key "my-key"`,
+	sfdbtools profile edit --quiet --profile "secure-db" --host "1.2.3.4" --profile-key "my-key"
+
+	# 6) Rotasi kunci enkripsi profil
+	sfdbtools profile edit --quiet --profile "secure-db" --profile-key "old-key" --new-profile-key "new-key"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := profile.ExecuteProfile(cmd, appdeps.Deps, "edit"); err != nil {
 			appdeps.Deps.Logger.Error("profile edit gagal: " + err.Error())

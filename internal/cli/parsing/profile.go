@@ -121,6 +121,15 @@ func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, e
 	if err != nil {
 		return nil, err
 	}
+	newKey, err := helper.GetSecretStringFlagOrEnv(cmd, "new-profile-key", "")
+	if err != nil {
+		return nil, err
+	}
+	newKeySource := ""
+	if strings.TrimSpace(newKey) != "" {
+		// Saat ini hanya dari flag (env var tidak dipakai untuk new-profile-key)
+		newKeySource = "flag"
+	}
 	keySource := ""
 	if strings.TrimSpace(key) != "" {
 		if cmd.Flags().Changed("profile-key") {
@@ -198,8 +207,10 @@ func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, e
 				LocalPort:    sshLocalPort,
 			},
 		},
-		NewName:     newName,
-		Interactive: interactive,
+		NewName:             newName,
+		Interactive:         interactive,
+		NewProfileKey:       newKey,
+		NewProfileKeySource: newKeySource,
 	}
 
 	return profileOptions, nil

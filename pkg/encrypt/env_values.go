@@ -38,6 +38,9 @@ var (
 
 	// Counter untuk failed decode attempts (fix #9: monitoring/alerting)
 	failedDecodeCount uint64
+
+	// Path file key material MariaDB untuk derive master key (bisa dioverride via config).
+	mariaDBKeyFilePath = defaultMariaDBKeyFile
 )
 
 const (
@@ -47,6 +50,26 @@ const (
 	// defaultMariaDBKeyFile adalah lokasi default file key material MariaDB.
 	defaultMariaDBKeyFile = "/var/lib/mysql/key_maria_nbc.txt"
 )
+
+// SetMariaDBKeyFilePath mengatur lokasi file key material MariaDB yang dipakai untuk derive master key ENV.
+// Jika path kosong, akan fallback ke default (/var/lib/mysql/key_maria_nbc.txt).
+// Catatan: ini diset sekali saat startup dari config.yaml.
+func SetMariaDBKeyFilePath(path string) {
+	trimmed := strings.TrimSpace(path)
+	if trimmed == "" {
+		mariaDBKeyFilePath = defaultMariaDBKeyFile
+		return
+	}
+	mariaDBKeyFilePath = trimmed
+}
+
+// GetMariaDBKeyFilePath mengembalikan path efektif file key material MariaDB.
+func GetMariaDBKeyFilePath() string {
+	if strings.TrimSpace(mariaDBKeyFilePath) == "" {
+		return defaultMariaDBKeyFile
+	}
+	return mariaDBKeyFilePath
+}
 
 // EnvEncryptedPrefixForDisplay mengembalikan prefix env terenkripsi untuk ditampilkan di UI/help.
 // Prefix ini sengaja tidak ditulis sebagai string literal supaya tidak muncul sebagai plaintext di binary.
@@ -81,7 +104,7 @@ func EncodeEnvValue(plaintext string) (string, error) {
 		return "", errors.New("plaintext kosong")
 	}
 
-	key := deriveEnvMasterKey(defaultMariaDBKeyFile)
+	key := deriveEnvMasterKey(GetMariaDBKeyFilePath())
 	defer func() {
 		// Zero key material dari memory untuk security
 		for i := range key {
@@ -137,7 +160,7 @@ func DecodeEnvValue(value string) (decoded string, wasEncrypted bool, err error)
 		return "", true, errors.New("versi payload tidak dikenali")
 	}
 
-	key := deriveEnvMasterKey(defaultMariaDBKeyFile)
+	key := deriveEnvMasterKey(GetMariaDBKeyFilePath())
 	defer func() {
 		// Zero key material dari memory untuk security
 		for i := range key {
@@ -171,7 +194,7 @@ func DecodeEnvValue(value string) (decoded string, wasEncrypted bool, err error)
 			log.Printf("WARNING: Failed to decrypt env value (attempt #%d). Possible causes: different master key, wrong MariaDB key file, or corrupted payload.\n", count)
 		}
 		// Jangan expose error detail (oracle attack prevention)
-		return "", true, errors.New("gagal decrypt payload (kemungkinan master key berbeda/berubah; cek akses ke /var/lib/mysql/key_maria_nbc.txt dan pastikan proses encode/decode memakai kondisi yang konsisten)")
+		return "", true, errors.New("gagal decrypt payload (kemungkinan master key berbeda/berubah; cek akses ke MariaDB key file dan pastikan proses encode/decode memakai kondisi yang konsisten)")
 	}
 	decodedStr := string(plain)
 	// Zero plaintext bytes dari memory
