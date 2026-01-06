@@ -2,7 +2,7 @@
 // Deskripsi : Helper functions untuk setup restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 30 Desember 2025
+// Last Modified : 6 Januari 2026
 
 package restore
 
@@ -67,6 +67,11 @@ func secondaryDBName(primaryDB string, instance string) string {
 // extractClientCodeFromDB mengekstrak client code dari nama database
 func extractClientCodeFromDB(dbName, prefix string) string {
 	defaultClientCode := strings.ToLower(strings.TrimSpace(dbName))
+	if p := strings.ToLower(strings.TrimSpace(prefix)); p != "" {
+		if strings.HasPrefix(defaultClientCode, p) {
+			return strings.TrimPrefix(defaultClientCode, p)
+		}
+	}
 	if strings.HasPrefix(defaultClientCode, consts.PrimaryPrefixNBC) {
 		return strings.TrimPrefix(defaultClientCode, consts.PrimaryPrefixNBC)
 	} else if strings.HasPrefix(defaultClientCode, consts.PrimaryPrefixBiznet) {

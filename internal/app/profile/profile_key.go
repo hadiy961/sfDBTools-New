@@ -2,16 +2,16 @@
 // Deskripsi : Helper untuk resolve kunci enkripsi profil (flag/env/prompt)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 6 Januari 2026
 
 package profile
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/encrypt"
 	"sfdbtools/pkg/helper"
 	"sfdbtools/pkg/validation"
 )
@@ -22,11 +22,15 @@ func resolveProfileEncryptionKey(existing string, allowPrompt bool) (key string,
 	}
 
 	// Prefer TARGET key env, fallback ke SOURCE untuk kompatibilitas.
-	if v := strings.TrimSpace(os.Getenv(consts.ENV_TARGET_PROFILE_KEY)); v != "" {
-		return v, "env", nil
+	if v, err := encrypt.ResolveEnvSecret(consts.ENV_TARGET_PROFILE_KEY); err != nil {
+		return "", "env", err
+	} else if strings.TrimSpace(v) != "" {
+		return strings.TrimSpace(v), "env", nil
 	}
-	if v := strings.TrimSpace(os.Getenv(consts.ENV_SOURCE_PROFILE_KEY)); v != "" {
-		return v, "env", nil
+	if v, err := encrypt.ResolveEnvSecret(consts.ENV_SOURCE_PROFILE_KEY); err != nil {
+		return "", "env", err
+	} else if strings.TrimSpace(v) != "" {
+		return strings.TrimSpace(v), "env", nil
 	}
 
 	if !allowPrompt {

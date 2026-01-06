@@ -1,3 +1,9 @@
+// File : internal/services/config/appconfig_types.go
+// Deskripsi : Definisi struktur config.yaml
+// Author : Hadiyatna Muflihun
+// Tanggal : 2 Januari 2026
+// Last Modified : 6 Januari 2026
+
 package appconfig
 
 // Config adalah struktur level atas yang memegang semua bagian konfigurasi.
@@ -160,6 +166,7 @@ type MariadbConfig struct {
 	ConfigDir           string `yaml:"config_dir"`
 	DataDir             string `yaml:"data_dir"`
 	EncryptionKeyFile   string `yaml:"encryption_key_file"`
+	KeyMariaNBCFile     string `yaml:"key_maria_nbc_file"`
 	InnodbEncryptTables bool   `yaml:"innodb_encrypt_tables"`
 	LogDir              string `yaml:"log_dir"`
 	Port                int    `yaml:"port"`

@@ -2,6 +2,7 @@
 // Deskripsi : Parsing flags untuk restore custom (SFCola account detail)
 // Author : Hadiyatna Muflihun
 // Tanggal : 24 Desember 2025
+// Last Modified : 6 Januari 2026
 
 package parsing
 
@@ -21,10 +22,14 @@ func ParsingRestoreCustomOptions(cmd *cobra.Command) (restoremodel.RestoreCustom
 	}
 
 	// Profile & key (target)
-	PopulateTargetProfileFlags(cmd, &opts.Profile)
+	if err := PopulateTargetProfileFlags(cmd, &opts.Profile); err != nil {
+		return restoremodel.RestoreCustomOptions{}, err
+	}
 
 	// Encryption key untuk decrypt backup file
-	PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey)
+	if err := PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey); err != nil {
+		return restoremodel.RestoreCustomOptions{}, err
+	}
 
 	// Safety flags
 	PopulateRestoreSafetyFlags(cmd, &opts.DropTarget, &opts.SkipBackup, &opts.DryRun, &opts.Force)

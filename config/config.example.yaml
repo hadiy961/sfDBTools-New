@@ -34,7 +34,8 @@ backup:
     # Filename pattern menggunakan format fixed:
     # {database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}
     # Contoh: mydb_20251110_143025_dbserver1.sql.gz.enc
-    base_directory: backup
+    base_directory: /media/ArchiveDB
+    filename_pattern: "{database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}"
     structure:
       create_subdirs: true
       pattern: "{year}{month}{day}/"
@@ -94,7 +95,7 @@ log:
     console:
       enabled: true
     file:
-      dir: logs
+      dir: /var/log/sfdbtools
       enabled: false
       filename_pattern: sfdbtools_{date}.log
       rotation:
@@ -103,6 +104,11 @@ log:
         max_size: 100MB
         retention_days: 7
   timezone: Asia/Jakarta
+
+mariadb:
+  # Opsional: override path key material MariaDB untuk derive master key ENV terenkripsi.
+  # Jika dikosongkan, sfdbtools akan fallback ke default: /var/lib/mysql/key_maria_nbc.txt
+  key_maria_nbc_file: ""
 
 script:
   # Jika diisi, output file .sftools dari `sfdbtools script encrypt` akan disimpan ke folder ini.

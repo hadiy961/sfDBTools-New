@@ -2,7 +2,7 @@
 // Deskripsi : Helper functions untuk backup pre-restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 19 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package restore
 
 import (
@@ -82,11 +82,12 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 	}
 
 	var filename string
-	if mode == consts.ModeAll {
+	switch mode {
+	case consts.ModeAll:
 		filename = fmt.Sprintf("all_%s_%s_pre_restore", timestamp, hostname)
-	} else if mode == consts.ModeCombined {
+	case consts.ModeCombined:
 		filename = fmt.Sprintf("combined_%d_%s_%s_pre_restore", len(dbList), timestamp, hostname)
-	} else {
+	default:
 		filename = fmt.Sprintf("%s_%s_%s_pre_restore", dbName, timestamp, hostname)
 	}
 
@@ -136,9 +137,10 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 	}
 
 	// Set filter based on mode
-	if mode == consts.ModeSingle {
+	switch mode {
+	case consts.ModeSingle:
 		backupOptions.Filter.IncludeDatabases = []string{dbName}
-	} else if mode == consts.ModeCombined {
+	case consts.ModeCombined:
 		backupOptions.Filter.IncludeDatabases = dbList
 		backupOptions.Filter.IsFilterCommand = true
 	}

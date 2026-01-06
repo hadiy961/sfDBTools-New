@@ -2,7 +2,7 @@
 // Deskripsi : Setup untuk restore secondary database mode (main setup flow only)
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package restore
 
 import (
@@ -69,6 +69,9 @@ func (s *Service) setupSecondaryBasics(ctx context.Context, allowInteractive boo
 	if err := s.resolveSecondaryCompanionFile(allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve companion (dmart) file: %w", err)
 	}
+	if err := s.validateCompanionFile(opts, allowInteractive); err != nil {
+		return err
+	}
 
 	// Validate companion file encryption key if applicable
 	if opts.IncludeDmart && strings.TrimSpace(opts.CompanionFile) != "" {
@@ -108,7 +111,7 @@ func (s *Service) setupSecondaryDatabase(ctx context.Context, allowInteractive b
 }
 
 // finalizeSecondarySetup menyelesaikan setup secondary dengan ticket, safety options, dan confirmation
-func (s *Service) finalizeSecondarySetup(ctx context.Context, allowInteractive bool) error {
+func (s *Service) finalizeSecondarySetup(_ context.Context, allowInteractive bool) error {
 	opts := s.RestoreSecondaryOpts
 
 	if err := s.resolveTicketNumber(&opts.Ticket, allowInteractive); err != nil {

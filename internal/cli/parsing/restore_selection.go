@@ -2,6 +2,7 @@
 // Deskripsi : Parsing flags untuk restore selection (CSV)
 // Author : Hadiyatna Muflihun
 // Tanggal : 19 Desember 2025
+// Last Modified : 6 Januari 2026
 
 package parsing
 
@@ -21,7 +22,9 @@ func ParsingRestoreSelectionOptions(cmd *cobra.Command) (restoremodel.RestoreSel
 	}
 
 	// Profile & key (target)
-	PopulateTargetProfileFlags(cmd, &opts.Profile)
+	if err := PopulateTargetProfileFlags(cmd, &opts.Profile); err != nil {
+		return restoremodel.RestoreSelectionOptions{}, err
+	}
 
 	// CSV source
 	if v := helper.GetStringFlagOrEnv(cmd, "csv", ""); v != "" {

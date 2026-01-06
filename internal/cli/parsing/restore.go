@@ -2,7 +2,7 @@
 // Deskripsi : Parsing functions untuk restore options
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 16 Desember 2025
+// Last Modified : 6 Januari 2026
 
 package parsing
 
@@ -25,10 +25,14 @@ func ParsingRestoreSingleOptions(cmd *cobra.Command) (restoremodel.RestoreSingle
 	}
 
 	// Profile & key (target)
-	PopulateTargetProfileFlags(cmd, &opts.Profile)
+	if err := PopulateTargetProfileFlags(cmd, &opts.Profile); err != nil {
+		return restoremodel.RestoreSingleOptions{}, err
+	}
 
 	// Encryption key untuk decrypt backup file
-	PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey)
+	if err := PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey); err != nil {
+		return restoremodel.RestoreSingleOptions{}, err
+	}
 
 	// Safety flags
 	PopulateRestoreSafetyFlags(cmd, &opts.DropTarget, &opts.SkipBackup, &opts.DryRun, &opts.Force)
@@ -71,10 +75,14 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (restoremodel.RestorePrima
 	}
 
 	// Profile & key (target)
-	PopulateTargetProfileFlags(cmd, &opts.Profile)
+	if err := PopulateTargetProfileFlags(cmd, &opts.Profile); err != nil {
+		return restoremodel.RestorePrimaryOptions{}, err
+	}
 
 	// Encryption key untuk decrypt backup file
-	PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey)
+	if err := PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey); err != nil {
+		return restoremodel.RestorePrimaryOptions{}, err
+	}
 
 	// Safety flags (force handled khusus di bawah)
 	PopulateRestoreSafetyFlags(cmd, &opts.DropTarget, &opts.SkipBackup, &opts.DryRun, &opts.Force)
@@ -160,11 +168,15 @@ func ParsingRestoreAllOptions(cmd *cobra.Command) (restoremodel.RestoreAllOption
 	}
 
 	// 1. Basic configs (Profile, Keys, File)
-	PopulateTargetProfileFlags(cmd, &opts.Profile)
+	if err := PopulateTargetProfileFlags(cmd, &opts.Profile); err != nil {
+		return restoremodel.RestoreAllOptions{}, err
+	}
 	if v := helper.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
 		opts.File = v
 	}
-	PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey)
+	if err := PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey); err != nil {
+		return restoremodel.RestoreAllOptions{}, err
+	}
 
 	// 2. Safety Flags
 	PopulateRestoreSafetyFlags(cmd, &opts.DropTarget, &opts.SkipBackup, &opts.DryRun, &opts.Force)
@@ -191,10 +203,14 @@ func ParsingRestoreSecondaryOptions(cmd *cobra.Command) (restoremodel.RestoreSec
 	}
 
 	// Profile & key (target)
-	PopulateTargetProfileFlags(cmd, &opts.Profile)
+	if err := PopulateTargetProfileFlags(cmd, &opts.Profile); err != nil {
+		return restoremodel.RestoreSecondaryOptions{}, err
+	}
 
 	// Encryption key (for decrypt source file / encrypt pre-backup primary)
-	PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey)
+	if err := PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey); err != nil {
+		return restoremodel.RestoreSecondaryOptions{}, err
+	}
 
 	// Safety flags
 	PopulateRestoreSafetyFlags(cmd, &opts.DropTarget, &opts.SkipBackup, &opts.DryRun, &opts.Force)

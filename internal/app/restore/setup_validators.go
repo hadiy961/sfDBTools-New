@@ -2,7 +2,7 @@
 // Deskripsi : Validation functions untuk setup restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package restore
 
 import (
@@ -23,18 +23,6 @@ func validateFileExists(filePath string) error {
 		return fmt.Errorf("file tidak ditemukan: %s", filePath)
 	} else if err != nil {
 		return fmt.Errorf("gagal membaca file: %w", err)
-	}
-	return nil
-}
-
-// validateNotDirectory memvalidasi bahwa path bukan directory
-func validateNotDirectory(filePath string) error {
-	fi, err := os.Stat(filePath)
-	if err != nil {
-		return err
-	}
-	if fi.IsDir() {
-		return fmt.Errorf("path adalah direktori, bukan file: %s", filePath)
 	}
 	return nil
 }

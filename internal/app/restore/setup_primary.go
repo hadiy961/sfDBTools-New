@@ -2,7 +2,7 @@
 // Deskripsi : Setup untuk restore primary database mode
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package restore
 
 import (
@@ -94,7 +94,7 @@ func (s *Service) setupBasicRequirements(ctx context.Context, opts *basicSetupOp
 }
 
 // setupPostDatabaseOptions melakukan setup setelah database terdeteksi
-func (s *Service) setupPostDatabaseOptions(ctx context.Context, opts *postDatabaseSetupOptions) error {
+func (s *Service) setupPostDatabaseOptions(_ context.Context, opts *postDatabaseSetupOptions) error {
 	if err := s.resolveTicketNumber(opts.ticket, opts.interactive); err != nil {
 		return fmt.Errorf("gagal resolve ticket number: %w", err)
 	}
@@ -110,6 +110,9 @@ func (s *Service) setupPostDatabaseOptions(ctx context.Context, opts *postDataba
 	if opts.includeDmart {
 		if err := s.DetectOrSelectCompanionFile(); err != nil {
 			return fmt.Errorf("gagal deteksi companion database: %w", err)
+		}
+		if err := s.validateCompanionFile(s.RestorePrimaryOpts, opts.interactive); err != nil {
+			return err
 		}
 	}
 
@@ -185,7 +188,7 @@ func (s *Service) displayPrimaryConfirmation() error {
 }
 
 // resolveTargetDatabasePrimary resolve nama database target untuk primary mode
-func (s *Service) resolveTargetDatabasePrimary(ctx context.Context) error {
+func (s *Service) resolveTargetDatabasePrimary(_ context.Context) error {
 	if s.RestorePrimaryOpts.TargetDB != "" {
 		s.Log.Infof("Target database: %s", s.RestorePrimaryOpts.TargetDB)
 		return nil

@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi job scheduler (dipanggil oleh systemd service)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-06
 package scheduler
 
 import (
@@ -23,6 +23,7 @@ import (
 	appdeps "sfdbtools/internal/cli/deps"
 	appconfig "sfdbtools/internal/services/config"
 	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/encrypt"
 	"sfdbtools/pkg/helper"
 )
 
@@ -65,7 +66,11 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	opts.Profile.Path = profilePath
 	// profile-key boleh dari env / config; untuk scheduler kita fail-fast jika kosong.
 	if strings.TrimSpace(opts.Profile.EncryptionKey) == "" {
-		opts.Profile.EncryptionKey = strings.TrimSpace(os.Getenv(consts.ENV_SOURCE_PROFILE_KEY))
+		v, err := encrypt.ResolveEnvSecret(consts.ENV_SOURCE_PROFILE_KEY)
+		if err != nil {
+			return err
+		}
+		opts.Profile.EncryptionKey = strings.TrimSpace(v)
 	}
 	if strings.TrimSpace(opts.Profile.EncryptionKey) == "" {
 		return fmt.Errorf("profile-key wajib untuk scheduler: set env %s", consts.ENV_SOURCE_PROFILE_KEY)
@@ -107,7 +112,11 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	if opts.Encryption.Enabled {
 		if strings.TrimSpace(opts.Encryption.Key) == "" {
 			// Coba dari env
-			opts.Encryption.Key = strings.TrimSpace(os.Getenv(consts.ENV_BACKUP_ENCRYPTION_KEY))
+			v, err := encrypt.ResolveEnvSecret(consts.ENV_BACKUP_ENCRYPTION_KEY)
+			if err != nil {
+				return err
+			}
+			opts.Encryption.Key = strings.TrimSpace(v)
 		}
 		if strings.TrimSpace(opts.Encryption.Key) == "" {
 			return fmt.Errorf("backup encryption aktif tapi key kosong: set config backup.encryption.key atau env %s (atau disable encryption)", consts.ENV_BACKUP_ENCRYPTION_KEY)

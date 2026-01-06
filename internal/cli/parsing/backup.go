@@ -24,7 +24,9 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	isFilterCommand := cmd.Use == "filter"
 
 	// Profile & key (Shared Helper)
-	PopulateProfileFlags(cmd, &opts.Profile)
+	if err := PopulateProfileFlags(cmd, &opts.Profile); err != nil {
+		return types_backup.BackupDBOptions{}, err
+	}
 
 	// Filters (Shared Helper)
 	PopulateFilterFlags(cmd, &opts.Filter)
@@ -36,7 +38,9 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	}
 
 	// Encryption (Shared Helper)
-	PopulateEncryptionFlags(cmd, &opts.Encryption)
+	if err := PopulateEncryptionFlags(cmd, &opts.Encryption); err != nil {
+		return types_backup.BackupDBOptions{}, err
+	}
 
 	// CaptureGTID & ExcludeUser berasal dari config file (defaultval), tidak di-override via flag.
 
@@ -113,18 +117,19 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	}
 
 	// Mode-specific options
-	if mode == "single" {
+	switch mode {
+	case consts.ModeSingle:
 		if v := helper.GetStringFlagOrEnv(cmd, "database", ""); v != "" {
 			opts.DBName = v
 		}
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
-	} else if mode == "primary" {
+	case consts.ModePrimary:
 		// Mode primary sama seperti single, hanya tanpa --database flag
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
 		if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
 			opts.ClientCode = v
 		}
-	} else if mode == "secondary" {
+	case consts.ModeSecondary:
 		// Mode secondary sama seperti primary, hanya untuk database dengan suffix _secondary
 		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
 		if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {

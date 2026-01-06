@@ -17,7 +17,9 @@ func ParsingScanFilterOptions(cmd *cobra.Command, cfg *appconfig.Config) (dbscan
 	opts := defaultVal.GetDefaultScanOptions("database")
 
 	// Profile & key (Shared Helper)
-	PopulateProfileFlags(cmd, &opts.ProfileInfo)
+	if err := PopulateProfileFlags(cmd, &opts.ProfileInfo); err != nil {
+		return dbscanmodel.ScanOptions{}, err
+	}
 
 	// Exclude system
 	opts.ExcludeSystem = helper.GetBoolFlagOrEnv(cmd, "exclude-system", "")

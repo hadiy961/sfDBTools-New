@@ -40,6 +40,10 @@ func GetStringFlagOrEnv(cmd *cobra.Command, flagName, envName string) string {
 	return cli.GetStringFlagOrEnv(cmd, flagName, envName)
 }
 
+func GetSecretStringFlagOrEnv(cmd *cobra.Command, flagName, envName string) (string, error) {
+	return cli.GetSecretStringFlagOrEnv(cmd, flagName, envName)
+}
+
 func GetIntFlagOrEnv(cmd *cobra.Command, flagName, envName string) int {
 	return cli.GetIntFlagOrEnv(cmd, flagName, envName)
 }

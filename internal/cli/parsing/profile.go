@@ -24,9 +24,15 @@ func ParsingCreateProfile(cmd *cobra.Command, logger applog.Logger) (*profilemod
 	password := helper.GetStringFlagOrEnv(cmd, "password", consts.ENV_TARGET_DB_PASSWORD)
 	name := helper.GetStringFlagOrEnv(cmd, "profile", "")
 	outputDir := helper.GetStringFlagOrEnv(cmd, "output-dir", "")
-	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
+	key, err := helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
+	if err != nil {
+		return nil, err
+	}
 	if strings.TrimSpace(key) == "" {
-		key = helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+		key, err = helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+		if err != nil {
+			return nil, err
+		}
 	}
 	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
 		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
@@ -111,9 +117,39 @@ func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, e
 	user := helper.GetStringFlagOrEnv(cmd, "user", consts.ENV_TARGET_DB_USER)
 	password := helper.GetStringFlagOrEnv(cmd, "password", consts.ENV_TARGET_DB_PASSWORD)
 	name := helper.GetStringFlagOrEnv(cmd, "profile", "")
-	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
+	key, err := helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
+	if err != nil {
+		return nil, err
+	}
+	newKey, err := helper.GetSecretStringFlagOrEnv(cmd, "new-profile-key", "")
+	if err != nil {
+		return nil, err
+	}
+	newKeySource := ""
+	if strings.TrimSpace(newKey) != "" {
+		// Saat ini hanya dari flag (env var tidak dipakai untuk new-profile-key)
+		newKeySource = "flag"
+	}
+	keySource := ""
+	if strings.TrimSpace(key) != "" {
+		if cmd.Flags().Changed("profile-key") {
+			keySource = "flag"
+		} else {
+			keySource = "env"
+		}
+	}
 	if strings.TrimSpace(key) == "" {
-		key = helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+		key, err = helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(key) != "" {
+			if cmd.Flags().Changed("profile-key") {
+				keySource = "flag"
+			} else {
+				keySource = "env"
+			}
+		}
 	}
 	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
 		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
@@ -151,9 +187,10 @@ func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, e
 
 	profileOptions := &profilemodel.ProfileEditOptions{
 		ProfileInfo: domain.ProfileInfo{
-			Path:          filePath,
-			Name:          name,
-			EncryptionKey: key,
+			Path:             filePath,
+			Name:             name,
+			EncryptionKey:    key,
+			EncryptionSource: keySource,
 			DBInfo: domain.DBInfo{
 				Host:     host,
 				Port:     port,
@@ -170,8 +207,10 @@ func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, e
 				LocalPort:    sshLocalPort,
 			},
 		},
-		NewName:     newName,
-		Interactive: interactive,
+		NewName:             newName,
+		Interactive:         interactive,
+		NewProfileKey:       newKey,
+		NewProfileKeySource: newKeySource,
 	}
 
 	return profileOptions, nil
@@ -180,9 +219,15 @@ func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, e
 // ParsingShowProfile
 func ParsingShowProfile(cmd *cobra.Command) (*profilemodel.ProfileShowOptions, error) {
 	filePath := helper.GetStringFlagOrEnv(cmd, "profile", "")
-	key := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
+	key, err := helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
+	if err != nil {
+		return nil, err
+	}
 	if strings.TrimSpace(key) == "" {
-		key = helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+		key, err = helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+		if err != nil {
+			return nil, err
+		}
 	}
 	RevealPassword := helper.GetBoolFlagOrEnv(cmd, "reveal-password", "")
 	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&

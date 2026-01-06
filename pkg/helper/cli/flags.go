@@ -1,9 +1,12 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
+
+	"sfdbtools/pkg/encrypt"
 
 	"github.com/spf13/cobra"
 )
@@ -18,6 +21,26 @@ func GetStringFlagOrEnv(cmd *cobra.Command, flagName, envName string) string {
 		return env
 	}
 	return val
+}
+
+// GetSecretStringFlagOrEnv mengambil nilai secret dari flag atau env.
+// - Flag selalu dianggap plaintext (tidak didekripsi meskipun bernilai "prefix:...")
+// - Env mendukung plaintext maupun format terenkripsi "prefix:<payload>".
+// Jika env memakai prefix namun payload invalid, akan mengembalikan error (fail-fast).
+func GetSecretStringFlagOrEnv(cmd *cobra.Command, flagName, envName string) (string, error) {
+	val, _ := cmd.Flags().GetString(flagName)
+	if val != "" {
+		return val, nil
+	}
+	if strings.TrimSpace(envName) == "" {
+		return "", nil
+	}
+
+	v, err := encrypt.ResolveEnvSecret(envName)
+	if err != nil {
+		return "", fmt.Errorf("gagal membaca env %s: %w", envName, err)
+	}
+	return v, nil
 }
 
 func GetIntFlagOrEnv(cmd *cobra.Command, flagName, envName string) int {
