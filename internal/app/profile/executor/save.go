@@ -7,6 +7,7 @@
 package executor
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -81,7 +82,8 @@ func (e *Executor) SaveProfile(mode string) error {
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		if strings.TrimSpace(confirmKey) != e.ProfileInfo.EncryptionKey {
+		// Constant-time comparison untuk prevent timing attacks
+		if subtle.ConstantTimeCompare([]byte(strings.TrimSpace(confirmKey)), []byte(e.ProfileInfo.EncryptionKey)) != 1 {
 			return fmt.Errorf(consts.ProfileSaveVerifyKeyMismatch)
 		}
 	}

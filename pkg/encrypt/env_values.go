@@ -15,10 +15,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"log"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"sfdbtools/pkg/consts"
 )
@@ -27,6 +30,14 @@ var (
 	// Disimpan dalam bentuk obfuscated agar tidak muncul sebagai plaintext di binary (mis. saat menjalankan `strings`).
 	envEncryptedPrefix = deobfuscateXORString([]byte{0xF9, 0xEC, 0xEE, 0xE8, 0xFE, 0xE5, 0xE5, 0xE6, 0xF9, 0x90}, 0xAA)
 	envValueAADBytes   = deobfuscateXORBytes([]byte{0xD9, 0xCC, 0xCE, 0xC8, 0xDE, 0xC5, 0xC5, 0xC6, 0xD9, 0x87, 0xCF, 0xC4, 0xDC, 0x87, 0xDC, 0x9B}, 0xAA)
+
+	// Cache untuk MariaDB key material (fix #5: race condition prevention)
+	mariaDBKeyCache     []byte
+	mariaDBKeyCacheOnce sync.Once
+	mariaDBKeyCachePath string
+
+	// Counter untuk failed decode attempts (fix #9: monitoring/alerting)
+	failedDecodeCount uint64
 )
 
 const (
@@ -41,6 +52,12 @@ const (
 // Prefix ini sengaja tidak ditulis sebagai string literal supaya tidak muncul sebagai plaintext di binary.
 func EnvEncryptedPrefixForDisplay() string {
 	return envEncryptedPrefix
+}
+
+// GetFailedDecodeCount mengembalikan jumlah failed decode attempts untuk monitoring.
+// Digunakan untuk alerting jika ada suspicious activity (brute-force attempts).
+func GetFailedDecodeCount() uint64 {
+	return atomic.LoadUint64(&failedDecodeCount)
 }
 
 func deobfuscateXORBytes(obfuscated []byte, key byte) []byte {
@@ -65,6 +82,12 @@ func EncodeEnvValue(plaintext string) (string, error) {
 	}
 
 	key := deriveEnvMasterKey(defaultMariaDBKeyFile)
+	defer func() {
+		// Zero key material dari memory untuk security
+		for i := range key {
+			key[i] = 0
+		}
+	}()
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
@@ -105,7 +128,7 @@ func DecodeEnvValue(value string) (decoded string, wasEncrypted bool, err error)
 
 	raw, err := base64.RawURLEncoding.DecodeString(payload)
 	if err != nil {
-		return "", true, err
+		return "", true, errors.New("format payload tidak valid")
 	}
 	if len(raw) < 1 {
 		return "", true, errors.New("payload terlalu pendek")
@@ -115,6 +138,12 @@ func DecodeEnvValue(value string) (decoded string, wasEncrypted bool, err error)
 	}
 
 	key := deriveEnvMasterKey(defaultMariaDBKeyFile)
+	defer func() {
+		// Zero key material dari memory untuk security
+		for i := range key {
+			key[i] = 0
+		}
+	}()
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", true, err
@@ -136,9 +165,22 @@ func DecodeEnvValue(value string) (decoded string, wasEncrypted bool, err error)
 
 	plain, err := gcm.Open(nil, nonce, ciphertext, envValueAADBytes)
 	if err != nil {
-		return "", true, errors.New("gagal decrypt payload (kemungkinan master key berbeda/berubah; cek akses ke /var/lib/mysql/key_maria_nbc.txt dan pastikan proses encode/decode memakai kondisi yang konsisten): " + err.Error())
+		// Fix #9: Log failed decode untuk monitoring/alerting
+		count := atomic.AddUint64(&failedDecodeCount, 1)
+		if count%10 == 1 { // Log setiap 10 failures untuk avoid spam
+			log.Printf("WARNING: Failed to decrypt env value (attempt #%d). Possible causes: different master key, wrong MariaDB key file, or corrupted payload.\n", count)
+		}
+		// Jangan expose error detail (oracle attack prevention)
+		return "", true, errors.New("gagal decrypt payload (kemungkinan master key berbeda/berubah; cek akses ke /var/lib/mysql/key_maria_nbc.txt dan pastikan proses encode/decode memakai kondisi yang konsisten)")
 	}
-	return string(plain), true, nil
+	decodedStr := string(plain)
+	// Zero plaintext bytes dari memory
+	defer func() {
+		for i := range plain {
+			plain[i] = 0
+		}
+	}()
+	return decodedStr, true, nil
 }
 
 // ResolveEnvSecret mengambil nilai env var, dan jika nilainya memakai prefix "prefix:" maka akan auto-decrypt. Jika payload invalid, mengembalikan error.
@@ -154,7 +196,8 @@ func ResolveEnvSecret(envVar string) (string, error) {
 
 	decoded, wasEncrypted, err := DecodeEnvValue(raw)
 	if err != nil {
-		return "", errors.New("env " + envVar + ": payload env terenkripsi tidak valid: " + err.Error())
+		// Jangan expose detail error crypto untuk mencegah oracle attacks
+		return "", errors.New("env " + envVar + ": payload env terenkripsi tidak valid")
 	}
 	if wasEncrypted {
 		return decoded, nil
@@ -164,7 +207,9 @@ func ResolveEnvSecret(envVar string) (string, error) {
 
 func deriveEnvMasterKey(mariaDBKeyFilePath string) []byte {
 	material := []byte(consts.ENV_PASSWORD_APP)
-	if extra := readMariaDBKeyMaterial(mariaDBKeyFilePath); len(extra) > 0 {
+	// Fix #5: Cache MariaDB key material untuk prevent race condition (TOCTOU)
+	extra := getCachedMariaDBKeyMaterial(mariaDBKeyFilePath)
+	if len(extra) > 0 {
 		material = append(material, 0)
 		material = append(material, extra...)
 	}
@@ -172,15 +217,40 @@ func deriveEnvMasterKey(mariaDBKeyFilePath string) []byte {
 	return sum[:]
 }
 
+// getCachedMariaDBKeyMaterial membaca key material sekali dan cache di memory.
+// Ini mencegah race condition jika file berubah antara encode dan decode.
+func getCachedMariaDBKeyMaterial(filePath string) []byte {
+	if filePath != mariaDBKeyCachePath {
+		// Path berubah, reset cache
+		mariaDBKeyCacheOnce = sync.Once{}
+		mariaDBKeyCachePath = filePath
+	}
+
+	mariaDBKeyCacheOnce.Do(func() {
+		mariaDBKeyCache = readMariaDBKeyMaterial(filePath)
+	})
+	return mariaDBKeyCache
+}
+
 func readMariaDBKeyMaterial(filePath string) []byte {
 	if strings.TrimSpace(filePath) == "" {
 		return nil
 	}
 
-	b, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil
+	// Fix #10: Log warning jika file exists tapi tidak bisa dibaca
+	if stat, statErr := os.Stat(filePath); statErr == nil && stat != nil {
+		b, err := os.ReadFile(filePath)
+		if err != nil {
+			log.Printf("WARNING: MariaDB key file %s exists but cannot be read (%v). Falling back to hardcoded seed only (weak security).\n", filePath, err)
+			return nil
+		}
+		return parseMariaDBKeyMaterial(b)
 	}
+	// File tidak ada sama sekali (bukan error, silent fallback)
+	return nil
+}
+
+func parseMariaDBKeyMaterial(b []byte) []byte {
 
 	lines := strings.Split(string(b), "\n")
 	type candidate struct {
@@ -215,7 +285,8 @@ func readMariaDBKeyMaterial(filePath string) []byte {
 		hexStr = strings.TrimPrefix(strings.ToLower(hexStr), "0x")
 		hexStr = strings.ReplaceAll(hexStr, " ", "")
 		keyBytes, err := hex.DecodeString(hexStr)
-		if err != nil || len(keyBytes) == 0 {
+		// Validasi minimum key length 16 bytes (128 bit) untuk security
+		if err != nil || len(keyBytes) < 16 {
 			continue
 		}
 		candidates = append(candidates, candidate{id: id, key: keyBytes})
