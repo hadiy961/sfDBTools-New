@@ -148,10 +148,15 @@ install_tar() {
   local url="${BASE}/sfdbtools_linux_amd64.tar.gz"
   local out="${tmpdir}/sfdbtools_linux_amd64.tar.gz"
 
+  # Backward-compatible dengan release lama yang memakai nama sfDBTools_*.tar.gz
   if ! curl -fsSLI "${url}" >/dev/null 2>&1; then
-    echo "Error: asset tar.gz tidak ditemukan di latest release." >&2
-    echo "Hint: pastikan release mengupload 'sfdbtools_linux_amd64.tar.gz'." >&2
-    exit 1
+    url="${BASE}/sfDBTools_linux_amd64.tar.gz"
+    out="${tmpdir}/sfDBTools_linux_amd64.tar.gz"
+    if ! curl -fsSLI "${url}" >/dev/null 2>&1; then
+      echo "Error: asset tar.gz tidak ditemukan di latest release." >&2
+      echo "Hint: pastikan release mengupload 'sfdbtools_linux_amd64.tar.gz'." >&2
+      exit 1
+    fi
   fi
 
   echo "→ Downloading ${url}"
@@ -169,8 +174,14 @@ install_tar() {
 
   echo "→ Extracting to ${bindir}"
   tar -xzf "${out}" -C "${tmpdir}"
-  install -m 0755 "${tmpdir}/sfdbtools" "${bindir}/sfdbtools"
-  ln -sf "sfdbtools" "${bindir}/sfdbtools" || true
+  if [[ -f "${tmpdir}/sfdbtools" ]]; then
+    install -m 0755 "${tmpdir}/sfdbtools" "${bindir}/sfdbtools"
+  elif [[ -f "${tmpdir}/sfDBTools" ]]; then
+    install -m 0755 "${tmpdir}/sfDBTools" "${bindir}/sfdbtools"
+  else
+    echo "Error: binary tidak ditemukan di tar.gz (sfdbtools/sfDBTools)." >&2
+    exit 1
+  fi
 
   echo "✓ Installed: ${bindir}/sfdbtools"
   if [[ "${is_root}" != "true" ]]; then

@@ -2,7 +2,7 @@
 // Deskripsi : Fitur auto-update binary sfdbtools via GitHub Releases
 // Author : Hadiyatna Muflihun
 // Tanggal : 5 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package autoupdate
 
 import (
@@ -156,12 +156,21 @@ func UpdateIfNeeded(ctx context.Context, log Logger, opts Options) error {
 
 	assetTar, err := findAsset(rel.Assets, "sfdbtools_linux_amd64.tar.gz")
 	if err != nil {
-		return err
+		// Backward-compatible dengan release lama.
+		assetTar, err = findAsset(rel.Assets, "sfDBTools_linux_amd64.tar.gz")
+		if err != nil {
+			return err
+		}
 	}
 
 	// File sha256 versi spesifik bersifat optional.
 	shaName := fmt.Sprintf("sfdbtools_%d.%d.%d_linux_amd64.sha256", latest.Major, latest.Minor, latest.Patch)
 	assetSHA, _ := findAsset(rel.Assets, shaName)
+	if assetSHA == nil {
+		// Backward-compatible dengan release lama.
+		legacySHA := fmt.Sprintf("sfDBTools_%d.%d.%d_linux_amd64.sha256", latest.Major, latest.Minor, latest.Patch)
+		assetSHA, _ = findAsset(rel.Assets, legacySHA)
+	}
 
 	if log != nil {
 		log.Infof("Update tersedia: %s -> %s. Mengunduh...", version.Version, rel.TagName)
@@ -212,7 +221,10 @@ func UpdateIfNeeded(ctx context.Context, log Logger, opts Options) error {
 
 	newBinPath := filepath.Join(tmpDir, "sfdbtools")
 	if err := extractSingleFileFromTarGz(tarPath, "sfdbtools", newBinPath); err != nil {
-		return err
+		// Backward-compatible: tar lama berisi binary sfDBTools
+		if err2 := extractSingleFileFromTarGz(tarPath, "sfDBTools", newBinPath); err2 != nil {
+			return err
+		}
 	}
 	if err := os.Chmod(newBinPath, 0o755); err != nil {
 		return fmt.Errorf("gagal chmod binary baru: %w", err)

@@ -86,9 +86,12 @@ remove_rpm() {
 remove_tar_files() {
   # Hapus binary dari lokasi umum.
   local candidates=(
-    "/usr/bin/sfdbtools" "/usr/bin/sfdbtools"
-    "/usr/local/bin/sfdbtools" "/usr/local/bin/sfdbtools"
-    "${PREFIX}/bin/sfdbtools" "${PREFIX}/bin/sfdbtools"
+    "/usr/bin/sfdbtools"
+    "/usr/bin/sfDBTools"
+    "/usr/local/bin/sfdbtools"
+    "/usr/local/bin/sfDBTools"
+    "${PREFIX}/bin/sfdbtools"
+    "${PREFIX}/bin/sfDBTools"
   )
 
   for p in "${candidates[@]}"; do
@@ -116,7 +119,7 @@ fi
 
 # 2) Hapus binary hasil install tar (atau sisa-sisa).
 if [[ "${pkg_removed}" != "true" ]]; then
-  echo "→ Menghapus binary sfdbtools/sfdbtools (tar/manual install)"
+  echo "→ Menghapus binary sfdbtools/sfDBTools (tar/manual install)"
   remove_tar_files
 fi
 
