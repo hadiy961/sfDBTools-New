@@ -67,7 +67,7 @@ jobs:
           ln -sf sfDBTools "${PKGROOT}/usr/bin/sfdbtools"
 
           # Install a default config file (dpkg/rpm will treat as config file)
-          install -m 0644 config/config.example.yaml "${PKGROOT}/etc/sfdbtools/config.yaml"
+          install -m 0644 config/config.example.yaml "${PKGROOT}/etc/sfDBTools/config.yaml"
 
           # DEB (Ubuntu/Debian)
           fpm -s dir -t deb \
@@ -77,7 +77,7 @@ jobs:
             --description "sfDBTools - MySQL/MariaDB backup & management CLI" \
             --maintainer "sfDBTools" \
             --license "Internal" \
-            --config-files /etc/sfdbtools/config.yaml \
+            --config-files /etc/sfDBTools/config.yaml \
             -C "${PKGROOT}" \
             -p "dist/sfdbtools_${VERSION}_amd64.deb" \
             .
@@ -91,7 +91,7 @@ jobs:
             --description "sfDBTools - MySQL/MariaDB backup & management CLI" \
             --maintainer "sfDBTools" \
             --license "Internal" \
-            --config-files /etc/sfdbtools/config.yaml \
+            --config-files /etc/sfDBTools/config.yaml \
             -C "${PKGROOT}" \
             -p "dist/sfdbtools-${VERSION}-1.x86_64.rpm" \
             .
