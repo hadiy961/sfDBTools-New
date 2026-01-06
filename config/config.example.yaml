@@ -96,7 +96,7 @@ log:
       enabled: true
     file:
       dir: /var/log/sfDBTools
-      enabled: false
+      enabled: true
       filename_pattern: sfDBTools_{date}.log
       rotation:
         compress_old: true
