@@ -24,8 +24,8 @@ func GetStringFlagOrEnv(cmd *cobra.Command, flagName, envName string) string {
 }
 
 // GetSecretStringFlagOrEnv mengambil nilai secret dari flag atau env.
-// - Flag selalu dianggap plaintext (tidak didekripsi meskipun bernilai "SFDBTOOLS:...")
-// - Env mendukung plaintext maupun format terenkripsi "SFDBTOOLS:<payload>".
+// - Flag selalu dianggap plaintext (tidak didekripsi meskipun bernilai "prefix:...")
+// - Env mendukung plaintext maupun format terenkripsi "prefix:<payload>".
 // Jika env memakai prefix namun payload invalid, akan mengembalikan error (fail-fast).
 func GetSecretStringFlagOrEnv(cmd *cobra.Command, flagName, envName string) (string, error) {
 	val, _ := cmd.Flags().GetString(flagName)

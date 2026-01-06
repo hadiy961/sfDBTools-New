@@ -14,11 +14,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CmdEnvEncode membuat payload ENV terenkripsi format SFDBTOOLS:<payload>.
+// CmdEnvEncode membuat payload ENV terenkripsi format prefix:<payload>.
 var CmdEnvEncode = &cobra.Command{
 	Use:   "env-encode",
-	Short: "Encode plaintext menjadi SFDBTOOLS:<payload> untuk ENV",
-	Long:  "Membuat payload terenkripsi untuk disimpan pada environment variable. Output menggunakan format 'SFDBTOOLS:<payload>' (base64 URL-safe tanpa padding).",
+	Short: "Encode plaintext menjadi format prefix+payload untuk ENV",
+	Long:  "Membuat payload terenkripsi untuk disimpan pada environment variable. Output menggunakan format '<prefix><payload>' (base64 URL-safe tanpa padding).",
 	Example: `
 	# Encode dari stdin (disarankan agar tidak masuk shell history)
 	echo -n 'my-secret-key' | sfdbtools crypto env-encode
@@ -67,4 +67,7 @@ var CmdEnvEncode = &cobra.Command{
 func init() {
 	CmdCryptoMain.AddCommand(CmdEnvEncode)
 	CmdEnvEncode.Flags().StringP("text", "t", "", "Plaintext yang akan di-encode (jika kosong, baca dari stdin)")
+
+	// Sisipkan prefix di help/usage tanpa menyimpan prefix sebagai string literal di binary.
+	CmdEnvEncode.Short = "Encode plaintext menjadi " + encrypt.EnvEncryptedPrefixForDisplay() + "<payload> untuk ENV"
 }

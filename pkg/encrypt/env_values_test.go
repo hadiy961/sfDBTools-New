@@ -24,8 +24,9 @@ func TestEncodeDecodeEnvValue_RoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EncodeEnvValue error: %v", err)
 	}
-	if !strings.HasPrefix(encoded, EnvEncryptedPrefix) {
-		t.Fatalf("expected prefix %q, got %q", EnvEncryptedPrefix, encoded)
+	prefix := EnvEncryptedPrefixForDisplay()
+	if !strings.HasPrefix(encoded, prefix) {
+		t.Fatalf("expected prefix %q, got %q", prefix, encoded)
 	}
 
 	decoded, wasEncrypted, err := DecodeEnvValue(encoded)
@@ -41,7 +42,7 @@ func TestEncodeDecodeEnvValue_RoundTrip(t *testing.T) {
 }
 
 func TestDecodeEnvValue_InvalidPayload(t *testing.T) {
-	_, wasEncrypted, err := DecodeEnvValue(EnvEncryptedPrefix + "@@@")
+	_, wasEncrypted, err := DecodeEnvValue(EnvEncryptedPrefixForDisplay() + "@@@")
 	if err == nil {
 		t.Fatalf("expected error")
 	}
