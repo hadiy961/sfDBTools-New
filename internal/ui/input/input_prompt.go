@@ -1,8 +1,8 @@
-// File : pkg/input/input_prompt.go
+// File : internal/ui/input/input_prompt.go
 // Deskripsi : Fungsi utilitas untuk input interaktif dari user
 // Author : Hadiyatna Muflihun
 // Tanggal : 3 Oktober 2024
-// Last Modified : 4 Januari 2026
+// Last Modified : 5 Januari 2026
 package input
 
 import (

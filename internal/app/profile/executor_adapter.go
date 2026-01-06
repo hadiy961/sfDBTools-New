@@ -2,7 +2,7 @@
 // Deskripsi : Adapter untuk memanggil subpackage executor dari Service
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package profile
 
 import (
@@ -33,7 +33,16 @@ func (s *Service) buildExecutor() *executor.Executor {
 		s.ProfileDelete = e.ProfileDelete
 		s.OriginalProfileName = e.OriginalProfileName
 		s.OriginalProfileInfo = e.OriginalProfileInfo
-		return s.runWizard(mode)
+		err := s.runWizard(mode)
+		// Sinkronkan balik state dari service ke executor,
+		// agar step berikutnya (validasi/save) tidak memakai pointer lama.
+		e.ProfileInfo = s.ProfileInfo
+		e.ProfileEdit = s.ProfileEdit
+		e.ProfileShow = s.ProfileShow
+		e.ProfileDelete = s.ProfileDelete
+		e.OriginalProfileName = s.OriginalProfileName
+		e.OriginalProfileInfo = s.OriginalProfileInfo
+		return err
 	}
 
 	e.DisplayProfileDetails = func() {

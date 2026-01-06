@@ -2,7 +2,7 @@
 // Deskripsi : Validasi dan pengecekan unik untuk profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package profile
 
 import (
@@ -26,6 +26,9 @@ import (
 
 // CheckConfigurationNameUnique memvalidasi apakah nama konfigurasi unik.
 func (s *Service) CheckConfigurationNameUnique(mode string) error {
+	if s.ProfileInfo == nil {
+		return fmt.Errorf(consts.ProfileErrProfileInfoNil)
+	}
 	s.ProfileInfo.Name = helper.TrimProfileSuffix(s.ProfileInfo.Name)
 	switch mode {
 	case consts.ProfileModeCreate:
@@ -38,12 +41,43 @@ func (s *Service) CheckConfigurationNameUnique(mode string) error {
 		original := helper.TrimProfileSuffix(s.OriginalProfileName)
 		newName := helper.TrimProfileSuffix(s.ProfileInfo.Name)
 
+		// Hardening: pastikan newName tidak kosong.
+		// Ini mencegah kasus seperti ".cnf.enc" yang ter-trim jadi "" dan memicu error confusing.
+		if strings.TrimSpace(newName) == "" {
+			if s.OriginalProfileInfo != nil && strings.TrimSpace(s.OriginalProfileInfo.Name) != "" {
+				newName = helper.TrimProfileSuffix(s.OriginalProfileInfo.Name)
+			} else if strings.TrimSpace(s.ProfileInfo.Path) != "" {
+				newName = helper.TrimProfileSuffix(filepath.Base(s.ProfileInfo.Path))
+			}
+			newName = strings.TrimSpace(newName)
+			if newName != "" {
+				s.ProfileInfo.Name = newName
+			}
+		}
+		if strings.TrimSpace(newName) == "" {
+			return fmt.Errorf(consts.ProfileErrProfileNameEmptyAlt)
+		}
+
+		// Hardening: jika original kosong, coba derive dari snapshot/path.
+		if strings.TrimSpace(original) == "" {
+			if s.OriginalProfileInfo != nil && strings.TrimSpace(s.OriginalProfileInfo.Name) != "" {
+				original = helper.TrimProfileSuffix(s.OriginalProfileInfo.Name)
+			} else if strings.TrimSpace(s.ProfileInfo.Path) != "" {
+				original = helper.TrimProfileSuffix(filepath.Base(s.ProfileInfo.Path))
+			}
+			original = strings.TrimSpace(original)
+			if original != "" {
+				s.OriginalProfileName = original
+			}
+		}
+
 		baseDir := s.Config.ConfigDir.DatabaseProfile
 		if s.ProfileInfo.Path != "" && filepath.IsAbs(s.ProfileInfo.Path) {
 			baseDir = filepath.Dir(s.ProfileInfo.Path)
 		}
 
 		if original == "" {
+			// Fallback terakhir: cek file yang di-derive dari newName.
 			targetAbs := filepath.Join(baseDir, validation.ProfileExt(newName))
 			if !fsops.PathExists(targetAbs) {
 				return fmt.Errorf(consts.ProfileErrConfigFileNotFoundChooseOtherFmt, newName)
@@ -53,6 +87,10 @@ func (s *Service) CheckConfigurationNameUnique(mode string) error {
 
 		if original == newName {
 			origAbs := filepath.Join(baseDir, validation.ProfileExt(original))
+			// Jika kita tahu absolute path asli, itu lebih reliable.
+			if s.ProfileInfo.Path != "" && filepath.IsAbs(s.ProfileInfo.Path) {
+				origAbs = s.ProfileInfo.Path
+			}
 			if !fsops.PathExists(origAbs) {
 				return fmt.Errorf(consts.ProfileErrOriginalConfigFileNotFoundFmt, original)
 			}

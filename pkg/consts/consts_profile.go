@@ -4,7 +4,7 @@ package consts
 // Deskripsi : Konstanta yang digunakan oleh fitur profile (prompt, header, dan pesan umum)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 
 // =============================================================================
 // Header + Success message

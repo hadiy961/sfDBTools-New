@@ -2,7 +2,7 @@
 // Deskripsi : Prompt edit field secara interaktif (multi-select)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 
 package wizard
 
@@ -15,6 +15,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
+// promptEditSelectedFields meminta user memilih field yang ingin diubah via multi-select.
 func (r *Runner) promptEditSelectedFields() error {
 	fields := []string{
 		consts.ProfileFieldName,
@@ -42,8 +43,9 @@ func (r *Runner) promptEditSelectedFields() error {
 
 	selected := make(map[string]bool, len(idxs))
 	for _, i := range idxs {
-		if i >= 1 && i <= len(fields) {
-			selected[fields[i-1]] = true
+		// idxs dari prompt.SelectMany adalah 0-based
+		if i >= 0 && i < len(fields) {
+			selected[fields[i]] = true
 		}
 	}
 

@@ -70,7 +70,7 @@ func PrintAppHeader(title string) {
 		return
 	}
 
-	fullTitle := fmt.Sprintf("%s v%s - %s", "sfDBTools", version.Version, title)
+	fullTitle := fmt.Sprintf("%s v%s - %s", version.AppName, version.Version, title)
 	// Kalau stdout bukan TTY (misal di-pipe), jangan clear screen.
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		_ = ClearAndShowHeader(fullTitle)

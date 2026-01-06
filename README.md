@@ -414,11 +414,11 @@ Mulai UI-1, seluruh code internal wajib lewat facade `internal/ui/*`:
 
 - Gunakan `internal/ui/print`, `internal/ui/prompt`, `internal/ui/table`, `internal/ui/progress`, `internal/ui/text`, `internal/ui/style`.
 - Per UI-2, implementasi UI output sudah berada di `internal/ui/*` (tidak ada lagi pemakaian paket UI legacy).
-- Legacy yang masih tersisa hanya `pkg/input` untuk prompt (akan ditangani di UI-3).
+- Per UI-3, engine prompt dipisah ke `internal/ui/input` dan public API tetap di `internal/ui/prompt`.
 
 Rencana deprecation bertahap:
 
-- UI-3: pindahkan prompt/validator dari `pkg/input` ke `internal/ui/prompt`, lalu tandai `pkg/input` sebagai deprecated (doc + lint/CI) dan phase-out pemakaian internal sepenuhnya.
+- UI-3: pindahkan prompt/validator ke `internal/ui/input` + `internal/ui/prompt`, lalu phase-out pemakaian legacy sepenuhnya.
 
 ## Lisensi
 
