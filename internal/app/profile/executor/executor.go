@@ -2,13 +2,17 @@
 // Deskripsi : Executor untuk operasi profile (create/edit/show/delete/save)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package executor
 
 import (
+	"os"
 	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/pkg/runtimecfg"
+
+	"github.com/mattn/go-isatty"
 )
 
 type Executor struct {
@@ -37,6 +41,14 @@ type Executor struct {
 }
 
 func (e *Executor) isInteractiveMode() bool {
+	// Hard stop: non-interaktif jika quiet/daemon atau tidak berjalan di TTY.
+	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+		return false
+	}
+	if !isatty.IsTerminal(os.Stdin.Fd()) || !isatty.IsTerminal(os.Stdout.Fd()) {
+		return false
+	}
+
 	if e.ProfileCreate != nil {
 		return e.ProfileCreate.Interactive
 	}

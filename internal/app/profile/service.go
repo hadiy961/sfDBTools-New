@@ -2,7 +2,7 @@
 // Deskripsi : Service utama implementation untuk profile operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package profile
 
 import (
@@ -95,21 +95,4 @@ func (s *Service) ExecuteProfileCommand(config profilemodel.ProfileEntryConfig) 
 	default:
 		return ErrInvalidProfileMode
 	}
-}
-
-// isInteractiveMode menentukan apakah service sedang berjalan dalam mode interaktif.
-func (s *Service) isInteractiveMode() bool {
-	if s.ProfileCreate != nil {
-		return s.ProfileCreate.Interactive
-	}
-	if s.ProfileEdit != nil {
-		return s.ProfileEdit.Interactive
-	}
-	if s.ProfileShow != nil {
-		return s.ProfileShow.Interactive
-	}
-	if s.ProfileDelete != nil {
-		return s.ProfileDelete.Interactive
-	}
-	return false
 }
