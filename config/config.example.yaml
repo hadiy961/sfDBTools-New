@@ -95,7 +95,7 @@ log:
     console:
       enabled: true
     file:
-      dir: logs
+      dir: /var/log/sfdbtools
       enabled: false
       filename_pattern: sfdbtools_{date}.log
       rotation:
