@@ -18,7 +18,7 @@ var CmdScriptExtract = &cobra.Command{
 	Long:  "Mendekripsi .sftools lalu mengekstrak isinya ke out-dir. Command ini butuh proteksi ganda: key + password aplikasi.",
 	Example: `
 # Extract bundle untuk diedit
-sfdbtools script extract -f /etc/sfdbtools/scripts/tes.sftools -o ./tes_extracted -k "mypassword"
+sfdbtools script extract -f /etc/sfDBTools/scripts/tes.sftools -o ./tes_extracted -k "mypassword"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		opts := parsing.ParsingScriptExtractOptions(cmd)

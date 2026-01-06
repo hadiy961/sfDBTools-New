@@ -2,7 +2,7 @@
 // Deskripsi : Helper untuk daemon/background process scanning
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package helpers
 
 import (
@@ -37,7 +37,7 @@ func SpawnScanDaemon(config dbscanmodel.ScanEntryConfig) error {
 	res, err := scheduler.SpawnSelfInBackground(ctx, scheduler.SpawnSelfOptions{
 		UnitPrefix:    "sfdbtools-dbscan",
 		Mode:          scheduler.RunModeAuto,
-		EnvFile:       "/etc/sfdbtools/.env",
+		EnvFile:       "/etc/sfDBTools/.env",
 		WorkDir:       wd,
 		Collect:       true,
 		NoAskPass:     true,

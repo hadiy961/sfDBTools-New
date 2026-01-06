@@ -67,7 +67,7 @@ Saat pertama kali dijalankan, jika file konfigurasi belum ada, sfdbtools akan me
 
 - Jika `SFDB_APPS_CONFIG` diset, file config dibuat di path tersebut.
 - Jika tidak diset:
-  - akan mencoba `/etc/sfdbtools/config.yaml` (jika punya permission)
+  - akan mencoba `/etc/sfDBTools/config.yaml` (jika punya permission)
   - fallback ke `~/.config/sfdbtools/config.yaml` (atau `XDG_CONFIG_HOME/sfdbtools/config.yaml`)
 
 ## Quickstart
@@ -375,7 +375,7 @@ sfdbtools db-backup single \
 
 ```cron
 # Daily backup jam 2 pagi
-0 2 * * * cd /opt/sfdbtools && SFDB_QUIET=1 sfdbtools db-backup all --profile /etc/sfdbtools/prod.cnf.enc --ticket "DAILY-$(date +\%Y\%m\%d)" >> /var/log/sfdbtools-backup.log 2>&1
+0 2 * * * cd /opt/sfdbtools && SFDB_QUIET=1 sfdbtools db-backup all --profile /etc/sfDBTools/config/db_profile/prod.cnf.enc --ticket "DAILY-$(date +\%Y\%m\%d)" >> /var/log/sfdbtools-backup.log 2>&1
 
 # Weekly cleanup retention 30 hari
 0 3 * * 0 sfdbtools cleanup auto --backup-dir /backups --retention-days 30 >> /var/log/sfdbtools-cleanup.log 2>&1

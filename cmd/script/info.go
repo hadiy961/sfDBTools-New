@@ -17,7 +17,8 @@ var CmdScriptInfo = &cobra.Command{
 	Long:  "Mendekripsi bundle .sftools dan membaca manifest untuk menampilkan entrypoint dan metadata.",
 	Example: `
 # Info bundle
-sfdbtools script info -f /etc/sfdbtools/scripts/tes.sftools -k "mypassword"
+
+sfdbtools script info -f /etc/sfDBTools/scripts/tes.sftools -k "mypassword"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		opts := parsing.ParsingScriptInfoOptions(cmd)

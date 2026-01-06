@@ -132,9 +132,10 @@ if [[ "${PURGE}" == "true" ]]; then
   fi
 
   if [[ "${is_root}" == "true" ]]; then
+    rm -rf /etc/sfDBTools || true
     rm -rf /etc/sfdbtools || true
   else
-    echo "ℹ️  Skip hapus /etc/sfdbtools (butuh sudo)" >&2
+    echo "ℹ️  Skip hapus /etc/sfDBTools (butuh sudo)" >&2
   fi
 
   # User config

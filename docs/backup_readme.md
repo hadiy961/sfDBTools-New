@@ -171,7 +171,7 @@ sfdbtools db-backup all [flags]
 ```bash
 sfdbtools db-backup all \
   --quiet \
-  --profile /etc/sfdbtools/profiles/db_prod.cnf.enc \
+  --profile /etc/sfDBTools/config/db_profile/db_prod.cnf.enc \
   --profile-key "your-profile-key" \
   --ticket "BACKUP-2026-001" \
   --backup-key "your-backup-key" \

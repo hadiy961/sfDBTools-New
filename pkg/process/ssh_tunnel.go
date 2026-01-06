@@ -2,7 +2,7 @@
 // Deskripsi : SSH tunnel native Go (port forwarding)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2 Januari 2026
-// Last Modified : 2 Januari 2026
+// Last Modified : 6 Januari 2026
 
 package process
 
@@ -24,7 +24,7 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
-const defaultSfDBToolsKnownHostsPath = "/etc/sfdbtools/known_hosts"
+const defaultSfDBToolsKnownHostsPath = "/etc/sfDBTools/known_hosts"
 
 const fallbackUserKnownHostsPath = ".config/sfdbtools/known_hosts"
 
@@ -123,7 +123,7 @@ func ensureFile(path string) error {
 }
 
 func selectKnownHostsPath() (string, error) {
-	// 1) Prefer /etc/sfdbtools/known_hosts
+	// 1) Prefer /etc/sfDBTools/known_hosts
 	if err := ensureFile(defaultSfDBToolsKnownHostsPath); err == nil {
 		return defaultSfDBToolsKnownHostsPath, nil
 	}

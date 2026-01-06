@@ -2,7 +2,7 @@
 // Deskripsi : Generator unit systemd untuk scheduler cleanup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package scheduler
 
 import (
@@ -19,7 +19,7 @@ import (
 const (
 	systemdUnitDir  = "/etc/systemd/system"
 	defaultLockFile = "/var/lock/sfdbtools-backup.lock" // shared lock (serialize with scheduled backups)
-	defaultEnvFile  = "/etc/sfdbtools/.env"
+	defaultEnvFile  = "/etc/sfDBTools/.env"
 
 	cleanupServiceUnit = "sfdbtools-cleanup.service"
 	cleanupTimerUnit   = "sfdbtools-cleanup.timer"

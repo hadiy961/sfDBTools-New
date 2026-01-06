@@ -1,7 +1,13 @@
+// File : pkg/consts/consts_paths.go
+// Deskripsi : Konstanta default path (system-wide)
+// Author : Hadiyatna Muflihun
+// Tanggal : 6 Januari 2026
+// Last Modified : 6 Januari 2026
+
 package consts
 
 // Default paths used across services.
 const (
-	DefaultAppConfigPath = "/etc/sfdbtools/config.yaml"
+	DefaultAppConfigPath = "/etc/sfDBTools/config.yaml"
 	DefaultLogDir        = "/var/log/sfdbtools"
 )

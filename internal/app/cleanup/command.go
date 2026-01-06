@@ -2,7 +2,7 @@
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 6 Januari 2026
 package cleanup
 
 import (
@@ -63,7 +63,7 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 		res, runErr := scheduler.SpawnSelfInBackground(ctx, scheduler.SpawnSelfOptions{
 			UnitPrefix:    "sfdbtools-cleanup",
 			Mode:          scheduler.RunModeAuto,
-			EnvFile:       "/etc/sfdbtools/.env",
+			EnvFile:       "/etc/sfDBTools/.env",
 			WorkDir:       wd,
 			Collect:       true,
 			NoAskPass:     true,

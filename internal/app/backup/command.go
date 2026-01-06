@@ -2,7 +2,7 @@
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-06
 package backup
 
 import (
@@ -117,7 +117,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 		res, runErr := scheduler.SpawnSelfInBackground(ctx, scheduler.SpawnSelfOptions{
 			UnitPrefix:    "sfdbtools-backup",
 			Mode:          scheduler.RunModeAuto,
-			EnvFile:       "/etc/sfdbtools/.env",
+			EnvFile:       "/etc/sfDBTools/.env",
 			WorkDir:       wd,
 			Collect:       true,
 			NoAskPass:     true,

@@ -2,7 +2,7 @@
 // Deskripsi : Generator unit systemd untuk scheduler backup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-06
 package scheduler
 
 import (
@@ -23,7 +23,7 @@ import (
 const (
 	systemdUnitDir  = "/etc/systemd/system"
 	defaultLockFile = "/var/lock/sfdbtools-backup.lock"
-	defaultEnvFile  = "/etc/sfdbtools/.env"
+	defaultEnvFile  = "/etc/sfDBTools/.env"
 	serviceTemplate = "sfdbtools-backup@.service"
 )
 
