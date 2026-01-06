@@ -1,7 +1,6 @@
 package encrypt
 
 import (
-	"os"
 	"sfdbtools/internal/ui/prompt"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -17,7 +16,9 @@ import (
 //   - source: "env" atau "prompt"
 //   - error: jika gagal mendapatkan password
 func PromptPassword(envVar, promptMsg string) (password, source string, err error) {
-	if pw := os.Getenv(envVar); pw != "" {
+	if pw, err := ResolveEnvSecret(envVar); err != nil {
+		return "", "env", err
+	} else if pw != "" {
 		return pw, "env", nil
 	}
 	pw, err := prompt.AskPassword(promptMsg, survey.Required)

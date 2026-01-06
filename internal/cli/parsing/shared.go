@@ -10,21 +10,27 @@ import (
 )
 
 // PopulateProfileFlags membaca flag profile dan mengupdate struct.
-func PopulateProfileFlags(cmd *cobra.Command, opts *domain.ProfileInfo) {
+func PopulateProfileFlags(cmd *cobra.Command, opts *domain.ProfileInfo) error {
 	if v := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE); v != "" {
 		opts.Path = v
 	}
-	if v := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY); v != "" {
+	if v, err := helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY); err != nil {
+		return err
+	} else if v != "" {
 		opts.EncryptionKey = v
 	}
+	return nil
 }
 
 // PopulateEncryptionFlags membaca flag encryption dan mengupdate struct.
-func PopulateEncryptionFlags(cmd *cobra.Command, opts *domain.EncryptionOptions) {
-	if v := helper.GetStringFlagOrEnv(cmd, "backup-key", consts.ENV_BACKUP_ENCRYPTION_KEY); v != "" {
+func PopulateEncryptionFlags(cmd *cobra.Command, opts *domain.EncryptionOptions) error {
+	if v, err := helper.GetSecretStringFlagOrEnv(cmd, "backup-key", consts.ENV_BACKUP_ENCRYPTION_KEY); err != nil {
+		return err
+	} else if v != "" {
 		opts.Key = v
 		opts.Enabled = true
 	}
+	return nil
 }
 
 // PopulateFilterFlags membaca flag filter dan mengupdate struct.
@@ -52,20 +58,26 @@ func PopulateFilterFlags(cmd *cobra.Command, opts *domain.FilterOptions) {
 // -------------------- restore helpers --------------------
 
 // PopulateTargetProfileFlags membaca flag profile target (restore) dan mengupdate struct.
-func PopulateTargetProfileFlags(cmd *cobra.Command, opts *domain.ProfileInfo) {
+func PopulateTargetProfileFlags(cmd *cobra.Command, opts *domain.ProfileInfo) error {
 	if v := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_TARGET_PROFILE); v != "" {
 		opts.Path = v
 	}
-	if v := helper.GetStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY); v != "" {
+	if v, err := helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY); err != nil {
+		return err
+	} else if v != "" {
 		opts.EncryptionKey = v
 	}
+	return nil
 }
 
 // PopulateRestoreEncryptionKey membaca encryption key untuk decrypt backup file.
-func PopulateRestoreEncryptionKey(cmd *cobra.Command, key *string) {
-	if v := helper.GetStringFlagOrEnv(cmd, "encryption-key", consts.ENV_BACKUP_ENCRYPTION_KEY); v != "" {
+func PopulateRestoreEncryptionKey(cmd *cobra.Command, key *string) error {
+	if v, err := helper.GetSecretStringFlagOrEnv(cmd, "encryption-key", consts.ENV_BACKUP_ENCRYPTION_KEY); err != nil {
+		return err
+	} else if v != "" {
 		*key = v
 	}
+	return nil
 }
 
 // PopulateRestoreSafetyFlags membaca flag safety umum untuk restore.

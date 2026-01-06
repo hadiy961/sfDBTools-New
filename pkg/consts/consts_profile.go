@@ -176,6 +176,8 @@ const (
 	ProfileErrWriteConfigFailedFmt        = ProfileErrWriteConfigBase + ": %w"
 
 	ProfileSavePromptContinueDespiteDBFail = "\nKoneksi database gagal. Apakah Anda tetap ingin menyimpan konfigurasi ini?"
+	ProfileSaveVerifyKeyPrompt             = "Masukkan ulang encryption key untuk konfirmasi penyimpanan: "
+	ProfileSaveVerifyKeyMismatch           = "Konfirmasi encryption key tidak cocok. Penyimpanan dibatalkan."
 	ProfileSaveWarnSavingWithInvalidConn   = "⚠️  PERINGATAN: Menyimpan konfigurasi dengan koneksi database yang tidak valid."
 	ProfileWarnSavedButDeleteOldFailedFmt  = "Berhasil menyimpan '%s' tetapi gagal menghapus file lama '%s': %v"
 	ProfileSuccessSavedRenamedFmt          = "File konfigurasi berhasil disimpan sebagai '%s' (rename dari '%s')."

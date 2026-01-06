@@ -16,7 +16,9 @@ func ParsingScanAllOptions(cmd *cobra.Command) (dbscanmodel.ScanOptions, error) 
 	opts := defaultVal.GetDefaultScanOptions("all")
 
 	// Profile & key (Shared Helper)
-	PopulateProfileFlags(cmd, &opts.ProfileInfo)
+	if err := PopulateProfileFlags(cmd, &opts.ProfileInfo); err != nil {
+		return dbscanmodel.ScanOptions{}, err
+	}
 
 	// Options lain yang diminta
 	opts.ExcludeSystem = helper.GetBoolFlagOrEnv(cmd, "exclude-system", "")
