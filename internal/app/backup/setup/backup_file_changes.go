@@ -11,11 +11,11 @@ import (
 	"strconv"
 	"strings"
 
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/compress"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/compress"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/validation"
 )
 
 func (s *Setup) changeBackupOutputDirInteractive(customOutputDir *string) error {

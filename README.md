@@ -1,6 +1,6 @@
-# sfDBTools
+# sfdbtools
 
-sfDBTools adalah CLI utility untuk operasi MySQL/MariaDB: backup, restore, db-scan, cleanup, crypto, dan manajemen profil koneksi.
+sfdbtools adalah CLI utility untuk operasi MySQL/MariaDB: backup, restore, db-scan, cleanup, crypto, dan manajemen profil koneksi.
 
 Target utama: penggunaan di environment server (Linux) dengan fokus pada **streaming** (hemat RAM), **safety**, dan **otomasi**.
 
@@ -11,13 +11,13 @@ Target utama: penggunaan di environment server (Linux) dengan fokus pada **strea
 Install sebagai root (akan auto pilih `.deb` / `.rpm` / tar sesuai OS):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/install.sh | sudo bash
 ```
 
 Install tanpa root (tar ke `~/.local/bin`):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/install.sh | bash
 ```
 
 Verifikasi:
@@ -29,7 +29,7 @@ sfdbtools --help
 
 ## Auto Update
 
-sfDBTools bisa melakukan auto-update dari GitHub Releases.
+sfdbtools bisa melakukan auto-update dari GitHub Releases.
 
 - Default: auto-update aktif saat startup.
 - Disable paksa (override): `SFDB_NO_AUTO_UPDATE=1`
@@ -38,19 +38,19 @@ sfDBTools bisa melakukan auto-update dari GitHub Releases.
 Catatan:
 - Auto-update saat ini hanya untuk `linux/amd64` (sesuai workflow release).
 - Jika binary terpasang di `/usr/bin`, jalankan dengan `sudo` agar bisa overwrite.
-- Saat startup, sfDBTools akan cek koneksi internet dulu. Jika tidak ada internet, proses update akan di-skip.
+- Saat startup, sfdbtools akan cek koneksi internet dulu. Jika tidak ada internet, proses update akan di-skip.
 - Saat mode non-quiet, proses cek update menampilkan spinner singkat (output ke stderr).
 
 ### Uninstall
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/uninstall.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/uninstall.sh | sudo bash
 ```
 
 Uninstall + hapus config user (HATI-HATI):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/uninstall.sh | sudo bash -s -- --purge
+curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/uninstall.sh | sudo bash -s -- --purge
 ```
 
 ## Requirements (dependensi runtime)
@@ -63,12 +63,12 @@ curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts
 
 ## Konfigurasi (auto)
 
-Saat pertama kali dijalankan, jika file konfigurasi belum ada, sfDBTools akan membuat config default otomatis.
+Saat pertama kali dijalankan, jika file konfigurasi belum ada, sfdbtools akan membuat config default otomatis.
 
 - Jika `SFDB_APPS_CONFIG` diset, file config dibuat di path tersebut.
 - Jika tidak diset:
-  - akan mencoba `/etc/sfDBTools/config.yaml` (jika punya permission)
-  - fallback ke `~/.config/sfDBTools/config.yaml` (atau `XDG_CONFIG_HOME/sfDBTools/config.yaml`)
+  - akan mencoba `/etc/sfdbtools/config.yaml` (jika punya permission)
+  - fallback ke `~/.config/sfdbtools/config.yaml` (atau `XDG_CONFIG_HOME/sfdbtools/config.yaml`)
 
 ## Quickstart
 
@@ -375,7 +375,7 @@ sfdbtools db-backup single \
 
 ```cron
 # Daily backup jam 2 pagi
-0 2 * * * cd /opt/sfDBTools && SFDB_QUIET=1 sfdbtools db-backup all --profile /etc/sfDBTools/prod.cnf.enc --ticket "DAILY-$(date +\%Y\%m\%d)" >> /var/log/sfdbtools-backup.log 2>&1
+0 2 * * * cd /opt/sfdbtools && SFDB_QUIET=1 sfdbtools db-backup all --profile /etc/sfdbtools/prod.cnf.enc --ticket "DAILY-$(date +\%Y\%m\%d)" >> /var/log/sfdbtools-backup.log 2>&1
 
 # Weekly cleanup retention 30 hari
 0 3 * * 0 sfdbtools cleanup auto --backup-dir /backups --retention-days 30 >> /var/log/sfdbtools-cleanup.log 2>&1
@@ -415,6 +415,11 @@ Mulai UI-1, seluruh code internal wajib lewat facade `internal/ui/*`:
 - Gunakan `internal/ui/print`, `internal/ui/prompt`, `internal/ui/table`, `internal/ui/progress`, `internal/ui/text`, `internal/ui/style`.
 - Per UI-2, implementasi UI output sudah berada di `internal/ui/*` (tidak ada lagi pemakaian paket UI legacy).
 - Per UI-3, engine prompt dipisah ke `internal/ui/input` dan public API tetap di `internal/ui/prompt`.
+
+Pembagian tanggung jawab:
+
+- `internal/ui/input`: wrapper low-level untuk `survey` + validator + selector (primitive interaksi).
+- `internal/ui/prompt`: facade/high-level API yang dipakai feature (mis. `AskText`, `AskPassword`, `SelectOne/Many`) dan menjaga konsistensi UX.
 
 Rencana deprecation bertahap:
 

@@ -1,7 +1,7 @@
 package flags
 
 import (
-	"sfDBTools/internal/domain"
+	"sfdbtools/internal/domain"
 
 	"github.com/spf13/cobra"
 )

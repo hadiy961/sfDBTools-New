@@ -1,6 +1,6 @@
 package types
 
-import "sfDBTools/internal/domain"
+import "sfdbtools/internal/domain"
 
 // ScanEntryConfig untuk konfigurasi scan entry point
 type ScanEntryConfig struct {

@@ -8,7 +8,7 @@ package modes
 import (
 	"context"
 	"fmt"
-	restoremodel "sfDBTools/internal/app/restore/model"
+	restoremodel "sfdbtools/internal/app/restore/model"
 )
 
 // batchRestoreTracker melacak jumlah sukses/gagal untuk operasi batch

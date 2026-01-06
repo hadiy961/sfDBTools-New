@@ -7,8 +7,8 @@ package backupcmd
 
 import (
 	"fmt"
-	"sfDBTools/internal/app/backup"
-	appdeps "sfDBTools/internal/cli/deps"
+	"sfdbtools/internal/app/backup"
+	appdeps "sfdbtools/internal/cli/deps"
 
 	"github.com/spf13/cobra"
 )

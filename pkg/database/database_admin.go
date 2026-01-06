@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sfDBTools/internal/ui/progress"
+	"sfdbtools/internal/ui/progress"
 )
 
 // CheckDatabaseExists mengecek apakah database sudah ada

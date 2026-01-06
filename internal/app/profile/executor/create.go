@@ -9,10 +9,10 @@ package executor
 import (
 	"fmt"
 
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/runtimecfg"
+	"sfdbtools/pkg/validation"
 )
 
 func (e *Executor) CreateProfile() error {

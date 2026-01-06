@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"sfDBTools/internal/app/backup/metadata"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/pkg/consts"
-	pkghelper "sfDBTools/pkg/helper"
+	"sfdbtools/internal/app/backup/metadata"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/pkg/consts"
+	pkghelper "sfdbtools/pkg/helper"
 )
 
 // buildDryRunInfo membuat DatabaseBackupInfo untuk dry-run mode.

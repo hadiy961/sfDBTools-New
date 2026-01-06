@@ -1,8 +1,8 @@
 package restore
 
 import (
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/domain"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/domain"
 )
 
 // File : internal/restore/setup_shared_backup.go

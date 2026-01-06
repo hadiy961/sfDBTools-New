@@ -8,12 +8,12 @@ package helpers
 import (
 	"fmt"
 
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/table"
-	"sfDBTools/internal/ui/text"
-	"sfDBTools/pkg/consts"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/table"
+	"sfdbtools/internal/ui/text"
+	"sfdbtools/pkg/consts"
 )
 
 // DisplayScanResult menampilkan hasil scanning ke UI

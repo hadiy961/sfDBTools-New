@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	"sfDBTools/pkg/fsops"
+	"sfdbtools/pkg/fsops"
 )
 
 // GetInteractiveInputBytes membaca input dari user secara interaktif (multi-line).

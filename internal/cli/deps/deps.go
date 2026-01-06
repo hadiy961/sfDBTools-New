@@ -1,8 +1,8 @@
 package deps
 
 import (
-	appconfig "sfDBTools/internal/services/config"
-	applog "sfDBTools/internal/services/log"
+	appconfig "sfdbtools/internal/services/config"
+	applog "sfdbtools/internal/services/log"
 )
 
 // Dependencies adalah struct yang menyimpan semua dependensi global aplikasi.

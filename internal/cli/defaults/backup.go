@@ -1,9 +1,9 @@
 package defaultVal
 
 import (
-	"sfDBTools/internal/app/backup/model/types_backup"
-	appconfig "sfDBTools/internal/services/config"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	appconfig "sfdbtools/internal/services/config"
+	"sfdbtools/pkg/helper"
 )
 
 // DefaultBackupOptions mengembalikan default options untuk database backup

@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/pkg/validation"
 	"strings"
 	"time"
 )

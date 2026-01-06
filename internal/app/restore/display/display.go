@@ -8,8 +8,8 @@ package display
 import (
 	"fmt"
 	"path/filepath"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/ui/print"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/ui/print"
 )
 
 // ShowRestoreSingleResult menampilkan hasil restore single

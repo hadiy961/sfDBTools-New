@@ -9,12 +9,12 @@ import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/app/backup/gtid"
-	"sfDBTools/internal/app/backup/metadata"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/fsops"
+	"sfdbtools/internal/app/backup/gtid"
+	"sfdbtools/internal/app/backup/metadata"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/fsops"
 )
 
 // ExtractMysqldumpVersion mengambil versi mysqldump dari stderr output.

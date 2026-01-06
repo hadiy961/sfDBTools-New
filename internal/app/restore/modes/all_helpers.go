@@ -9,9 +9,9 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"sfDBTools/internal/app/restore/helpers"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/pkg/database"
+	"sfdbtools/internal/app/restore/helpers"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/pkg/database"
 	"strings"
 )
 

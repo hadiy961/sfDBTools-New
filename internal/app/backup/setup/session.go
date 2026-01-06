@@ -11,14 +11,14 @@ import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/app/backup/display"
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/database"
-	profilehelper "sfDBTools/pkg/helper/profile"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/app/backup/display"
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/database"
+	profilehelper "sfdbtools/pkg/helper/profile"
+	"sfdbtools/pkg/validation"
 )
 
 type PathGenerator func(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error)

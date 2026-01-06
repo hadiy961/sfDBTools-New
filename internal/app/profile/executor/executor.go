@@ -6,9 +6,9 @@
 package executor
 
 import (
-	profilemodel "sfDBTools/internal/app/profile/model"
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/services/log"
+	profilemodel "sfdbtools/internal/app/profile/model"
+	"sfdbtools/internal/domain"
+	applog "sfdbtools/internal/services/log"
 )
 
 type Executor struct {

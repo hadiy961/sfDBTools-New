@@ -8,13 +8,13 @@ package dbscan
 
 import (
 	"fmt"
-	"sfDBTools/internal/app/dbscan/helpers"
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/internal/ui/table"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/app/dbscan/helpers"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/internal/ui/table"
+	"sfdbtools/pkg/validation"
 )
 
 // DisplayScanOptions menampilkan opsi scanning aktif dan meminta konfirmasi

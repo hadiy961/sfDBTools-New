@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"sfDBTools/pkg/compress"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/pkg/compress"
+	"sfdbtools/pkg/consts"
 )
 
 func GenerateBackupDirectory(baseDir string, structurePattern string, hostname string) (string, error) {

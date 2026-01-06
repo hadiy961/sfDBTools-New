@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sfDBTools/cmd"
-	"sfDBTools/internal/autoupdate"
-	appdeps "sfDBTools/internal/cli/deps"
-	config "sfDBTools/internal/services/config"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/progress"
-	"sfDBTools/pkg/runtimecfg"
+	"sfdbtools/cmd"
+	"sfdbtools/internal/autoupdate"
+	appdeps "sfdbtools/internal/cli/deps"
+	config "sfdbtools/internal/services/config"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/progress"
+	"sfdbtools/pkg/runtimecfg"
 	"time"
 
-	applog "sfDBTools/internal/services/log"
+	applog "sfdbtools/internal/services/log"
 )
 
 // Inisialisasi awal untuk Config dan Logger.

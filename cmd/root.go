@@ -1,5 +1,5 @@
 // File : cmd/cmd_root.go
-// Deskripsi : Root command untuk aplikasi sfDBTools
+// Deskripsi : Root command untuk aplikasi sfdbtools
 // Author : Hadiyatna Muflihun
 // Tanggal : 3 Oktober 2024
 // Last Modified : 5 Januari 2026
@@ -9,17 +9,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	backupcmd "sfDBTools/cmd/backup"
-	cleanupcmd "sfDBTools/cmd/cleanup"
-	cryptocmd "sfDBTools/cmd/crypto"
-	dbscancmd "sfDBTools/cmd/dbscan"
-	jobscmd "sfDBTools/cmd/jobs"
-	profilecmd "sfDBTools/cmd/profile"
-	restorecmd "sfDBTools/cmd/restore"
-	scriptcmd "sfDBTools/cmd/script"
-	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/runtimecfg"
+	backupcmd "sfdbtools/cmd/backup"
+	cleanupcmd "sfdbtools/cmd/cleanup"
+	cryptocmd "sfdbtools/cmd/crypto"
+	dbscancmd "sfdbtools/cmd/dbscan"
+	jobscmd "sfdbtools/cmd/jobs"
+	profilecmd "sfdbtools/cmd/profile"
+	restorecmd "sfdbtools/cmd/restore"
+	scriptcmd "sfdbtools/cmd/script"
+	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/runtimecfg"
 	"strings"
 
 	"github.com/spf13/cobra"

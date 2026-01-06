@@ -9,15 +9,15 @@ import (
 	"fmt"
 	"strings"
 
-	profilemodel "sfDBTools/internal/app/profile/model"
-	"sfDBTools/internal/app/profile/shared"
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/fsops"
-	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/validation"
+	profilemodel "sfdbtools/internal/app/profile/model"
+	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/fsops"
+	"sfdbtools/pkg/helper"
+	"sfdbtools/pkg/validation"
 
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -106,6 +106,7 @@ func (r *Runner) runEditFlow() error {
 
 // ensureSSHTunnelMinimumIfEnabled memastikan kebutuhan minimal SSH tunnel pada edit flow.
 // Pada edit flow, kita hindari prompt untuk field opsional (identity/local port/password) kecuali user memilihnya manual.
+// Catatan: SSH Host wajib jika tunnel aktif, dan SSH Port akan di-default ke 22 jika kosong.
 func (r *Runner) ensureSSHTunnelMinimumIfEnabled() error {
 	if r.ProfileInfo == nil {
 		return nil

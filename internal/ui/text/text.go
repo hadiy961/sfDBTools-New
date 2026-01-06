@@ -6,7 +6,7 @@
 
 package text
 
-import "sfDBTools/internal/ui/style"
+import "sfdbtools/internal/ui/style"
 
 // Color memberi warna pada string.
 func Color(s string, color style.Color) string {

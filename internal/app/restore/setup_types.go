@@ -6,7 +6,7 @@
 package restore
 
 import (
-	"sfDBTools/internal/domain"
+	"sfdbtools/internal/domain"
 )
 
 // basicSetupOptions contains common setup options for all modes

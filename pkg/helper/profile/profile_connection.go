@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/ui/progress"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/database"
-	"sfDBTools/pkg/process"
-	"sfDBTools/pkg/runtimecfg"
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/ui/progress"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/database"
+	"sfdbtools/pkg/process"
+	"sfdbtools/pkg/runtimecfg"
 )
 
 // EffectiveDBInfo mengembalikan DBInfo yang efektif untuk koneksi.

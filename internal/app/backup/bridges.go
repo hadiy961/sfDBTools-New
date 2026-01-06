@@ -9,14 +9,14 @@ package backup
 import (
 	"context"
 
-	"sfDBTools/internal/app/backup/execution"
-	"sfDBTools/internal/app/backup/grants"
-	"sfDBTools/internal/app/backup/gtid"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/internal/app/backup/selection"
-	"sfDBTools/internal/app/backup/setup"
-	"sfDBTools/internal/domain"
-	"sfDBTools/pkg/database"
+	"sfdbtools/internal/app/backup/execution"
+	"sfdbtools/internal/app/backup/grants"
+	"sfdbtools/internal/app/backup/gtid"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/app/backup/selection"
+	"sfdbtools/internal/app/backup/setup"
+	"sfdbtools/internal/domain"
+	"sfdbtools/pkg/database"
 )
 
 // =============================================================================

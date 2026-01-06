@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfDBTools/internal/services/config"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/validation"
+	appconfig "sfdbtools/internal/services/config"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/validation"
 )
 
 // TrimProfileSuffix menghapus suffix .cnf.enc dari nama jika ada.

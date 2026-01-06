@@ -8,13 +8,13 @@ package wizard
 import (
 	"fmt"
 
-	profilemodel "sfDBTools/internal/app/profile/model"
-	"sfDBTools/internal/domain"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/validation"
+	profilemodel "sfdbtools/internal/app/profile/model"
+	"sfdbtools/internal/domain"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/validation"
 )
 
 type Runner struct {

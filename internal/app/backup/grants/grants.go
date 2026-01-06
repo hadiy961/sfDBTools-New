@@ -3,9 +3,9 @@ package grants
 import (
 	"context"
 
-	"sfDBTools/internal/app/backup/metadata"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/pkg/database"
+	"sfdbtools/internal/app/backup/metadata"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/pkg/database"
 )
 
 // ExportUserGrantsIfNeeded exports user grants unless excluded or in dry-run.

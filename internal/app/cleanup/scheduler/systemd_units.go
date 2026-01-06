@@ -12,14 +12,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/services/scheduler"
+	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/services/scheduler"
 )
 
 const (
 	systemdUnitDir  = "/etc/systemd/system"
 	defaultLockFile = "/var/lock/sfdbtools-backup.lock" // shared lock (serialize with scheduled backups)
-	defaultEnvFile  = "/etc/sfDBTools/.env"
+	defaultEnvFile  = "/etc/sfdbtools/.env"
 
 	cleanupServiceUnit = "sfdbtools-cleanup.service"
 	cleanupTimerUnit   = "sfdbtools-cleanup.timer"
@@ -109,7 +109,7 @@ func writeServiceUnit(dryRun bool) error {
 
 	content := strings.Join([]string{
 		"[Unit]",
-		"Description=sfDBTools Cleanup",
+		"Description=sfdbtools Cleanup",
 		"After=network-online.target",
 		"Wants=network-online.target",
 		"",
@@ -141,7 +141,7 @@ func writeTimerUnit(cron string) error {
 
 	content := strings.Join([]string{
 		"[Unit]",
-		"Description=sfDBTools Cleanup Timer",
+		"Description=sfdbtools Cleanup Timer",
 		"",
 		"[Timer]",
 		fmt.Sprintf("OnCalendar=%s", onCalendar),
@@ -169,7 +169,7 @@ func ensureRoot() error {
 
 func detectBinaryPathForSystemd() string {
 	// Default: sesuai scripts/build_run.sh (dan tar installer).
-	defaultPath := "/usr/bin/sfDBTools"
+	defaultPath := "/usr/bin/sfdbtools"
 	if _, err := os.Stat("/usr/bin/sfdbtools"); err == nil {
 		return "/usr/bin/sfdbtools"
 	}

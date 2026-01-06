@@ -2,8 +2,8 @@ package defaultVal
 
 import (
 	"fmt"
-	profilemodel "sfDBTools/internal/app/profile/model"
-	appconfig "sfDBTools/internal/services/config"
+	profilemodel "sfdbtools/internal/app/profile/model"
+	appconfig "sfdbtools/internal/services/config"
 )
 
 func DefaultProfileCreateOptions() profilemodel.ProfileCreateOptions {

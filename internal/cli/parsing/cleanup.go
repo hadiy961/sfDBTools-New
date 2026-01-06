@@ -1,9 +1,9 @@
 package parsing
 
 import (
-	cleanupmodel "sfDBTools/internal/app/cleanup/model"
-	defaultVal "sfDBTools/internal/cli/defaults"
-	"sfDBTools/pkg/helper"
+	cleanupmodel "sfdbtools/internal/app/cleanup/model"
+	defaultVal "sfdbtools/internal/cli/defaults"
+	"sfdbtools/pkg/helper"
 
 	"github.com/spf13/cobra"
 )

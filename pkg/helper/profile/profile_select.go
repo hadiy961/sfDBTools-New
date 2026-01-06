@@ -5,12 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/fsops"
-	"sfDBTools/pkg/helper/profileutil"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/fsops"
+	"sfdbtools/pkg/helper/profileutil"
+	"sfdbtools/pkg/validation"
 )
 
 func SelectExistingDBConfig(configDir, purpose string) (domain.ProfileInfo, error) {

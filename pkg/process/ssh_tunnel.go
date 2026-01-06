@@ -24,9 +24,9 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
-const defaultSfDBToolsKnownHostsPath = "/etc/sfDBTools/known_hosts"
+const defaultSfDBToolsKnownHostsPath = "/etc/sfdbtools/known_hosts"
 
-const fallbackUserKnownHostsPath = ".config/sfDBTools/known_hosts"
+const fallbackUserKnownHostsPath = ".config/sfdbtools/known_hosts"
 
 type SSHTunnelOptions struct {
 	SSHHost        string
@@ -94,7 +94,7 @@ func (o SSHTunnelOptions) validate() error {
 }
 
 func defaultKnownHostsPaths() []string {
-	// Prioritaskan known_hosts khusus sfDBTools agar tidak konflik dengan ~/.ssh/known_hosts.
+	// Prioritaskan known_hosts khusus sfdbtools agar tidak konflik dengan ~/.ssh/known_hosts.
 	// Jika file ini ada, kita akan pakai secara eksklusif.
 	paths := []string{defaultSfDBToolsKnownHostsPath}
 	if home, err := os.UserHomeDir(); err == nil && strings.TrimSpace(home) != "" {
@@ -123,12 +123,12 @@ func ensureFile(path string) error {
 }
 
 func selectKnownHostsPath() (string, error) {
-	// 1) Prefer /etc/sfDBTools/known_hosts
+	// 1) Prefer /etc/sfdbtools/known_hosts
 	if err := ensureFile(defaultSfDBToolsKnownHostsPath); err == nil {
 		return defaultSfDBToolsKnownHostsPath, nil
 	}
 
-	// 2) Fallback per-user: ~/.config/sfDBTools/known_hosts
+	// 2) Fallback per-user: ~/.config/sfdbtools/known_hosts
 	home, err := os.UserHomeDir()
 	if err != nil || strings.TrimSpace(home) == "" {
 		return "", fmt.Errorf("tidak bisa menentukan home dir untuk fallback known_hosts")
@@ -185,14 +185,14 @@ func buildHostKeyCallbackFor(host string, port int) (ssh.HostKeyCallback, string
 	}
 
 	// Auto-trust seperti client GUI: jika host key belum ada / mismatch,
-	// tambahkan key yang sedang dipresentasikan ke file known_hosts sfDBTools.
+	// tambahkan key yang sedang dipresentasikan ke file known_hosts sfdbtools.
 	wrapped := func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 		if err := cb(hostname, remote, key); err == nil {
 			return nil
 		} else {
 			var keyErr *knownhosts.KeyError
 			if errors.As(err, &keyErr) {
-				// Jangan sentuh ~/.ssh/known_hosts; tulis ke file khusus sfDBTools.
+				// Jangan sentuh ~/.ssh/known_hosts; tulis ke file khusus sfdbtools.
 				if werr := appendKnownHost(knownHostsPath, host, port, key); werr == nil {
 					return nil
 				}
@@ -314,7 +314,7 @@ func StartSSHTunnel(ctx context.Context, opts SSHTunnelOptions) (*SSHTunnel, err
 				kh = defaultSfDBToolsKnownHostsPath
 			}
 			return nil, fmt.Errorf(
-				"ssh handshake gagal ke %s: known_hosts key mismatch. sfDBTools akan memakai file: %s. Pastikan host yang dituju benar lalu update host key di file tsb: %w",
+				"ssh handshake gagal ke %s: known_hosts key mismatch. sfdbtools akan memakai file: %s. Pastikan host yang dituju benar lalu update host key di file tsb: %w",
 				sshAddr,
 				kh,
 				err,

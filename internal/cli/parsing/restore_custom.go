@@ -6,7 +6,7 @@
 package parsing
 
 import (
-	restoremodel "sfDBTools/internal/app/restore/model"
+	restoremodel "sfdbtools/internal/app/restore/model"
 
 	"github.com/spf13/cobra"
 )

@@ -9,9 +9,9 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"sfDBTools/internal/app/restore/display"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/ui/print"
+	"sfdbtools/internal/app/restore/display"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/ui/print"
 )
 
 // SetupRestoreSelectionSession melakukan setup untuk restore selection (CSV)

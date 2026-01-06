@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"os"
 
-	internaljobs "sfDBTools/internal/jobs"
-	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/validation"
+	internaljobs "sfdbtools/internal/jobs"
+	"sfdbtools/internal/services/scheduler"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/validation"
 
 	"github.com/spf13/cobra"
 )

@@ -1,10 +1,10 @@
 package parsing
 
 import (
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	defaultVal "sfDBTools/internal/cli/defaults"
-	appconfig "sfDBTools/internal/services/config"
-	"sfDBTools/pkg/helper"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	defaultVal "sfdbtools/internal/cli/defaults"
+	appconfig "sfdbtools/internal/services/config"
+	"sfdbtools/pkg/helper"
 
 	"github.com/spf13/cobra"
 )

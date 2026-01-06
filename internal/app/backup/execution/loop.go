@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"time"
 
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/pkg/consts"
 )
 
 // ExecuteBackupLoop menjalankan backup across multiple databases.

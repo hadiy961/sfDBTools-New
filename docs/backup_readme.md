@@ -1,4 +1,4 @@
-# sfDBTools - Backup Module Documentation
+# sfdbtools - Backup Module Documentation
 
 **Last Updated**: January 2, 2026
 
@@ -171,7 +171,7 @@ sfdbtools db-backup all [flags]
 ```bash
 sfdbtools db-backup all \
   --quiet \
-  --profile /etc/sfDBTools/profiles/db_prod.cnf.enc \
+  --profile /etc/sfdbtools/profiles/db_prod.cnf.enc \
   --profile-key "your-profile-key" \
   --ticket "BACKUP-2026-001" \
   --backup-key "your-backup-key" \
@@ -587,7 +587,7 @@ Metadata files use a **grouped/hierarchical JSON structure** for better readabil
   },
   "ticket": "BACKUP-2026-001",
   "generator": {
-    "generated_by": "sfDBTools",
+    "generated_by": "sfdbtools",
     "generated_at": "2026-01-02T14:35:48Z"
   },
   "warnings": []

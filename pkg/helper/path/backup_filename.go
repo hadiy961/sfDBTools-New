@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"sfDBTools/pkg/compress"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/pkg/compress"
+	"sfdbtools/pkg/consts"
 )
 
 func GenerateBackupFilename(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, excludeData bool) (string, error) {

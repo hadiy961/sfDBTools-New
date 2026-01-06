@@ -8,7 +8,7 @@ package print
 
 import (
 	"fmt"
-	"sfDBTools/internal/ui/progress"
+	"sfdbtools/internal/ui/progress"
 )
 
 // Println menambah satu baris kosong.

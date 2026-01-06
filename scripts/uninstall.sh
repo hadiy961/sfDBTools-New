@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# uninstall.sh - Uninstaller for sfDBTools.
+# uninstall.sh - Uninstaller for sfdbtools.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/uninstall.sh | sudo bash
-#   curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/uninstall.sh | sudo bash -s -- --purge
+#   curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/uninstall.sh | sudo bash
+#   curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/uninstall.sh | sudo bash -s -- --purge
 #
 # Flags:
 #   --purge    Hapus juga config dan data user (HATI-HATI)
@@ -86,9 +86,9 @@ remove_rpm() {
 remove_tar_files() {
   # Hapus binary dari lokasi umum.
   local candidates=(
-    "/usr/bin/sfdbtools" "/usr/bin/sfDBTools"
-    "/usr/local/bin/sfdbtools" "/usr/local/bin/sfDBTools"
-    "${PREFIX}/bin/sfdbtools" "${PREFIX}/bin/sfDBTools"
+    "/usr/bin/sfdbtools" "/usr/bin/sfdbtools"
+    "/usr/local/bin/sfdbtools" "/usr/local/bin/sfdbtools"
+    "${PREFIX}/bin/sfdbtools" "${PREFIX}/bin/sfdbtools"
   )
 
   for p in "${candidates[@]}"; do
@@ -116,7 +116,7 @@ fi
 
 # 2) Hapus binary hasil install tar (atau sisa-sisa).
 if [[ "${pkg_removed}" != "true" ]]; then
-  echo "→ Menghapus binary sfdbtools/sfDBTools (tar/manual install)"
+  echo "→ Menghapus binary sfdbtools/sfdbtools (tar/manual install)"
   remove_tar_files
 fi
 
@@ -132,17 +132,17 @@ if [[ "${PURGE}" == "true" ]]; then
   fi
 
   if [[ "${is_root}" == "true" ]]; then
-    rm -rf /etc/sfDBTools || true
+    rm -rf /etc/sfdbtools || true
   else
-    echo "ℹ️  Skip hapus /etc/sfDBTools (butuh sudo)" >&2
+    echo "ℹ️  Skip hapus /etc/sfdbtools (butuh sudo)" >&2
   fi
 
   # User config
   if [[ -n "${XDG_CONFIG_HOME:-}" ]]; then
-    rm -rf "${XDG_CONFIG_HOME}/sfDBTools" 2>/dev/null || true
+    rm -rf "${XDG_CONFIG_HOME}/sfdbtools" 2>/dev/null || true
   fi
   if [[ -n "${HOME:-}" ]]; then
-    rm -rf "${HOME}/.config/sfDBTools" 2>/dev/null || true
+    rm -rf "${HOME}/.config/sfdbtools" 2>/dev/null || true
   fi
 fi
 

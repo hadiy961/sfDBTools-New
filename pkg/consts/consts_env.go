@@ -47,7 +47,7 @@ const (
 	ENV_AUTO_UPDATE       = "SFDB_AUTO_UPDATE"       // set 1 untuk enable auto-update saat start
 	ENV_NO_AUTO_UPDATE    = "SFDB_NO_AUTO_UPDATE"    // set 1 untuk disable paksa (override)
 	ENV_UPDATE_REPO_OWNER = "SFDB_UPDATE_REPO_OWNER" // default: hadiy961
-	ENV_UPDATE_REPO_NAME  = "SFDB_UPDATE_REPO_NAME"  // default: sfDBTools-New
+	ENV_UPDATE_REPO_NAME  = "SFDB_UPDATE_REPO_NAME"  // default: sfdbtools-New
 	ENV_GITHUB_TOKEN      = "SFDB_GITHUB_TOKEN"      // optional, untuk menghindari rate limit GitHub API
 
 	ENV_PASSWORD_APP = "sfdbtools" // hardcoded password for app database

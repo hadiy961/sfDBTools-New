@@ -8,11 +8,11 @@ package wizard
 import (
 	"strings"
 
-	"sfDBTools/internal/app/profile/shared"
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/helper"
 )
 
 func (r *Runner) runCreateFlow(mode string) error {

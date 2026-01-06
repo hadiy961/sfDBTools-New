@@ -1,7 +1,7 @@
 package flags
 
 import (
-	"sfDBTools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/app/backup/model/types_backup"
 
 	"github.com/spf13/cobra"
 )

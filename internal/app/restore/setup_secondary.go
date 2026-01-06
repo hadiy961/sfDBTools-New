@@ -9,8 +9,8 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/ui/print"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/ui/print"
 	"strings"
 )
 

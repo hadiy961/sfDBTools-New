@@ -7,9 +7,9 @@
 package metadata
 
 import (
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/global"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/global"
 	"time"
 )
 
@@ -32,7 +32,7 @@ func GenerateBackupMetadata(cfg types_backup.MetadataConfig) *types_backup.Backu
 		ExcludeData:       cfg.ExcludeData,
 		BackupStatus:      cfg.BackupStatus,
 		Warnings:          cfg.Warnings,
-		GeneratedBy:       "sfDBTools",
+		GeneratedBy:       "sfdbtools",
 		GeneratedAt:       time.Now(),
 		Ticket:            cfg.Ticket,
 		// Additional files

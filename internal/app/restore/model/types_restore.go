@@ -6,7 +6,7 @@
 
 package types
 
-import "sfDBTools/internal/domain"
+import "sfdbtools/internal/domain"
 
 // RestoreSelectionEntry merepresentasikan satu baris dari CSV selection
 type RestoreSelectionEntry struct {

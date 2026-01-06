@@ -1,9 +1,9 @@
-# sfDBTools Copilot Instructions
+# sfdbtools Copilot Instructions
 
 ## Project Overview
-**sfDBTools** is a production-grade CLI utility built to simplify and standardize day-to-day work for **Database Administrators (DBAs)** managing **MariaDB/MySQL and Microsoft SQL Server** environments. It supports operational workflows across **SaaS**, **hosting**, and **on‑premise** deployments—focused on repeatability, automation, and reducing human error.
+**sfdbtools** is a production-grade CLI utility built to simplify and standardize day-to-day work for **Database Administrators (DBAs)** managing **MariaDB/MySQL and Microsoft SQL Server** environments. It supports operational workflows across **SaaS**, **hosting**, and **on‑premise** deployments—focused on repeatability, automation, and reducing human error.
 
-Built in **Go (Golang)** and aligned with **Clean Architecture**, sfDBTools prioritizes **data safety** and **security**, including **AES‑256** encryption for sensitive assets (such as backups and connection profiles), while keeping execution reliable and suitable for production operations.
+Built in **Go (Golang)** and aligned with **Clean Architecture**, sfdbtools prioritizes **data safety** and **security**, including **AES‑256** encryption for sensitive assets (such as backups and connection profiles), while keeping execution reliable and suitable for production operations.
 
 **Core Features**: Backup (multi-mode with encryption/compression), Restore (with companion database handling), Profile management, DB scanning, Cleanup, and Crypto utilities.
 
@@ -65,7 +65,7 @@ Follow these specific principles when writing or refactoring code for this proje
   - **Examples**:
     - `./scripts/build_run.sh -- backup single --help`
     - `./scripts/build_run.sh -- profile show --file config/my.cnf.enc`
-  - **Output**: Binary compiled to `/usr/bin/sfDBTools`
+  - **Output**: Binary compiled to `/usr/bin/sfdbtools`
 
 - **Environment Variables**:
   - Defined in `pkg/consts/consts_env.go`
@@ -122,7 +122,7 @@ Follow these specific principles when writing or refactoring code for this proje
   - Types split by domain: `internal/types/types_backup.go`, `types_restore.go`, etc.
 
 - **Logging**:
-  - Use `sfDBTools/internal/applog.Logger` interface
+  - Use `sfdbtools/internal/applog.Logger` interface
   - Respect `consts.ENV_QUIET` for pipeline usage (routes logs to stderr)
   - **Error Logging**: Use `pkg/errorlog.ErrorLogger` for feature-specific error logs
 

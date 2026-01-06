@@ -8,10 +8,10 @@ package print
 
 import (
 	"fmt"
-	"sfDBTools/internal/ui/progress"
-	"sfDBTools/internal/ui/style"
-	"sfDBTools/internal/ui/text"
-	"sfDBTools/pkg/runtimecfg"
+	"sfdbtools/internal/ui/progress"
+	"sfdbtools/internal/ui/style"
+	"sfdbtools/internal/ui/text"
+	"sfdbtools/pkg/runtimecfg"
 	"strings"
 )
 

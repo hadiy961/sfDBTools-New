@@ -13,9 +13,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sfDBTools/internal/app/backup/metadata"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/internal/app/backup/metadata"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/pkg/consts"
 	"strings"
 )
 

@@ -13,9 +13,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/helper"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/helper"
 	"strings"
 	"time"
 )

@@ -35,7 +35,7 @@ type BackupConfig struct {
 }
 
 // BackupSchedulerConfig menyimpan konfigurasi scheduler backup berbasis systemd.
-// Scheduler tidak berjalan sebagai daemon internal; sfDBTools hanya meng-generate unit systemd.
+// Scheduler tidak berjalan sebagai daemon internal; sfdbtools hanya meng-generate unit systemd.
 type BackupSchedulerConfig struct {
 	Jobs []BackupSchedulerJob `yaml:"jobs"`
 }

@@ -7,7 +7,7 @@
 package dbscan
 
 import (
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 )
 
 // ExecuteScanCommand adalah fungsi wrapper untuk menjalankan scan command

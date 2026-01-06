@@ -8,10 +8,10 @@ package restore
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/app/restore/helpers"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
+	"sfdbtools/internal/app/restore/helpers"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
 )
 
 // SetupRestorePrimarySession melakukan setup untuk restore primary session

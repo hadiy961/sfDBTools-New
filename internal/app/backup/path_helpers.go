@@ -3,12 +3,12 @@ package backup
 import (
 	"context"
 	"path/filepath"
-	"sfDBTools/internal/app/backup/modes"
-	"sfDBTools/internal/domain"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/database"
-	pkghelper "sfDBTools/pkg/helper"
+	"sfdbtools/internal/app/backup/modes"
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/database"
+	pkghelper "sfdbtools/pkg/helper"
 	"strings"
 )
 

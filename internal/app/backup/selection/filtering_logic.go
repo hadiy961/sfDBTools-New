@@ -3,8 +3,8 @@ package selection
 import (
 	"strings"
 
-	"sfDBTools/internal/domain"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/internal/domain"
+	"sfdbtools/pkg/consts"
 )
 
 // FilterCandidatesByMode memfilter database candidates berdasarkan backup mode.

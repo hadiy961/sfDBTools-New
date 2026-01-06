@@ -6,11 +6,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	scriptmodel "sfDBTools/internal/app/script/model"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/encrypt"
-	"sfDBTools/pkg/helper"
+	scriptmodel "sfdbtools/internal/app/script/model"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/encrypt"
+	"sfdbtools/pkg/helper"
 	"strings"
 )
 

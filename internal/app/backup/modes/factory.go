@@ -8,7 +8,7 @@ package modes
 
 import (
 	"fmt"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/pkg/consts"
 )
 
 // GetExecutor mengembalikan implementasi ModeExecutor yang sesuai berdasarkan mode string

@@ -3,12 +3,12 @@ package dbscancmd
 import (
 	"errors"
 	"fmt"
-	"sfDBTools/internal/app/dbscan"
-	dbscanmodel "sfDBTools/internal/app/dbscan/model"
-	appdeps "sfDBTools/internal/cli/deps"
-	"sfDBTools/internal/cli/flags"
-	"sfDBTools/internal/cli/parsing"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/app/dbscan"
+	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/cli/flags"
+	"sfdbtools/internal/cli/parsing"
+	"sfdbtools/pkg/validation"
 
 	"github.com/spf13/cobra"
 )

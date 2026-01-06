@@ -9,9 +9,9 @@ package shared
 import (
 	"strings"
 
-	"sfDBTools/internal/domain"
-	"sfDBTools/pkg/helper"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/domain"
+	"sfdbtools/pkg/helper"
+	"sfdbtools/pkg/validation"
 )
 
 func BuildProfileFileName(name string) string {

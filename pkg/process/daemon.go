@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sfDBTools/pkg/fsops"
+	"sfdbtools/pkg/fsops"
 	"syscall"
 	"time"
 )

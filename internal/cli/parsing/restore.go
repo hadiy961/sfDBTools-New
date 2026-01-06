@@ -8,9 +8,9 @@ package parsing
 
 import (
 	"path/filepath"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/helper"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/helper"
 	"strings"
 
 	"github.com/spf13/cobra"

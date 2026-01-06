@@ -1,5 +1,5 @@
 // File : internal/jobs/interactive.go
-// Deskripsi : Mode interaktif untuk monitoring job systemd sfDBTools
+// Deskripsi : Mode interaktif untuk monitoring job systemd sfdbtools
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
 // Last Modified : 5 Januari 2026
@@ -12,11 +12,11 @@ import (
 	"sort"
 	"strings"
 
-	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/runtimecfg"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/services/scheduler"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/runtimecfg"
+	"sfdbtools/pkg/validation"
 
 	"github.com/mattn/go-isatty"
 )

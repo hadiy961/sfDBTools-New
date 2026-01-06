@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/internal/domain"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/backuphelper"
-	"sfDBTools/pkg/consts"
-	pkghelper "sfDBTools/pkg/helper"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/domain"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/backuphelper"
+	"sfdbtools/pkg/consts"
+	pkghelper "sfdbtools/pkg/helper"
 )
 
 // DatabaseLister is the minimal interface needed to list databases.

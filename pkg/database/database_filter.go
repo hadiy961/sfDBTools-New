@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sfDBTools/internal/domain"
-	"sfDBTools/pkg/fsops"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/domain"
+	"sfdbtools/pkg/fsops"
+	"sfdbtools/pkg/helper"
 	"strings"
 )
 

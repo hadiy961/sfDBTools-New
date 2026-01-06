@@ -8,8 +8,8 @@ package restore
 
 import (
 	"path/filepath"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/helper"
 	"strings"
 )
 

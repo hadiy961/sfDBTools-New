@@ -7,7 +7,7 @@
 package types_backup
 
 import (
-	"sfDBTools/internal/domain"
+	"sfdbtools/internal/domain"
 	"time"
 )
 

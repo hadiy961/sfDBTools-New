@@ -8,8 +8,8 @@ package restore
 import (
 	"context"
 	"fmt"
-	"sfDBTools/internal/app/restore/helpers"
-	restoremodel "sfDBTools/internal/app/restore/model"
+	"sfdbtools/internal/app/restore/helpers"
+	restoremodel "sfdbtools/internal/app/restore/model"
 )
 
 // BackupDatabaseIfNeeded melakukan backup database jika diperlukan

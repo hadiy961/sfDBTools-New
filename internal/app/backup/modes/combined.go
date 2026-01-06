@@ -10,8 +10,8 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/pkg/consts"
 	"strings"
 	"time"
 )

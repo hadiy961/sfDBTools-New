@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/helper"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/helper"
 )
 
 func (s *Service) resolveGrantsFile(skipGrants *bool, grantsFile *string, backupFile string, allowInteractive bool, stopOnError bool) error {

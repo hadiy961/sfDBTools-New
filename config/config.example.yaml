@@ -1,5 +1,5 @@
-# Default configuration for sfDBTools (safe defaults, no secrets)
-# Copy to /etc/sfDBTools/config.yaml if you want system-wide config.
+# Default configuration for sfdbtools (safe defaults, no secrets)
+# Copy to /etc/sfdbtools/config.yaml if you want system-wide config.
 
 backup:
   compression:
@@ -56,8 +56,8 @@ backup:
       #   enabled: true
       #   schedule: "0 2 * * *" # tiap hari 02:00
       #   mode: separated
-      #   include_file: /etc/sfDBTools/config/db_list.txt
-      #   profile: /etc/sfDBTools/config/db_profile/source.cnf.enc
+      #   include_file: /etc/sfdbtools/config/db_list.txt
+      #   profile: /etc/sfdbtools/config/db_profile/source.cnf.enc
       #   ticket: "SCHEDULED"
       #   output:
       #     base_directory: /backup/local
@@ -69,8 +69,8 @@ backup:
       #   enabled: true
       #   schedule: "0 1 */3 * *" # tiap 3 hari 01:00
       #   mode: separated
-      #   include_file: /etc/sfDBTools/config/db_list.txt
-      #   profile: /etc/sfDBTools/config/db_profile/source.cnf.enc
+      #   include_file: /etc/sfdbtools/config/db_list.txt
+      #   profile: /etc/sfdbtools/config/db_profile/source.cnf.enc
       #   ticket: "SCHEDULED"
       #   output:
       #     base_directory: /mnt/nfs/backup
@@ -79,7 +79,7 @@ backup:
       #     retention_days: 14
 
 config_dir:
-  database_profile: /etc/sfDBTools/config/db_profile
+  database_profile: /etc/sfdbtools/config/db_profile
 
 general:
   locale:
@@ -96,7 +96,7 @@ log:
     file:
       dir: logs
       enabled: false
-      filename_pattern: sfDBTools_{date}.log
+      filename_pattern: sfdbtools_{date}.log
       rotation:
         compress_old: true
         daily: true
@@ -107,4 +107,4 @@ log:
 script:
   # Jika diisi, output file .sftools dari `sfdbtools script encrypt` akan disimpan ke folder ini.
   # Jika kosong, default: satu folder dengan file entrypoint.
-  bundle_output_dir: "/etc/sfDBTools/scripts"
+  bundle_output_dir: "/etc/sfdbtools/scripts"

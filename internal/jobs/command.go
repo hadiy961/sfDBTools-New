@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/services/scheduler"
-	"sfDBTools/internal/ui/print"
+	"sfdbtools/internal/services/scheduler"
+	"sfdbtools/internal/ui/print"
 )
 
 type ListOutput struct {

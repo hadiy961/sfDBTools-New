@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"sfDBTools/internal/app/backup/model/types_backup"
-	appconfig "sfDBTools/internal/services/config"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/fsops"
-	profilehelper "sfDBTools/pkg/helper/profile"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	appconfig "sfdbtools/internal/services/config"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/fsops"
+	profilehelper "sfdbtools/pkg/helper/profile"
 )
 
 type Setup struct {

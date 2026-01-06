@@ -11,7 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"sfDBTools/internal/ui/progress"
+	"sfdbtools/internal/ui/progress"
 	"strings"
 )
 

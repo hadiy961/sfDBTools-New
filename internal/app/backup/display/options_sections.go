@@ -2,8 +2,8 @@ package display
 
 import (
 	"fmt"
-	"sfDBTools/internal/ui/text"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/internal/ui/text"
+	"sfdbtools/pkg/consts"
 	"sort"
 )
 

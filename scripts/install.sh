@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# install.sh - One-click installer for sfDBTools from GitHub Releases.
+# install.sh - One-click installer for sfdbtools from GitHub Releases.
 # Default: installs latest release for linux/amd64.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/install.sh | sudo bash
-#   curl -fsSL https://raw.githubusercontent.com/hadiy961/sfDBTools-New/main/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/install.sh | sudo bash
+#   curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/install.sh | bash
 #
 # Options (env vars):
-#   SFDBTOOLS_REPO   (default: hadiy961/sfDBTools-New)
+#   SFDBTOOLS_REPO   (default: hadiy961/sfdbtools-New)
 #   SFDBTOOLS_METHOD (deb|rpm|tar|auto) default: auto
 #   SFDBTOOLS_PREFIX (default: /usr/local for root, ~/.local for non-root) used for tar installs
 
-REPO="${SFDBTOOLS_REPO:-hadiy961/sfDBTools-New}"
+REPO="${SFDBTOOLS_REPO:-hadiy961/sfdbtools-New}"
 METHOD="${SFDBTOOLS_METHOD:-auto}"
 DEFAULT_PREFIX="/usr/local"
 if [[ "$(id -u)" -ne 0 ]]; then
@@ -145,12 +145,12 @@ install_rpm() {
 }
 
 install_tar() {
-  local url="${BASE}/sfDBTools_linux_amd64.tar.gz"
-  local out="${tmpdir}/sfDBTools_linux_amd64.tar.gz"
+  local url="${BASE}/sfdbtools_linux_amd64.tar.gz"
+  local out="${tmpdir}/sfdbtools_linux_amd64.tar.gz"
 
   if ! curl -fsSLI "${url}" >/dev/null 2>&1; then
     echo "Error: asset tar.gz tidak ditemukan di latest release." >&2
-    echo "Hint: pastikan release mengupload 'sfDBTools_linux_amd64.tar.gz'." >&2
+    echo "Hint: pastikan release mengupload 'sfdbtools_linux_amd64.tar.gz'." >&2
     exit 1
   fi
 
@@ -169,8 +169,8 @@ install_tar() {
 
   echo "→ Extracting to ${bindir}"
   tar -xzf "${out}" -C "${tmpdir}"
-  install -m 0755 "${tmpdir}/sfDBTools" "${bindir}/sfDBTools"
-  ln -sf "sfDBTools" "${bindir}/sfdbtools" || true
+  install -m 0755 "${tmpdir}/sfdbtools" "${bindir}/sfdbtools"
+  ln -sf "sfdbtools" "${bindir}/sfdbtools" || true
 
   echo "✓ Installed: ${bindir}/sfdbtools"
   if [[ "${is_root}" != "true" ]]; then

@@ -1,15 +1,15 @@
 package helper
 
 import (
-	"sfDBTools/pkg/compress"
-	"sfDBTools/pkg/helper/cli"
-	cryptokey "sfDBTools/pkg/helper/crypto"
-	"sfDBTools/pkg/helper/env"
-	"sfDBTools/pkg/helper/file"
-	"sfDBTools/pkg/helper/list"
-	"sfDBTools/pkg/helper/path"
-	"sfDBTools/pkg/helper/profileutil"
-	"sfDBTools/pkg/helper/timing"
+	"sfdbtools/pkg/compress"
+	"sfdbtools/pkg/helper/cli"
+	cryptokey "sfdbtools/pkg/helper/crypto"
+	"sfdbtools/pkg/helper/env"
+	"sfdbtools/pkg/helper/file"
+	"sfdbtools/pkg/helper/list"
+	"sfdbtools/pkg/helper/path"
+	"sfdbtools/pkg/helper/profileutil"
+	"sfdbtools/pkg/helper/timing"
 
 	"github.com/spf13/cobra"
 )

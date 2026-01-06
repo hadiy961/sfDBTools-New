@@ -3,9 +3,9 @@ package profile
 import (
 	"fmt"
 
-	"sfDBTools/internal/domain"
-	"sfDBTools/pkg/helper/env"
-	"sfDBTools/pkg/helper/profileutil"
+	"sfdbtools/internal/domain"
+	"sfdbtools/pkg/helper/env"
+	"sfdbtools/pkg/helper/profileutil"
 )
 
 // ProfileLoadOptions berisi opsi untuk loading profile.

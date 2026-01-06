@@ -7,10 +7,10 @@
 package executor
 
 import (
-	"sfDBTools/internal/ui/print"
-	"sfDBTools/internal/ui/prompt"
-	"sfDBTools/pkg/consts"
-	"sfDBTools/pkg/validation"
+	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/pkg/consts"
+	"sfdbtools/pkg/validation"
 )
 
 func (e *Executor) handleConnectionFailedRetry(retryWarningMsg string, cancelInfoMsg string) (bool, error) {

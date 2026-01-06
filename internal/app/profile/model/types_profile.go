@@ -1,6 +1,6 @@
 package types
 
-import "sfDBTools/internal/domain"
+import "sfdbtools/internal/domain"
 
 // ProfileCreateOptions - Options for creating a new profile
 type ProfileCreateOptions struct {

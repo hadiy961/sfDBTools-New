@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"sfDBTools/internal/services/log"
+	applog "sfdbtools/internal/services/log"
 )
 
 // ErrorLogger mencatat error ke file log terpisah untuk setiap fitur
@@ -24,7 +24,7 @@ type ErrorLogger struct {
 // NewErrorLogger membuat instance ErrorLogger baru
 func NewErrorLogger(logger applog.Logger, logDir, feature string) *ErrorLogger {
 	if logDir == "" {
-		logDir = "/var/log/sfDBTools"
+		logDir = "/var/log/sfdbtools"
 	}
 	return &ErrorLogger{
 		Logger:  logger,
@@ -74,7 +74,7 @@ func (el *ErrorLogger) LogWithOutput(details map[string]interface{}, output stri
 // getLogFilePath mengembalikan path file log berdasarkan feature
 func (el *ErrorLogger) getLogFilePath() string {
 	dateStr := time.Now().Format("2006-01-02")
-	return filepath.Join(el.LogDir, fmt.Sprintf("sfDBTools_%s_error_%s.log", dateStr, el.Feature))
+	return filepath.Join(el.LogDir, fmt.Sprintf("sfdbtools_%s_error_%s.log", dateStr, el.Feature))
 }
 
 // formatLogEntry membuat format log entry

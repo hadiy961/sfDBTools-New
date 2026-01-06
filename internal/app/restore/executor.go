@@ -7,9 +7,9 @@ package restore
 
 import (
 	"context"
-	restoremodel "sfDBTools/internal/app/restore/model"
-	"sfDBTools/internal/app/restore/modes"
-	"sfDBTools/pkg/consts"
+	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/app/restore/modes"
+	"sfdbtools/pkg/consts"
 )
 
 // ExecuteRestoreSingle menjalankan restore single database

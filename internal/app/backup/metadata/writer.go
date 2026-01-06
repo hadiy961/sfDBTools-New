@@ -9,9 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sfDBTools/internal/app/backup/model/types_backup"
-	applog "sfDBTools/internal/services/log"
-	"sfDBTools/pkg/consts"
+	"sfdbtools/internal/app/backup/model/types_backup"
+	applog "sfdbtools/internal/services/log"
+	"sfdbtools/pkg/consts"
 )
 
 // SaveBackupMetadata menyimpan metadata ke file dengan atomic write
