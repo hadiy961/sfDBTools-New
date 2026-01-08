@@ -19,7 +19,7 @@ import (
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
 	"sfdbtools/pkg/helper"
-	profilehelper "sfdbtools/pkg/helper/profile"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"strings"
 )
 

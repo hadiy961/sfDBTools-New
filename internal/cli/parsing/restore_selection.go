@@ -8,7 +8,7 @@ package parsing
 
 import (
 	restoremodel "sfdbtools/internal/app/restore/model"
-	"sfdbtools/pkg/helper"
+	resolver "sfdbtools/internal/cli/resolver"
 
 	"github.com/spf13/cobra"
 )
@@ -27,7 +27,7 @@ func ParsingRestoreSelectionOptions(cmd *cobra.Command) (restoremodel.RestoreSel
 	}
 
 	// CSV source
-	if v := helper.GetStringFlagOrEnv(cmd, "csv", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "csv", ""); v != "" {
 		opts.CSV = v
 	}
 

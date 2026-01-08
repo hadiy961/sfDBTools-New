@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/envx"
 	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/helper"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -14,11 +14,11 @@ import (
 
 // ConnectToAppDatabase membuat koneksi ke database aplikasi berdasarkan environment variables.
 func ConnectToAppDatabase() (*Client, error) {
-	host := helper.GetEnvOrDefault(consts.ENV_DB_HOST, "localhost")
-	port := helper.GetEnvOrDefaultInt(consts.ENV_DB_PORT, 3306)
-	user := helper.GetEnvOrDefault(consts.ENV_DB_USER, "root")
-	password := helper.GetEnvOrDefault(consts.ENV_DB_PASSWORD, "DataOn24!!")
-	database := helper.GetEnvOrDefault(consts.ENV_DB_NAME, "sfdbtools")
+	host := envx.GetEnvOrDefault(consts.ENV_DB_HOST, "localhost")
+	port := envx.GetEnvOrDefaultInt(consts.ENV_DB_PORT, 3306)
+	user := envx.GetEnvOrDefault(consts.ENV_DB_USER, "root")
+	password := envx.GetEnvOrDefault(consts.ENV_DB_PASSWORD, "DataOn24!!")
+	database := envx.GetEnvOrDefault(consts.ENV_DB_NAME, "sfdbtools")
 
 	cfg := Config{
 		Host:                 host,

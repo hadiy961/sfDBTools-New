@@ -1,9 +1,9 @@
-// File : pkg/helper/profile/profile_parse.go
+// File : internal/app/profile/helpers/profile_parse.go
 // Deskripsi : Utility untuk load dan parse profil terenkripsi
 // Author : Hadiyatna Muflihun
 // Tanggal : 5 Desember 2025
-// Last Modified : 5 Januari 2026
-package profile
+// Last Modified : 8 Januari 2026
+package helpers
 
 import (
 	"fmt"
@@ -17,7 +17,6 @@ import (
 	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/helper/profileutil"
 )
 
 // LoadAndParseProfile membaca file terenkripsi, mendapatkan kunci (jika tidak diberikan),
@@ -62,7 +61,7 @@ func LoadAndParseProfile(absPath string, key string) (*domain.ProfileInfo, error
 
 	sshParsed := parsing.ParseINISection(string(plaintext), "ssh")
 
-	info.Name = profileutil.TrimProfileSuffix(filepath.Base(absPath))
+	info.Name = TrimProfileSuffix(filepath.Base(absPath))
 	{
 		if h, ok := parsed["host"]; ok {
 			info.DBInfo.Host = h

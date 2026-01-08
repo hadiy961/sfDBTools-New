@@ -15,7 +15,7 @@ import (
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/internal/ui/table"
 	"sfdbtools/pkg/consts"
-	profilehelper "sfdbtools/pkg/helper/profile"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 
 	"github.com/AlecAivazis/survey/v2"
 )

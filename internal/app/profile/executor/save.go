@@ -20,7 +20,7 @@ import (
 	"sfdbtools/pkg/encrypt"
 	"sfdbtools/pkg/fsops"
 	"sfdbtools/pkg/helper"
-	profilehelper "sfdbtools/pkg/helper/profile"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/pkg/validation"
 )
 

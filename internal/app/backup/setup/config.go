@@ -11,7 +11,7 @@ import (
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/fsops"
-	profilehelper "sfdbtools/pkg/helper/profile"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 )
 
 type Setup struct {

@@ -1,4 +1,4 @@
-package profile
+package helpers
 
 import (
 	"context"

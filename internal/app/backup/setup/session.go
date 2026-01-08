@@ -17,7 +17,7 @@ import (
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/database"
-	profilehelper "sfdbtools/pkg/helper/profile"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/pkg/validation"
 )
 

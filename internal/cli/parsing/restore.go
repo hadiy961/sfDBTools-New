@@ -8,9 +8,10 @@ package parsing
 
 import (
 	"path/filepath"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/cli/resolver"
 	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/helper"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -39,7 +40,7 @@ func ParsingRestoreSingleOptions(cmd *cobra.Command) (restoremodel.RestoreSingle
 	PopulateStopOnErrorFromContinueFlag(cmd, &opts.StopOnError)
 
 	// File backup
-	if v := helper.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
 		opts.File = v
 	}
 
@@ -47,7 +48,7 @@ func ParsingRestoreSingleOptions(cmd *cobra.Command) (restoremodel.RestoreSingle
 	PopulateRestoreTicket(cmd, &opts.Ticket)
 
 	// Target database
-	if v := helper.GetStringFlagOrEnv(cmd, "target-db", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "target-db", ""); v != "" {
 		opts.TargetDB = v
 	}
 
@@ -89,14 +90,14 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (restoremodel.RestorePrima
 	PopulateStopOnErrorFromContinueFlag(cmd, &opts.StopOnError)
 
 	// File backup primary
-	if v := helper.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
 		opts.File = v
 	}
 
 	// Companion file (dmart)
-	if v := helper.GetStringFlagOrEnv(cmd, "dmart-file", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "dmart-file", ""); v != "" {
 		opts.CompanionFile = v
-	} else if v := helper.GetStringFlagOrEnv(cmd, "companion-file", ""); v != "" {
+	} else if v := resolver.GetStringFlagOrEnv(cmd, "companion-file", ""); v != "" {
 		opts.CompanionFile = v
 	}
 
@@ -105,14 +106,14 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (restoremodel.RestorePrima
 
 	// Target database
 	// UX baru: --client-code (akan membentuk nama DB primary)
-	if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
 		clientCode := strings.TrimSpace(v)
 		clientCodeLower := strings.ToLower(clientCode)
 		if strings.HasPrefix(clientCodeLower, consts.PrimaryPrefixNBC) || strings.HasPrefix(clientCodeLower, consts.PrimaryPrefixBiznet) {
 			opts.TargetDB = clientCode
 		} else {
 			prefix := consts.PrimaryPrefixNBC
-			inferred := helper.ExtractDatabaseNameFromFile(filepath.Base(opts.File))
+			inferred := backupfile.ExtractDatabaseNameFromFile(filepath.Base(opts.File))
 			inferredLower := strings.ToLower(inferred)
 			if strings.HasPrefix(inferredLower, consts.PrimaryPrefixBiznet) {
 				prefix = consts.PrimaryPrefixBiznet
@@ -133,21 +134,21 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (restoremodel.RestorePrima
 
 	// Include dmart
 	if cmd.Flags().Changed("dmart-include") {
-		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "dmart-include", "")
+		opts.IncludeDmart = resolver.GetBoolFlagOrEnv(cmd, "dmart-include", "")
 	} else if cmd.Flags().Changed("include-dmart") {
-		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
+		opts.IncludeDmart = resolver.GetBoolFlagOrEnv(cmd, "include-dmart", "")
 	}
 
 	// Auto-detect dmart
 	if cmd.Flags().Changed("dmart-detect") {
-		opts.AutoDetectDmart = helper.GetBoolFlagOrEnv(cmd, "dmart-detect", "")
+		opts.AutoDetectDmart = resolver.GetBoolFlagOrEnv(cmd, "dmart-detect", "")
 	} else if cmd.Flags().Changed("auto-detect-dmart") {
-		opts.AutoDetectDmart = helper.GetBoolFlagOrEnv(cmd, "auto-detect-dmart", "")
+		opts.AutoDetectDmart = resolver.GetBoolFlagOrEnv(cmd, "auto-detect-dmart", "")
 	}
 
 	// Confirm if not exists
 	if cmd.Flags().Changed("skip-confirm") {
-		opts.ConfirmIfNotExists = !helper.GetBoolFlagOrEnv(cmd, "skip-confirm", "")
+		opts.ConfirmIfNotExists = !resolver.GetBoolFlagOrEnv(cmd, "skip-confirm", "")
 	}
 
 	// Backup options untuk pre-restore backup
@@ -171,7 +172,7 @@ func ParsingRestoreAllOptions(cmd *cobra.Command) (restoremodel.RestoreAllOption
 	if err := PopulateTargetProfileFlags(cmd, &opts.Profile); err != nil {
 		return restoremodel.RestoreAllOptions{}, err
 	}
-	if v := helper.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
 		opts.File = v
 	}
 	if err := PopulateRestoreEncryptionKey(cmd, &opts.EncryptionKey); err != nil {
@@ -220,35 +221,35 @@ func ParsingRestoreSecondaryOptions(cmd *cobra.Command) (restoremodel.RestoreSec
 	// Important UX: jika user tidak mengisi --from dan mode interaktif aktif,
 	// pemilihan mode (file/primary) akan diprompt paling awal pada setup.
 	if cmd.Flags().Changed("from") {
-		if v := helper.GetStringFlagOrEnv(cmd, "from", ""); v != "" {
+		if v := resolver.GetStringFlagOrEnv(cmd, "from", ""); v != "" {
 			opts.From = strings.ToLower(strings.TrimSpace(v))
 		}
 	}
 
 	// File (used when From=file)
-	if v := helper.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
 		opts.File = v
 	}
 
 	// Companion file (dmart)
-	if v := helper.GetStringFlagOrEnv(cmd, "dmart-file", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "dmart-file", ""); v != "" {
 		opts.CompanionFile = v
 	}
 	if cmd.Flags().Changed("dmart-include") {
-		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "dmart-include", "")
+		opts.IncludeDmart = resolver.GetBoolFlagOrEnv(cmd, "dmart-include", "")
 	}
 	if cmd.Flags().Changed("dmart-detect") {
-		opts.AutoDetectDmart = helper.GetBoolFlagOrEnv(cmd, "dmart-detect", "")
+		opts.AutoDetectDmart = resolver.GetBoolFlagOrEnv(cmd, "dmart-detect", "")
 	}
 
 	// Ticket
 	PopulateRestoreTicket(cmd, &opts.Ticket)
 
 	// Secondary naming
-	if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
 		opts.ClientCode = strings.TrimSpace(v)
 	}
-	if v := helper.GetStringFlagOrEnv(cmd, "instance", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "instance", ""); v != "" {
 		opts.Instance = strings.TrimSpace(v)
 	}
 

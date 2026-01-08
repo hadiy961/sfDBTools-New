@@ -10,10 +10,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/timex"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/database"
-	"sfdbtools/pkg/helper"
 	"strings"
 )
 
@@ -29,7 +30,7 @@ func ExportAndSaveUserGrants(ctx context.Context, client *database.Client, logge
 		return "", nil
 	}
 
-	timer := helper.NewTimer()
+	timer := timex.NewTimer()
 
 	// Export user grants dari database
 	var userGrantsSQL string
@@ -112,7 +113,7 @@ func GenerateUserFilePath(backupFilePath string) string {
 	base := filepath.Base(backupFilePath)
 
 	// Remove backup extensions (.sql + optional compression + optional .enc)
-	nameWithoutExt, _ := helper.ExtractFileExtensions(base)
+	nameWithoutExt, _ := backupfile.ExtractFileExtensions(base)
 	userFileName := nameWithoutExt + consts.UsersSQLSuffix
 	return filepath.Join(dir, userFileName)
 }

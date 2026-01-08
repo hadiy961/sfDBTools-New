@@ -1,11 +1,10 @@
-package profile
+package helpers
 
 import (
 	"fmt"
 
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/envx"
-	"sfdbtools/pkg/helper/profileutil"
 )
 
 // ProfileLoadOptions berisi opsi untuk loading profile.
@@ -62,7 +61,7 @@ func ResolveAndLoadProfile(opts ProfileLoadOptions) (*domain.ProfileInfo, error)
 		profileKey = envx.GetEnvOrDefault(opts.EnvProfileKey, "")
 	}
 
-	absPath, name, err := profileutil.ResolveConfigPath(profilePath)
+	absPath, name, err := ResolveConfigPath(profilePath)
 	if err != nil {
 		return nil, fmt.Errorf("gagal memproses path konfigurasi: %w", err)
 	}

@@ -3,7 +3,7 @@ package parsing
 import (
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	defaultVal "sfdbtools/internal/cli/defaults"
-	"sfdbtools/pkg/helper"
+	resolver "sfdbtools/internal/cli/resolver"
 
 	"github.com/spf13/cobra"
 )
@@ -21,9 +21,9 @@ func ParsingScanAllOptions(cmd *cobra.Command) (dbscanmodel.ScanOptions, error) 
 	}
 
 	// Options lain yang diminta
-	opts.ExcludeSystem = helper.GetBoolFlagOrEnv(cmd, "exclude-system", "")
-	opts.Background = helper.GetBoolFlagOrEnv(cmd, "background", "")
-	opts.ShowOptions = helper.GetBoolFlagOrEnv(cmd, "show-options", "")
+	opts.ExcludeSystem = resolver.GetBoolFlagOrEnv(cmd, "exclude-system", "")
+	opts.Background = resolver.GetBoolFlagOrEnv(cmd, "background", "")
+	opts.ShowOptions = resolver.GetBoolFlagOrEnv(cmd, "show-options", "")
 
 	return opts, nil
 }

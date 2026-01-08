@@ -1,4 +1,4 @@
-package profileutil
+package helpers
 
 import (
 	"fmt"

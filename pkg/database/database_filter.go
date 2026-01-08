@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/listx"
 	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/helper"
 	"strings"
 )
 
@@ -36,7 +36,7 @@ func FilterDatabases(ctx context.Context, client *Client, options domain.FilterO
 			return nil, nil, fmt.Errorf("gagal membaca file whitelist %s: %w", options.IncludeFile, err)
 		}
 		// Clean whitelist
-		whitelistFromFile = helper.ListTrimNonEmpty(whitelistFromFile)
+		whitelistFromFile = listx.ListTrimNonEmpty(whitelistFromFile)
 	}
 
 	// 3. Load blacklist from file if specified
@@ -47,7 +47,7 @@ func FilterDatabases(ctx context.Context, client *Client, options domain.FilterO
 			return nil, nil, fmt.Errorf("gagal membaca file blacklist %s: %w", options.ExcludeDBFile, err)
 		}
 		// Clean blacklist
-		blacklistFromFile = helper.ListTrimNonEmpty(blacklistFromFile)
+		blacklistFromFile = listx.ListTrimNonEmpty(blacklistFromFile)
 	}
 
 	// 4. Merge whitelist: combine file and direct list
@@ -56,7 +56,7 @@ func FilterDatabases(ctx context.Context, client *Client, options domain.FilterO
 		whitelist = append(whitelist, whitelistFromFile...)
 	}
 	if len(options.IncludeDatabases) > 0 {
-		whitelist = append(whitelist, helper.ListTrimNonEmpty(options.IncludeDatabases)...)
+		whitelist = append(whitelist, listx.ListTrimNonEmpty(options.IncludeDatabases)...)
 	}
 	// Remove duplicates from whitelist using map
 	var isFromFile bool
@@ -83,7 +83,7 @@ func FilterDatabases(ctx context.Context, client *Client, options domain.FilterO
 		blacklistIsFromFile = true
 	}
 	if len(options.ExcludeDatabases) > 0 {
-		blacklist = append(blacklist, helper.ListTrimNonEmpty(options.ExcludeDatabases)...)
+		blacklist = append(blacklist, listx.ListTrimNonEmpty(options.ExcludeDatabases)...)
 	}
 	// Remove duplicates from blacklist using map
 	if len(blacklist) > 0 {
@@ -102,7 +102,7 @@ func FilterDatabases(ctx context.Context, client *Client, options domain.FilterO
 	// 6. Validate whitelist - check if databases in whitelist exist on server
 	if len(whitelist) > 0 {
 		for _, dbName := range whitelist {
-			if !helper.StringSliceContainsFold(allDatabases, dbName) {
+			if !listx.StringSliceContainsFold(allDatabases, dbName) {
 				if isFromFile {
 					stats.NotFoundInWhitelist = append(stats.NotFoundInWhitelist, dbName)
 				} else {
@@ -115,8 +115,8 @@ func FilterDatabases(ctx context.Context, client *Client, options domain.FilterO
 	// 6. Validate blacklist - check if databases in blacklist exist on server
 	if len(blacklist) > 0 {
 		for _, dbName := range blacklist {
-			if !helper.StringSliceContainsFold(allDatabases, dbName) {
-				if blacklistIsFromFile && helper.StringSliceContainsFold(blacklistFromFile, dbName) {
+			if !listx.StringSliceContainsFold(allDatabases, dbName) {
+				if blacklistIsFromFile && listx.StringSliceContainsFold(blacklistFromFile, dbName) {
 					stats.NotFoundInBlacklist = append(stats.NotFoundInBlacklist, dbName)
 				} else {
 					stats.NotFoundInExclude = append(stats.NotFoundInExclude, dbName)
@@ -172,7 +172,7 @@ func (s *Client) GetDatabaseList(ctx context.Context) ([]string, error) {
 }
 
 // cleanDatabaseList membersihkan list database dari whitespace dan entry kosong
-// moved to helper.ListTrimNonEmpty
+// moved to listx.ListTrimNonEmpty
 
 // shouldExcludeDatabase menentukan apakah database harus di-exclude
 // Returns true jika database harus di-exclude, false jika harus di-include
@@ -186,7 +186,7 @@ func shouldExcludeDatabase(dbName string, whitelist, blacklist []string, exclude
 
 	// 2. Whitelist has highest priority - if specified, only include databases in whitelist
 	if len(whitelist) > 0 {
-		if !helper.StringSliceContainsFold(whitelist, dbName) {
+		if !listx.StringSliceContainsFold(whitelist, dbName) {
 			stats.ExcludedByFile++
 			stats.ExcludedDatabases = append(stats.ExcludedDatabases, dbName)
 			return true
@@ -195,7 +195,7 @@ func shouldExcludeDatabase(dbName string, whitelist, blacklist []string, exclude
 	}
 
 	// 3. Check blacklist
-	if helper.StringSliceContainsFold(blacklist, dbName) {
+	if listx.StringSliceContainsFold(blacklist, dbName) {
 		stats.ExcludedByList++
 		stats.ExcludedDatabases = append(stats.ExcludedDatabases, dbName)
 		return true
@@ -220,4 +220,4 @@ func IsSystemDatabase(dbName string) bool {
 }
 
 // containsDatabase memeriksa apakah database ada dalam list
-// moved to helper.StringSliceContainsFold
+// moved to listx.StringSliceContainsFold

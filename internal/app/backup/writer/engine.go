@@ -16,7 +16,7 @@ import (
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
 	"sfdbtools/pkg/errorlog"
-	pkghelper "sfdbtools/pkg/helper"
+	cryptokey "sfdbtools/internal/services/crypto/helpers"
 )
 
 func summarizeStderr(stderr string, maxLines int, maxChars int) string {
@@ -49,7 +49,7 @@ func (e *Engine) resolveEncryptionKeyIfNeeded() (string, error) {
 		return "", nil
 	}
 
-	resolvedKey, source, err := pkghelper.ResolveEncryptionKey(
+	resolvedKey, source, err := cryptokey.ResolveEncryptionKey(
 		e.Options.Encryption.Key,
 		consts.ENV_BACKUP_ENCRYPTION_KEY,
 	)

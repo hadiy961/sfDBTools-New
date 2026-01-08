@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"sfdbtools/internal/domain"
 	"sfdbtools/pkg/consts"
-	profilehelper "sfdbtools/pkg/helper/profile"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 )
 
 func (s *Service) resolveTargetProfile(profileInfo *domain.ProfileInfo, allowInteractive bool) error {

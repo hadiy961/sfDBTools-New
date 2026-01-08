@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/pkg/consts"
-	profilehelper "sfdbtools/pkg/helper/profile"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 )
 
 func (s *Service) promptSelectExistingConfig() error {

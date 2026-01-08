@@ -3,13 +3,13 @@ package helper
 import (
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	backuppath "sfdbtools/internal/app/backup/helpers/path"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/cli/resolver"
 	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	"sfdbtools/internal/shared/envx"
 	"sfdbtools/internal/shared/listx"
 	"sfdbtools/internal/shared/timex"
 	"sfdbtools/pkg/compress"
-	"sfdbtools/pkg/helper/profileutil"
 
 	"github.com/spf13/cobra"
 )
@@ -159,9 +159,9 @@ func NewTimer() *Timer {
 // -------------------- profile --------------------
 
 func TrimProfileSuffix(name string) string {
-	return profileutil.TrimProfileSuffix(name)
+	return profilehelper.TrimProfileSuffix(name)
 }
 
 func ResolveConfigPath(spec string) (string, string, error) {
-	return profileutil.ResolveConfigPath(spec)
+	return profilehelper.ResolveConfigPath(spec)
 }

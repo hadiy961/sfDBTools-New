@@ -7,7 +7,7 @@ import (
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/helper"
+	resolver "sfdbtools/internal/cli/resolver"
 	"sfdbtools/pkg/runtimecfg"
 	"sfdbtools/pkg/validation"
 	"strings"
@@ -18,18 +18,18 @@ import (
 
 // ParsingProfile
 func ParsingCreateProfile(cmd *cobra.Command, logger applog.Logger) (*profilemodel.ProfileCreateOptions, error) {
-	host := helper.GetStringFlagOrEnv(cmd, "host", consts.ENV_TARGET_DB_HOST)
-	port := helper.GetIntFlagOrEnv(cmd, "port", consts.ENV_TARGET_DB_PORT)
-	user := helper.GetStringFlagOrEnv(cmd, "user", consts.ENV_TARGET_DB_USER)
-	password := helper.GetStringFlagOrEnv(cmd, "password", consts.ENV_TARGET_DB_PASSWORD)
-	name := helper.GetStringFlagOrEnv(cmd, "profile", "")
-	outputDir := helper.GetStringFlagOrEnv(cmd, "output-dir", "")
-	key, err := helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
+	host := resolver.GetStringFlagOrEnv(cmd, "host", consts.ENV_TARGET_DB_HOST)
+	port := resolver.GetIntFlagOrEnv(cmd, "port", consts.ENV_TARGET_DB_PORT)
+	user := resolver.GetStringFlagOrEnv(cmd, "user", consts.ENV_TARGET_DB_USER)
+	password := resolver.GetStringFlagOrEnv(cmd, "password", consts.ENV_TARGET_DB_PASSWORD)
+	name := resolver.GetStringFlagOrEnv(cmd, "profile", "")
+	outputDir := resolver.GetStringFlagOrEnv(cmd, "output-dir", "")
+	key, err := resolver.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
 	if err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(key) == "" {
-		key, err = helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+		key, err = resolver.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
 		if err != nil {
 			return nil, err
 		}
@@ -37,13 +37,13 @@ func ParsingCreateProfile(cmd *cobra.Command, logger applog.Logger) (*profilemod
 	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
 		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
 
-	sshEnabled := helper.GetBoolFlagOrEnv(cmd, "ssh", "")
-	sshHost := helper.GetStringFlagOrEnv(cmd, "ssh-host", "")
-	sshPort := helper.GetIntFlagOrEnv(cmd, "ssh-port", "")
-	sshUser := helper.GetStringFlagOrEnv(cmd, "ssh-user", "")
-	sshPassword := helper.GetStringFlagOrEnv(cmd, "ssh-password", "")
-	sshIdentityFile := helper.GetStringFlagOrEnv(cmd, "ssh-identity-file", "")
-	sshLocalPort := helper.GetIntFlagOrEnv(cmd, "ssh-local-port", "")
+	sshEnabled := resolver.GetBoolFlagOrEnv(cmd, "ssh", "")
+	sshHost := resolver.GetStringFlagOrEnv(cmd, "ssh-host", "")
+	sshPort := resolver.GetIntFlagOrEnv(cmd, "ssh-port", "")
+	sshUser := resolver.GetStringFlagOrEnv(cmd, "ssh-user", "")
+	sshPassword := resolver.GetStringFlagOrEnv(cmd, "ssh-password", "")
+	sshIdentityFile := resolver.GetStringFlagOrEnv(cmd, "ssh-identity-file", "")
+	sshLocalPort := resolver.GetIntFlagOrEnv(cmd, "ssh-local-port", "")
 	if sshPort == 0 {
 		sshPort = 22
 	}
@@ -110,18 +110,18 @@ func ParsingCreateProfile(cmd *cobra.Command, logger applog.Logger) (*profilemod
 
 // ParsingEditProfile parses flags for the profile edit command and returns ProfileEditOptions
 func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, error) {
-	filePath := helper.GetStringFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE)
-	newName := helper.GetStringFlagOrEnv(cmd, "new-name", "")
-	host := helper.GetStringFlagOrEnv(cmd, "host", consts.ENV_TARGET_DB_HOST)
-	port := helper.GetIntFlagOrEnv(cmd, "port", consts.ENV_TARGET_DB_PORT)
-	user := helper.GetStringFlagOrEnv(cmd, "user", consts.ENV_TARGET_DB_USER)
-	password := helper.GetStringFlagOrEnv(cmd, "password", consts.ENV_TARGET_DB_PASSWORD)
-	name := helper.GetStringFlagOrEnv(cmd, "profile", "")
-	key, err := helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
+	filePath := resolver.GetStringFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE)
+	newName := resolver.GetStringFlagOrEnv(cmd, "new-name", "")
+	host := resolver.GetStringFlagOrEnv(cmd, "host", consts.ENV_TARGET_DB_HOST)
+	port := resolver.GetIntFlagOrEnv(cmd, "port", consts.ENV_TARGET_DB_PORT)
+	user := resolver.GetStringFlagOrEnv(cmd, "user", consts.ENV_TARGET_DB_USER)
+	password := resolver.GetStringFlagOrEnv(cmd, "password", consts.ENV_TARGET_DB_PASSWORD)
+	name := resolver.GetStringFlagOrEnv(cmd, "profile", "")
+	key, err := resolver.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
 	if err != nil {
 		return nil, err
 	}
-	newKey, err := helper.GetSecretStringFlagOrEnv(cmd, "new-profile-key", "")
+	newKey, err := resolver.GetSecretStringFlagOrEnv(cmd, "new-profile-key", "")
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, e
 		}
 	}
 	if strings.TrimSpace(key) == "" {
-		key, err = helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+		key, err = resolver.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
 		if err != nil {
 			return nil, err
 		}
@@ -174,13 +174,13 @@ func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, e
 		}
 	}
 
-	sshEnabled := helper.GetBoolFlagOrEnv(cmd, "ssh", "")
-	sshHost := helper.GetStringFlagOrEnv(cmd, "ssh-host", "")
-	sshPort := helper.GetIntFlagOrEnv(cmd, "ssh-port", "")
-	sshUser := helper.GetStringFlagOrEnv(cmd, "ssh-user", "")
-	sshPassword := helper.GetStringFlagOrEnv(cmd, "ssh-password", "")
-	sshIdentityFile := helper.GetStringFlagOrEnv(cmd, "ssh-identity-file", "")
-	sshLocalPort := helper.GetIntFlagOrEnv(cmd, "ssh-local-port", "")
+	sshEnabled := resolver.GetBoolFlagOrEnv(cmd, "ssh", "")
+	sshHost := resolver.GetStringFlagOrEnv(cmd, "ssh-host", "")
+	sshPort := resolver.GetIntFlagOrEnv(cmd, "ssh-port", "")
+	sshUser := resolver.GetStringFlagOrEnv(cmd, "ssh-user", "")
+	sshPassword := resolver.GetStringFlagOrEnv(cmd, "ssh-password", "")
+	sshIdentityFile := resolver.GetStringFlagOrEnv(cmd, "ssh-identity-file", "")
+	sshLocalPort := resolver.GetIntFlagOrEnv(cmd, "ssh-local-port", "")
 	if sshPort == 0 {
 		sshPort = 22
 	}
@@ -218,18 +218,18 @@ func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, e
 
 // ParsingShowProfile
 func ParsingShowProfile(cmd *cobra.Command) (*profilemodel.ProfileShowOptions, error) {
-	filePath := helper.GetStringFlagOrEnv(cmd, "profile", "")
-	key, err := helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
+	filePath := resolver.GetStringFlagOrEnv(cmd, "profile", "")
+	key, err := resolver.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_TARGET_PROFILE_KEY)
 	if err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(key) == "" {
-		key, err = helper.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+		key, err = resolver.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
 		if err != nil {
 			return nil, err
 		}
 	}
-	RevealPassword := helper.GetBoolFlagOrEnv(cmd, "reveal-password", "")
+	RevealPassword := resolver.GetBoolFlagOrEnv(cmd, "reveal-password", "")
 	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
 		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
 
@@ -264,8 +264,8 @@ func ParsingShowProfile(cmd *cobra.Command) (*profilemodel.ProfileShowOptions, e
 
 // ParsingDeleteProfile parses flags for the profile delete command and returns ProfileDeleteOptions
 func ParsingDeleteProfile(cmd *cobra.Command) (*profilemodel.ProfileDeleteOptions, error) {
-	profilePaths := helper.GetStringSliceFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE)
-	force := helper.GetBoolFlagOrEnv(cmd, "force", "")
+	profilePaths := resolver.GetStringSliceFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE)
+	force := resolver.GetBoolFlagOrEnv(cmd, "force", "")
 	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
 		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
 

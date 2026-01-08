@@ -3,8 +3,9 @@ package parsing
 import (
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	defaultVal "sfdbtools/internal/cli/defaults"
+	"sfdbtools/internal/cli/resolver"
 	appconfig "sfdbtools/internal/services/config"
-	"sfdbtools/pkg/helper"
+	"sfdbtools/internal/shared/listx"
 
 	"github.com/spf13/cobra"
 )
@@ -22,23 +23,23 @@ func ParsingScanFilterOptions(cmd *cobra.Command, cfg *appconfig.Config) (dbscan
 	}
 
 	// Exclude system
-	opts.ExcludeSystem = helper.GetBoolFlagOrEnv(cmd, "exclude-system", "")
+	opts.ExcludeSystem = resolver.GetBoolFlagOrEnv(cmd, "exclude-system", "")
 
 	// Include sources
-	includeCSV := helper.GetStringFlagOrEnv(cmd, "db", "")
-	opts.IncludeList = helper.CSVToCleanList(includeCSV)
+	includeCSV := resolver.GetStringFlagOrEnv(cmd, "db", "")
+	opts.IncludeList = listx.CSVToCleanList(includeCSV)
 
-	includeFile := helper.GetStringFlagOrEnv(cmd, "db-file", "")
+	includeFile := resolver.GetStringFlagOrEnv(cmd, "db-file", "")
 	if includeFile != "" {
 		opts.DatabaseList.File = includeFile
 	}
 	// Note: opts.DatabaseList.File might already be set by defaultVal from config.
 
 	// Exclude sources
-	excludeCSV := helper.GetStringFlagOrEnv(cmd, "exclude-db", "")
-	opts.ExcludeList = helper.CSVToCleanList(excludeCSV)
+	excludeCSV := resolver.GetStringFlagOrEnv(cmd, "exclude-db", "")
+	opts.ExcludeList = listx.CSVToCleanList(excludeCSV)
 
-	excludeFile := helper.GetStringFlagOrEnv(cmd, "exclude-file", "")
+	excludeFile := resolver.GetStringFlagOrEnv(cmd, "exclude-file", "")
 	if excludeFile != "" {
 		opts.ExcludeFile = excludeFile
 	} else {
