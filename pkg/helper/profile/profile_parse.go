@@ -16,7 +16,7 @@ import (
 	"sfdbtools/internal/domain"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
-	cryptokey "sfdbtools/pkg/helper/crypto"
+	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	"sfdbtools/pkg/helper/profileutil"
 )
 

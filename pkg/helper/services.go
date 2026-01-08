@@ -6,7 +6,7 @@ import (
 	"sfdbtools/internal/shared/timex"
 	"sfdbtools/pkg/compress"
 	"sfdbtools/pkg/helper/cli"
-	cryptokey "sfdbtools/pkg/helper/crypto"
+	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	"sfdbtools/pkg/helper/file"
 	"sfdbtools/pkg/helper/path"
 	"sfdbtools/pkg/helper/profileutil"
