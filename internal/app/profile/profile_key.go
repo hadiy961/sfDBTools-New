@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"strings"
 
+	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/helper"
 	"sfdbtools/pkg/validation"
 )
 
@@ -42,8 +42,8 @@ func resolveProfileEncryptionKey(existing string, allowPrompt bool) (key string,
 		)
 	}
 
-	// Prompt (interactive). helper.ResolveEncryptionKey akan mencoba env var yang diberikan dulu.
-	k, src, e := helper.ResolveEncryptionKey("", consts.ENV_TARGET_PROFILE_KEY)
+	// Prompt (interactive). cryptokey.ResolveEncryptionKey akan mencoba env var yang diberikan dulu.
+	k, src, e := cryptokey.ResolveEncryptionKey("", consts.ENV_TARGET_PROFILE_KEY)
 	if e != nil {
 		return "", src, e
 	}

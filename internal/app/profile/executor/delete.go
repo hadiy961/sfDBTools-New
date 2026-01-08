@@ -10,11 +10,11 @@ import (
 	"fmt"
 	"path/filepath"
 
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/helper"
 	"sfdbtools/pkg/validation"
 )
 
@@ -37,7 +37,7 @@ func (e *Executor) collectValidPathsFromFlags(profiles []string) (validPaths []s
 			continue
 		}
 
-		absPath, name, err := helper.ResolveConfigPath(p)
+		absPath, name, err := profilehelper.ResolveConfigPath(p)
 		if err != nil {
 			return nil, nil, err
 		}

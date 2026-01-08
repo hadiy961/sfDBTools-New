@@ -12,12 +12,12 @@ import (
 	"strings"
 
 	"sfdbtools/internal/app/backup/display"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/database"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/pkg/validation"
 )
 

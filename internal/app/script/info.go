@@ -8,9 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	scriptmodel "sfdbtools/internal/app/script/model"
+	cryptokey "sfdbtools/internal/services/crypto/helpers"
+	"sfdbtools/internal/shared/envx"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/helper"
 	"sort"
 	"strings"
 )
@@ -30,9 +31,9 @@ func GetBundleInfo(opts scriptmodel.ScriptInfoOptions) (BundleInfo, error) {
 	if bundlePath == "" {
 		return BundleInfo{}, fmt.Errorf("--file wajib diisi")
 	}
-	bundlePath = helper.ExpandPath(bundlePath)
+	bundlePath = envx.ExpandPath(bundlePath)
 
-	key, _, err := helper.ResolveEncryptionKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY)
+	key, _, err := cryptokey.ResolveEncryptionKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY)
 	if err != nil {
 		return BundleInfo{}, fmt.Errorf("gagal mendapatkan encryption key: %w", err)
 	}

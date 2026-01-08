@@ -10,13 +10,13 @@ import (
 	"strings"
 
 	"sfdbtools/internal/app/backup/model/types_backup"
+	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/ui/progress"
 	"sfdbtools/pkg/compress"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
 	"sfdbtools/pkg/errorlog"
-	cryptokey "sfdbtools/internal/services/crypto/helpers"
 )
 
 func summarizeStderr(stderr string, maxLines int, maxChars int) string {

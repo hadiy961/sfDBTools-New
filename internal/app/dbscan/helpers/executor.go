@@ -12,8 +12,8 @@ import (
 
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/timex"
 	"sfdbtools/pkg/database"
-	"sfdbtools/pkg/helper"
 
 	"github.com/dustin/go-humanize"
 )
@@ -36,7 +36,7 @@ func ExecuteScanWithSave(
 	serverPort int,
 	opts ScanExecutorOptions,
 ) (*dbscanmodel.ScanResult, map[string]dbscanmodel.DatabaseDetailInfo, error) {
-	timer := helper.NewTimer()
+	timer := timex.NewTimer()
 
 	if opts.IsBackground {
 		opts.Logger.Info("Memulai proses scanning database...")

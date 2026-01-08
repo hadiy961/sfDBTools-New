@@ -12,15 +12,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/helper"
 )
 
 // resolveBackupFile resolve lokasi file backup
 func (s *Service) resolveBackupFile(filePath *string, allowInteractive bool) error {
 	return s.resolveFileWithPrompt(filePath, allowInteractive,
-		helper.ValidBackupFileExtensionsForSelection(),
+		backupfile.ValidBackupFileExtensionsForSelection(),
 		"file backup",
 		"Masukkan path directory atau file backup")
 }
@@ -98,7 +98,7 @@ func (s *Service) resolveFileWithPrompt(filePath *string, allowInteractive bool,
 
 // resolveEncryptionKey resolve encryption key untuk decrypt file
 func (s *Service) resolveEncryptionKey(filePath string, encryptionKey *string, allowInteractive bool) error {
-	if !helper.IsEncryptedFile(filePath) {
+	if !backupfile.IsEncryptedFile(filePath) {
 		s.Log.Debug("File backup tidak terenkripsi")
 		return nil
 	}

@@ -8,9 +8,9 @@ package restore
 import (
 	"context"
 	"fmt"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/helper"
 	"strings"
 )
 
@@ -104,7 +104,7 @@ func validateSecondaryInstanceName(primaryDB, inst string) error {
 		return fmt.Errorf("instance tidak boleh kosong")
 	}
 	target := secondaryDBName(primaryDB, inst)
-	if !helper.IsValidDatabaseName(target) {
+	if !backupfile.IsValidDatabaseName(target) {
 		return fmt.Errorf("instance menghasilkan nama database tidak valid: %s", target)
 	}
 	return nil

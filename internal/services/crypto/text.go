@@ -7,12 +7,12 @@ import (
 	"strings"
 
 	"sfdbtools/internal/services/crypto/helpers"
+	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	cryptomodel "sfdbtools/internal/services/crypto/model"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/helper"
 )
 
 // ExecuteEncryptText menangani logic encrypt text
@@ -29,7 +29,7 @@ func ExecuteEncryptText(logger applog.Logger, opts cryptomodel.EncryptTextOption
 	}
 
 	// Key
-	key, _, err := helper.ResolveEncryptionKey(opts.Key, consts.ENV_ENCRYPTION_KEY)
+	key, _, err := cryptokey.ResolveEncryptionKey(opts.Key, consts.ENV_ENCRYPTION_KEY)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan encryption key: %v", err)
 	}
@@ -80,7 +80,7 @@ func ExecuteDecryptText(logger applog.Logger, opts cryptomodel.DecryptTextOption
 	}
 
 	// Key
-	key, _, err := helper.ResolveEncryptionKey(opts.Key, consts.ENV_ENCRYPTION_KEY)
+	key, _, err := cryptokey.ResolveEncryptionKey(opts.Key, consts.ENV_ENCRYPTION_KEY)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan encryption key: %v", err)
 	}

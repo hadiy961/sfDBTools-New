@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/helper"
 	"strings"
 )
 
@@ -70,7 +70,7 @@ func (s *Service) detectCompanionAuto(primaryFile string) (string, error) {
 // Ini berguna untuk dump yang tidak memakai format timestamp/hostname dan tidak punya .meta.json.
 func (s *Service) detectCompanionBySiblingFilename(primaryFile string, dir string) (string, error) {
 	basename := filepath.Base(primaryFile)
-	nameWithoutExt, extensions := helper.ExtractFileExtensions(basename)
+	nameWithoutExt, extensions := backupfile.ExtractFileExtensions(basename)
 	if nameWithoutExt == "" {
 		return "", fmt.Errorf("gagal parse filename: %s", basename)
 	}
@@ -122,7 +122,7 @@ func (s *Service) detectCompanionFromMetadata(primaryFile string) (string, error
 func (s *Service) detectCompanionByPattern(primaryFile string, dir string) (string, error) {
 	basename := filepath.Base(primaryFile)
 
-	nameWithoutExt, extensions := helper.ExtractFileExtensions(basename)
+	nameWithoutExt, extensions := backupfile.ExtractFileExtensions(basename)
 
 	parts := strings.Split(nameWithoutExt, "_")
 	if len(parts) < 4 {

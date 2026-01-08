@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/helper"
 )
 
 func (s *Service) resolveGrantsFile(skipGrants *bool, grantsFile *string, backupFile string, allowInteractive bool, stopOnError bool) error {
@@ -44,7 +44,7 @@ func (s *Service) resolveGrantsFile(skipGrants *bool, grantsFile *string, backup
 		}
 	}
 
-	if autoGrantsFile := helper.AutoDetectGrantsFile(backupFile); autoGrantsFile != "" {
+	if autoGrantsFile := backupfile.AutoDetectGrantsFile(backupFile); autoGrantsFile != "" {
 		s.Log.Infof("✓ Grants file ditemukan: %s", filepath.Base(autoGrantsFile))
 
 		if !allowInteractive {

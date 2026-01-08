@@ -8,8 +8,8 @@ package restore
 
 import (
 	"path/filepath"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/helper"
 	"strings"
 )
 
@@ -82,7 +82,7 @@ func extractClientCodeFromDB(dbName, prefix string) string {
 
 // extractDefaultClientCodeFromFile mengekstrak default client code dari filename
 func extractDefaultClientCodeFromFile(filePath string) string {
-	inferredDB := helper.ExtractDatabaseNameFromFile(filepath.Base(filePath))
+	inferredDB := backupfile.ExtractDatabaseNameFromFile(filepath.Base(filePath))
 	inferredLower := strings.ToLower(strings.TrimSpace(inferredDB))
 
 	if strings.HasPrefix(inferredLower, consts.PrimaryPrefixNBC) {

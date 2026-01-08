@@ -11,13 +11,13 @@ import (
 	"fmt"
 	"sfdbtools/internal/app/dbscan/helpers"
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/listx"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/database"
 	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/helper"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/pkg/validation"
 )
 
@@ -30,7 +30,7 @@ func ResolveScanLists(opts *dbscanmodel.ScanOptions) error {
 		if err != nil {
 			return fmt.Errorf("gagal membaca db-file %s: %w", opts.DatabaseList.File, err)
 		}
-		opts.IncludeList = append(opts.IncludeList, helper.ListTrimNonEmpty(lines)...)
+		opts.IncludeList = append(opts.IncludeList, listx.ListTrimNonEmpty(lines)...)
 	}
 
 	// Exclude File
@@ -39,12 +39,12 @@ func ResolveScanLists(opts *dbscanmodel.ScanOptions) error {
 		if err != nil {
 			return fmt.Errorf("gagal membaca exclude-file %s: %w", opts.ExcludeFile, err)
 		}
-		opts.ExcludeList = append(opts.ExcludeList, helper.ListTrimNonEmpty(lines)...)
+		opts.ExcludeList = append(opts.ExcludeList, listx.ListTrimNonEmpty(lines)...)
 	}
 
 	// Deduplicate lists
-	opts.IncludeList = helper.ListUnique(opts.IncludeList)
-	opts.ExcludeList = helper.ListUnique(opts.ExcludeList)
+	opts.IncludeList = listx.ListUnique(opts.IncludeList)
+	opts.ExcludeList = listx.ListUnique(opts.ExcludeList)
 
 	// Validation: minimal ada kriteria filter
 	if len(opts.IncludeList) == 0 && len(opts.ExcludeList) == 0 {
@@ -55,7 +55,7 @@ func ResolveScanLists(opts *dbscanmodel.ScanOptions) error {
 	// Jika user memberikan include list DAN exclude list, maka kita kurangi include list dengan exclude list.
 	// Jika hanya exclude list, maka include list kosong (artinya scan semua kecuali exclude, ini ditangani di layer database filtering).
 	if len(opts.IncludeList) > 0 && len(opts.ExcludeList) > 0 {
-		opts.IncludeList = helper.ListSubtract(opts.IncludeList, opts.ExcludeList)
+		opts.IncludeList = listx.ListSubtract(opts.IncludeList, opts.ExcludeList)
 		opts.ExcludeList = []string{} // Reset exclude list karena sudah diaplikasikan ke include list
 	}
 

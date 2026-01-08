@@ -8,9 +8,9 @@ package profile
 
 import (
 	"fmt"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/pkg/consts"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
 )
 
 func (s *Service) promptSelectExistingConfig() error {

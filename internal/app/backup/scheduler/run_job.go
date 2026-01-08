@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"sfdbtools/internal/app/backup"
+	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/cleanup"
 	cleanupmodel "sfdbtools/internal/app/cleanup/model"
@@ -24,7 +25,6 @@ import (
 	appconfig "sfdbtools/internal/services/config"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/helper"
 )
 
 func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) error {
@@ -98,7 +98,7 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 		baseDir = deps.Config.Backup.Output.BaseDirectory
 	}
 
-	outputDir, err := helper.GenerateBackupDirectory(
+	outputDir, err := backuppath.GenerateBackupDirectory(
 		baseDir,
 		deps.Config.Backup.Output.Structure.Pattern,
 		"",

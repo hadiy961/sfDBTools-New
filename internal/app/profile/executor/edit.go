@@ -10,11 +10,11 @@ import (
 	"fmt"
 	"strings"
 
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/helper"
 	"sfdbtools/pkg/validation"
 )
 
@@ -52,7 +52,7 @@ func (e *Executor) EditProfile() error {
 			overrideDB := e.ProfileInfo.DBInfo
 			overrideSSH := e.ProfileInfo.SSHTunnel
 
-			absPath, name, err := helper.ResolveConfigPath(e.OriginalProfileName)
+			absPath, name, err := profilehelper.ResolveConfigPath(e.OriginalProfileName)
 			if err != nil {
 				return err
 			}
@@ -87,7 +87,7 @@ func (e *Executor) EditProfile() error {
 				e.Log.Info(consts.ProfileLogValidatingParams)
 			}
 			if e.ProfileEdit != nil && strings.TrimSpace(e.ProfileEdit.NewName) != "" {
-				newName := helper.TrimProfileSuffix(strings.TrimSpace(e.ProfileEdit.NewName))
+				newName := profilehelper.TrimProfileSuffix(strings.TrimSpace(e.ProfileEdit.NewName))
 				if newName == "" {
 					return fmt.Errorf(consts.ProfileErrNewNameEmpty)
 				}

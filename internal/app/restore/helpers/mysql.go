@@ -13,13 +13,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/ui/progress"
 	"sfdbtools/pkg/compress"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/helper"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"strings"
 )
 
@@ -101,7 +101,7 @@ func OpenAndPrepareReader(filePath string, encryptionKey string) (io.Reader, []i
 	closers := []io.Closer{file}
 
 	// Decrypt if encrypted
-	isEncrypted := helper.IsEncryptedFile(filePath)
+	isEncrypted := backupfile.IsEncryptedFile(filePath)
 	if isEncrypted {
 		decReader, err := encrypt.NewDecryptingReader(reader, encryptionKey)
 		if err != nil {

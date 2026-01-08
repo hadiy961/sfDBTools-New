@@ -12,9 +12,10 @@ import (
 	"path"
 	"path/filepath"
 	scriptmodel "sfdbtools/internal/app/script/model"
+	cryptokey "sfdbtools/internal/services/crypto/helpers"
+	"sfdbtools/internal/shared/envx"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/helper"
 	"strings"
 	"time"
 )
@@ -38,7 +39,7 @@ func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 		return fmt.Errorf("--file wajib diisi")
 	}
 
-	entryPath = helper.ExpandPath(entryPath)
+	entryPath = envx.ExpandPath(entryPath)
 	entryInfo, err := os.Stat(entryPath)
 	if err != nil {
 		return fmt.Errorf("gagal membaca file entrypoint: %w", err)
@@ -53,7 +54,7 @@ func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 	if outputPath == "" {
 		outputPath = defaultBundleOutputPath(entryPath)
 	}
-	outputPath = helper.ExpandPath(outputPath)
+	outputPath = envx.ExpandPath(outputPath)
 
 	entryAbs, _ := filepath.Abs(entryPath)
 	outAbs, _ := filepath.Abs(outputPath)
@@ -65,7 +66,7 @@ func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 		return fmt.Errorf("gagal membuat folder output: %w", err)
 	}
 
-	key, _, err := helper.ResolveEncryptionKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY)
+	key, _, err := cryptokey.ResolveEncryptionKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan encryption key: %w", err)
 	}
@@ -170,9 +171,9 @@ func RunBundle(opts scriptmodel.ScriptRunOptions) error {
 	if bundlePath == "" {
 		return fmt.Errorf("--file wajib diisi")
 	}
-	bundlePath = helper.ExpandPath(bundlePath)
+	bundlePath = envx.ExpandPath(bundlePath)
 
-	key, _, err := helper.ResolveEncryptionKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY)
+	key, _, err := cryptokey.ResolveEncryptionKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan encryption key: %w", err)
 	}

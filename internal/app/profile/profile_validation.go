@@ -11,11 +11,11 @@ import (
 	"path/filepath"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/helper"
 	"sfdbtools/pkg/runtimecfg"
 	"sfdbtools/pkg/validation"
 	"strings"
 
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
@@ -26,35 +26,35 @@ import (
 
 func deriveProfileName(profileInfo *domain.ProfileInfo, originalProfileInfo *domain.ProfileInfo) string {
 	if profileInfo != nil {
-		if v := strings.TrimSpace(helper.TrimProfileSuffix(profileInfo.Name)); v != "" {
+		if v := strings.TrimSpace(profilehelper.TrimProfileSuffix(profileInfo.Name)); v != "" {
 			return v
 		}
 	}
 	if originalProfileInfo != nil {
-		if v := strings.TrimSpace(helper.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
+		if v := strings.TrimSpace(profilehelper.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
 			return v
 		}
 	}
 	if profileInfo != nil {
 		if p := strings.TrimSpace(profileInfo.Path); p != "" {
-			return strings.TrimSpace(helper.TrimProfileSuffix(filepath.Base(p)))
+			return strings.TrimSpace(profilehelper.TrimProfileSuffix(filepath.Base(p)))
 		}
 	}
 	return ""
 }
 
 func deriveOriginalProfileName(originalProfileName string, profileInfo *domain.ProfileInfo, originalProfileInfo *domain.ProfileInfo) string {
-	if v := strings.TrimSpace(helper.TrimProfileSuffix(originalProfileName)); v != "" {
+	if v := strings.TrimSpace(profilehelper.TrimProfileSuffix(originalProfileName)); v != "" {
 		return v
 	}
 	if originalProfileInfo != nil {
-		if v := strings.TrimSpace(helper.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
+		if v := strings.TrimSpace(profilehelper.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
 			return v
 		}
 	}
 	if profileInfo != nil {
 		if p := strings.TrimSpace(profileInfo.Path); p != "" {
-			return strings.TrimSpace(helper.TrimProfileSuffix(filepath.Base(p)))
+			return strings.TrimSpace(profilehelper.TrimProfileSuffix(filepath.Base(p)))
 		}
 	}
 	return ""
@@ -65,7 +65,7 @@ func (s *Service) CheckConfigurationNameUnique(mode string) error {
 	if s.ProfileInfo == nil {
 		return fmt.Errorf(consts.ProfileErrProfileInfoNil)
 	}
-	s.ProfileInfo.Name = helper.TrimProfileSuffix(s.ProfileInfo.Name)
+	s.ProfileInfo.Name = profilehelper.TrimProfileSuffix(s.ProfileInfo.Name)
 	switch mode {
 	case consts.ProfileModeCreate:
 		abs := s.filePathInConfigDir(s.ProfileInfo.Name)

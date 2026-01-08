@@ -13,11 +13,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/app/restore/display"
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/helper"
 )
 
 func (s *Service) SetupRestoreCustomSession(ctx context.Context) error {
@@ -92,7 +92,7 @@ func (s *Service) SetupRestoreCustomSession(ctx context.Context) error {
 	if defaultDir == "" {
 		defaultDir = "."
 	}
-	validExtensions := helper.ValidBackupFileExtensionsForSelection()
+	validExtensions := backupfile.ValidBackupFileExtensionsForSelection()
 
 	dbFile, err := prompt.SelectFile(defaultDir, "Pilih file backup untuk DATABASE", validExtensions)
 	if err != nil {

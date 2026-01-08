@@ -2,9 +2,9 @@ package parsing
 
 import (
 	restoremodel "sfdbtools/internal/app/restore/model"
+	resolver "sfdbtools/internal/cli/resolver"
 	"sfdbtools/internal/domain"
 	"sfdbtools/pkg/consts"
-	resolver "sfdbtools/internal/cli/resolver"
 
 	"github.com/spf13/cobra"
 )

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
@@ -16,7 +17,6 @@ import (
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/helper"
 	"sfdbtools/pkg/validation"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -41,7 +41,7 @@ func (r *Runner) runEditFlow() error {
 	}
 
 	if target != "" {
-		absPath, name, err := helper.ResolveConfigPath(target)
+		absPath, name, err := profilehelper.ResolveConfigPath(target)
 		if err != nil {
 			return err
 		}

@@ -7,10 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	scriptmodel "sfdbtools/internal/app/script/model"
+	cryptokey "sfdbtools/internal/services/crypto/helpers"
+	"sfdbtools/internal/shared/envx"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/helper"
 	"strings"
 )
 
@@ -19,16 +20,16 @@ func ExtractBundle(opts scriptmodel.ScriptExtractOptions) error {
 	if bundlePath == "" {
 		return fmt.Errorf("--file wajib diisi")
 	}
-	bundlePath = helper.ExpandPath(bundlePath)
+	bundlePath = envx.ExpandPath(bundlePath)
 
 	outDir := strings.TrimSpace(opts.OutDir)
 	if outDir == "" {
 		return fmt.Errorf("--out-dir wajib diisi")
 	}
-	outDir = helper.ExpandPath(outDir)
+	outDir = envx.ExpandPath(outDir)
 	outDir = filepath.Clean(outDir)
 
-	key, _, err := helper.ResolveEncryptionKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY)
+	key, _, err := cryptokey.ResolveEncryptionKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan encryption key: %w", err)
 	}

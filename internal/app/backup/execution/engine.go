@@ -12,12 +12,12 @@ import (
 	"sfdbtools/internal/app/backup/gtid"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/backup/writer"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/timex"
 	"sfdbtools/pkg/database"
 	"sfdbtools/pkg/errorlog"
-	pkghelper "sfdbtools/pkg/helper"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
 )
 
 // StateTracker interface untuk tracking current backup file state.
@@ -81,7 +81,7 @@ func (e *Engine) ExecuteAndBuildBackup(
 	ctx context.Context,
 	cfg types_backup.BackupExecutionConfig,
 ) (types_backup.DatabaseBackupInfo, error) {
-	timer := pkghelper.NewTimer()
+	timer := timex.NewTimer()
 	startTime := timer.StartTime()
 
 	// Set current backup file untuk state tracking (cleanup on cancel)

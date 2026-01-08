@@ -8,11 +8,11 @@ package wizard
 import (
 	"strings"
 
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/helper"
 )
 
 func (r *Runner) runCreateFlow(mode string) error {
@@ -26,7 +26,7 @@ func (r *Runner) runCreateFlow(mode string) error {
 			return err
 		}
 	} else {
-		r.ProfileInfo.Name = helper.TrimProfileSuffix(r.ProfileInfo.Name)
+		r.ProfileInfo.Name = profilehelper.TrimProfileSuffix(r.ProfileInfo.Name)
 		if r.CheckConfigurationNameUnique != nil {
 			if err := r.CheckConfigurationNameUnique(mode); err != nil {
 				print.PrintError(err.Error())

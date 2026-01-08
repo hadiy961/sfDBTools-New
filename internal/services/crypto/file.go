@@ -6,12 +6,12 @@ import (
 	"os"
 
 	"sfdbtools/internal/services/crypto/helpers"
+	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	cryptomodel "sfdbtools/internal/services/crypto/model"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/helper"
 )
 
 // ExecuteEncryptFile menangani logic encrypt file
@@ -37,7 +37,7 @@ func ExecuteEncryptFile(logger applog.Logger, opts cryptomodel.EncryptFileOption
 	}
 
 	// Dapatkan key dari flag/env/prompt
-	key, _, err := helper.ResolveEncryptionKey(opts.Key, consts.ENV_ENCRYPTION_KEY)
+	key, _, err := cryptokey.ResolveEncryptionKey(opts.Key, consts.ENV_ENCRYPTION_KEY)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan encryption key: %v", err)
 	}
@@ -111,7 +111,7 @@ func ExecuteDecryptFile(logger applog.Logger, opts cryptomodel.DecryptFileOption
 	}
 
 	// Dapatkan key dari flag/env/prompt
-	key, _, err := helper.ResolveEncryptionKey(opts.Key, consts.ENV_ENCRYPTION_KEY)
+	key, _, err := cryptokey.ResolveEncryptionKey(opts.Key, consts.ENV_ENCRYPTION_KEY)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan encryption key: %v", err)
 	}
