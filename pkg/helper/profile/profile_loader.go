@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"sfdbtools/internal/domain"
-	"sfdbtools/pkg/helper/env"
+	"sfdbtools/internal/shared/envx"
 	"sfdbtools/pkg/helper/profileutil"
 )
 
@@ -28,7 +28,7 @@ func ResolveAndLoadProfile(opts ProfileLoadOptions) (*domain.ProfileInfo, error)
 
 	if profilePath == "" {
 		if opts.EnvProfilePath != "" {
-			profilePath = env.GetEnvOrDefault(opts.EnvProfilePath, "")
+			profilePath = envx.GetEnvOrDefault(opts.EnvProfilePath, "")
 		}
 
 		if profilePath == "" {
@@ -59,7 +59,7 @@ func ResolveAndLoadProfile(opts ProfileLoadOptions) (*domain.ProfileInfo, error)
 	}
 
 	if profileKey == "" && opts.EnvProfileKey != "" {
-		profileKey = env.GetEnvOrDefault(opts.EnvProfileKey, "")
+		profileKey = envx.GetEnvOrDefault(opts.EnvProfileKey, "")
 	}
 
 	absPath, name, err := profileutil.ResolveConfigPath(profilePath)

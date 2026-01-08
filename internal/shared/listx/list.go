@@ -1,4 +1,4 @@
-package list
+package listx
 
 import "strings"
 
