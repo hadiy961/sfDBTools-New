@@ -1,14 +1,14 @@
 package helper
 
 import (
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
+	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/cli/resolver"
 	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	"sfdbtools/internal/shared/envx"
 	"sfdbtools/internal/shared/listx"
 	"sfdbtools/internal/shared/timex"
 	"sfdbtools/pkg/compress"
-	"sfdbtools/pkg/helper/file"
-	"sfdbtools/pkg/helper/path"
 	"sfdbtools/pkg/helper/profileutil"
 
 	"github.com/spf13/cobra"
@@ -84,68 +84,68 @@ func ListSubtract(a, b []string) []string {
 
 // -------------------- path --------------------
 
-type PathPatternReplacer = path.PathPatternReplacer
+type PathPatternReplacer = backuppath.PathPatternReplacer
 
 func NewPathPatternReplacer(database string, hostname string, compressionType compress.CompressionType, encrypted bool, isFilename bool) (*PathPatternReplacer, error) {
-	return path.NewPathPatternReplacer(database, hostname, compressionType, encrypted, isFilename)
+	return backuppath.NewPathPatternReplacer(database, hostname, compressionType, encrypted, isFilename)
 }
 
 func GenerateBackupFilename(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, excludeData bool) (string, error) {
-	return path.GenerateBackupFilename(database, mode, hostname, compressionType, encrypted, excludeData)
+	return backuppath.GenerateBackupFilename(database, mode, hostname, compressionType, encrypted, excludeData)
 }
 
 func GenerateBackupFilenameWithCount(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, dbCount int, excludeData bool) (string, error) {
-	return path.GenerateBackupFilenameWithCount(database, mode, hostname, compressionType, encrypted, dbCount, excludeData)
+	return backuppath.GenerateBackupFilenameWithCount(database, mode, hostname, compressionType, encrypted, dbCount, excludeData)
 }
 
 func GenerateBackupDirectory(baseDir string, structurePattern string, hostname string) (string, error) {
-	return path.GenerateBackupDirectory(baseDir, structurePattern, hostname)
+	return backuppath.GenerateBackupDirectory(baseDir, structurePattern, hostname)
 }
 
 func GenerateFullBackupPath(baseDir string, structurePattern string, filenamePattern string, database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, excludeData bool) (string, error) {
-	return path.GenerateFullBackupPath(baseDir, structurePattern, filenamePattern, database, mode, hostname, compressionType, encrypted, excludeData)
+	return backuppath.GenerateFullBackupPath(baseDir, structurePattern, filenamePattern, database, mode, hostname, compressionType, encrypted, excludeData)
 }
 
 // -------------------- file --------------------
 
 func IsEncryptedFile(pathStr string) bool {
-	return file.IsEncryptedFile(pathStr)
+	return backupfile.IsEncryptedFile(pathStr)
 }
 
 func ValidBackupFileExtensionsForSelection() []string {
-	return file.ValidBackupFileExtensionsForSelection()
+	return backupfile.ValidBackupFileExtensionsForSelection()
 }
 
 func ExtractDatabaseNameFromFile(filePath string) string {
-	return file.ExtractDatabaseNameFromFile(filePath)
+	return backupfile.ExtractDatabaseNameFromFile(filePath)
 }
 
 func IsValidDatabaseName(name string) bool {
-	return file.IsValidDatabaseName(name)
+	return backupfile.IsValidDatabaseName(name)
 }
 
 func ListBackupFilesInDirectory(dir string) ([]string, error) {
-	return file.ListBackupFilesInDirectory(dir)
+	return backupfile.ListBackupFilesInDirectory(dir)
 }
 
 func GenerateGrantsFilename(backupFilename string) string {
-	return file.GenerateGrantsFilename(backupFilename)
+	return backupfile.GenerateGrantsFilename(backupFilename)
 }
 
 func AutoDetectGrantsFile(backupFile string) string {
-	return file.AutoDetectGrantsFile(backupFile)
+	return backupfile.AutoDetectGrantsFile(backupFile)
 }
 
 func IsBackupFile(filename string) bool {
-	return file.IsBackupFile(filename)
+	return backupfile.IsBackupFile(filename)
 }
 
 func StripAllBackupExtensions(filename string) string {
-	return file.StripAllBackupExtensions(filename)
+	return backupfile.StripAllBackupExtensions(filename)
 }
 
 func ExtractFileExtensions(filename string) (string, []string) {
-	return file.ExtractFileExtensions(filename)
+	return backupfile.ExtractFileExtensions(filename)
 }
 
 // -------------------- timing --------------------
