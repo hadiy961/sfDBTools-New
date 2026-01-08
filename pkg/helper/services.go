@@ -1,12 +1,12 @@
 package helper
 
 import (
+	"sfdbtools/internal/cli/resolver"
+	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	"sfdbtools/internal/shared/envx"
 	"sfdbtools/internal/shared/listx"
 	"sfdbtools/internal/shared/timex"
 	"sfdbtools/pkg/compress"
-	"sfdbtools/pkg/helper/cli"
-	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	"sfdbtools/pkg/helper/file"
 	"sfdbtools/pkg/helper/path"
 	"sfdbtools/pkg/helper/profileutil"
@@ -37,27 +37,27 @@ func ResolveEncryptionKey(existing string, envName string) (string, string, erro
 // -------------------- cli flags --------------------
 
 func GetStringFlagOrEnv(cmd *cobra.Command, flagName, envName string) string {
-	return cli.GetStringFlagOrEnv(cmd, flagName, envName)
+	return resolver.GetStringFlagOrEnv(cmd, flagName, envName)
 }
 
 func GetSecretStringFlagOrEnv(cmd *cobra.Command, flagName, envName string) (string, error) {
-	return cli.GetSecretStringFlagOrEnv(cmd, flagName, envName)
+	return resolver.GetSecretStringFlagOrEnv(cmd, flagName, envName)
 }
 
 func GetIntFlagOrEnv(cmd *cobra.Command, flagName, envName string) int {
-	return cli.GetIntFlagOrEnv(cmd, flagName, envName)
+	return resolver.GetIntFlagOrEnv(cmd, flagName, envName)
 }
 
 func GetBoolFlagOrEnv(cmd *cobra.Command, flagName, envName string) bool {
-	return cli.GetBoolFlagOrEnv(cmd, flagName, envName)
+	return resolver.GetBoolFlagOrEnv(cmd, flagName, envName)
 }
 
 func GetStringSliceFlagOrEnv(cmd *cobra.Command, flagName, envName string) []string {
-	return cli.GetStringSliceFlagOrEnv(cmd, flagName, envName)
+	return resolver.GetStringSliceFlagOrEnv(cmd, flagName, envName)
 }
 
 func GetStringArrayFlagOrEnv(cmd *cobra.Command, flagName, envName string) []string {
-	return cli.GetStringArrayFlagOrEnv(cmd, flagName, envName)
+	return resolver.GetStringArrayFlagOrEnv(cmd, flagName, envName)
 }
 
 // -------------------- list --------------------

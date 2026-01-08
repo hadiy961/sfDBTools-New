@@ -14,9 +14,9 @@ import (
 
 	"sfdbtools/internal/cli/parsing"
 	"sfdbtools/internal/domain"
+	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	"sfdbtools/pkg/consts"
 	"sfdbtools/pkg/encrypt"
-	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	"sfdbtools/pkg/helper/profileutil"
 )
 
