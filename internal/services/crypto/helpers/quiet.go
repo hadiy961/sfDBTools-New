@@ -9,7 +9,7 @@ import (
 	"os"
 
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/pkg/runtimecfg"
+	"sfdbtools/internal/shared/runtimecfg"
 )
 
 // SetupQuietMode memeriksa mode quiet/daemon berbasis parameter dan mengkonfigurasi logger

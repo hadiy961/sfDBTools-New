@@ -12,8 +12,8 @@ import (
 
 	internaljobs "sfdbtools/internal/jobs"
 	"sfdbtools/internal/services/scheduler"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/validation"
 
 	"github.com/spf13/cobra"
 )

@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 
 	"github.com/joho/godotenv" // Untuk memuat file .env
 	"gopkg.in/yaml.v3"         // Untuk mem-parsing file YAML

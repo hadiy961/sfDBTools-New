@@ -16,10 +16,10 @@ import (
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/compress"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/encrypt"
 	"sfdbtools/internal/ui/progress"
-	"sfdbtools/pkg/compress"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/encrypt"
 	"strings"
 )
 

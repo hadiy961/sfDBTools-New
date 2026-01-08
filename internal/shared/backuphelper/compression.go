@@ -8,7 +8,7 @@ package backuphelper
 
 import (
 	"sfdbtools/internal/app/backup/model/types_backup"
-	"sfdbtools/pkg/compress"
+	"sfdbtools/internal/shared/compress"
 )
 
 // BuildCompressionSettings membuat CompressionSettings dari BackupDBOptions

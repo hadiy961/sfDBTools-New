@@ -9,11 +9,11 @@ import (
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/backuphelper"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/listx"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/backuphelper"
-	"sfdbtools/pkg/consts"
 )
 
 // DatabaseLister is the minimal interface needed to list databases.

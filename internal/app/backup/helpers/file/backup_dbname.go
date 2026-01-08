@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 )
 
 // ExtractDatabaseNameFromFile mengekstrak nama database dari nama file backup.

@@ -13,9 +13,9 @@ import (
 	"path/filepath"
 	scriptmodel "sfdbtools/internal/app/script/model"
 	cryptokey "sfdbtools/internal/services/crypto/helpers"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/encrypt"
 	"sfdbtools/internal/shared/envx"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/encrypt"
 	"strings"
 	"time"
 )

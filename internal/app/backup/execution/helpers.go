@@ -13,8 +13,8 @@ import (
 	"sfdbtools/internal/app/backup/metadata"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/fsops"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/fsops"
 )
 
 // ExtractMysqldumpVersion mengambil versi mysqldump dari stderr output.

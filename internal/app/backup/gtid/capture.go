@@ -4,7 +4,7 @@ import (
 	"context"
 
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/pkg/database"
+	"sfdbtools/internal/shared/database"
 )
 
 // Capture fetches GTID info when enabled.

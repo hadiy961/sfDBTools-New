@@ -12,7 +12,7 @@ import (
 	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 	"strings"
 )
 

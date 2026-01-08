@@ -1,6 +1,6 @@
 package modes
 
-import "sfdbtools/pkg/consts"
+import "sfdbtools/internal/shared/consts"
 
 // IsSingleModeVariant checks if mode is single/primary/secondary.
 func IsSingleModeVariant(mode string) bool {

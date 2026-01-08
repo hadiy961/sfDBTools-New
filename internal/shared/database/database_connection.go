@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/envx"
-	"sfdbtools/pkg/consts"
 	"time"
 
 	"github.com/briandowns/spinner"

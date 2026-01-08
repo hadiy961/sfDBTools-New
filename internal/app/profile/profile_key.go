@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	cryptokey "sfdbtools/internal/services/crypto/helpers"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/validation"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/encrypt"
+	"sfdbtools/internal/shared/validation"
 )
 
 func resolveProfileEncryptionKey(existing string, allowPrompt bool) (key string, source string, err error) {

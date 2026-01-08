@@ -25,8 +25,8 @@ import (
 	"syscall"
 	"time"
 
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/version"
+	"sfdbtools/internal/app/version"
+	"sfdbtools/internal/shared/consts"
 )
 
 type Logger interface {

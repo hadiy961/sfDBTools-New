@@ -11,7 +11,7 @@ import (
 
 	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/domain"
-	"sfdbtools/pkg/validation"
+	"sfdbtools/internal/shared/validation"
 )
 
 func BuildProfileFileName(name string) string {

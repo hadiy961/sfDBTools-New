@@ -6,9 +6,9 @@ import (
 	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/modes"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/database"
 	"strings"
 )
 

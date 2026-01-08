@@ -14,8 +14,8 @@ import (
 	"sfdbtools/internal/app/backup/model/types_backup"
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/domain"
-	"sfdbtools/pkg/compress"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/compress"
+	"sfdbtools/internal/shared/consts"
 	"time"
 )
 

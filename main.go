@@ -8,10 +8,10 @@ import (
 	"sfdbtools/internal/autoupdate"
 	appdeps "sfdbtools/internal/cli/deps"
 	config "sfdbtools/internal/services/config"
+	"sfdbtools/internal/shared/encrypt"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/progress"
-	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/runtimecfg"
 	"time"
 
 	applog "sfdbtools/internal/services/log"

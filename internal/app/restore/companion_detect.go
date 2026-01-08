@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/app/backup/model/types_backup"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 	"strings"
 )
 

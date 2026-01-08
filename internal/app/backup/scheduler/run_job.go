@@ -23,8 +23,8 @@ import (
 	defaultVal "sfdbtools/internal/cli/defaults"
 	appdeps "sfdbtools/internal/cli/deps"
 	appconfig "sfdbtools/internal/services/config"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/encrypt"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/encrypt"
 )
 
 func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) error {

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/listx"
-	"sfdbtools/pkg/fsops"
 	"strings"
 )
 

@@ -12,9 +12,9 @@ import (
 	"strings"
 
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/consts"
 )
 
 func (s *Service) resolveGrantsFile(skipGrants *bool, grantsFile *string, backupFile string, allowInteractive bool, stopOnError bool) error {

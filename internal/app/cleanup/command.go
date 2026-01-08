@@ -15,10 +15,10 @@ import (
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/parsing"
 	"sfdbtools/internal/services/scheduler"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/style"
 	"sfdbtools/internal/ui/text"
-	"sfdbtools/pkg/runtimecfg"
 
 	"github.com/spf13/cobra"
 )

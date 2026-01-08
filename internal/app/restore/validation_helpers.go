@@ -9,9 +9,9 @@ import (
 	"context"
 	"fmt"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/consts"
 	"strings"
 )
 

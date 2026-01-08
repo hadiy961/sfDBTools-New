@@ -18,8 +18,8 @@ import (
 	restorecmd "sfdbtools/cmd/restore"
 	scriptcmd "sfdbtools/cmd/script"
 	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/runtimecfg"
 	"strings"
 
 	"github.com/spf13/cobra"

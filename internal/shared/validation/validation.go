@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2/terminal"

@@ -12,10 +12,10 @@ import (
 	profilehelper "sfdbtools/internal/app/profile/helpers"
 	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/internal/ui/table"
-	"sfdbtools/pkg/consts"
 
 	"github.com/AlecAivazis/survey/v2"
 )

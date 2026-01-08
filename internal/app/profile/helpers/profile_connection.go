@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/database"
+	"sfdbtools/internal/shared/process"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/progress"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/database"
-	"sfdbtools/pkg/process"
-	"sfdbtools/pkg/runtimecfg"
 )
 
 // EffectiveDBInfo mengembalikan DBInfo yang efektif untuk koneksi.

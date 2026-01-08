@@ -12,8 +12,8 @@ import (
 
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/timex"
-	"sfdbtools/pkg/database"
 
 	"github.com/dustin/go-humanize"
 )

@@ -9,9 +9,9 @@ import (
 	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	cryptomodel "sfdbtools/internal/services/crypto/model"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/encrypt"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/encrypt"
 )
 
 // ExecuteEncryptFile menangani logic encrypt file

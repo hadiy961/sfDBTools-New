@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"sfdbtools/internal/app/backup/metadata"
 	"sfdbtools/internal/app/backup/model/types_backup"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 	"strings"
 )
 

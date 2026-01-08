@@ -11,10 +11,10 @@ import (
 	"sfdbtools/internal/app/dbscan/helpers"
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/internal/ui/table"
-	"sfdbtools/pkg/validation"
 )
 
 // DisplayScanOptions menampilkan opsi scanning aktif dan meminta konfirmasi

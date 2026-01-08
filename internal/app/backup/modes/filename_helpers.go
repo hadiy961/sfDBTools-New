@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 )
 
 func applyCustomBaseFilename(defaultFilename string, customBase string) string {

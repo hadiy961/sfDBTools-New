@@ -9,10 +9,10 @@ package cleanup
 import (
 	"fmt"
 	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/global"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/table"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/global"
 )
 
 // displayCleanupOptions menampilkan konfigurasi cleanup yang akan dijalankan

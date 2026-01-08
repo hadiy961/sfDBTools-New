@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/fsops"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/validation"
 )
 
 func SelectExistingDBConfig(configDir, purpose string) (domain.ProfileInfo, error) {

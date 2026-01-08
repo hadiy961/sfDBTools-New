@@ -11,7 +11,7 @@ import (
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/cli/resolver"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 	"strings"
 
 	"github.com/spf13/cobra"

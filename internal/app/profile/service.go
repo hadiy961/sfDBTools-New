@@ -11,7 +11,7 @@ import (
 	"sfdbtools/internal/domain"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 )
 
 // Error definitions

@@ -9,11 +9,11 @@ import (
 	"fmt"
 	profilehelper "sfdbtools/internal/app/profile/helpers"
 	profilemodel "sfdbtools/internal/app/profile/model"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/fsops"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/table"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/validation"
 	"strings"
 )
 

@@ -5,7 +5,7 @@ import (
 
 	"sfdbtools/internal/app/backup/metadata"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/pkg/database"
+	"sfdbtools/internal/shared/database"
 )
 
 // ExportUserGrantsIfNeeded exports user grants unless excluded or in dry-run.

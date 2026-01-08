@@ -11,8 +11,8 @@ import (
 	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/consts"
 )
 
 func (r *Runner) runCreateFlow(mode string) error {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"runtime"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 	"strings"
 
 	"github.com/klauspost/compress/zstd"

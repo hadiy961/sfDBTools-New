@@ -23,7 +23,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 )
 
 var (

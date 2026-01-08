@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/database"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/database"
 )
 
 // editBackupOptionsInteractive adalah satu-satunya entrypoint untuk aksi "Ubah opsi"

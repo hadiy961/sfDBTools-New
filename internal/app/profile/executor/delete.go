@@ -11,11 +11,11 @@ import (
 	"path/filepath"
 
 	profilehelper "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/fsops"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/validation"
 )
 
 func filterProfileConfigFiles(files []string) []string {

@@ -7,9 +7,9 @@ import (
 	resolver "sfdbtools/internal/cli/resolver"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/runtimecfg"
-	"sfdbtools/pkg/validation"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/runtimecfg"
+	"sfdbtools/internal/shared/validation"
 	"strings"
 
 	"github.com/mattn/go-isatty"

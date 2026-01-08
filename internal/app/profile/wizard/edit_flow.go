@@ -13,11 +13,11 @@ import (
 	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/fsops"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/validation"
 
 	"github.com/AlecAivazis/survey/v2"
 )

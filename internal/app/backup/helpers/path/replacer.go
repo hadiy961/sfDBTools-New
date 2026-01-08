@@ -4,8 +4,8 @@ import (
 	"strings"
 	"time"
 
-	"sfdbtools/pkg/compress"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/compress"
+	"sfdbtools/internal/shared/consts"
 )
 
 // PathPatternReplacer menyimpan nilai-nilai untuk menggantikan pattern dalam path/filename.

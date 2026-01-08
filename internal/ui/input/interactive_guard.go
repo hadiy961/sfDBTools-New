@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"sfdbtools/pkg/runtimecfg"
-	"sfdbtools/pkg/validation"
+	"sfdbtools/internal/shared/runtimecfg"
+	"sfdbtools/internal/shared/validation"
 
 	"github.com/mattn/go-isatty"
 )

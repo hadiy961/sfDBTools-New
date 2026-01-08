@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"sfdbtools/pkg/encrypt"
+	"sfdbtools/internal/shared/encrypt"
 )
 
 // ResolveEncryptionKey mengembalikan kunci enkripsi final dan sumbernya.

@@ -12,8 +12,8 @@ import (
 	"os"
 	"strings"
 
+	"sfdbtools/internal/shared/encrypt"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/encrypt"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/mattn/go-isatty"

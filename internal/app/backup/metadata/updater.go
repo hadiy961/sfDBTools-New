@@ -11,7 +11,7 @@ import (
 	"os"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 )
 
 // UpdateMetadataUserGrantsFile membaca metadata yang ada, update UserGrantsFile field, dan save kembali

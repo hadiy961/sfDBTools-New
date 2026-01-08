@@ -1,8 +1,8 @@
 package display
 
 import (
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/text"
-	"sfdbtools/pkg/consts"
 )
 
 func (d *OptionsDisplayer) isSingleMode() bool {

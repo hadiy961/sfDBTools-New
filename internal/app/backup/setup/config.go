@@ -8,10 +8,10 @@ import (
 	profilehelper "sfdbtools/internal/app/profile/helpers"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/fsops"
 )
 
 type Setup struct {

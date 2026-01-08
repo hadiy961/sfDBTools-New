@@ -4,7 +4,7 @@ import (
 	restoremodel "sfdbtools/internal/app/restore/model"
 	resolver "sfdbtools/internal/cli/resolver"
 	"sfdbtools/internal/domain"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 
 	"github.com/spf13/cobra"
 )

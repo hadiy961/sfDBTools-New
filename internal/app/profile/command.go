@@ -8,8 +8,8 @@ package profile
 import (
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/parsing"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/consts"
 
 	profilemodel "sfdbtools/internal/app/profile/model"
 

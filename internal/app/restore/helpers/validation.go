@@ -9,9 +9,9 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/database"
 	"strings"
 )
 

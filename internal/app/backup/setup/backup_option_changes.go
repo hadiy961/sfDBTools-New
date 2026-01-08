@@ -14,10 +14,10 @@ import (
 
 	"sfdbtools/internal/app/backup/selection"
 	profilehelper "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/database"
 )
 
 func (s *Setup) changeBackupTicketInteractive() error {

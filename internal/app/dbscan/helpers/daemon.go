@@ -14,9 +14,9 @@ import (
 
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	"sfdbtools/internal/services/scheduler"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/text"
-	"sfdbtools/pkg/consts"
 )
 
 func detectUserModeText(mode scheduler.RunMode) string {

@@ -15,8 +15,8 @@ import (
 	"sfdbtools/internal/cli/parsing"
 	"sfdbtools/internal/domain"
 	cryptokey "sfdbtools/internal/services/crypto/helpers"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/encrypt"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/encrypt"
 )
 
 // LoadAndParseProfile membaca file terenkripsi, mendapatkan kunci (jika tidak diberikan),

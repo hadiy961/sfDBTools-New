@@ -9,7 +9,7 @@ package restore
 import (
 	"path/filepath"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 	"strings"
 )
 

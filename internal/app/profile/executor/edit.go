@@ -12,10 +12,10 @@ import (
 
 	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/fsops"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/validation"
 )
 
 func (e *Executor) EditProfile() error {

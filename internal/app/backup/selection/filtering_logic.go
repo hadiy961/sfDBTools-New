@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"sfdbtools/internal/domain"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 )
 
 // FilterCandidatesByMode memfilter database candidates berdasarkan backup mode.

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/consts"
 )
 
 // ValidatePassword meminta password dari user dan memvalidasi dengan ENV_PASSWORD_APP.

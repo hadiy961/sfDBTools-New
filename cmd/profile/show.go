@@ -4,7 +4,7 @@ import (
 	"sfdbtools/internal/app/profile"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/flags"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 
 	"github.com/spf13/cobra"
 )

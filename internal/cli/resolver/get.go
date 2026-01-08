@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"sfdbtools/pkg/encrypt"
+	"sfdbtools/internal/shared/encrypt"
 
 	"github.com/spf13/cobra"
 )

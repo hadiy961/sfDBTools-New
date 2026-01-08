@@ -8,8 +8,8 @@ package metadata
 
 import (
 	"sfdbtools/internal/app/backup/model/types_backup"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/global"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/global"
 	"time"
 )
 

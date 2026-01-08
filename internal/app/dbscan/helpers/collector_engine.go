@@ -9,7 +9,7 @@ import (
 
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/pkg/database"
+	"sfdbtools/internal/shared/database"
 )
 
 // CollectDatabaseDetails mengumpulkan detail informasi untuk semua database secara concurrent

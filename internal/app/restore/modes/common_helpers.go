@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"sfdbtools/internal/app/restore/helpers"
 	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/consts"
 	"strings"
 	"time"
 )

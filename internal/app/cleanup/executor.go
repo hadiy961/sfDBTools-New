@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/app/backup/model/types_backup"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/global"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/global"
 	"sort"
 	"time"
 

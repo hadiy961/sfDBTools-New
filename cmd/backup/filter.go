@@ -9,9 +9,9 @@ import (
 	"fmt"
 	defaultVal "sfdbtools/internal/cli/defaults"
 	"sfdbtools/internal/cli/flags"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/validation"
 
 	"github.com/spf13/cobra"
 )
