@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"sfdbtools/internal/shared/encrypt"
+	"sfdbtools/internal/crypto"
 
 	"github.com/spf13/cobra"
 )
@@ -36,7 +36,7 @@ func GetSecretStringFlagOrEnv(cmd *cobra.Command, flagName, envName string) (str
 		return "", nil
 	}
 
-	v, err := encrypt.ResolveEnvSecret(envName)
+	v, err := crypto.ResolveEnvSecret(envName)
 	if err != nil {
 		return "", fmt.Errorf("gagal membaca env %s: %w", envName, err)
 	}

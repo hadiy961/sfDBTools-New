@@ -10,11 +10,10 @@ import (
 	"strings"
 
 	"sfdbtools/internal/app/backup/model/types_backup"
-	cryptokey "sfdbtools/internal/services/crypto/helpers"
+	"sfdbtools/internal/crypto"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/compress"
 	"sfdbtools/internal/shared/consts"
-	"sfdbtools/internal/shared/encrypt"
 	"sfdbtools/internal/shared/errorlog"
 	"sfdbtools/internal/ui/progress"
 )
@@ -49,9 +48,10 @@ func (e *Engine) resolveEncryptionKeyIfNeeded() (string, error) {
 		return "", nil
 	}
 
-	resolvedKey, source, err := cryptokey.ResolveEncryptionKey(
+	resolvedKey, source, err := crypto.ResolveKey(
 		e.Options.Encryption.Key,
 		consts.ENV_BACKUP_ENCRYPTION_KEY,
+		false, // tidak perlu prompt untuk backup
 	)
 	if err != nil {
 		return "", fmt.Errorf("gagal mendapatkan kunci enkripsi: %w", err)
@@ -76,7 +76,7 @@ func (e *Engine) createWriterPipeline(baseWriter io.Writer, compressionRequired 
 
 	// Layer 1: Encryption (paling dekat dengan file)
 	if e.Options.Encryption.Enabled {
-		encryptingWriter, err := encrypt.NewEncryptingWriter(writer, []byte(encryptionKey))
+		encryptingWriter, err := crypto.NewStreamEncryptor(writer, []byte(encryptionKey))
 		if err != nil {
 			return nil, nil, fmt.Errorf("gagal membuat encrypting writer: %w", err)
 		}

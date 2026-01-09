@@ -7,9 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	scriptmodel "sfdbtools/internal/app/script/model"
-	cryptokey "sfdbtools/internal/services/crypto/helpers"
+	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/consts"
-	"sfdbtools/internal/shared/encrypt"
 	"sfdbtools/internal/shared/envx"
 	"sfdbtools/internal/ui/prompt"
 	"strings"
@@ -29,7 +28,7 @@ func ExtractBundle(opts scriptmodel.ScriptExtractOptions) error {
 	outDir = envx.ExpandPath(outDir)
 	outDir = filepath.Clean(outDir)
 
-	key, _, err := cryptokey.ResolveEncryptionKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY)
+	key, _, err := crypto.ResolveKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY, true)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan encryption key: %w", err)
 	}
@@ -53,7 +52,7 @@ func ExtractBundle(opts scriptmodel.ScriptExtractOptions) error {
 	}
 	defer f.Close()
 
-	decReader, err := encrypt.NewDecryptingReader(f, key)
+	decReader, err := crypto.NewStreamDecryptor(f, key)
 	if err != nil {
 		return fmt.Errorf("gagal membuat decrypting reader: %w", err)
 	}

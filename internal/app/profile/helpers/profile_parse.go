@@ -13,10 +13,9 @@ import (
 	"strings"
 
 	"sfdbtools/internal/cli/parsing"
+	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/domain"
-	cryptokey "sfdbtools/internal/services/crypto/helpers"
 	"sfdbtools/internal/shared/consts"
-	"sfdbtools/internal/shared/encrypt"
 )
 
 // LoadAndParseProfile membaca file terenkripsi, mendapatkan kunci (jika tidak diberikan),
@@ -31,14 +30,14 @@ func LoadAndParseProfile(absPath string, key string) (*domain.ProfileInfo, error
 	info := &domain.ProfileInfo{}
 	if k == "" {
 		var src string
-		k, src, err = cryptokey.ResolveEncryptionKey(key, consts.ENV_SOURCE_PROFILE_KEY)
+		k, src, err = crypto.ResolveKey(key, consts.ENV_SOURCE_PROFILE_KEY, true)
 		if err != nil {
 			return nil, fmt.Errorf("kunci enkripsi tidak tersedia: %w", err)
 		}
 		info.EncryptionSource = src
 	}
 
-	plaintext, err := encrypt.DecryptAES(data, []byte(k))
+	plaintext, err := crypto.DecryptData(data, []byte(k))
 	if err != nil {
 		var hint string
 		switch info.EncryptionSource {

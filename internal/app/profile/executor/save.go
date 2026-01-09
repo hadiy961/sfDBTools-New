@@ -15,8 +15,8 @@ import (
 
 	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/consts"
-	"sfdbtools/internal/shared/encrypt"
 	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
@@ -87,7 +87,7 @@ func (e *Executor) SaveProfile(mode string) error {
 		}
 	}
 
-	encryptedContent, err := encrypt.EncryptAES([]byte(iniContent), []byte(e.ProfileInfo.EncryptionKey))
+	encryptedContent, err := crypto.EncryptData([]byte(iniContent), []byte(e.ProfileInfo.EncryptionKey))
 	if err != nil {
 		return fmt.Errorf(consts.ProfileErrEncryptConfigFailedFmt, err)
 	}
