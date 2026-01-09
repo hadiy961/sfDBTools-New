@@ -26,10 +26,3 @@ func withVarScope(ctx context.Context, getter func(context.Context) (float64, er
 func WithSessionMaxStatementTime(ctx context.Context, c *Client, newSeconds float64) (restore func(context.Context) error, original float64, err error) {
 	return withVarScope(ctx, c.GetMaxStatementsTime, c.SetMaxStatementsTime, newSeconds, "SESSION max_statement_time")
 }
-
-// WithGlobalMaxStatementTime mengatur nilai GLOBAL max_statement_time ke newSeconds
-// dan mengembalikan fungsi restore untuk mengembalikan ke nilai awal.
-// PENTING: Memerlukan privilege SUPER atau SYSTEM_VARIABLES_ADMIN.
-func WithGlobalMaxStatementTime(ctx context.Context, c *Client, newSeconds float64) (restore func(context.Context) error, original float64, err error) {
-	return withVarScope(ctx, c.GetGlobalMaxStatementTime, c.SetGlobalMaxStatementTime, newSeconds, "GLOBAL max_statement_time")
-}

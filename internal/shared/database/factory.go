@@ -5,42 +5,10 @@ import (
 	"fmt"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/internal/shared/consts"
-	"sfdbtools/internal/shared/envx"
 	"time"
 
 	"github.com/briandowns/spinner"
 )
-
-// ConnectToAppDatabase membuat koneksi ke database aplikasi berdasarkan environment variables.
-func ConnectToAppDatabase() (*Client, error) {
-	host := envx.GetEnvOrDefault(consts.ENV_DB_HOST, "localhost")
-	port := envx.GetEnvOrDefaultInt(consts.ENV_DB_PORT, 3306)
-	user := envx.GetEnvOrDefault(consts.ENV_DB_USER, "root")
-	password := envx.GetEnvOrDefault(consts.ENV_DB_PASSWORD, "DataOn24!!")
-	database := envx.GetEnvOrDefault(consts.ENV_DB_NAME, "sfdbtools")
-
-	cfg := Config{
-		Host:                 host,
-		Port:                 port,
-		User:                 user,
-		Password:             password,
-		AllowNativePasswords: true,
-		ParseTime:            true,
-		Database:             database,
-	}
-
-	if cfg.Host == "" || cfg.Port == 0 {
-		return nil, fmt.Errorf("invalid database configuration, please check your environment variables") // Tidak ada koneksi database yang diatur
-	}
-
-	ctx := context.Background()
-	client, err := NewClient(ctx, cfg, 5*time.Second, 10, 5, time.Minute*5)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
 
 // connectWithSpinner adalah helper untuk membuat koneksi dengan spinner UI.
 func connectWithSpinner(info domain.DBInfo, database, label string, timeout time.Duration) (*Client, error) {

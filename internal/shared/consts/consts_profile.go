@@ -4,7 +4,7 @@ package consts
 // Deskripsi : Konstanta yang digunakan oleh fitur profile (prompt, header, dan pesan umum)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 6 Januari 2026
+// Last Modified : 9 Januari 2026
 
 // =============================================================================
 // Header + Success message
@@ -26,8 +26,8 @@ const (
 // =============================================================================
 
 const (
-	ProfileNonInteractiveQuiet     = "non-interaktif (--quiet):"
-	ProfileMsgNonInteractivePrefix = "mode " + ProfileNonInteractiveQuiet + " "
+	profileNonInteractiveQuiet     = "non-interaktif (--quiet):"
+	ProfileMsgNonInteractivePrefix = "mode " + profileNonInteractiveQuiet + " "
 
 	// Mode strings
 	ProfileModeCreate = "create"
@@ -75,19 +75,19 @@ const (
 	ProfileLabelSSHUser         = "SSH User"
 	ProfileLabelSSHPassword     = "SSH Password"
 	ProfileLabelSSHIdentityFile = "SSH Identity File"
-	ProfileLabelLocalPort       = "Local Port"
+	profileLabelLocalPort       = "Local Port"
 	ProfileLabelSSHLocalPort    = "SSH Local Port"
 
-	ProfileSuffixOptional     = " (opsional)"
-	ProfileSuffixEmptyDefault = " (kosong = default)"
-	ProfileSuffixZeroAuto     = " (0 = otomatis)"
+	profileSuffixOptional     = " (opsional)"
+	profileSuffixEmptyDefault = " (kosong = default)"
+	profileSuffixZeroAuto     = " (0 = otomatis)"
 
 	ProfilePromptUseSSHTunnel            = "Gunakan SSH tunnel untuk koneksi database?"
 	ProfilePromptSSHHost                 = "SSH Host (bastion)"
-	ProfilePromptSSHUser                 = ProfileLabelSSHUser + ProfileSuffixEmptyDefault
-	ProfilePromptSSHPasswordOptional     = ProfileLabelSSHPassword + ProfileSuffixOptional
-	ProfilePromptSSHIdentityFileOptional = ProfileLabelSSHIdentityFile + ProfileSuffixOptional
-	ProfilePromptSSHLocalPort            = ProfileLabelLocalPort + ProfileSuffixZeroAuto
+	ProfilePromptSSHUser                 = ProfileLabelSSHUser + profileSuffixEmptyDefault
+	ProfilePromptSSHPasswordOptional     = ProfileLabelSSHPassword + profileSuffixOptional
+	ProfilePromptSSHIdentityFileOptional = ProfileLabelSSHIdentityFile + profileSuffixOptional
+	ProfilePromptSSHLocalPort            = profileLabelLocalPort + profileSuffixZeroAuto
 
 	ProfileTipKeepCurrentDBPassword  = "💡 Tekan Enter untuk mempertahankan password saat ini."
 	ProfileTipKeepCurrentSSHPassword = "💡 Tekan Enter untuk mempertahankan SSH password saat ini."
@@ -148,14 +148,14 @@ const (
 	ProfileDeleteDeletedFmt             = "Berhasil menghapus: %s"
 	ProfileDeleteFailedFmt              = "Gagal menghapus: %s (%v)"
 	ProfileDeleteWillDeleteHeader       = "Akan menghapus profil berikut:"
-	ProfileDeleteConfirmPrefix          = "Anda yakin ingin menghapus %d "
-	ProfileDeleteConfirmCountFmt        = ProfileDeleteConfirmPrefix + "profil ini?"
+	profileDeleteConfirmPrefix          = "Anda yakin ingin menghapus %d "
+	ProfileDeleteConfirmCountFmt        = profileDeleteConfirmPrefix + "profil ini?"
 	ProfileDeleteCancelledByUser        = "Penghapusan dibatalkan oleh pengguna."
 	ProfileDeleteReadConfigDirFailedFmt = "gagal membaca direktori konfigurasi: %w"
 	ProfileDeleteNoConfigFiles          = "Tidak ada file konfigurasi untuk dihapus."
 	ProfileDeleteSelectFilesPrompt      = "Pilih file konfigurasi yang akan dihapus:"
 	ProfileDeleteNoFilesSelected        = "Tidak ada file terpilih untuk dihapus."
-	ProfileDeleteConfirmFilesCountFmt   = ProfileDeleteConfirmPrefix + "file?"
+	ProfileDeleteConfirmFilesCountFmt   = profileDeleteConfirmPrefix + "file?"
 	ProfileDeleteListPrefix             = " - "
 )
 
@@ -171,9 +171,9 @@ const (
 	ProfileErrFormatINIUnavailable        = "format config INI tidak tersedia"
 	ProfileErrEncryptionKeyUnavailableFmt = "kunci enkripsi tidak tersedia: %w"
 	ProfileErrEncryptConfigFailedFmt      = "gagal mengenkripsi konten konfigurasi: %w"
-	ProfileErrWriteConfigBase             = "gagal menyimpan file konfigurasi"
-	ProfileErrWriteNewConfigFailedFmt     = ProfileErrWriteConfigBase + " baru: %w"
-	ProfileErrWriteConfigFailedFmt        = ProfileErrWriteConfigBase + ": %w"
+	profileErrWriteConfigBase             = "gagal menyimpan file konfigurasi"
+	ProfileErrWriteNewConfigFailedFmt     = profileErrWriteConfigBase + " baru: %w"
+	ProfileErrWriteConfigFailedFmt        = profileErrWriteConfigBase + ": %w"
 
 	ProfileSavePromptContinueDespiteDBFail = "\nKoneksi database gagal. Apakah Anda tetap ingin menyimpan konfigurasi ini?"
 	ProfileSaveVerifyKeyPrompt             = "Masukkan ulang encryption key untuk konfirmasi penyimpanan: "
@@ -250,7 +250,7 @@ const (
 
 const (
 	ProfileCLIAutoInteractiveSuffix           = " (otomatis interaktif kecuali --quiet)"
-	ProfileCLIModeNonInteractiveHeader        = "Mode " + ProfileNonInteractiveQuiet
+	ProfileCLIModeNonInteractiveHeader        = "Mode " + profileNonInteractiveQuiet
 	ProfileCLINonInteractiveEnvProfileKeyNote = "(atau ENV SFDB_TARGET_PROFILE_KEY/SFDB_SOURCE_PROFILE_KEY)."
 )
 

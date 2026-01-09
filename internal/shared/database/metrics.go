@@ -6,16 +6,6 @@ import (
 	"fmt"
 )
 
-// CountDatabases menghitung jumlah database pada server
-func (s *Client) CountDatabases() (int, error) {
-	var count int
-	row := s.db.QueryRow("SELECT COUNT(*) FROM information_schema.SCHEMATA")
-	if err := row.Scan(&count); err != nil {
-		return 0, err
-	}
-	return count, nil
-}
-
 // Database metric collection functions
 
 // GetDatabaseSize menghitung total ukuran data + indeks untuk sebuah database.
