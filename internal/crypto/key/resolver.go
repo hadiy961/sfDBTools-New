@@ -2,12 +2,16 @@
 // Deskripsi : Key resolution dari multiple sources (flag, env, prompt)
 // Author : Hadiyatna Muflihun
 // Tanggal : 8 Januari 2026
-// Last Modified : 8 Januari 2026
+// Last Modified : 9 Januari 2026
 package key
 
 import (
 	"fmt"
 	"strings"
+
+	"sfdbtools/internal/ui/prompt"
+
+	"github.com/AlecAivazis/survey/v2"
 )
 
 // Resolve resolves encryption key from multiple sources in priority order:
@@ -63,8 +67,18 @@ func ResolveOrFail(explicit, envName string) string {
 
 // promptForKey prompts user for encryption key interactively.
 func promptForKey(envName string) (key, source string, err error) {
-	// Import dari auth package untuk avoid circular dependency
-	// Akan di-implement setelah auth package selesai
-	// Untuk sekarang, return error
-	return "", "prompt", fmt.Errorf("interactive prompt not yet implemented in key package")
+	msg := "Masukkan kunci enkripsi: "
+	if strings.TrimSpace(envName) != "" {
+		msg = fmt.Sprintf("Masukkan kunci enkripsi (atau set ENV %s): ", strings.TrimSpace(envName))
+	}
+
+	k, err := prompt.AskPassword(msg, survey.Required)
+	if err != nil {
+		return "", "prompt", err
+	}
+	k = strings.TrimSpace(k)
+	if k == "" {
+		return "", "prompt", fmt.Errorf("kunci enkripsi kosong")
+	}
+	return k, "prompt", nil
 }

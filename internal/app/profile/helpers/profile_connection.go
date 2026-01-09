@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"sfdbtools/internal/app/profile/process"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
-	"sfdbtools/internal/shared/process"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/progress"
 )

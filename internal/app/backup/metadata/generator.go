@@ -9,7 +9,7 @@ package metadata
 import (
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/shared/consts"
-	"sfdbtools/internal/shared/global"
+	"sfdbtools/internal/ui/text"
 	"time"
 )
 
@@ -23,9 +23,9 @@ func GenerateBackupMetadata(cfg types_backup.MetadataConfig) *types_backup.Backu
 		Hostname:          cfg.Hostname,
 		BackupStartTime:   cfg.StartTime,
 		BackupEndTime:     cfg.EndTime,
-		BackupDuration:    global.FormatDuration(cfg.Duration),
+		BackupDuration:    text.FormatDuration(cfg.Duration),
 		FileSize:          cfg.FileSize,
-		FileSizeHuman:     global.FormatFileSize(cfg.FileSize),
+		FileSizeHuman:     text.FormatFileSize(cfg.FileSize),
 		Compressed:        cfg.Compressed,
 		CompressionType:   cfg.CompressionType,
 		Encrypted:         cfg.Encrypted,

@@ -1,9 +1,7 @@
 package fsops
 
 import (
-	"fmt"
 	"os"
-	"path/filepath"
 )
 
 // WriteFile menulis data ke file di path yang diberikan dengan permission 0600.
@@ -43,56 +41,10 @@ func ReadLinesFromFile(path string) ([]string, error) {
 	return lines, nil
 }
 
-// EnsureDir ensures a directory exists
-func EnsureDir(dir string) (string, error) {
-	if dir == "" {
-		return "", nil
-	}
-	// Create the directory if it doesn't exist
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return "", err
-	}
-	return dir, nil
-}
-
-// CreateBackupDirs membuat direktori base dan (opsional) subdirektori berdasarkan konfigurasi.
-// Mengembalikan path final tempat backup akan disimpan.
-func CreateBackupDirs(baseDir string, createSubdirs bool, structurePattern, client string) (bool, error) {
-	if baseDir == "" {
-		return false, fmt.Errorf("direktori dasar kosong")
-	}
-
-	// Pastikan direktori dasar ada
-	if !DirExists(baseDir) {
-		// fmt.Println("Membuat direktori dasar:", baseDir)
-		if err := CreateDirIfNotExist(baseDir); err != nil {
-			return false, fmt.Errorf("gagal membuat direktori dasar: %w", err)
-		}
-	}
-
-	finalDir := baseDir
-	if createSubdirs {
-		subdir, err := BuildSubdirPath(structurePattern, client)
-		if err != nil {
-			return false, fmt.Errorf("gagal membangun path subdirektori: %w", err)
-		}
-		finalDir = filepath.Join(baseDir, subdir)
-		if err := CreateDirIfNotExist(finalDir); err != nil {
-			return false, fmt.Errorf("gagal membuat path subdirektori: %w", err)
-		}
-	}
-	return true, nil
-}
-
 // CreateDirIfNotExist membuat direktori jika belum ada
 func CreateDirIfNotExist(dir string) error {
 	if DirExists(dir) {
 		return nil
 	}
-	return CreateDir(dir)
-}
-
-// CreateDir membuat direktori beserta parent-nya jika belum ada
-func CreateDir(dir string) error {
 	return os.MkdirAll(dir, os.ModePerm)
 }

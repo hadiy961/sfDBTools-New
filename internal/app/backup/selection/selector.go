@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"sfdbtools/internal/app/backup/helpers/compression"
 	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/internal/shared/backuphelper"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/listx"
 	"sfdbtools/internal/ui/print"
@@ -33,7 +33,7 @@ func New(log applog.Logger, opts *types_backup.BackupDBOptions) *Selector {
 
 // buildCompressionSettings delegates ke shared helper untuk avoid duplication
 func (s *Selector) buildCompressionSettings() types_backup.CompressionSettings {
-	return backuphelper.BuildCompressionSettings(s.Options)
+	return compression.BuildCompressionSettings(s.Options)
 }
 
 // GetFilteredDatabasesWithMultiSelect shows interactive multi-select for databases.

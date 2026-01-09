@@ -8,12 +8,12 @@ package backup
 import (
 	"fmt"
 	"sfdbtools/internal/app/backup/gtid"
+	"sfdbtools/internal/app/backup/helpers/compression"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/backup/modes"
 	"sfdbtools/internal/domain"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/internal/shared/backuphelper"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/errorlog"
@@ -78,7 +78,7 @@ var _ modes.BackupService = (*Service)(nil)
 
 // buildCompressionSettings delegates ke shared helper
 func (s *Service) buildCompressionSettings() types_backup.CompressionSettings {
-	return backuphelper.BuildCompressionSettings(s.BackupDBOptions)
+	return compression.BuildCompressionSettings(s.BackupDBOptions)
 }
 
 // =============================================================================

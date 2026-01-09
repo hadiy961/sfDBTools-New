@@ -13,7 +13,7 @@ import (
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/shared/consts"
-	"sfdbtools/internal/shared/global"
+	"sfdbtools/internal/ui/text"
 	"sort"
 	"time"
 
@@ -123,9 +123,9 @@ func (s *Service) performDeletion(files []types_backup.BackupFileInfo) {
 		}
 		deletedCount++
 		totalFreedSize += file.Size
-		s.Log.Infof("Dihapus: %s (size: %s)", file.Path, global.FormatFileSize(file.Size))
+		s.Log.Infof("Dihapus: %s (size: %s)", file.Path, text.FormatFileSize(file.Size))
 	}
 
 	s.Log.Infof("Cleanup selesai: %d file dihapus, total %s ruang dibebaskan.",
-		deletedCount, global.FormatFileSize(totalFreedSize))
+		deletedCount, text.FormatFileSize(totalFreedSize))
 }
