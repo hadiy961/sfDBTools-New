@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	defaultVal "sfdbtools/internal/cli/defaults"
-	"sfdbtools/pkg/compress"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/helper"
-	"sfdbtools/pkg/runtimecfg"
-	"sfdbtools/pkg/validation"
+	resolver "sfdbtools/internal/cli/resolver"
+	"sfdbtools/internal/shared/compress"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/runtimecfg"
+	"sfdbtools/internal/shared/validation"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -45,18 +45,18 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	// CaptureGTID & ExcludeUser berasal dari config file (defaultval), tidak di-override via flag.
 
 	// Dry Run
-	opts.DryRun = helper.GetBoolFlagOrEnv(cmd, "dry-run", "")
+	opts.DryRun = resolver.GetBoolFlagOrEnv(cmd, "dry-run", "")
 
 	// Non Interactive (global): --quiet / --daemon
 	opts.NonInteractive = runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
 
 	// Backup Directory
-	if v := helper.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {
 		opts.OutputDir = v
 	}
 
 	// Filename (optional; jika kosong akan auto dari config/pattern)
-	if v := helper.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "filename", ""); v != "" {
 		if err := validation.ValidateCustomFilenameBase(v); err != nil {
 			return types_backup.BackupDBOptions{}, fmt.Errorf("filename tidak valid: %w", err)
 		}
@@ -64,7 +64,7 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	}
 
 	// Compression flags
-	skipCompress := helper.GetBoolFlagOrEnv(cmd, "skip-compress", "")
+	skipCompress := resolver.GetBoolFlagOrEnv(cmd, "skip-compress", "")
 	if skipCompress {
 		opts.Compression.Enabled = false
 		opts.Compression.Type = consts.CompressionTypeNone
@@ -77,7 +77,7 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 		}
 
 		// compress type
-		if v := helper.GetStringFlagOrEnv(cmd, "compress", ""); v != "" {
+		if v := resolver.GetStringFlagOrEnv(cmd, "compress", ""); v != "" {
 			ct, err := compress.ValidateCompressionType(v)
 			if err != nil {
 				return types_backup.BackupDBOptions{}, err
@@ -107,7 +107,7 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	}
 
 	// Encryption skip flag
-	skipEncrypt := helper.GetBoolFlagOrEnv(cmd, "skip-encrypt", "")
+	skipEncrypt := resolver.GetBoolFlagOrEnv(cmd, "skip-encrypt", "")
 	if skipEncrypt {
 		opts.Encryption.Enabled = false
 		opts.Encryption.Key = ""
@@ -119,29 +119,29 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	// Mode-specific options
 	switch mode {
 	case consts.ModeSingle:
-		if v := helper.GetStringFlagOrEnv(cmd, "database", ""); v != "" {
+		if v := resolver.GetStringFlagOrEnv(cmd, "database", ""); v != "" {
 			opts.DBName = v
 		}
-		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
+		opts.IncludeDmart = resolver.GetBoolFlagOrEnv(cmd, "include-dmart", "")
 	case consts.ModePrimary:
 		// Mode primary sama seperti single, hanya tanpa --database flag
-		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
-		if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
+		opts.IncludeDmart = resolver.GetBoolFlagOrEnv(cmd, "include-dmart", "")
+		if v := resolver.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
 			opts.ClientCode = v
 		}
 	case consts.ModeSecondary:
 		// Mode secondary sama seperti primary, hanya untuk database dengan suffix _secondary
-		opts.IncludeDmart = helper.GetBoolFlagOrEnv(cmd, "include-dmart", "")
-		if v := helper.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
+		opts.IncludeDmart = resolver.GetBoolFlagOrEnv(cmd, "include-dmart", "")
+		if v := resolver.GetStringFlagOrEnv(cmd, "client-code", ""); v != "" {
 			opts.ClientCode = v
 		}
-		if v := helper.GetStringFlagOrEnv(cmd, "instance", ""); v != "" {
+		if v := resolver.GetStringFlagOrEnv(cmd, "instance", ""); v != "" {
 			opts.Instance = v
 		}
 	}
 
 	// Ticket (wajib untuk semua mode)
-	if v := helper.GetStringFlagOrEnv(cmd, "ticket", ""); v != "" {
+	if v := resolver.GetStringFlagOrEnv(cmd, "ticket", ""); v != "" {
 		opts.Ticket = v
 	}
 

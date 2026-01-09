@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"sfdbtools/pkg/database"
+	"sfdbtools/internal/shared/database"
 )
 
 // GTIDInfo menyimpan informasi GTID dari database server.

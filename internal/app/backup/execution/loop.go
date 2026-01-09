@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"sfdbtools/internal/app/backup/model/types_backup"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 )
 
 // ExecuteBackupLoop menjalankan backup across multiple databases.

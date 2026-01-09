@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"sfdbtools/internal/app/backup/model/types_backup"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/fsops"
-	profilehelper "sfdbtools/pkg/helper/profile"
 )
 
 type Setup struct {

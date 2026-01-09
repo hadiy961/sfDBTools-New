@@ -12,9 +12,9 @@ import (
 	"strings"
 
 	"sfdbtools/internal/services/scheduler"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/validation"
 )
 
 func pickScopeInteractive(defaultScope scheduler.Scope) (scheduler.Scope, error) {

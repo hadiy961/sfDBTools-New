@@ -12,15 +12,15 @@ import (
 
 	"sfdbtools/internal/app/backup/metadata"
 	"sfdbtools/internal/app/backup/model/types_backup"
-	"sfdbtools/pkg/consts"
-	pkghelper "sfdbtools/pkg/helper"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/timex"
 )
 
 // buildDryRunInfo membuat DatabaseBackupInfo untuk dry-run mode.
 func (e *Engine) buildDryRunInfo(
 	cfg types_backup.BackupExecutionConfig,
 	args []string,
-	timer *pkghelper.Timer,
+	timer *timex.Timer,
 	startTime time.Time,
 ) types_backup.DatabaseBackupInfo {
 	if cfg.IsMultiDB {
@@ -49,7 +49,7 @@ func (e *Engine) buildDryRunInfo(
 func (e *Engine) buildRealBackupInfo(
 	cfg types_backup.BackupExecutionConfig,
 	writeResult *types_backup.BackupWriteResult,
-	timer *pkghelper.Timer,
+	timer *timex.Timer,
 	startTime time.Time,
 	dbVersion string,
 ) types_backup.DatabaseBackupInfo {

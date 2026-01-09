@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"sfdbtools/internal/app/restore/helpers"
 	restoremodel "sfdbtools/internal/app/restore/model"
-	"sfdbtools/pkg/database"
+	"sfdbtools/internal/shared/database"
 	"strings"
 )
 

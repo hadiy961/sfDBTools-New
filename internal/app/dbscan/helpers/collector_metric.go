@@ -8,7 +8,7 @@ import (
 
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/pkg/database"
+	"sfdbtools/internal/shared/database"
 
 	"github.com/dustin/go-humanize"
 )

@@ -5,7 +5,7 @@ import (
 
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	"sfdbtools/internal/domain"
-	"sfdbtools/pkg/database"
+	"sfdbtools/internal/shared/database"
 )
 
 // FilterFromScanOptions membuat FilterOptions dari ScanOptions dan menjalankan filtering.

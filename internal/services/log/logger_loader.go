@@ -11,8 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	appconfig "sfdbtools/internal/services/config"
-	"sfdbtools/pkg/runtimecfg"
-	"sfdbtools/pkg/spinnerguard"
+	"sfdbtools/internal/shared/runtimecfg"
+	"sfdbtools/internal/shared/spinnerguard"
 	"strings"
 	"time"
 

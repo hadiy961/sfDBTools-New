@@ -10,7 +10,7 @@ import (
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/pkg/database"
+	"sfdbtools/internal/shared/database"
 )
 
 // RestoreExecutor interface untuk semua mode restore

@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"strings"
 
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/validation"
 
 	"github.com/AlecAivazis/survey/v2"
 )

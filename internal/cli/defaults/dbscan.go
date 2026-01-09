@@ -4,7 +4,7 @@ import (
 	"os"
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	appconfig "sfdbtools/internal/services/config"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 )
 
 // GetDefaultScanOptions mengembalikan default options untuk database scan

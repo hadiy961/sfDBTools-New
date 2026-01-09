@@ -9,7 +9,7 @@ package setup
 import (
 	"context"
 
-	"sfdbtools/pkg/database"
+	"sfdbtools/internal/shared/database"
 )
 
 func (s *Setup) editItemsBackupProfileTicket(ctx context.Context, clientPtr **database.Client) []editMenuItem {

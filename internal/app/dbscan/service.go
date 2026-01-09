@@ -14,12 +14,12 @@ import (
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/database"
+	"sfdbtools/internal/shared/errorlog"
+	"sfdbtools/internal/shared/runtimecfg"
+	"sfdbtools/internal/shared/servicehelper"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/database"
-	"sfdbtools/pkg/errorlog"
-	"sfdbtools/pkg/runtimecfg"
-	"sfdbtools/pkg/servicehelper"
 )
 
 // Error definitions

@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/helper"
 	"strings"
 )
 
@@ -105,7 +105,7 @@ func (s *Service) useCompanionFileFromFlagOrDecide() (bool, error) {
 		return false, nil
 	}
 
-	validExtensions := helper.ValidBackupFileExtensionsForSelection()
+	validExtensions := backupfile.ValidBackupFileExtensionsForSelection()
 	if !isValidBackupFileExtension(flagPath, validExtensions) {
 		s.Log.Warnf("Companion file dari flag tidak valid (ekstensi): %s", flagPath)
 		print.PrintWarning(fmt.Sprintf("⚠️  Companion file tidak valid (ekstensi tidak didukung): %s", flagPath))

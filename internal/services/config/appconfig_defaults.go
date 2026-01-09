@@ -9,8 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"sfdbtools/pkg/version"
+	"sfdbtools/internal/app/version"
 )
 
 const (

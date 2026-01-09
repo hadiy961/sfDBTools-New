@@ -7,11 +7,11 @@ import (
 	"sfdbtools/cmd"
 	"sfdbtools/internal/autoupdate"
 	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/crypto"
 	config "sfdbtools/internal/services/config"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/progress"
-	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/runtimecfg"
 	"time"
 
 	applog "sfdbtools/internal/services/log"
@@ -80,7 +80,7 @@ func main() {
 		}
 		// Konfigurasi path key file MariaDB untuk derive master key env terenkripsi.
 		// Jika kosong, akan fallback ke default internal.
-		encrypt.SetMariaDBKeyFilePath(cfg.Mariadb.KeyMariaNBCFile)
+		crypto.SetMariaDBKeyFilePath(cfg.Mariadb.KeyMariaNBCFile)
 	}
 
 	// 2. Inisialisasi Logger Kustom

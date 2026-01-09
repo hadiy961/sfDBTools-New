@@ -9,9 +9,9 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/domain"
-	"sfdbtools/pkg/consts"
-	profilehelper "sfdbtools/pkg/helper/profile"
+	"sfdbtools/internal/shared/consts"
 )
 
 func (s *Service) resolveTargetProfile(profileInfo *domain.ProfileInfo, allowInteractive bool) error {

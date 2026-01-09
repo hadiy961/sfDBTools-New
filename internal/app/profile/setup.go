@@ -9,11 +9,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/helper"
-	profilehelper "sfdbtools/pkg/helper/profile"
+	"sfdbtools/internal/shared/consts"
 	"strings"
 )
 
@@ -50,7 +49,7 @@ func (s *Service) fillOriginalInfoFromMeta(absPath string, info domain.ProfileIn
 
 	s.OriginalProfileInfo = &domain.ProfileInfo{
 		Path:         absPath,
-		Name:         helper.TrimProfileSuffix(filepath.Base(absPath)),
+		Name:         profilehelper.TrimProfileSuffix(filepath.Base(absPath)),
 		DBInfo:       info.DBInfo,
 		SSHTunnel:    info.SSHTunnel,
 		Size:         fileSizeStr,

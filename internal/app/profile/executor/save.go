@@ -13,15 +13,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/crypto"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/fsops"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/helper"
-	profilehelper "sfdbtools/pkg/helper/profile"
-	"sfdbtools/pkg/validation"
 )
 
 func (e *Executor) SaveProfile(mode string) error {
@@ -88,7 +87,7 @@ func (e *Executor) SaveProfile(mode string) error {
 		}
 	}
 
-	encryptedContent, err := encrypt.EncryptAES([]byte(iniContent), []byte(e.ProfileInfo.EncryptionKey))
+	encryptedContent, err := crypto.EncryptData([]byte(iniContent), []byte(e.ProfileInfo.EncryptionKey))
 	if err != nil {
 		return fmt.Errorf(consts.ProfileErrEncryptConfigFailedFmt, err)
 	}
@@ -103,7 +102,7 @@ func (e *Executor) SaveProfile(mode string) error {
 		return err
 	}
 
-	e.ProfileInfo.Name = helper.TrimProfileSuffix(e.ProfileInfo.Name)
+	e.ProfileInfo.Name = profilehelper.TrimProfileSuffix(e.ProfileInfo.Name)
 	newFileName := shared.BuildProfileFileName(e.ProfileInfo.Name)
 	newFilePath := filepath.Join(baseDir, newFileName)
 

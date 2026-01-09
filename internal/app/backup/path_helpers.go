@@ -3,12 +3,12 @@ package backup
 import (
 	"context"
 	"path/filepath"
+	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/modes"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/database"
-	pkghelper "sfdbtools/pkg/helper"
 	"strings"
 )
 
@@ -27,7 +27,7 @@ func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, er
 		hostIdentifier = s.BackupDBOptions.Profile.DBInfo.Host
 	}
 
-	filename, err := pkghelper.GenerateBackupFilename(
+	filename, err := backuppath.GenerateBackupFilename(
 		dbName,
 		mode,
 		hostIdentifier,
@@ -53,7 +53,7 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Clie
 
 	// Generate output directory
 	var err error
-	s.BackupDBOptions.OutputDir, err = pkghelper.GenerateBackupDirectory(
+	s.BackupDBOptions.OutputDir, err = backuppath.GenerateBackupDirectory(
 		s.Config.Backup.Output.BaseDirectory,
 		s.Config.Backup.Output.Structure.Pattern,
 		dbHostname,
@@ -75,7 +75,7 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Clie
 		// dengan prefix sesuai mode ('all' atau 'combined')
 	}
 
-	s.BackupDBOptions.File.Path, err = pkghelper.GenerateBackupFilenameWithCount(
+	s.BackupDBOptions.File.Path, err = backuppath.GenerateBackupFilenameWithCount(
 		exampleDBName,
 		s.BackupDBOptions.Mode,
 		dbHostname,

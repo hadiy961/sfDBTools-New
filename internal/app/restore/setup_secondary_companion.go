@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/helper"
 	"strings"
 )
 
@@ -140,7 +140,7 @@ func (s *Service) handleCompanionNotFound(opts *restoremodel.RestoreSecondaryOpt
 }
 
 func (s *Service) selectDmartFileInteractive(dir string) (string, error) {
-	validExtensions := helper.ValidBackupFileExtensionsForSelection()
+	validExtensions := backupfile.ValidBackupFileExtensionsForSelection()
 	selectedFile, err := prompt.SelectFile(dir, "Masukkan path directory atau file dmart", validExtensions)
 	if err != nil {
 		return "", fmt.Errorf("gagal memilih dmart file: %w", err)

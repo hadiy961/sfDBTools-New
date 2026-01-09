@@ -16,7 +16,7 @@ import (
 	"sfdbtools/internal/app/backup/selection"
 	"sfdbtools/internal/app/backup/setup"
 	"sfdbtools/internal/domain"
-	"sfdbtools/pkg/database"
+	"sfdbtools/internal/shared/database"
 )
 
 // =============================================================================

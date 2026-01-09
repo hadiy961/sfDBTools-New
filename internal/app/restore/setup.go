@@ -8,8 +8,8 @@ package restore
 
 import (
 	"path/filepath"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/helper"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
+	"sfdbtools/internal/shared/consts"
 	"strings"
 )
 
@@ -24,7 +24,7 @@ func inferPrimaryPrefixFromTargetOrFile(targetDB string, filePath string) string
 		return consts.PrimaryPrefixNBC
 	}
 
-	inferred := helper.ExtractDatabaseNameFromFile(filepath.Base(filePath))
+	inferred := backupfile.ExtractDatabaseNameFromFile(filepath.Base(filePath))
 	inferredLower := strings.ToLower(strings.TrimSpace(inferred))
 	if strings.HasPrefix(inferredLower, consts.PrimaryPrefixBiznet) {
 		return consts.PrimaryPrefixBiznet

@@ -4,7 +4,7 @@ import (
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/flags"
 	"sfdbtools/internal/cli/parsing"
-	"sfdbtools/internal/services/crypto"
+	"sfdbtools/internal/crypto"
 
 	"github.com/spf13/cobra"
 )

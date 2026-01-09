@@ -12,13 +12,13 @@ import (
 	"strings"
 
 	"sfdbtools/internal/app/backup/display"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/database"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/database"
-	profilehelper "sfdbtools/pkg/helper/profile"
-	"sfdbtools/pkg/validation"
 )
 
 type PathGenerator func(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error)

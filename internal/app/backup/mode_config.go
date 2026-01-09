@@ -9,7 +9,7 @@ package backup
 import (
 	"fmt"
 	"sfdbtools/internal/app/backup/model/types_backup"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 )
 
 // GetExecutionConfig returns the execution configuration for a given backup mode

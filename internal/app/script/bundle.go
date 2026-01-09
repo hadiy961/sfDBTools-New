@@ -12,9 +12,9 @@ import (
 	"path"
 	"path/filepath"
 	scriptmodel "sfdbtools/internal/app/script/model"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/helper"
+	"sfdbtools/internal/crypto"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/envx"
 	"strings"
 	"time"
 )
@@ -38,7 +38,7 @@ func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 		return fmt.Errorf("--file wajib diisi")
 	}
 
-	entryPath = helper.ExpandPath(entryPath)
+	entryPath = envx.ExpandPath(entryPath)
 	entryInfo, err := os.Stat(entryPath)
 	if err != nil {
 		return fmt.Errorf("gagal membaca file entrypoint: %w", err)
@@ -53,7 +53,7 @@ func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 	if outputPath == "" {
 		outputPath = defaultBundleOutputPath(entryPath)
 	}
-	outputPath = helper.ExpandPath(outputPath)
+	outputPath = envx.ExpandPath(outputPath)
 
 	entryAbs, _ := filepath.Abs(entryPath)
 	outAbs, _ := filepath.Abs(outputPath)
@@ -65,7 +65,7 @@ func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 		return fmt.Errorf("gagal membuat folder output: %w", err)
 	}
 
-	key, _, err := helper.ResolveEncryptionKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY)
+	key, _, err := crypto.ResolveKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY, true)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan encryption key: %w", err)
 	}
@@ -104,7 +104,7 @@ func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 	}
 	defer outFile.Close()
 
-	ew, err := encrypt.NewEncryptingWriter(outFile, []byte(key))
+	ew, err := crypto.NewStreamEncryptor(outFile, []byte(key))
 	if err != nil {
 		return fmt.Errorf("gagal membuat encrypting writer: %w", err)
 	}
@@ -170,9 +170,9 @@ func RunBundle(opts scriptmodel.ScriptRunOptions) error {
 	if bundlePath == "" {
 		return fmt.Errorf("--file wajib diisi")
 	}
-	bundlePath = helper.ExpandPath(bundlePath)
+	bundlePath = envx.ExpandPath(bundlePath)
 
-	key, _, err := helper.ResolveEncryptionKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY)
+	key, _, err := crypto.ResolveKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY, true)
 	if err != nil {
 		return fmt.Errorf("gagal mendapatkan encryption key: %w", err)
 	}
@@ -183,7 +183,7 @@ func RunBundle(opts scriptmodel.ScriptRunOptions) error {
 	}
 	defer f.Close()
 
-	decReader, err := encrypt.NewDecryptingReader(f, key)
+	decReader, err := crypto.NewStreamDecryptor(f, key)
 	if err != nil {
 		return fmt.Errorf("gagal membuat decrypting reader: %w", err)
 	}

@@ -2,7 +2,7 @@
 // Deskripsi : Command untuk encode nilai ENV terenkripsi
 // Author : Hadiyatna Muflihun
 // Tanggal : 6 Januari 2026
-// Last Modified : 6 Januari 2026
+// Last Modified : 9 Januari 2026
 
 package cryptocmd
 
@@ -12,8 +12,8 @@ import (
 	"os"
 	"strings"
 
+	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/encrypt"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/mattn/go-isatty"
@@ -53,7 +53,7 @@ var CmdEnvEncode = &cobra.Command{
 
 		// Warning: jika key file MariaDB ada tapi tidak readable oleh user ini,
 		// hasil encode akan fallback ke hardcoded saja dan bisa mismatch jika runtime nanti bisa membaca file tsb.
-		keyFile := encrypt.GetMariaDBKeyFilePath()
+		keyFile := crypto.GetMariaDBKeyFilePath()
 		if _, statErr := os.Stat(keyFile); statErr == nil {
 			if _, readErr := os.ReadFile(keyFile); readErr != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: %s terdeteksi tapi tidak bisa dibaca (%v).\n", keyFile, readErr)
@@ -61,7 +61,7 @@ var CmdEnvEncode = &cobra.Command{
 			}
 		}
 
-		out, err := encrypt.EncodeEnvValue(text)
+		out, err := crypto.EncodeEnvSecret(text)
 		if err != nil {
 			return err
 		}
@@ -75,5 +75,5 @@ func init() {
 	CmdEnvEncode.Flags().StringP("text", "t", "", "Plaintext yang akan di-encode (jika kosong, baca dari stdin)")
 
 	// Sisipkan prefix di help/usage tanpa menyimpan prefix sebagai string literal di binary.
-	CmdEnvEncode.Short = "Encode plaintext menjadi " + encrypt.EnvEncryptedPrefixForDisplay() + "<payload> untuk ENV"
+	CmdEnvEncode.Short = "Encode plaintext menjadi " + crypto.EncryptedPrefixForDisplay() + "<payload> untuk ENV"
 }

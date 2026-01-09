@@ -1,0 +1,31 @@
+package compress
+
+import (
+	"fmt"
+	"sfdbtools/internal/shared/consts"
+	"strings"
+)
+
+// ValidateCompressionType validates if the compression type is supported
+func ValidateCompressionType(compressionType string) (CompressionType, error) {
+	ct := CompressionType(strings.ToLower(compressionType))
+	switch ct {
+	case CompressionType(consts.CompressionTypeNone),
+		CompressionType(consts.CompressionTypeGzip),
+		CompressionType(consts.CompressionTypePgzip),
+		CompressionType(consts.CompressionTypeZlib),
+		CompressionType(consts.CompressionTypeZstd),
+		CompressionType(consts.CompressionTypeXz):
+		return ct, nil
+	default:
+		return CompressionType(consts.CompressionTypeNone), fmt.Errorf("unsupported compression type: %s. Supported types: none, gzip, pgzip, zlib, zstd, xz", compressionType)
+	}
+}
+
+// ValidateCompressionLevel validates if the compression level is valid (1-9)
+func ValidateCompressionLevel(level int) (CompressionLevel, error) {
+	if level < 1 || level > 9 {
+		return CompressionLevel(consts.CompressionLevelDefault), fmt.Errorf("unsupported compression level: %d. Supported levels: 1-9 (1=fastest, 9=best)", level)
+	}
+	return CompressionLevel(level), nil
+}

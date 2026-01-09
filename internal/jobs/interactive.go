@@ -13,10 +13,10 @@ import (
 	"strings"
 
 	"sfdbtools/internal/services/scheduler"
+	"sfdbtools/internal/shared/runtimecfg"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/runtimecfg"
-	"sfdbtools/pkg/validation"
 
 	"github.com/mattn/go-isatty"
 )

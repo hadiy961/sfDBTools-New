@@ -9,13 +9,13 @@ package shared
 import (
 	"strings"
 
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/domain"
-	"sfdbtools/pkg/helper"
-	"sfdbtools/pkg/validation"
+	"sfdbtools/internal/shared/validation"
 )
 
 func BuildProfileFileName(name string) string {
-	return validation.ProfileExt(helper.TrimProfileSuffix(strings.TrimSpace(name)))
+	return validation.ProfileExt(profilehelper.TrimProfileSuffix(strings.TrimSpace(name)))
 }
 
 func CloneAsOriginalProfileInfo(info *domain.ProfileInfo) *domain.ProfileInfo {

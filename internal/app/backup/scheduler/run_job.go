@@ -16,15 +16,15 @@ import (
 	"time"
 
 	"sfdbtools/internal/app/backup"
+	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/cleanup"
 	cleanupmodel "sfdbtools/internal/app/cleanup/model"
 	defaultVal "sfdbtools/internal/cli/defaults"
 	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/crypto"
 	appconfig "sfdbtools/internal/services/config"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/encrypt"
-	"sfdbtools/pkg/helper"
+	"sfdbtools/internal/shared/consts"
 )
 
 func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) error {
@@ -66,7 +66,7 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	opts.Profile.Path = profilePath
 	// profile-key boleh dari env / config; untuk scheduler kita fail-fast jika kosong.
 	if strings.TrimSpace(opts.Profile.EncryptionKey) == "" {
-		v, err := encrypt.ResolveEnvSecret(consts.ENV_SOURCE_PROFILE_KEY)
+		v, err := crypto.ResolveEnvSecret(consts.ENV_SOURCE_PROFILE_KEY)
 		if err != nil {
 			return err
 		}
@@ -98,7 +98,7 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 		baseDir = deps.Config.Backup.Output.BaseDirectory
 	}
 
-	outputDir, err := helper.GenerateBackupDirectory(
+	outputDir, err := backuppath.GenerateBackupDirectory(
 		baseDir,
 		deps.Config.Backup.Output.Structure.Pattern,
 		"",
@@ -112,7 +112,7 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	if opts.Encryption.Enabled {
 		if strings.TrimSpace(opts.Encryption.Key) == "" {
 			// Coba dari env
-			v, err := encrypt.ResolveEnvSecret(consts.ENV_BACKUP_ENCRYPTION_KEY)
+			v, err := crypto.ResolveEnvSecret(consts.ENV_BACKUP_ENCRYPTION_KEY)
 			if err != nil {
 				return err
 			}

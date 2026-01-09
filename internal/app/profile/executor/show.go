@@ -7,14 +7,13 @@ package executor
 
 import (
 	"fmt"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
 	profilemodel "sfdbtools/internal/app/profile/model"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/fsops"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/table"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/fsops"
-	"sfdbtools/pkg/helper"
-	profilehelper "sfdbtools/pkg/helper/profile"
-	"sfdbtools/pkg/validation"
 	"strings"
 )
 
@@ -54,7 +53,7 @@ func (e *Executor) ShowProfile() error {
 		e.ProfileShow.Path = e.ProfileInfo.Path
 		e.ProfileShow.RevealPassword = revealPassword
 	} else {
-		abs, name, err := helper.ResolveConfigPath(e.ProfileShow.Path)
+		abs, name, err := profilehelper.ResolveConfigPath(e.ProfileShow.Path)
 		if err != nil {
 			return err
 		}

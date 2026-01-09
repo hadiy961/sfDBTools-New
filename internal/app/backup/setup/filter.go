@@ -7,8 +7,8 @@ import (
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/backup/selection"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/database"
 )
 
 // GetFilteredDatabases fetches and filters DB list.

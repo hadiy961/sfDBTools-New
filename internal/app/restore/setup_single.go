@@ -12,12 +12,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/app/restore/helpers"
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/internal/ui/table"
-	"sfdbtools/pkg/helper"
 )
 
 // SetupRestoreSession melakukan setup untuk restore single session
@@ -189,7 +189,7 @@ func (s *Service) resolveTargetDatabaseSingle(ctx context.Context) error {
 	}
 
 	// Extract suggested database name from file
-	suggestedDBName := helper.ExtractDatabaseNameFromFile(s.RestoreOpts.File)
+	suggestedDBName := backupfile.ExtractDatabaseNameFromFile(s.RestoreOpts.File)
 
 	// Build options
 	options := []string{}
@@ -227,7 +227,7 @@ func (s *Service) resolveTargetDatabaseSingle(ctx context.Context) error {
 				if strings.TrimSpace(str) == "" {
 					return fmt.Errorf("nama database tidak boleh kosong")
 				}
-				if !helper.IsValidDatabaseName(str) {
+				if !backupfile.IsValidDatabaseName(str) {
 					return fmt.Errorf("nama database hanya boleh berisi huruf, angka, underscore, dan dash")
 				}
 				return nil

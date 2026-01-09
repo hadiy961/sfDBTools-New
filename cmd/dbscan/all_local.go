@@ -8,7 +8,7 @@ import (
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/flags"
 	"sfdbtools/internal/cli/parsing"
-	"sfdbtools/pkg/validation"
+	"sfdbtools/internal/shared/validation"
 
 	"github.com/spf13/cobra"
 )

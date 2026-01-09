@@ -9,9 +9,9 @@ package progress
 import (
 	"fmt"
 	"os"
-	"sfdbtools/pkg/global"
-	"sfdbtools/pkg/runtimecfg"
-	"sfdbtools/pkg/spinnerguard"
+	"sfdbtools/internal/shared/runtimecfg"
+	"sfdbtools/internal/shared/spinnerguard"
+	"sfdbtools/internal/ui/text"
 	"sync"
 	"time"
 
@@ -80,7 +80,7 @@ func (s *elapsedSpinner) Start() {
 				return
 			default:
 				elapsed := time.Since(s.startTime)
-				s.spin.Suffix = fmt.Sprintf(" %s... (%s)", s.message, global.FormatDuration(elapsed))
+				s.spin.Suffix = fmt.Sprintf(" %s... (%s)", s.message, text.FormatDuration(elapsed))
 				time.Sleep(500 * time.Millisecond)
 			}
 		}
@@ -110,7 +110,7 @@ func (s *elapsedSpinner) UpdateMessage(message string) {
 	}
 	s.message = message
 	elapsed := time.Since(s.startTime)
-	s.spin.Suffix = fmt.Sprintf(" %s... (%s)", message, global.FormatDuration(elapsed))
+	s.spin.Suffix = fmt.Sprintf(" %s... (%s)", message, text.FormatDuration(elapsed))
 }
 
 // SuspendAndRun stops the spinner, runs action, then restarts the spinner preserving elapsed time
@@ -143,7 +143,7 @@ func (s *elapsedSpinner) SuspendAndRun(action func()) {
 				return
 			default:
 				elapsed := time.Since(s.startTime)
-				s.spin.Suffix = fmt.Sprintf(" %s... (%s)", s.message, global.FormatDuration(elapsed))
+				s.spin.Suffix = fmt.Sprintf(" %s... (%s)", s.message, text.FormatDuration(elapsed))
 				time.Sleep(500 * time.Millisecond)
 			}
 		}

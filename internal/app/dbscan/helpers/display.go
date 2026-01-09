@@ -10,10 +10,10 @@ import (
 
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/table"
 	"sfdbtools/internal/ui/text"
-	"sfdbtools/pkg/consts"
 )
 
 // DisplayScanResult menampilkan hasil scanning ke UI

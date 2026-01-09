@@ -9,10 +9,10 @@ package cleanup
 import (
 	"fmt"
 	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/table"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/global"
+	"sfdbtools/internal/ui/text"
 )
 
 // displayCleanupOptions menampilkan konfigurasi cleanup yang akan dijalankan
@@ -46,10 +46,10 @@ func (s *Service) logDryRunSummary(files []types_backup.BackupFileInfo) {
 			i+1,
 			file.Path,
 			file.ModTime.Format(consts.CleanupTimeFormat),
-			global.FormatFileSize(file.Size))
+			text.FormatFileSize(file.Size))
 	}
 
 	s.Log.Infof("DRY-RUN: Total %d file dengan ukuran %s akan dibebaskan.",
-		len(files), global.FormatFileSize(totalSize))
+		len(files), text.FormatFileSize(totalSize))
 	s.Log.Info("DRY-RUN: Untuk menjalankan cleanup sebenarnya, jalankan tanpa flag --dry-run.")
 }

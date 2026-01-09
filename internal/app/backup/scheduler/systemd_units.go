@@ -17,7 +17,7 @@ import (
 	appdeps "sfdbtools/internal/cli/deps"
 	appconfig "sfdbtools/internal/services/config"
 	"sfdbtools/internal/services/scheduler"
-	"sfdbtools/pkg/consts"
+	"sfdbtools/internal/shared/consts"
 )
 
 const (

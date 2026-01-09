@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/backup/modes"
-	"sfdbtools/pkg/database"
-	"sfdbtools/pkg/helper"
+	"sfdbtools/internal/shared/database"
+	"sfdbtools/internal/shared/timex"
 )
 
 // ExecuteBackup melakukan proses backup database - entry point utama
@@ -26,7 +26,7 @@ func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Clie
 	}
 
 	// Jalankan backup sesuai mode
-	timer := helper.NewTimer()
+	timer := timex.NewTimer()
 	result := s.executeBackupByMode(ctx, dbFiltered, backupMode)
 	result.TotalTimeTaken = timer.Elapsed()
 

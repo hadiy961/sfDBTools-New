@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/app/backup/model/types_backup"
-	"sfdbtools/pkg/consts"
-	"sfdbtools/pkg/global"
-	"sfdbtools/pkg/helper"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/ui/text"
 	"sort"
 	"time"
 
@@ -88,7 +88,7 @@ func (s *Service) scanFiles(baseDir string, cutoff time.Time, pattern string) ([
 		}
 
 		// Validasi tipe file dan kriteria
-		if info.IsDir() || (pattern == "**/*" && !helper.IsBackupFile(fullPath)) {
+		if info.IsDir() || (pattern == "**/*" && !backupfile.IsBackupFile(fullPath)) {
 			continue
 		}
 
@@ -123,9 +123,9 @@ func (s *Service) performDeletion(files []types_backup.BackupFileInfo) {
 		}
 		deletedCount++
 		totalFreedSize += file.Size
-		s.Log.Infof("Dihapus: %s (size: %s)", file.Path, global.FormatFileSize(file.Size))
+		s.Log.Infof("Dihapus: %s (size: %s)", file.Path, text.FormatFileSize(file.Size))
 	}
 
 	s.Log.Infof("Cleanup selesai: %d file dihapus, total %s ruang dibebaskan.",
-		deletedCount, global.FormatFileSize(totalFreedSize))
+		deletedCount, text.FormatFileSize(totalFreedSize))
 }

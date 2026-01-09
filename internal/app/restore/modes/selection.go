@@ -13,9 +13,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/pkg/helper"
 	"strings"
 	"time"
 )
@@ -57,7 +57,7 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*restoremodel.RestoreR
 		// Resolve db name from file if empty
 		dbName := strings.TrimSpace(ent.DBName)
 		if dbName == "" {
-			dbName = helper.ExtractDatabaseNameFromFile(ent.File)
+			dbName = backupfile.ExtractDatabaseNameFromFile(ent.File)
 			if dbName == "" {
 				tracker.recordFailure()
 				msg := fmt.Sprintf("[%d/%d] %s: gagal infer nama database dari filename", idx+1, tracker.total, filepath.Base(ent.File))
@@ -230,5 +230,5 @@ func (e *selectionExecutor) readCSV(path string) ([]restoremodel.RestoreSelectio
 }
 
 func (e *selectionExecutor) isEncryptedFile(path string) bool {
-	return helper.IsEncryptedFile(path)
+	return backupfile.IsEncryptedFile(path)
 }

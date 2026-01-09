@@ -9,7 +9,7 @@ package metadata
 import (
 	"fmt"
 	"sfdbtools/internal/app/backup/model/types_backup"
-	"sfdbtools/pkg/global"
+	"sfdbtools/internal/ui/text"
 	"time"
 )
 
@@ -41,8 +41,8 @@ func (b *DatabaseBackupInfoBuilder) Build() types_backup.DatabaseBackupInfo {
 		DatabaseName:   b.DatabaseName,
 		OutputFile:     b.OutputFile,
 		FileSize:       b.FileSize,
-		FileSizeHuman:  global.FormatFileSize(b.FileSize),
-		Duration:       global.FormatDuration(b.Duration),
+		FileSizeHuman:  text.FormatFileSize(b.FileSize),
+		Duration:       text.FormatDuration(b.Duration),
 		Status:         b.Status,
 		Warnings:       b.Warnings,
 		BackupID:       backupID,

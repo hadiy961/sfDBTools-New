@@ -10,7 +10,7 @@ import (
 	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/pkg/runtimecfg"
+	"sfdbtools/internal/shared/runtimecfg"
 
 	"github.com/mattn/go-isatty"
 )

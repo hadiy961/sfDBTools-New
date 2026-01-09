@@ -6,7 +6,7 @@
 
 package style
 
-import "sfdbtools/pkg/consts"
+import "sfdbtools/internal/shared/consts"
 
 // Color adalah alias string untuk warna/format ANSI.
 // Di fase UI-1, nilai ini masih memetakan ke konstanta legacy di pkg/consts.

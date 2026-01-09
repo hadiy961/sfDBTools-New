@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"sfdbtools/pkg/database"
+	"sfdbtools/internal/shared/database"
 )
 
 // UserInfo menyimpan informasi user dari mysql.user.

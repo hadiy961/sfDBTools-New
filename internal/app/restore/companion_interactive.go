@@ -9,9 +9,9 @@ package restore
 import (
 	"fmt"
 	"path/filepath"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-	"sfdbtools/pkg/helper"
 	"strings"
 )
 
@@ -73,7 +73,7 @@ func (s *Service) selectCompanionFileInteractive() error {
 
 func (s *Service) browseCompanionFileInteractive() (string, error) {
 	dir := filepath.Dir(s.RestorePrimaryOpts.File)
-	files, err := helper.ListBackupFilesInDirectory(dir)
+	files, err := backupfile.ListBackupFilesInDirectory(dir)
 	if err != nil {
 		return "", fmt.Errorf("gagal list files: %w", err)
 	}

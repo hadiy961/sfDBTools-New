@@ -1,9 +1,9 @@
 package defaultVal
 
 import (
+	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	appconfig "sfdbtools/internal/services/config"
-	"sfdbtools/pkg/helper"
 )
 
 // DefaultBackupOptions mengembalikan default options untuk database backup
@@ -32,7 +32,7 @@ func DefaultBackupOptions(mode string) types_backup.BackupDBOptions {
 	// Note: OutputDir ditampilkan dengan structure pattern yang sudah di-substitute dengan timestamp saat ini
 	// Contoh: /media/ArchiveDB/{year}{month}{day}/ menjadi /media/ArchiveDB/20251205/
 	// Hostname TIDAK di-include di directory (hanya untuk filename)
-	outputDir, _ := helper.GenerateBackupDirectory(
+	outputDir, _ := backuppath.GenerateBackupDirectory(
 		cfg.Backup.Output.BaseDirectory,
 		cfg.Backup.Output.Structure.Pattern,
 		"", // hostname tidak diperlukan untuk preview directory
