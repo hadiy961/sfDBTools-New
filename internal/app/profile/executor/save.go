@@ -2,7 +2,7 @@
 // Deskripsi : Simpan profile ke file (terenkripsi)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 6 Januari 2026
+// Last Modified : 9 Januari 2026
 
 package executor
 
@@ -24,10 +24,10 @@ import (
 )
 
 func (e *Executor) SaveProfile(mode string) error {
-	if e.Log != nil {
+	isInteractive := e.isInteractiveMode()
+	if e.Log != nil && !isInteractive {
 		e.Log.Info(consts.ProfileLogStartSave)
 	}
-	isInteractive := e.isInteractiveMode()
 
 	var baseDir string
 	var originalAbsPath string
@@ -48,6 +48,14 @@ func (e *Executor) SaveProfile(mode string) error {
 		if !isInteractive {
 			return err
 		}
+		info := profilehelper.DescribeConnectError(err)
+		print.PrintWarning("\n⚠️  " + info.Title)
+		if strings.TrimSpace(info.Detail) != "" {
+			print.PrintWarning("Detail (ringkas): " + info.Detail)
+		}
+		for _, h := range info.Hints {
+			print.PrintInfo("Hint: " + h)
+		}
 		continueAnyway, askErr := prompt.Confirm(consts.ProfileSavePromptContinueDespiteDBFail, false)
 		if askErr != nil {
 			return validation.HandleInputError(askErr)
@@ -59,7 +67,9 @@ func (e *Executor) SaveProfile(mode string) error {
 	} else {
 		c.Close()
 		if e.Log != nil {
-			e.Log.Info(consts.ProfileLogDBConnectionValid)
+			if !isInteractive {
+				e.Log.Info(consts.ProfileLogDBConnectionValid)
+			}
 		}
 	}
 

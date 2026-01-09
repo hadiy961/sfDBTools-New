@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi pembuatan profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 9 Januari 2026
 
 package executor
 
@@ -16,23 +16,24 @@ import (
 )
 
 func (e *Executor) CreateProfile() error {
-	print.PrintAppHeader(consts.ProfileUIHeaderCreate)
-	if e.Log != nil {
+	isInteractive := e.isInteractiveMode()
+	if e.Log != nil && !isInteractive {
 		e.Log.Info(consts.ProfileLogCreateStarted)
 	}
 
+	// Jika retry save karena koneksi DB invalid, kita tidak ingin restart wizard dari awal.
+	skipWizard := false
+
 	for {
-		if e.ProfileCreate != nil && e.ProfileCreate.Interactive {
-			if e.Log != nil {
-				e.Log.Info(consts.ProfileLogModeInteractiveEnabled)
-			}
+		if !skipWizard && e.ProfileCreate != nil && e.ProfileCreate.Interactive {
+			// Mode interaktif: hindari log Info agar tidak mengganggu prompt.
 			if e.RunWizard == nil {
 				return fmt.Errorf(consts.ProfileErrWizardRunnerUnavailable)
 			}
 			if err := e.RunWizard(consts.ProfileModeCreate); err != nil {
 				return err
 			}
-		} else {
+		} else if !skipWizard {
 			if e.Log != nil {
 				e.Log.Info(consts.ProfileLogModeNonInteractiveEnabled)
 				e.Log.Info(consts.ProfileLogValidatingParams)
@@ -54,6 +55,7 @@ func (e *Executor) CreateProfile() error {
 				}
 			}
 		}
+		skipWizard = false
 
 		if e.CheckConfigurationNameUnique != nil {
 			if err := e.CheckConfigurationNameUnique(consts.ProfileModeCreate); err != nil {
@@ -69,6 +71,13 @@ func (e *Executor) CreateProfile() error {
 					return err2
 				}
 				if retry {
+					// UX: setelah retry, tampilkan selector field (mirip profile edit), bukan restart wizard dari awal.
+					if e.isInteractiveMode() && e.PromptCreateRetrySelectedFields != nil {
+						if err := e.PromptCreateRetrySelectedFields(); err != nil {
+							return err
+						}
+						skipWizard = true
+					}
 					continue
 				}
 				return validation.ErrUserCancelled
@@ -79,7 +88,9 @@ func (e *Executor) CreateProfile() error {
 	}
 
 	if e.Log != nil {
-		e.Log.Info(consts.ProfileLogCreateSuccess)
+		if !isInteractive {
+			e.Log.Info(consts.ProfileLogCreateSuccess)
+		}
 	}
 	return nil
 }

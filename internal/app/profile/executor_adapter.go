@@ -26,6 +26,24 @@ func (s *Service) buildExecutor() *executor.Executor {
 		ResolveProfileEncryptionKey: resolveProfileEncryptionKey,
 	}
 
+	e.PromptCreateRetrySelectedFields = func() error {
+		s.ProfileInfo = e.ProfileInfo
+		s.ProfileEdit = e.ProfileEdit
+		s.ProfileShow = e.ProfileShow
+		s.ProfileDelete = e.ProfileDelete
+		s.OriginalProfileName = e.OriginalProfileName
+		s.OriginalProfileInfo = e.OriginalProfileInfo
+		err := s.promptCreateRetrySelectedFields()
+		// Sinkronkan balik state setelah prompt.
+		e.ProfileInfo = s.ProfileInfo
+		e.ProfileEdit = s.ProfileEdit
+		e.ProfileShow = s.ProfileShow
+		e.ProfileDelete = s.ProfileDelete
+		e.OriginalProfileName = s.OriginalProfileName
+		e.OriginalProfileInfo = s.OriginalProfileInfo
+		return err
+	}
+
 	e.RunWizard = func(mode string) error {
 		s.ProfileInfo = e.ProfileInfo
 		s.ProfileEdit = e.ProfileEdit

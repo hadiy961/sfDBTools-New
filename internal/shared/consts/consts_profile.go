@@ -11,11 +11,6 @@ package consts
 // =============================================================================
 
 const (
-	ProfileHeaderCreate = "Create Database Profile"
-	ProfileHeaderShow   = "Show Database Profile"
-	ProfileHeaderEdit   = "Edit Database Profile"
-	ProfileHeaderDelete = "Delete Database Profile"
-
 	ProfileSuccessCreated = "✓ Profile berhasil dibuat"
 	ProfileSuccessUpdated = "✓ Profile berhasil diupdate"
 	ProfileSuccessDeleted = "✓ Profile berhasil dihapus"
@@ -37,21 +32,21 @@ const (
 
 	// UI text / action labels
 	ProfileUIHeaderCreate         = "Pembuatan Profil Baru"
-	ProfileUIHeaderEdit           = "Database Configuration Editing"
-	ProfileUIHeaderShow           = "Display User Profile Details"
-	ProfileUIHeaderDelete         = "Delete Database Configurations"
+	ProfileUIHeaderEdit           = "Pengeditan Profil Database"
+	ProfileUIHeaderShow           = "Detail Profil Database"
+	ProfileUIHeaderDelete         = "Penghapusan Profil Database"
 	ProfilePromptAction           = "Aksi:"
 	ProfileActionEditData         = "Ubah data"
 	ProfileActionCancel           = "Batalkan"
 	ProfileMsgChangeSummaryPrefix = "Ringkasan Perubahan : "
 
 	// Wizard headers / labels
-	ProfileWizardSubHeaderConfigName        = "Please provide the configuration name:"
-	ProfileWizardLabelConfigName            = "Configuration Name"
+	ProfileWizardSubHeaderConfigName        = "Silakan isi nama konfigurasi:"
+	ProfileWizardLabelConfigName            = "Nama Konfigurasi"
 	ProfileWizardDefaultConfigName          = "localhost_3306"
-	ProfileWizardSubHeaderProfileDetails    = "Please provide the following database profile details:"
+	ProfileWizardSubHeaderProfileDetails    = "Silakan isi detail profil database:"
 	ProfileWizardLogStarted                 = "Wizard profil dimulai..."
-	ProfileWizardPromptSelectExistingConfig = "Select Existing Configuration File"
+	ProfileWizardPromptSelectExistingConfig = "Pilih file konfigurasi yang ada"
 	ProfileWizardMsgRestart                 = "Penyimpanan dibatalkan. Memulai ulang wizard..."
 	ProfileWizardMsgConfirmAccepted         = "Konfirmasi diterima. Mempersiapkan enkripsi dan penyimpanan..."
 	ProfileErrProfileNameEmpty              = "nama konfigurasi tidak boleh kosong"

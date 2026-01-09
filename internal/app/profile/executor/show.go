@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi tampilkan profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 9 Januari 2026
 package executor
 
 import (
@@ -18,7 +18,6 @@ import (
 )
 
 func (e *Executor) ShowProfile() error {
-	print.PrintAppHeader(consts.ProfileUIHeaderShow)
 	isInteractive := e.isInteractiveMode()
 
 	if !isInteractive {
@@ -86,7 +85,14 @@ func (e *Executor) ShowProfile() error {
 	}
 
 	if c, err := profilehelper.ConnectWithProfile(e.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
-		print.PrintWarning(consts.ProfileWarnDBConnectFailedPrefix + err.Error())
+		info := profilehelper.DescribeConnectError(err)
+		print.PrintWarning("⚠️  " + info.Title)
+		if strings.TrimSpace(info.Detail) != "" {
+			print.PrintWarning("Detail (ringkas): " + info.Detail)
+		}
+		for _, h := range info.Hints {
+			print.PrintInfo("Hint: " + h)
+		}
 	} else {
 		c.Close()
 	}

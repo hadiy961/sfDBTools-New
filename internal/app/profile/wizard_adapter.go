@@ -2,7 +2,7 @@
 // Deskripsi : Adapter untuk memanggil subpackage wizard dari Service
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 9 Januari 2026
 package profile
 
 import (
@@ -10,7 +10,7 @@ import (
 	"sfdbtools/internal/domain"
 )
 
-func (s *Service) runWizard(mode string) error {
+func (s *Service) newWizardRunner() *wizard.Runner {
 	w := &wizard.Runner{
 		Log:                         s.Log,
 		ConfigDir:                   s.Config.ConfigDir.DatabaseProfile,
@@ -48,7 +48,31 @@ func (s *Service) runWizard(mode string) error {
 		return w.OriginalProfileInfo, err
 	}
 
+	return w
+}
+
+func (s *Service) runWizard(mode string) error {
+	w := s.newWizardRunner()
+
 	if err := w.Run(mode); err != nil {
+		return err
+	}
+
+	// Final sync
+	s.ProfileInfo = w.ProfileInfo
+	s.ProfileEdit = w.ProfileEdit
+	s.ProfileShow = w.ProfileShow
+	s.OriginalProfileName = w.OriginalProfileName
+	s.OriginalProfileInfo = w.OriginalProfileInfo
+	return nil
+}
+
+// promptCreateRetrySelectedFields dipanggil saat save profile (create) gagal karena koneksi DB invalid
+// dan user memilih untuk mengulang input. UX-nya mengikuti profile edit: user memilih field mana yang ingin diubah.
+func (s *Service) promptCreateRetrySelectedFields() error {
+	w := s.newWizardRunner()
+
+	if err := w.PromptCreateRetrySelectedFields(); err != nil {
 		return err
 	}
 

@@ -2,7 +2,7 @@
 // Deskripsi : Helper terminal (size, separator, wait)
 // Author : Hadiyatna Muflihun
 // Tanggal : 3 Oktober 2024
-// Last Modified : 5 Januari 2026
+// Last Modified : 9 Januari 2026
 
 package print
 
@@ -11,8 +11,11 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/progress"
 	"strings"
+
+	"github.com/mattn/go-isatty"
 )
 
 // GetTerminalSize returns the terminal width and height, with sensible defaults.
@@ -83,6 +86,14 @@ func PrintDashedSeparator() {
 
 // WaitForEnter waits for the user to press Enter with optional message.
 func WaitForEnter(message ...string) {
+	// Jangan pernah block di mode non-interaktif (mis. saat output dipipe atau --quiet).
+	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+		return
+	}
+	if !isatty.IsTerminal(os.Stdin.Fd()) || !isatty.IsTerminal(os.Stdout.Fd()) {
+		return
+	}
+
 	msg := "Press Enter to continue..."
 	if len(message) > 0 && message[0] != "" {
 		msg = message[0]

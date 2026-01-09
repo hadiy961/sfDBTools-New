@@ -77,7 +77,6 @@ func (e *Executor) deletePaths(paths []string, logSuccessFmt string, showErrorOn
 }
 
 func (e *Executor) PromptDeleteProfile() error {
-	print.PrintAppHeader(consts.ProfileUIHeaderDelete)
 	isInteractive := e.isInteractiveMode()
 
 	force := false
@@ -156,8 +155,8 @@ func (e *Executor) PromptDeleteProfile() error {
 
 	selected := make([]string, 0, len(idxs))
 	for _, i := range idxs {
-		if i >= 1 && i <= len(filtered) {
-			selected = append(selected, filepath.Join(e.ConfigDir, filtered[i-1]))
+		if i >= 0 && i < len(filtered) {
+			selected = append(selected, filepath.Join(e.ConfigDir, filtered[i]))
 		}
 	}
 

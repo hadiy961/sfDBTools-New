@@ -36,6 +36,10 @@ type Executor struct {
 	PromptSelectExistingConfig   func() error
 	LoadSnapshotFromPath         func(absPath string) (*domain.ProfileInfo, error)
 
+	// PromptCreateRetrySelectedFields meminta user memilih field yang ingin diubah
+	// ketika save gagal karena koneksi DB invalid (khusus mode create).
+	PromptCreateRetrySelectedFields func() error
+
 	FormatConfigToINI           func() string
 	ResolveProfileEncryptionKey func(existing string, allowPrompt bool) (key string, source string, err error)
 }

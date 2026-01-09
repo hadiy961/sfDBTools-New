@@ -2,7 +2,7 @@
 // Deskripsi : Flow wizard untuk edit profile (honor flag overrides)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 6 Januari 2026
+// Last Modified : 9 Januari 2026
 package wizard
 
 import (
@@ -18,8 +18,6 @@ import (
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
-
-	"github.com/AlecAivazis/survey/v2"
 )
 
 func (r *Runner) runEditFlow() error {
@@ -116,11 +114,17 @@ func (r *Runner) ensureSSHTunnelMinimumIfEnabled() error {
 	}
 	// Host wajib jika tunnel aktif.
 	if strings.TrimSpace(r.ProfileInfo.SSHTunnel.Host) == "" {
-		v, err := prompt.AskText(consts.ProfilePromptSSHHost, prompt.WithDefault(""), prompt.WithValidator(survey.Required))
+		validator := prompt.ComposeValidators(
+			validateNotBlank(consts.ProfileLabelSSHHost),
+			validateNoControlChars(consts.ProfileLabelSSHHost),
+			validateNoLeadingTrailingSpaces(consts.ProfileLabelSSHHost),
+			validateNoSpaces(consts.ProfileLabelSSHHost),
+		)
+		v, err := prompt.AskText(consts.ProfilePromptSSHHost, prompt.WithDefault(""), prompt.WithValidator(validator))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		r.ProfileInfo.SSHTunnel.Host = v
+		r.ProfileInfo.SSHTunnel.Host = strings.TrimSpace(v)
 	}
 	// Port default 22 untuk menghindari prompt tambahan.
 	if r.ProfileInfo.SSHTunnel.Port == 0 {

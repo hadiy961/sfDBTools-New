@@ -18,25 +18,25 @@ import (
 
 var profileExecutionConfigs = map[string]profilemodel.ProfileEntryConfig{
 	consts.ProfileModeCreate: {
-		HeaderTitle: consts.ProfileHeaderCreate,
+		HeaderTitle: consts.ProfileUIHeaderCreate,
 		Mode:        consts.ProfileModeCreate,
 		SuccessMsg:  consts.ProfileSuccessCreated,
 		LogPrefix:   consts.ProfileLogPrefixCreate,
 	},
 	consts.ProfileModeShow: {
-		HeaderTitle: consts.ProfileHeaderShow,
+		HeaderTitle: consts.ProfileUIHeaderShow,
 		Mode:        consts.ProfileModeShow,
 		SuccessMsg:  "", // No success message for show
 		LogPrefix:   consts.ProfileLogPrefixShow,
 	},
 	consts.ProfileModeEdit: {
-		HeaderTitle: consts.ProfileHeaderEdit,
+		HeaderTitle: consts.ProfileUIHeaderEdit,
 		Mode:        consts.ProfileModeEdit,
 		SuccessMsg:  consts.ProfileSuccessUpdated,
 		LogPrefix:   consts.ProfileLogPrefixEdit,
 	},
 	consts.ProfileModeDelete: {
-		HeaderTitle: consts.ProfileHeaderDelete,
+		HeaderTitle: consts.ProfileUIHeaderDelete,
 		Mode:        consts.ProfileModeDelete,
 		SuccessMsg:  consts.ProfileSuccessDeleted,
 		LogPrefix:   consts.ProfileLogPrefixDelete,

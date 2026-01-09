@@ -33,6 +33,9 @@ func ConnectWithProfile(profile *domain.ProfileInfo, initialDB string) (*databas
 	if profile == nil {
 		return nil, fmt.Errorf("profile tidak boleh nil")
 	}
+	if err := ValidateConnectPreflight(profile); err != nil {
+		return nil, err
+	}
 
 	if initialDB == "" {
 		initialDB = consts.DefaultInitialDatabase
@@ -69,7 +72,7 @@ func ConnectWithProfile(profile *domain.ProfileInfo, initialDB string) (*databas
 			return nil, fmt.Errorf("ssh tunnel aktif tetapi ssh-host kosong")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), ProfileConnectTimeout())
 		defer cancel()
 
 		t, err := process.StartSSHTunnel(ctx, process.SSHTunnelOptions{
@@ -81,13 +84,17 @@ func ConnectWithProfile(profile *domain.ProfileInfo, initialDB string) (*databas
 			LocalPort:      profile.SSHTunnel.LocalPort,
 			RemoteHost:     profile.DBInfo.Host,
 			RemotePort:     profile.DBInfo.Port,
-			ConnectTimeout: 10 * time.Second,
+			ConnectTimeout: ProfileConnectTimeout(),
 			ServerAlive:    30 * time.Second,
 			ExitOnFailure:  true,
 			BatchMode:      true,
 		})
 		if err != nil {
-			return nil, err
+			sshPort := profile.SSHTunnel.Port
+			if sshPort == 0 {
+				sshPort = 22
+			}
+			return nil, fmt.Errorf("gagal membuat SSH tunnel ke %s:%d: %w", sshHost, sshPort, err)
 		}
 		tunnel = t
 		profile.SSHTunnel.ResolvedLocalPort = tunnel.LocalPort
@@ -106,7 +113,7 @@ func ConnectWithProfile(profile *domain.ProfileInfo, initialDB string) (*databas
 		WriteTimeout:         0,
 	}
 
-	client, err := database.NewClient(context.Background(), cfg, 10*time.Second, 10, 5, 0)
+	client, err := database.NewClient(context.Background(), cfg, ProfileConnectTimeout(), 10, 5, 0)
 	if err != nil {
 		if tunnel != nil {
 			_ = tunnel.Stop(context.Background())

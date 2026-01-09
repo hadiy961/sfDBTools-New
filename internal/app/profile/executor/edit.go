@@ -19,8 +19,6 @@ import (
 )
 
 func (e *Executor) EditProfile() error {
-	print.PrintAppHeader(consts.ProfileUIHeaderEdit)
-
 	for {
 		if e.ProfileEdit != nil && e.ProfileEdit.Interactive {
 			if e.Log != nil {
@@ -141,7 +139,9 @@ func (e *Executor) EditProfile() error {
 	}
 
 	if e.Log != nil {
-		e.Log.Info(consts.ProfileLogWizardInteractiveFinished)
+		if !e.isInteractiveMode() {
+			e.Log.Info(consts.ProfileLogWizardInteractiveFinished)
+		}
 	}
 	return nil
 }

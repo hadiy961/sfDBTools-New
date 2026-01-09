@@ -2,15 +2,19 @@
 // Deskripsi : Prompt/input interaktif (select/confirm/password/text)
 // Author : Hadiyatna Muflihun
 // Tanggal : 5 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 9 Januari 2026
 
 package prompt
 
 import (
 	"fmt"
+	"os"
 	"sfdbtools/internal/ui/input"
 
+	"sfdbtools/internal/shared/runtimecfg"
+
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/mattn/go-isatty"
 )
 
 type textOptions struct {
@@ -109,6 +113,14 @@ func SelectFile(directory string, label string, extensions []string) (string, er
 }
 
 func WaitForEnter(message ...string) {
+	// Jangan pernah block di mode non-interaktif (mis. saat output dipipe atau --quiet).
+	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+		return
+	}
+	if !isatty.IsTerminal(os.Stdin.Fd()) || !isatty.IsTerminal(os.Stdout.Fd()) {
+		return
+	}
+
 	msg := "Tekan Enter untuk melanjutkan..."
 	if len(message) > 0 && message[0] != "" {
 		msg = message[0]
