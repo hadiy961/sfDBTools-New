@@ -6,8 +6,11 @@
 package backupcmd
 
 import (
+	"sfdbtools/internal/app/backup"
 	defaultVal "sfdbtools/internal/cli/defaults"
+	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/flags"
+	"sfdbtools/internal/cli/runner"
 	"sfdbtools/internal/shared/consts"
 
 	"github.com/spf13/cobra"
@@ -31,8 +34,9 @@ Contoh:
   # 2. Backup primary ke direktori khusus
   sfdbtools db-backup primary --backup-dir "/backups/prod"`,
 	Run: func(cmd *cobra.Command, args []string) {
-		runBackupCommand(cmd, func() (string, error) {
-			return consts.ModePrimary, nil
+		runner.Run(cmd, func() error {
+			_ = backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModePrimary)
+			return nil
 		})
 	},
 }

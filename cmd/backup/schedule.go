@@ -6,6 +6,7 @@
 package backupcmd
 
 import (
+	"fmt"
 	"sfdbtools/internal/app/backup/scheduler"
 	appdeps "sfdbtools/internal/cli/deps"
 
@@ -40,6 +41,10 @@ var cmdBackupScheduleStart = &cobra.Command{
 	Use:   "start",
 	Short: "Aktifkan scheduler backup (enable timer)",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if appdeps.Deps == nil {
+			cmd.PrintErrln("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
+			return fmt.Errorf("dependencies tidak tersedia")
+		}
 		jobName, _ := cmd.Flags().GetString("job")
 		return scheduler.Start(cmd.Context(), appdeps.Deps, jobName)
 	},
@@ -49,6 +54,10 @@ var cmdBackupScheduleStop = &cobra.Command{
 	Use:   "stop",
 	Short: "Nonaktifkan scheduler backup (disable timer)",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if appdeps.Deps == nil {
+			cmd.PrintErrln("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
+			return fmt.Errorf("dependencies tidak tersedia")
+		}
 		jobName, _ := cmd.Flags().GetString("job")
 		killRunning, _ := cmd.Flags().GetBool("kill-running")
 		return scheduler.Stop(cmd.Context(), appdeps.Deps, jobName, killRunning)
@@ -59,6 +68,10 @@ var cmdBackupScheduleStatus = &cobra.Command{
 	Use:   "status",
 	Short: "Tampilkan status scheduler backup",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if appdeps.Deps == nil {
+			cmd.PrintErrln("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
+			return fmt.Errorf("dependencies tidak tersedia")
+		}
 		jobName, _ := cmd.Flags().GetString("job")
 		return scheduler.Status(cmd.Context(), appdeps.Deps, jobName)
 	},
@@ -72,6 +85,10 @@ var cmdBackupScheduleHistory = &cobra.Command{
 Secara default akan menampilkan log dari unit service (eksekusi backup).
 Gunakan --timer untuk melihat event timer (trigger scheduler).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if appdeps.Deps == nil {
+			cmd.PrintErrln("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
+			return fmt.Errorf("dependencies tidak tersedia")
+		}
 		jobName, _ := cmd.Flags().GetString("job")
 		since, _ := cmd.Flags().GetString("since")
 		until, _ := cmd.Flags().GetString("until")
@@ -93,6 +110,10 @@ var cmdBackupScheduleRun = &cobra.Command{
 	Use:   "run",
 	Short: "Jalankan satu job scheduler (internal/systemd)",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if appdeps.Deps == nil {
+			cmd.PrintErrln("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
+			return fmt.Errorf("dependencies tidak tersedia")
+		}
 		jobName, _ := cmd.Flags().GetString("job")
 		return scheduler.RunJob(cmd.Context(), appdeps.Deps, jobName)
 	},

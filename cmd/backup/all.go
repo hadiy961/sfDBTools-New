@@ -6,8 +6,11 @@
 package backupcmd
 
 import (
+	"sfdbtools/internal/app/backup"
 	defaultVal "sfdbtools/internal/cli/defaults"
+	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/flags"
+	"sfdbtools/internal/cli/runner"
 	"sfdbtools/internal/shared/consts"
 
 	"github.com/spf13/cobra"
@@ -35,8 +38,9 @@ Fitur:
 	# 3. Backup dengan custom nama file output
 	sfdbtools db-backup all --backup-dir "/backup/daily" --filename "all_backup_20251224"`,
 	Run: func(cmd *cobra.Command, args []string) {
-		runBackupCommand(cmd, func() (string, error) {
-			return consts.ModeAll, nil
+		runner.Run(cmd, func() error {
+			_ = backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModeAll)
+			return nil
 		})
 	},
 }

@@ -6,10 +6,10 @@
 package restorecmd
 
 import (
-	"fmt"
 	"sfdbtools/internal/app/restore"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/flags"
+	"sfdbtools/internal/cli/runner"
 
 	"github.com/spf13/cobra"
 )
@@ -41,15 +41,10 @@ Jika nama database target tidak ditentukan, sistem akan mencoba menebak dari nam
   # 4. Restore tanpa melakukan backup pencegahan (lebih cepat tapi berisiko)
   sfdbtools db-restore single --file "backup.sql" --skip-backup --ticket "TICKET-123"`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Pastikan dependencies tersedia
-		if appdeps.Deps == nil {
-			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
-			return
-		}
-
-		if err := restore.ExecuteRestoreSingleCommand(cmd, appdeps.Deps); err != nil {
-			appdeps.Deps.Logger.Error("restore single gagal: " + err.Error())
-		}
+		runner.Run(cmd, func() error {
+			_ = restore.ExecuteRestoreSingleCommand(cmd, appdeps.Deps)
+			return nil
+		})
 	},
 }
 

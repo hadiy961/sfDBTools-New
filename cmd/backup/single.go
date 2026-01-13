@@ -6,8 +6,11 @@
 package backupcmd
 
 import (
+	"sfdbtools/internal/app/backup"
 	defaultVal "sfdbtools/internal/cli/defaults"
+	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/flags"
+	"sfdbtools/internal/cli/runner"
 	"sfdbtools/internal/shared/consts"
 
 	"github.com/spf13/cobra"
@@ -31,8 +34,9 @@ Jika nama database tidak diberikan via flag, akan muncul menu interaktif untuk m
 	  sfdbtools db-backup single --database "target_db" --filename "backup_target_v1"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		runBackupCommand(cmd, func() (string, error) {
-			return consts.ModeSingle, nil
+		runner.Run(cmd, func() error {
+			_ = backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModeSingle)
+			return nil
 		})
 	},
 }
