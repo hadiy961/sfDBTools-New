@@ -1,10 +1,10 @@
-// File : internal/app/profile/helpers/connect_error_hints.go
-// Deskripsi : Helper untuk merangkum error koneksi DB/SSH dengan hint yang actionable
+// File : internal/app/profile/shared/connect_error_hints.go
+// Deskripsi : Helper untuk merangkum error koneksi DB/SSH dengan hint yang actionable (shared)
 // Author : Hadiyatna Muflihun
 // Tanggal : 9 Januari 2026
-// Last Modified : 9 Januari 2026
+// Last Modified : 13 Januari 2026
 
-package helpers
+package shared
 
 import (
 	"context"

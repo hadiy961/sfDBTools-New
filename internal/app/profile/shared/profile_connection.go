@@ -1,4 +1,10 @@
-package helpers
+// File : internal/app/profile/shared/profile_connection.go
+// Deskripsi : Koneksi database berbasis ProfileInfo (shared)
+// Author : Hadiyatna Muflihun
+// Tanggal : 14 Januari 2026
+// Last Modified : 14 Januari 2026
+
+package shared
 
 import (
 	"context"
@@ -14,24 +20,10 @@ import (
 	"sfdbtools/internal/ui/progress"
 )
 
-// EffectiveDBInfo mengembalikan DBInfo yang efektif untuk koneksi.
-// Jika SSH tunnel aktif dan sudah memiliki ResolvedLocalPort, koneksi diarahkan ke localhost.
-func EffectiveDBInfo(profile *domain.ProfileInfo) domain.DBInfo {
-	if profile == nil {
-		return domain.DBInfo{}
-	}
-	info := profile.DBInfo
-	if profile.SSHTunnel.Enabled && profile.SSHTunnel.ResolvedLocalPort > 0 {
-		info.Host = "127.0.0.1"
-		info.Port = profile.SSHTunnel.ResolvedLocalPort
-	}
-	return info
-}
-
 // ConnectWithProfile membuat koneksi database menggunakan ProfileInfo.
 func ConnectWithProfile(profile *domain.ProfileInfo, initialDB string) (*database.Client, error) {
 	if profile == nil {
-		return nil, fmt.Errorf("profile tidak boleh nil")
+		return nil, ErrProfileNil
 	}
 	if err := ValidateConnectPreflight(profile); err != nil {
 		return nil, err

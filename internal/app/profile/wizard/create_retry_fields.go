@@ -7,9 +7,9 @@
 package wizard
 
 import (
-	"fmt"
 	"strings"
 
+	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/prompt"
@@ -22,8 +22,8 @@ import (
 // - Tampilkan multi-select field (7 item) seperti screenshot: nama, kunci enkripsi, DB host/port/user/password, dan toggle SSH.
 // - Hanya re-prompt field yang dipilih.
 func (r *Runner) PromptCreateRetrySelectedFields() error {
-	if r.ProfileInfo == nil {
-		return fmt.Errorf(consts.ProfileErrProfileInfoNil)
+	if r.State.ProfileInfo == nil {
+		return shared.ErrProfileNil
 	}
 
 	fields := []string{
@@ -52,12 +52,12 @@ func (r *Runner) PromptCreateRetrySelectedFields() error {
 		if err != nil {
 			return err
 		}
-		r.ProfileInfo.EncryptionKey = strings.TrimSpace(newKey)
-		r.ProfileInfo.EncryptionSource = "prompt"
+		r.State.ProfileInfo.EncryptionKey = strings.TrimSpace(newKey)
+		r.State.ProfileInfo.EncryptionSource = "prompt"
 	}
 
 	if selected[consts.ProfileLabelDBHost] {
-		def := strings.TrimSpace(r.ProfileInfo.DBInfo.Host)
+		def := strings.TrimSpace(r.State.ProfileInfo.DBInfo.Host)
 		if def == "" {
 			def = "localhost"
 		}
@@ -67,7 +67,7 @@ func (r *Runner) PromptCreateRetrySelectedFields() error {
 	}
 
 	if selected[consts.ProfileLabelDBPort] {
-		def := r.ProfileInfo.DBInfo.Port
+		def := r.State.ProfileInfo.DBInfo.Port
 		if def == 0 {
 			def = 3306
 		}
@@ -77,7 +77,7 @@ func (r *Runner) PromptCreateRetrySelectedFields() error {
 	}
 
 	if selected[consts.ProfileLabelDBUser] {
-		def := strings.TrimSpace(r.ProfileInfo.DBInfo.User)
+		def := strings.TrimSpace(r.State.ProfileInfo.DBInfo.User)
 		if def == "" {
 			def = "root"
 		}
@@ -88,8 +88,8 @@ func (r *Runner) PromptCreateRetrySelectedFields() error {
 
 	if selected[consts.ProfileLabelDBPassword] {
 		existing := ""
-		if r.ProfileInfo != nil {
-			existing = r.ProfileInfo.DBInfo.Password
+		if r.State.ProfileInfo != nil {
+			existing = r.State.ProfileInfo.DBInfo.Password
 		}
 		if err := r.promptDBPasswordKeepCurrent(existing); err != nil {
 			return err
@@ -97,11 +97,11 @@ func (r *Runner) PromptCreateRetrySelectedFields() error {
 	}
 
 	if selected[consts.ProfileFieldSSHTunnelToggle] {
-		enable, err := prompt.Confirm(consts.ProfilePromptUseSSHTunnel, r.ProfileInfo.SSHTunnel.Enabled)
+		enable, err := prompt.Confirm(consts.ProfilePromptUseSSHTunnel, r.State.ProfileInfo.SSHTunnel.Enabled)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		r.ProfileInfo.SSHTunnel.Enabled = enable
+		r.State.ProfileInfo.SSHTunnel.Enabled = enable
 		if enable {
 			// Jika user mengaktifkan SSH tunnel, prompt minimal field yang diperlukan.
 			if err := r.promptSSHTunnelDetailsIfEnabled(); err != nil {

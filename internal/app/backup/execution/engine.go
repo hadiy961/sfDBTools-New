@@ -12,7 +12,7 @@ import (
 	"sfdbtools/internal/app/backup/gtid"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/backup/writer"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	profileshared "sfdbtools/internal/app/profile/shared"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/database"
@@ -113,7 +113,7 @@ func (e *Engine) ExecuteAndBuildBackup(
 
 	mysqldumpArgs := BuildMysqldumpArgs(
 		e.Config.Backup.MysqlDumpArgs,
-		profilehelper.EffectiveDBInfo(&e.Options.Profile),
+		profileshared.EffectiveDBInfo(&e.Options.Profile),
 		e.Options.Filter,
 		dbList,
 		cfg.DBName,

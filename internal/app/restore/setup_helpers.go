@@ -2,7 +2,7 @@
 // Deskripsi : Helper functions untuk setup restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 6 Januari 2026
+// Last Modified : 14 Januari 2026
 
 package restore
 
@@ -10,37 +10,9 @@ import (
 	"path/filepath"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/validation"
 	"strings"
 )
-
-// hasAnySuffix memeriksa apakah path memiliki salah satu suffix yang diberikan
-func hasAnySuffix(path string, suffixes []string) bool {
-	lower := strings.ToLower(strings.TrimSpace(path))
-	for _, s := range suffixes {
-		if strings.HasSuffix(lower, strings.ToLower(s)) {
-			return true
-		}
-	}
-	return false
-}
-
-// uniqueStrings mengembalikan list string unik
-func uniqueStrings(items []string) []string {
-	seen := map[string]struct{}{}
-	out := make([]string, 0, len(items))
-	for _, it := range items {
-		it = strings.TrimSpace(it)
-		if it == "" {
-			continue
-		}
-		if _, ok := seen[it]; ok {
-			continue
-		}
-		seen[it] = struct{}{}
-		out = append(out, it)
-	}
-	return out
-}
 
 // extractSecondaryInstances mengekstrak instance dari list database secondary
 func extractSecondaryInstances(databases []string, secondaryPrefix string) []string {
@@ -55,29 +27,7 @@ func extractSecondaryInstances(databases []string, secondaryPrefix string) []str
 		}
 		instances = append(instances, inst)
 	}
-	return uniqueStrings(instances)
-}
-
-// secondaryDBName membentuk nama database secondary dari primary dan instance
-func secondaryDBName(primaryDB string, instance string) string {
-	inst := strings.TrimSpace(instance)
-	return primaryDB + "_secondary_" + inst
-}
-
-// extractClientCodeFromDB mengekstrak client code dari nama database
-func extractClientCodeFromDB(dbName, prefix string) string {
-	defaultClientCode := strings.ToLower(strings.TrimSpace(dbName))
-	if p := strings.ToLower(strings.TrimSpace(prefix)); p != "" {
-		if strings.HasPrefix(defaultClientCode, p) {
-			return strings.TrimPrefix(defaultClientCode, p)
-		}
-	}
-	if strings.HasPrefix(defaultClientCode, consts.PrimaryPrefixNBC) {
-		return strings.TrimPrefix(defaultClientCode, consts.PrimaryPrefixNBC)
-	} else if strings.HasPrefix(defaultClientCode, consts.PrimaryPrefixBiznet) {
-		return strings.TrimPrefix(defaultClientCode, consts.PrimaryPrefixBiznet)
-	}
-	return defaultClientCode
+	return validation.UniqueStrings(instances)
 }
 
 // extractDefaultClientCodeFromFile mengekstrak default client code dari filename

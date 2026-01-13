@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	profilehelpers "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/validation"
@@ -37,7 +37,7 @@ func (e *Executor) collectValidPathsFromFlags(profiles []string) (validPaths []s
 			continue
 		}
 
-		absPath, name, err := profilehelper.ResolveConfigPath(p)
+		absPath, name, err := profilehelpers.ResolveConfigPath(p)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -80,12 +80,12 @@ func (e *Executor) PromptDeleteProfile() error {
 	isInteractive := e.isInteractiveMode()
 
 	force := false
-	if e.ProfileDelete != nil {
-		force = e.ProfileDelete.Force
+	if e.State.ProfileDelete != nil {
+		force = e.State.ProfileDelete.Force
 	}
 
 	if !isInteractive {
-		if e.ProfileDelete == nil || len(e.ProfileDelete.Profiles) == 0 {
+		if e.State.ProfileDelete == nil || len(e.State.ProfileDelete.Profiles) == 0 {
 			return fmt.Errorf(
 				"%sflag --profile wajib disertakan: %w",
 				consts.ProfileMsgNonInteractivePrefix,
@@ -102,8 +102,8 @@ func (e *Executor) PromptDeleteProfile() error {
 	}
 
 	// 1) Jika profile path disediakan via flag --profile (support multiple)
-	if e.ProfileDelete != nil && len(e.ProfileDelete.Profiles) > 0 {
-		validPaths, displayNames, err := e.collectValidPathsFromFlags(e.ProfileDelete.Profiles)
+	if e.State.ProfileDelete != nil && len(e.State.ProfileDelete.Profiles) > 0 {
+		validPaths, displayNames, err := e.collectValidPathsFromFlags(e.State.ProfileDelete.Profiles)
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func (e *Executor) PromptDeleteProfile() error {
 			return nil
 		}
 
-		if e.ProfileDelete.Force {
+		if e.State.ProfileDelete.Force {
 			e.deletePaths(validPaths, consts.ProfileDeleteForceDeletedFmt, false, false)
 			return nil
 		}

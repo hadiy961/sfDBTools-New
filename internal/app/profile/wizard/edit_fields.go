@@ -52,14 +52,14 @@ func (r *Runner) promptEditSelectedFields() error {
 		if err != nil {
 			return err
 		}
-		if r.ProfileEdit != nil {
-			r.ProfileEdit.NewProfileKey = strings.TrimSpace(newKey)
-			r.ProfileEdit.NewProfileKeySource = "prompt"
+		if r.State.ProfileEdit != nil {
+			r.State.ProfileEdit.NewProfileKey = strings.TrimSpace(newKey)
+			r.State.ProfileEdit.NewProfileKeySource = "prompt"
 		}
 	}
 
 	if selected[consts.ProfileLabelDBHost] {
-		def := strings.TrimSpace(r.ProfileInfo.DBInfo.Host)
+		def := strings.TrimSpace(r.State.ProfileInfo.DBInfo.Host)
 		if def == "" {
 			def = "localhost"
 		}
@@ -69,7 +69,7 @@ func (r *Runner) promptEditSelectedFields() error {
 	}
 
 	if selected[consts.ProfileLabelDBPort] {
-		def := r.ProfileInfo.DBInfo.Port
+		def := r.State.ProfileInfo.DBInfo.Port
 		if def == 0 {
 			def = 3306
 		}
@@ -79,7 +79,7 @@ func (r *Runner) promptEditSelectedFields() error {
 	}
 
 	if selected[consts.ProfileLabelDBUser] {
-		def := strings.TrimSpace(r.ProfileInfo.DBInfo.User)
+		def := strings.TrimSpace(r.State.ProfileInfo.DBInfo.User)
 		if def == "" {
 			def = "root"
 		}
@@ -90,8 +90,8 @@ func (r *Runner) promptEditSelectedFields() error {
 
 	if selected[consts.ProfileLabelDBPassword] {
 		existing := ""
-		if r.ProfileInfo != nil {
-			existing = r.ProfileInfo.DBInfo.Password
+		if r.State.ProfileInfo != nil {
+			existing = r.State.ProfileInfo.DBInfo.Password
 		}
 		if err := r.promptDBPasswordKeepCurrent(existing); err != nil {
 			return err
@@ -99,15 +99,15 @@ func (r *Runner) promptEditSelectedFields() error {
 	}
 
 	if selected[consts.ProfileFieldSSHTunnelToggle] {
-		enable, err := prompt.Confirm(consts.ProfilePromptUseSSHTunnel, r.ProfileInfo.SSHTunnel.Enabled)
+		enable, err := prompt.Confirm(consts.ProfilePromptUseSSHTunnel, r.State.ProfileInfo.SSHTunnel.Enabled)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		r.ProfileInfo.SSHTunnel.Enabled = enable
+		r.State.ProfileInfo.SSHTunnel.Enabled = enable
 	}
 
 	sshRequired := survey.Validator(nil)
-	if r.ProfileInfo.SSHTunnel.Enabled {
+	if r.State.ProfileInfo.SSHTunnel.Enabled {
 		sshRequired = survey.Required
 	}
 
@@ -118,15 +118,15 @@ func (r *Runner) promptEditSelectedFields() error {
 			validateNoLeadingTrailingSpaces(consts.ProfileLabelSSHHost),
 			validateNoSpaces(consts.ProfileLabelSSHHost),
 		)
-		v, err := prompt.AskText(consts.ProfilePromptSSHHost, prompt.WithDefault(r.ProfileInfo.SSHTunnel.Host), prompt.WithValidator(validator))
+		v, err := prompt.AskText(consts.ProfilePromptSSHHost, prompt.WithDefault(r.State.ProfileInfo.SSHTunnel.Host), prompt.WithValidator(validator))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		r.ProfileInfo.SSHTunnel.Host = strings.TrimSpace(v)
+		r.State.ProfileInfo.SSHTunnel.Host = strings.TrimSpace(v)
 	}
 
 	if selected[consts.ProfileLabelSSHPort] {
-		def := r.ProfileInfo.SSHTunnel.Port
+		def := r.State.ProfileInfo.SSHTunnel.Port
 		if def == 0 {
 			def = 22
 		}
@@ -138,7 +138,7 @@ func (r *Runner) promptEditSelectedFields() error {
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		r.ProfileInfo.SSHTunnel.Port = v
+		r.State.ProfileInfo.SSHTunnel.Port = v
 	}
 
 	if selected[consts.ProfileLabelSSHUser] {
@@ -147,17 +147,17 @@ func (r *Runner) promptEditSelectedFields() error {
 			validateNoLeadingTrailingSpaces(consts.ProfileLabelSSHUser),
 			validateNoSpaces(consts.ProfileLabelSSHUser),
 		)
-		v, err := prompt.AskText(consts.ProfilePromptSSHUser, prompt.WithDefault(r.ProfileInfo.SSHTunnel.User), prompt.WithValidator(validator))
+		v, err := prompt.AskText(consts.ProfilePromptSSHUser, prompt.WithDefault(r.State.ProfileInfo.SSHTunnel.User), prompt.WithValidator(validator))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		r.ProfileInfo.SSHTunnel.User = strings.TrimSpace(v)
+		r.State.ProfileInfo.SSHTunnel.User = strings.TrimSpace(v)
 	}
 
 	if selected[consts.ProfileLabelSSHPassword] {
 		existing := ""
-		if r.ProfileInfo != nil {
-			existing = r.ProfileInfo.SSHTunnel.Password
+		if r.State.ProfileInfo != nil {
+			existing = r.State.ProfileInfo.SSHTunnel.Password
 		}
 		print.PrintInfo(consts.ProfileTipKeepCurrentSSHPassword)
 		pw, err := prompt.AskPassword(
@@ -171,9 +171,9 @@ func (r *Runner) promptEditSelectedFields() error {
 			return validation.HandleInputError(err)
 		}
 		if strings.TrimSpace(pw) == "" {
-			r.ProfileInfo.SSHTunnel.Password = existing
+			r.State.ProfileInfo.SSHTunnel.Password = existing
 		} else {
-			r.ProfileInfo.SSHTunnel.Password = pw
+			r.State.ProfileInfo.SSHTunnel.Password = pw
 		}
 	}
 
@@ -183,20 +183,20 @@ func (r *Runner) promptEditSelectedFields() error {
 			validateNoLeadingTrailingSpaces(consts.ProfileLabelSSHIdentityFile),
 			validateOptionalExistingFilePath(consts.ProfileLabelSSHIdentityFile),
 		)
-		v, err := prompt.AskText(consts.ProfilePromptSSHIdentityFileOptional, prompt.WithDefault(r.ProfileInfo.SSHTunnel.IdentityFile), prompt.WithValidator(validator))
+		v, err := prompt.AskText(consts.ProfilePromptSSHIdentityFileOptional, prompt.WithDefault(r.State.ProfileInfo.SSHTunnel.IdentityFile), prompt.WithValidator(validator))
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		r.ProfileInfo.SSHTunnel.IdentityFile = strings.TrimSpace(v)
+		r.State.ProfileInfo.SSHTunnel.IdentityFile = strings.TrimSpace(v)
 	}
 
 	if selected[consts.ProfileLabelSSHLocalPort] {
 		validator := validatePortRange(1, 65535, true, consts.ProfileLabelSSHLocalPort)
-		v, err := prompt.AskInt(consts.ProfilePromptSSHLocalPort, r.ProfileInfo.SSHTunnel.LocalPort, validator)
+		v, err := prompt.AskInt(consts.ProfilePromptSSHLocalPort, r.State.ProfileInfo.SSHTunnel.LocalPort, validator)
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		r.ProfileInfo.SSHTunnel.LocalPort = v
+		r.State.ProfileInfo.SSHTunnel.LocalPort = v
 	}
 
 	return nil

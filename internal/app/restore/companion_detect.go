@@ -2,7 +2,7 @@
 // Deskripsi : Helper deteksi companion (_dmart) file
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 30 Desember 2025
+// Last Modified : 14 Januari 2026
 
 package restore
 
@@ -14,18 +14,9 @@ import (
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/naming"
 	"strings"
 )
-
-func buildCompanionDBName(dbName string) string {
-	companionDBName := dbName + consts.SuffixDmart
-	lowerDBName := strings.ToLower(dbName)
-	if strings.HasSuffix(lowerDBName, "_nodata") {
-		base := dbName[:len(dbName)-len("_nodata")]
-		companionDBName = base + consts.SuffixDmart + "_nodata"
-	}
-	return companionDBName
-}
 
 // detectCompanionAuto mencoba menemukan companion file menggunakan strategi berurutan.
 func (s *Service) detectCompanionAuto(primaryFile string) (string, error) {
@@ -75,7 +66,7 @@ func (s *Service) detectCompanionBySiblingFilename(primaryFile string, dir strin
 		return "", fmt.Errorf("gagal parse filename: %s", basename)
 	}
 
-	companionDBName := buildCompanionDBName(nameWithoutExt)
+	companionDBName := naming.BuildCompanionDBName(nameWithoutExt)
 
 	extStr := strings.Join(extensions, "")
 	candidate := filepath.Join(dir, companionDBName+extStr)
@@ -135,7 +126,7 @@ func (s *Service) detectCompanionByPattern(primaryFile string, dir string) (stri
 
 	s.Log.Debugf("Parsed - DB: %s, Date: %s, Host: %s", dbName, dateStr, hostname)
 
-	companionDBName := buildCompanionDBName(dbName)
+	companionDBName := naming.BuildCompanionDBName(dbName)
 
 	files, err := os.ReadDir(dir)
 	if err != nil {

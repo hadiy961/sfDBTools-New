@@ -2,7 +2,7 @@
 // Deskripsi : Setup untuk restore secondary database mode (main setup flow only)
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 6 Januari 2026
+// Last Modified : 14 Januari 2026
 package restore
 
 import (
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"path/filepath"
 	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/shared/naming"
 	"sfdbtools/internal/ui/print"
 	"strings"
 )
@@ -98,7 +99,7 @@ func (s *Service) setupSecondaryDatabase(ctx context.Context, allowInteractive b
 		if err != nil {
 			return err
 		}
-		primaryDB = buildPrimaryTargetDBFromClientCode(prefix, opts.ClientCode)
+		primaryDB = naming.BuildPrimaryDBName(prefix, opts.ClientCode)
 		opts.PrimaryDB = primaryDB
 	}
 
@@ -106,7 +107,7 @@ func (s *Service) setupSecondaryDatabase(ctx context.Context, allowInteractive b
 		return err
 	}
 
-	opts.TargetDB = secondaryDBName(primaryDB, opts.Instance)
+	opts.TargetDB = naming.BuildSecondaryDBName(primaryDB, opts.Instance)
 	return nil
 }
 

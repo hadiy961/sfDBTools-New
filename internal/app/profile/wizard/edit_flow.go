@@ -2,7 +2,7 @@
 // Deskripsi : Flow wizard untuk edit profile (honor flag overrides)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 9 Januari 2026
+// Last Modified : 14 Januari 2026
 package wizard
 
 import (
@@ -12,6 +12,7 @@ import (
 	profilehelper "sfdbtools/internal/app/profile/helpers"
 	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/app/profile/shared"
+	profiledisplay "sfdbtools/internal/app/profile/display"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
@@ -24,41 +25,41 @@ func (r *Runner) runEditFlow() error {
 	// Simpan override dari flag/env sebelum load snapshot.
 	overrideDB := domain.DBInfo{}
 	overrideSSH := domain.SSHTunnelConfig{}
-	if r.ProfileInfo != nil {
-		overrideDB = r.ProfileInfo.DBInfo
-		overrideSSH = r.ProfileInfo.SSHTunnel
+	if r.State.ProfileInfo != nil {
+		overrideDB = r.State.ProfileInfo.DBInfo
+		overrideSSH = r.State.ProfileInfo.SSHTunnel
 	}
 
 	// Jika user memberikan --profile, jangan minta pilih lagi.
 	target := ""
-	if r.ProfileInfo != nil {
-		target = strings.TrimSpace(r.ProfileInfo.Path)
+	if r.State.ProfileInfo != nil {
+		target = strings.TrimSpace(r.State.ProfileInfo.Path)
 	}
 	if target == "" {
-		target = strings.TrimSpace(r.OriginalProfileName)
+		target = strings.TrimSpace(r.State.OriginalProfileName)
 	}
 
 	if target != "" {
-		absPath, name, err := profilehelper.ResolveConfigPath(target)
+		absPath, name, err := profilehelper.ResolveConfigPathInDir(r.ConfigDir, target)
 		if err != nil {
 			return err
 		}
 		if !fsops.PathExists(absPath) {
 			return fmt.Errorf(consts.ProfileErrConfigFileNotFoundFmt, absPath)
 		}
-		if r.LoadSnapshotFromPath == nil {
+		if r.LoadSnapshot == nil {
 			return fmt.Errorf(consts.ProfileErrLoadSnapshotUnavailable)
 		}
-		snap, err := r.LoadSnapshotFromPath(absPath)
+		snap, err := r.LoadSnapshot(absPath)
 		if err != nil {
 			return err
 		}
-		r.OriginalProfileInfo = snap
-		if r.ProfileInfo != nil {
-			r.ProfileInfo.Path = absPath
-			r.ProfileInfo.Name = name
+		r.State.OriginalProfileInfo = snap
+		if r.State.ProfileInfo != nil {
+			r.State.ProfileInfo.Path = absPath
+			r.State.ProfileInfo.Name = name
 		}
-		r.OriginalProfileName = name
+		r.State.OriginalProfileName = name
 	} else {
 		// Tidak ada --profile: pilih secara interaktif.
 		if err := r.promptSelectExistingConfig(); err != nil {
@@ -67,18 +68,16 @@ func (r *Runner) runEditFlow() error {
 	}
 
 	// Jadikan snapshot sebagai baseline, lalu apply override dari flag/env.
-	shared.ApplySnapshotAsBaseline(r.ProfileInfo, r.OriginalProfileInfo)
-	shared.ApplyDBOverrides(r.ProfileInfo, overrideDB)
-	shared.ApplySSHOverrides(r.ProfileInfo, overrideSSH)
+	shared.ApplySnapshotAsBaseline(r.State.ProfileInfo, r.State.OriginalProfileInfo)
+	shared.ApplyDBOverrides(r.State.ProfileInfo, overrideDB)
+	shared.ApplySSHOverrides(r.State.ProfileInfo, overrideSSH)
 
 	// Tampilkan isi profil terlebih dahulu (seperti profile show), lalu beri opsi ubah/batal.
 	// Ini tetap dijalankan walaupun ada override flag/env, supaya user selalu lihat kondisi awal.
-	prevShow := r.ProfileShow
-	r.ProfileShow = &profilemodel.ProfileShowOptions{}
-	if r.DisplayProfileDetails != nil {
-		r.DisplayProfileDetails()
-	}
-	r.ProfileShow = prevShow
+	prevShow := r.State.ProfileShow
+	r.State.ProfileShow = &profilemodel.ProfileShowOptions{}
+	profiledisplay.DisplayProfileDetails(r.ConfigDir, r.State)
+	r.State.ProfileShow = prevShow
 
 	action, _, err := prompt.SelectOne(consts.ProfilePromptAction, []string{consts.ProfileActionEditData, consts.ProfileActionCancel}, -1)
 	if err != nil {
@@ -98,7 +97,7 @@ func (r *Runner) runEditFlow() error {
 		return err
 	}
 
-	print.PrintSubHeader(consts.ProfileMsgChangeSummaryPrefix + r.ProfileInfo.Name)
+	print.PrintSubHeader(consts.ProfileMsgChangeSummaryPrefix + r.State.ProfileInfo.Name)
 	return nil
 }
 
@@ -106,14 +105,14 @@ func (r *Runner) runEditFlow() error {
 // Pada edit flow, kita hindari prompt untuk field opsional (identity/local port/password) kecuali user memilihnya manual.
 // Catatan: SSH Host wajib jika tunnel aktif, dan SSH Port akan di-default ke 22 jika kosong.
 func (r *Runner) ensureSSHTunnelMinimumIfEnabled() error {
-	if r.ProfileInfo == nil {
+	if r.State.ProfileInfo == nil {
 		return nil
 	}
-	if !r.ProfileInfo.SSHTunnel.Enabled {
+	if !r.State.ProfileInfo.SSHTunnel.Enabled {
 		return nil
 	}
 	// Host wajib jika tunnel aktif.
-	if strings.TrimSpace(r.ProfileInfo.SSHTunnel.Host) == "" {
+	if strings.TrimSpace(r.State.ProfileInfo.SSHTunnel.Host) == "" {
 		validator := prompt.ComposeValidators(
 			validateNotBlank(consts.ProfileLabelSSHHost),
 			validateNoControlChars(consts.ProfileLabelSSHHost),
@@ -124,11 +123,11 @@ func (r *Runner) ensureSSHTunnelMinimumIfEnabled() error {
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		r.ProfileInfo.SSHTunnel.Host = strings.TrimSpace(v)
+		r.State.ProfileInfo.SSHTunnel.Host = strings.TrimSpace(v)
 	}
 	// Port default 22 untuk menghindari prompt tambahan.
-	if r.ProfileInfo.SSHTunnel.Port == 0 {
-		r.ProfileInfo.SSHTunnel.Port = 22
+	if r.State.ProfileInfo.SSHTunnel.Port == 0 {
+		r.State.ProfileInfo.SSHTunnel.Port = 22
 	}
 	return nil
 }

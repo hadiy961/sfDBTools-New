@@ -40,3 +40,16 @@ type ProfileEntryConfig struct {
 	SuccessMsg  string // Success message
 	LogPrefix   string // Log prefix for tracking
 }
+
+// ProfileState adalah single source of truth untuk semua state yang perlu di-share
+// antara Service, Wizard, Executor, dan Display components.
+// Menggunakan pointer shared ini mengeliminasi kebutuhan sync functions yang repetitif.
+type ProfileState struct {
+	ProfileInfo         *domain.ProfileInfo
+	ProfileCreate       *ProfileCreateOptions
+	ProfileEdit         *ProfileEditOptions
+	ProfileShow         *ProfileShowOptions
+	ProfileDelete       *ProfileDeleteOptions
+	OriginalProfileName string
+	OriginalProfileInfo *domain.ProfileInfo
+}

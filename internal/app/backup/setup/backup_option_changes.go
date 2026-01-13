@@ -2,7 +2,7 @@
 // Deskripsi : Kumpulan handler interaktif untuk opsi backup (ticket, toggle, filter, selection, profile)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-31
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-14
 
 package setup
 
@@ -13,9 +13,10 @@ import (
 	"time"
 
 	"sfdbtools/internal/app/backup/selection"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	profileshared "sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
+	"sfdbtools/internal/shared/listx"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 )
@@ -169,14 +170,7 @@ func (s *Setup) changeBackupIncludeSelectionIncludeListManualInteractive() error
 		return nil
 	}
 
-	parts := strings.Split(val, ",")
-	include := make([]string, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			include = append(include, p)
-		}
-	}
+	include := listx.ListUnique(listx.CSVToCleanList(val))
 	s.Options.Filter.IncludeDatabases = include
 	s.Options.Filter.IncludeFile = ""
 	return nil
@@ -231,7 +225,7 @@ func (s *Setup) changeBackupProfileAndReconnect(ctx context.Context, clientPtr *
 		*clientPtr = nil
 	}
 
-	newClient, err := profilehelper.ConnectWithProfile(&s.Options.Profile, consts.DefaultInitialDatabase)
+	newClient, err := profileshared.ConnectWithProfile(&s.Options.Profile, consts.DefaultInitialDatabase)
 	if err != nil {
 		return fmt.Errorf("gagal koneksi ke database source dengan profile baru: %w", err)
 	}

@@ -2,7 +2,7 @@
 // Deskripsi : Helper functions untuk setup restore secondary operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 14 Januari 2026
 package restore
 
 import (
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/naming"
 	"sfdbtools/internal/ui/prompt"
 	"strings"
 )
@@ -97,8 +98,8 @@ func (s *Service) resolveSecondaryPrimaryDB(ctx context.Context, opts *restoremo
 		return nil
 	}
 
-	nbc := buildPrimaryTargetDBFromClientCode(consts.PrimaryPrefixNBC, cc)
-	biz := buildPrimaryTargetDBFromClientCode(consts.PrimaryPrefixBiznet, cc)
+	nbc := naming.BuildPrimaryDBName(consts.PrimaryPrefixNBC, cc)
+	biz := naming.BuildPrimaryDBName(consts.PrimaryPrefixBiznet, cc)
 
 	nbcExists, nbcErr := s.TargetClient.CheckDatabaseExists(ctx, nbc)
 	if nbcErr != nil {
@@ -148,7 +149,7 @@ func (s *Service) resolveSecondaryPrefixForFileMode(ctx context.Context, opts *r
 	}
 
 	if strings.TrimSpace(opts.File) != "" {
-		return inferPrimaryPrefixFromTargetOrFile("", opts.File), nil
+		return naming.InferPrimaryPrefix("", opts.File), nil
 	}
 
 	return consts.PrimaryPrefixNBC, nil

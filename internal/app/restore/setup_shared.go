@@ -2,98 +2,37 @@
 // Deskripsi : Shared setup functions untuk restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 14 Januari 2026
 
 package restore
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
-	"sfdbtools/internal/ui/print"
-	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/internal/shared/fsops"
 )
 
 // resolveBackupFile resolve lokasi file backup
 func (s *Service) resolveBackupFile(filePath *string, allowInteractive bool) error {
-	return s.resolveFileWithPrompt(filePath, allowInteractive,
-		backupfile.ValidBackupFileExtensionsForSelection(),
-		"file backup",
-		"Masukkan path directory atau file backup")
+	return fsops.ResolveFileWithPrompt(fsops.FileResolverOptions{
+		FilePath:         filePath,
+		AllowInteractive: allowInteractive,
+		ValidExtensions:  backupfile.ValidBackupFileExtensionsForSelection(),
+		Purpose:          "file backup",
+		PromptLabel:      "Masukkan path directory atau file backup",
+		DefaultDir:       s.Config.Backup.Output.BaseDirectory,
+	})
 }
 
 // resolveSelectionCSV resolve lokasi file CSV untuk restore selection
 func (s *Service) resolveSelectionCSV(csvPath *string, allowInteractive bool) error {
-	return s.resolveFileWithPrompt(csvPath, allowInteractive,
-		[]string{".csv"},
-		"file CSV",
-		"Masukkan path CSV selection")
-}
-
-// resolveFileWithPrompt adalah fungsi umum untuk resolve file dengan validasi dan prompt
-func (s *Service) resolveFileWithPrompt(filePath *string, allowInteractive bool, validExtensions []string, purpose, promptLabel string) error {
-	if strings.TrimSpace(*filePath) == "" {
-		if !allowInteractive {
-			return fmt.Errorf("%s wajib diisi pada mode non-interaktif (--force)", purpose)
-		}
-
-		defaultDir := s.Config.Backup.Output.BaseDirectory
-		if defaultDir == "" {
-			defaultDir = "."
-		}
-
-		selectedFile, err := prompt.SelectFile(defaultDir, promptLabel, validExtensions)
-		if err != nil {
-			return fmt.Errorf("gagal memilih %s: %w", purpose, err)
-		}
-		*filePath = selectedFile
-	}
-
-	// Validasi file
-	if err := validateFileExists(*filePath); err != nil {
-		return fmt.Errorf("%s: %w", purpose, err)
-	}
-
-	fi, err := os.Stat(*filePath)
-	if err != nil {
-		return fmt.Errorf("gagal membaca %s: %w", purpose, err)
-	}
-
-	if fi.IsDir() {
-		if !allowInteractive {
-			return fmt.Errorf("%s tidak valid (path adalah direktori): %s", purpose, *filePath)
-		}
-
-		selectedFile, selErr := prompt.SelectFile(*filePath, promptLabel, validExtensions)
-		if selErr != nil {
-			return fmt.Errorf("gagal memilih %s: %w", purpose, selErr)
-		}
-		*filePath = selectedFile
-	}
-
-	if err := validateFileExtension(*filePath, validExtensions, purpose); err != nil {
-		if !allowInteractive {
-			return err
-		}
-		print.PrintWarning(fmt.Sprintf("⚠️  %s", err.Error()))
-		selectedFile, selErr := prompt.SelectFile(filepath.Dir(*filePath), promptLabel, validExtensions)
-		if selErr != nil {
-			return fmt.Errorf("gagal memilih %s: %w", purpose, selErr)
-		}
-		*filePath = selectedFile
-	}
-
-	absPath, err := filepath.Abs(*filePath)
-	if err != nil {
-		return fmt.Errorf("gagal mendapatkan absolute path: %w", err)
-	}
-	*filePath = absPath
-
-	s.Log.Infof("%s: %s", strings.Title(purpose), *filePath)
-	return nil
+	return fsops.ResolveFileWithPrompt(fsops.FileResolverOptions{
+		FilePath:         csvPath,
+		AllowInteractive: allowInteractive,
+		ValidExtensions:  []string{".csv"},
+		Purpose:          "file CSV",
+		PromptLabel:      "Masukkan path CSV selection",
+		DefaultDir:       s.Config.Backup.Output.BaseDirectory,
+	})
 }
 
 // resolveEncryptionKey resolve encryption key untuk decrypt file

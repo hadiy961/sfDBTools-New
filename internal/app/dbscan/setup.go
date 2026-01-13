@@ -12,6 +12,7 @@ import (
 	"sfdbtools/internal/app/dbscan/helpers"
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	profilehelper "sfdbtools/internal/app/profile/helpers"
+	profileshared "sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
@@ -100,7 +101,7 @@ func (s *Service) prepareScanSession(ctx context.Context, headerTitle string, sh
 	}
 
 	// Connect ke Source Database
-	client, err := profilehelper.ConnectWithProfile(&s.ScanOptions.ProfileInfo, consts.DefaultInitialDatabase)
+	client, err := profileshared.ConnectWithProfile(&s.ScanOptions.ProfileInfo, consts.DefaultInitialDatabase)
 	if err != nil {
 		return nil, nil, err
 	}
