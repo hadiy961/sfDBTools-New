@@ -15,7 +15,7 @@ import (
 	"sfdbtools/internal/shared/validation"
 	"strings"
 
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
@@ -26,68 +26,68 @@ import (
 
 func deriveProfileName(profileInfo *domain.ProfileInfo, originalProfileInfo *domain.ProfileInfo) string {
 	if profileInfo != nil {
-		if v := strings.TrimSpace(profilehelper.TrimProfileSuffix(profileInfo.Name)); v != "" {
+		if v := strings.TrimSpace(shared.TrimProfileSuffix(profileInfo.Name)); v != "" {
 			return v
 		}
 	}
 	if originalProfileInfo != nil {
-		if v := strings.TrimSpace(profilehelper.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
+		if v := strings.TrimSpace(shared.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
 			return v
 		}
 	}
 	if profileInfo != nil {
 		if p := strings.TrimSpace(profileInfo.Path); p != "" {
-			return strings.TrimSpace(profilehelper.TrimProfileSuffix(filepath.Base(p)))
+			return strings.TrimSpace(shared.TrimProfileSuffix(filepath.Base(p)))
 		}
 	}
 	return ""
 }
 
 func deriveOriginalProfileName(originalProfileName string, profileInfo *domain.ProfileInfo, originalProfileInfo *domain.ProfileInfo) string {
-	if v := strings.TrimSpace(profilehelper.TrimProfileSuffix(originalProfileName)); v != "" {
+	if v := strings.TrimSpace(shared.TrimProfileSuffix(originalProfileName)); v != "" {
 		return v
 	}
 	if originalProfileInfo != nil {
-		if v := strings.TrimSpace(profilehelper.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
+		if v := strings.TrimSpace(shared.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
 			return v
 		}
 	}
 	if profileInfo != nil {
 		if p := strings.TrimSpace(profileInfo.Path); p != "" {
-			return strings.TrimSpace(profilehelper.TrimProfileSuffix(filepath.Base(p)))
+			return strings.TrimSpace(shared.TrimProfileSuffix(filepath.Base(p)))
 		}
 	}
 	return ""
 }
 
 // CheckConfigurationNameUnique memvalidasi apakah nama konfigurasi unik.
-func (s *Service) CheckConfigurationNameUnique(mode string) error {
-	if s.ProfileInfo == nil {
-		return fmt.Errorf(consts.ProfileErrProfileInfoNil)
+func (s *Service) checkConfigurationNameUnique(mode string) error {
+	if s.State.ProfileInfo == nil {
+		return shared.ErrProfileNil
 	}
-	s.ProfileInfo.Name = profilehelper.TrimProfileSuffix(s.ProfileInfo.Name)
+	s.State.ProfileInfo.Name = shared.TrimProfileSuffix(s.State.ProfileInfo.Name)
 	switch mode {
 	case consts.ProfileModeCreate:
-		abs := s.filePathInConfigDir(s.ProfileInfo.Name)
+		abs := s.filePathInConfigDir(s.State.ProfileInfo.Name)
 		if fsops.PathExists(abs) {
-			return fmt.Errorf(consts.ProfileErrConfigNameExistsFmt, s.ProfileInfo.Name)
+			return fmt.Errorf(consts.ProfileErrConfigNameExistsFmt, s.State.ProfileInfo.Name)
 		}
 		return nil
 	case consts.ProfileModeEdit:
-		newName := deriveProfileName(s.ProfileInfo, s.OriginalProfileInfo)
+		newName := deriveProfileName(s.State.ProfileInfo, s.State.OriginalProfileInfo)
 		if newName == "" {
 			return fmt.Errorf(consts.ProfileErrProfileNameEmptyAlt)
 		}
-		s.ProfileInfo.Name = newName
+		s.State.ProfileInfo.Name = newName
 
-		original := deriveOriginalProfileName(s.OriginalProfileName, s.ProfileInfo, s.OriginalProfileInfo)
+		original := deriveOriginalProfileName(s.State.OriginalProfileName, s.State.ProfileInfo, s.State.OriginalProfileInfo)
 		if original != "" {
-			s.OriginalProfileName = original
+			s.State.OriginalProfileName = original
 		}
 
 		baseDir := s.Config.ConfigDir.DatabaseProfile
-		if s.ProfileInfo.Path != "" && filepath.IsAbs(s.ProfileInfo.Path) {
-			baseDir = filepath.Dir(s.ProfileInfo.Path)
+		if s.State.ProfileInfo.Path != "" && filepath.IsAbs(s.State.ProfileInfo.Path) {
+			baseDir = filepath.Dir(s.State.ProfileInfo.Path)
 		}
 
 		if original == "" {
@@ -102,8 +102,8 @@ func (s *Service) CheckConfigurationNameUnique(mode string) error {
 		if original == newName {
 			origAbs := filepath.Join(baseDir, validation.ProfileExt(original))
 			// Jika kita tahu absolute path asli, itu lebih reliable.
-			if s.ProfileInfo.Path != "" && filepath.IsAbs(s.ProfileInfo.Path) {
-				origAbs = s.ProfileInfo.Path
+			if s.State.ProfileInfo.Path != "" && filepath.IsAbs(s.State.ProfileInfo.Path) {
+				origAbs = s.State.ProfileInfo.Path
 			}
 			if !fsops.PathExists(origAbs) {
 				return fmt.Errorf(consts.ProfileErrOriginalConfigFileNotFoundFmt, original)
@@ -126,7 +126,7 @@ func (s *Service) CheckConfigurationNameUnique(mode string) error {
 
 func ValidateProfileInfo(p *domain.ProfileInfo) error {
 	if p == nil {
-		return fmt.Errorf(consts.ProfileErrProfileInfoNil)
+		return shared.ErrProfileNil
 	}
 	if p.Name == "" {
 		return fmt.Errorf(consts.ProfileErrProfileNameEmptyAlt)

@@ -14,7 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	profileshared "sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/compress"
@@ -25,7 +25,7 @@ import (
 
 // BuildMySQLArgs membuat argument list untuk mysql command
 func BuildMySQLArgs(profile *domain.ProfileInfo, database string, extraArgs ...string) []string {
-	eff := profilehelper.EffectiveDBInfo(profile)
+	eff := profileshared.EffectiveDBInfo(profile)
 	args := []string{
 		fmt.Sprintf("--host=%s", eff.Host),
 		fmt.Sprintf("--port=%d", eff.Port),

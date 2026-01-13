@@ -2,20 +2,19 @@
 // Deskripsi : Helper shared untuk merge snapshot dan override saat edit profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 14 Januari 2026
 
 package shared
 
 import (
 	"strings"
 
-	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/validation"
 )
 
 func BuildProfileFileName(name string) string {
-	return validation.ProfileExt(profilehelper.TrimProfileSuffix(strings.TrimSpace(name)))
+	return validation.ProfileExt(TrimProfileSuffix(name))
 }
 
 func CloneAsOriginalProfileInfo(info *domain.ProfileInfo) *domain.ProfileInfo {

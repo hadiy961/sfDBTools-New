@@ -30,7 +30,7 @@ func (r *Runner) promptDBConfigName(mode string) error {
 			validateNoLeadingTrailingSpaces(consts.ProfileWizardLabelConfigName),
 			prompt.ValidateFilename,
 		)
-		def := strings.TrimSpace(r.ProfileInfo.Name)
+		def := strings.TrimSpace(r.State.ProfileInfo.Name)
 		if def == "" {
 			def = consts.ProfileWizardDefaultConfigName
 		}
@@ -39,9 +39,9 @@ func (r *Runner) promptDBConfigName(mode string) error {
 			return validation.HandleInputError(err)
 		}
 
-		r.ProfileInfo.Name = strings.TrimSpace(configName)
-		if r.CheckConfigurationNameUnique != nil {
-			if err = r.CheckConfigurationNameUnique(mode); err != nil {
+		r.State.ProfileInfo.Name = strings.TrimSpace(configName)
+		if r.CheckNameUnique != nil {
+			if err = r.CheckNameUnique(mode); err != nil {
 				print.PrintError(err.Error())
 				continue
 			}
@@ -49,8 +49,8 @@ func (r *Runner) promptDBConfigName(mode string) error {
 		break
 	}
 
-	r.ProfileInfo.Name = strings.TrimSpace(r.ProfileInfo.Name)
-	print.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + shared.BuildProfileFileName(r.ProfileInfo.Name))
+	r.State.ProfileInfo.Name = strings.TrimSpace(r.State.ProfileInfo.Name)
+	print.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + shared.BuildProfileFileName(r.State.ProfileInfo.Name))
 	return nil
 }
 
@@ -58,7 +58,7 @@ func (r *Runner) promptProfileInfo() error {
 	print.PrintSubHeader(consts.ProfileWizardSubHeaderProfileDetails)
 
 	// Host
-	if strings.TrimSpace(r.ProfileInfo.DBInfo.Host) == "" {
+	if strings.TrimSpace(r.State.ProfileInfo.DBInfo.Host) == "" {
 		validator := prompt.ComposeValidators(
 			validateNotBlank(consts.ProfileLabelDBHost),
 			validateNoControlChars(consts.ProfileLabelDBHost),
@@ -69,11 +69,11 @@ func (r *Runner) promptProfileInfo() error {
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		r.ProfileInfo.DBInfo.Host = strings.TrimSpace(v)
+		r.State.ProfileInfo.DBInfo.Host = strings.TrimSpace(v)
 	}
 
 	// Port
-	if r.ProfileInfo.DBInfo.Port == 0 {
+	if r.State.ProfileInfo.DBInfo.Port == 0 {
 		validator := prompt.ComposeValidators(
 			survey.Required,
 			validatePortRange(1, 65535, false, consts.ProfileLabelDBPort),
@@ -82,11 +82,11 @@ func (r *Runner) promptProfileInfo() error {
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		r.ProfileInfo.DBInfo.Port = v
+		r.State.ProfileInfo.DBInfo.Port = v
 	}
 
 	// User
-	if strings.TrimSpace(r.ProfileInfo.DBInfo.User) == "" {
+	if strings.TrimSpace(r.State.ProfileInfo.DBInfo.User) == "" {
 		validator := prompt.ComposeValidators(
 			validateNotBlank(consts.ProfileLabelDBUser),
 			validateNoControlChars(consts.ProfileLabelDBUser),
@@ -97,15 +97,15 @@ func (r *Runner) promptProfileInfo() error {
 		if err != nil {
 			return validation.HandleInputError(err)
 		}
-		r.ProfileInfo.DBInfo.User = strings.TrimSpace(v)
+		r.State.ProfileInfo.DBInfo.User = strings.TrimSpace(v)
 	}
 
 	// Password
-	isEditFlow := r.OriginalProfileInfo != nil || r.OriginalProfileName != ""
-	if strings.TrimSpace(r.ProfileInfo.DBInfo.Password) == "" {
+	isEditFlow := r.State.OriginalProfileInfo != nil || r.State.OriginalProfileName != ""
+	if strings.TrimSpace(r.State.ProfileInfo.DBInfo.Password) == "" {
 		envPassword := os.Getenv(consts.ENV_TARGET_DB_PASSWORD)
 		if !isEditFlow && envPassword != "" {
-			r.ProfileInfo.DBInfo.Password = envPassword
+			r.State.ProfileInfo.DBInfo.Password = envPassword
 		} else {
 			if !isEditFlow {
 				print.PrintWarning(fmt.Sprintf(consts.ProfileWarnEnvVarMissingOrEmptyFmt, consts.ENV_TARGET_DB_PASSWORD, consts.ENV_TARGET_DB_PASSWORD))
@@ -124,7 +124,7 @@ func (r *Runner) promptProfileInfo() error {
 			if err != nil {
 				return validation.HandleInputError(err)
 			}
-			r.ProfileInfo.DBInfo.Password = pw
+			r.State.ProfileInfo.DBInfo.Password = pw
 		}
 	}
 
@@ -136,7 +136,7 @@ func (r *Runner) promptProfileInfo() error {
 // - jika sudah Enabled (mis. via flag --ssh), langsung prompt detail yang belum ada
 // - jika belum Enabled, akan tanya Yes/No dulu
 func (r *Runner) promptSSHTunnelDetailsIfEnabledOrAsk() error {
-	enabled := r.ProfileInfo.SSHTunnel.Enabled
+	enabled := r.State.ProfileInfo.SSHTunnel.Enabled
 	if !enabled {
 		v, err := prompt.Confirm(consts.ProfilePromptUseSSHTunnel, false)
 		if err != nil {
@@ -145,21 +145,21 @@ func (r *Runner) promptSSHTunnelDetailsIfEnabledOrAsk() error {
 		enabled = v
 	}
 	if !enabled {
-		r.ProfileInfo.SSHTunnel.Enabled = false
+		r.State.ProfileInfo.SSHTunnel.Enabled = false
 		return nil
 	}
 	// enabled
-	r.ProfileInfo.SSHTunnel.Enabled = true
+	r.State.ProfileInfo.SSHTunnel.Enabled = true
 	return r.promptSSHTunnelDetailsIfEnabled()
 }
 
 // promptSSHTunnelDetailsIfEnabled meminta detail SSH hanya jika Enabled dan field penting belum tersedia.
 func (r *Runner) promptSSHTunnelDetailsIfEnabled() error {
-	if !r.ProfileInfo.SSHTunnel.Enabled {
+	if !r.State.ProfileInfo.SSHTunnel.Enabled {
 		return nil
 	}
 
-	ssh := &r.ProfileInfo.SSHTunnel
+	ssh := &r.State.ProfileInfo.SSHTunnel
 	// Host wajib
 	if strings.TrimSpace(ssh.Host) == "" {
 		validator := prompt.ComposeValidators(

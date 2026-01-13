@@ -2,17 +2,14 @@
 // Deskripsi : Setup, configuration helpers, and path management
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 14 Januari 2026
 package profile
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/app/profile/shared"
-	"sfdbtools/internal/domain"
-	"sfdbtools/internal/shared/consts"
 	"strings"
 )
 
@@ -24,37 +21,22 @@ func (s *Service) filePathInConfigDir(name string) string {
 
 // loadSnapshotFromPath membaca file terenkripsi, mencoba dekripsi, parse, dan mengisi OriginalProfileInfo.
 func (s *Service) loadSnapshotFromPath(absPath string) error {
-	info, err := profilehelper.ResolveAndLoadProfile(profilehelper.ProfileLoadOptions{
+	key := ""
+	if s.State.ProfileInfo != nil {
+		key = s.State.ProfileInfo.EncryptionKey
+	}
+
+	snap, err := profilehelper.LoadProfileSnapshotFromPath(profilehelper.SnapshotLoadOptions{
 		ConfigDir:      s.Config.ConfigDir.DatabaseProfile,
 		ProfilePath:    absPath,
-		ProfileKey:     s.ProfileInfo.EncryptionKey,
+		ProfileKey:     key,
 		RequireProfile: true,
 	})
-	if err != nil {
-		s.fillOriginalInfoFromMeta(absPath, domain.ProfileInfo{})
-		return err
+	s.State.OriginalProfileInfo = snap
+	if snap != nil {
+		s.State.OriginalProfileName = snap.Name
 	}
-	s.fillOriginalInfoFromMeta(absPath, *info)
-	return nil
-}
-
-// fillOriginalInfoFromMeta mengisi OriginalProfileInfo dengan metadata file dan nilai koneksi yang tersedia
-func (s *Service) fillOriginalInfoFromMeta(absPath string, info domain.ProfileInfo) {
-	var fileSizeStr string
-	var lastMod = info.LastModified
-	if fi, err := os.Stat(absPath); err == nil {
-		fileSizeStr = fmt.Sprintf(consts.ProfileFmtFileSizeBytes, fi.Size())
-		lastMod = fi.ModTime()
-	}
-
-	s.OriginalProfileInfo = &domain.ProfileInfo{
-		Path:         absPath,
-		Name:         profilehelper.TrimProfileSuffix(filepath.Base(absPath)),
-		DBInfo:       info.DBInfo,
-		SSHTunnel:    info.SSHTunnel,
-		Size:         fileSizeStr,
-		LastModified: lastMod,
-	}
+	return err
 }
 
 // formatConfigToINI mengubah struct DBConfigInfo menjadi format string INI.
@@ -67,9 +49,9 @@ user=%s
 password=%s
 `
 
-	base := fmt.Sprintf(content, s.ProfileInfo.DBInfo.Host, s.ProfileInfo.DBInfo.Port, s.ProfileInfo.DBInfo.User, s.ProfileInfo.DBInfo.Password)
+	base := fmt.Sprintf(content, s.State.ProfileInfo.DBInfo.Host, s.State.ProfileInfo.DBInfo.Port, s.State.ProfileInfo.DBInfo.User, s.State.ProfileInfo.DBInfo.Password)
 
-	ssh := s.ProfileInfo.SSHTunnel
+	ssh := s.State.ProfileInfo.SSHTunnel
 	if !ssh.Enabled && strings.TrimSpace(ssh.Host) == "" {
 		return base
 	}

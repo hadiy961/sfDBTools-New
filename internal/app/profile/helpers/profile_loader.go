@@ -61,7 +61,16 @@ func ResolveAndLoadProfile(opts ProfileLoadOptions) (*domain.ProfileInfo, error)
 		profileKey = envx.GetEnvOrDefault(opts.EnvProfileKey, "")
 	}
 
-	absPath, name, err := ResolveConfigPath(profilePath)
+	var (
+		absPath string
+		name    string
+		err     error
+	)
+	if opts.ConfigDir != "" {
+		absPath, name, err = ResolveConfigPathInDir(opts.ConfigDir, profilePath)
+	} else {
+		absPath, name, err = ResolveConfigPath(profilePath)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("gagal memproses path konfigurasi: %w", err)
 	}

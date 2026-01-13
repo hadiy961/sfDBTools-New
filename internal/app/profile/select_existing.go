@@ -9,25 +9,21 @@ package profile
 import (
 	"fmt"
 	profilehelper "sfdbtools/internal/app/profile/helpers"
-	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/shared/consts"
 )
 
 func (s *Service) promptSelectExistingConfig() error {
-	info, err := profilehelper.ResolveAndLoadProfile(profilehelper.ProfileLoadOptions{
-		ConfigDir:         s.Config.ConfigDir.DatabaseProfile,
-		ProfilePath:       "",
-		AllowInteractive:  true,
-		InteractivePrompt: consts.ProfileWizardPromptSelectExistingConfig,
-		RequireProfile:    true,
-	})
+	info, originalName, snapshot, err := profilehelper.SelectExistingDBConfigWithSnapshot(
+		s.Config.ConfigDir.DatabaseProfile,
+		consts.ProfileWizardPromptSelectExistingConfig,
+	)
 	if err != nil {
 		return err
 	}
 
-	s.ProfileInfo = info
-	s.OriginalProfileName = info.Name
-	s.OriginalProfileInfo = shared.CloneAsOriginalProfileInfo(info)
+	s.State.ProfileInfo = info
+	s.State.OriginalProfileName = originalName
+	s.State.OriginalProfileInfo = snapshot
 
 	s.Log.Debug(fmt.Sprintf(consts.ProfileLogConfigLoadedFromFmt, info.Path, info.Name))
 	return nil

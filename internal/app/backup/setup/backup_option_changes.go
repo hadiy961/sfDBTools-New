@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"sfdbtools/internal/app/backup/selection"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	profileshared "sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/listx"
@@ -225,7 +225,7 @@ func (s *Setup) changeBackupProfileAndReconnect(ctx context.Context, clientPtr *
 		*clientPtr = nil
 	}
 
-	newClient, err := profilehelper.ConnectWithProfile(&s.Options.Profile, consts.DefaultInitialDatabase)
+	newClient, err := profileshared.ConnectWithProfile(&s.Options.Profile, consts.DefaultInitialDatabase)
 	if err != nil {
 		return fmt.Errorf("gagal koneksi ke database source dengan profile baru: %w", err)
 	}

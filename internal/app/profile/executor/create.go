@@ -7,8 +7,8 @@
 package executor
 
 import (
-	"fmt"
-
+	profiledisplay "sfdbtools/internal/app/profile/display"
+	profilevalidation "sfdbtools/internal/app/profile/validation"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/shared/validation"
@@ -25,12 +25,9 @@ func (e *Executor) CreateProfile() error {
 	skipWizard := false
 
 	for {
-		if !skipWizard && e.ProfileCreate != nil && e.ProfileCreate.Interactive {
+		if !skipWizard && e.State.ProfileCreate != nil && e.State.ProfileCreate.Interactive {
 			// Mode interaktif: hindari log Info agar tidak mengganggu prompt.
-			if e.RunWizard == nil {
-				return fmt.Errorf(consts.ProfileErrWizardRunnerUnavailable)
-			}
-			if err := e.RunWizard(consts.ProfileModeCreate); err != nil {
+			if err := e.Ops.NewWizard().Run(consts.ProfileModeCreate); err != nil {
 				return err
 			}
 		} else if !skipWizard {
@@ -38,33 +35,27 @@ func (e *Executor) CreateProfile() error {
 				e.Log.Info(consts.ProfileLogModeNonInteractiveEnabled)
 				e.Log.Info(consts.ProfileLogValidatingParams)
 			}
-			if e.ValidateProfileInfo != nil {
-				if err := e.ValidateProfileInfo(e.ProfileInfo); err != nil {
-					if e.Log != nil {
-						e.Log.Errorf(consts.ProfileLogValidationFailedFmt, err)
-					}
-					return err
+			if err := profilevalidation.ValidateProfileInfo(e.State.ProfileInfo); err != nil {
+				if e.Log != nil {
+					e.Log.Errorf(consts.ProfileLogValidationFailedFmt, err)
 				}
+				return err
 			}
 			if e.Log != nil {
 				e.Log.Info(consts.ProfileLogValidationSuccess)
 			}
 			if !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) {
-				if e.DisplayProfileDetails != nil {
-					e.DisplayProfileDetails()
-				}
+				profiledisplay.DisplayProfileDetails(e.ConfigDir, e.State)
 			}
 		}
 		skipWizard = false
 
-		if e.CheckConfigurationNameUnique != nil {
-			if err := e.CheckConfigurationNameUnique(consts.ProfileModeCreate); err != nil {
-				print.PrintError(err.Error())
-				return err
-			}
+		if err := e.Ops.CheckConfigurationNameUnique(consts.ProfileModeCreate); err != nil {
+			print.PrintError(err.Error())
+			return err
 		}
 
-		if err := e.SaveProfile(consts.ProfileSaveModeCreate); err != nil {
+		if err := e.Ops.SaveProfile(consts.ProfileSaveModeCreate); err != nil {
 			if err == validation.ErrConnectionFailedRetry {
 				retry, err2 := e.handleConnectionFailedRetry(consts.ProfileMsgRetryCreate, consts.ProfileMsgCreateCancelled)
 				if err2 != nil {
@@ -72,8 +63,8 @@ func (e *Executor) CreateProfile() error {
 				}
 				if retry {
 					// UX: setelah retry, tampilkan selector field (mirip profile edit), bukan restart wizard dari awal.
-					if e.isInteractiveMode() && e.PromptCreateRetrySelectedFields != nil {
-						if err := e.PromptCreateRetrySelectedFields(); err != nil {
+					if e.isInteractiveMode() {
+						if err := e.Ops.NewWizard().PromptCreateRetrySelectedFields(); err != nil {
 							return err
 						}
 						skipWizard = true
@@ -85,12 +76,6 @@ func (e *Executor) CreateProfile() error {
 			return err
 		}
 		break
-	}
-
-	if e.Log != nil {
-		if !isInteractive {
-			e.Log.Info(consts.ProfileLogCreateSuccess)
-		}
 	}
 	return nil
 }

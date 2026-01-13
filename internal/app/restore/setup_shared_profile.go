@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"path/filepath"
 	profilehelper "sfdbtools/internal/app/profile/helpers"
+	profileshared "sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 )
@@ -43,7 +44,7 @@ func (s *Service) resolveTargetProfile(profileInfo *domain.ProfileInfo, allowInt
 func (s *Service) connectToTargetDatabase(ctx context.Context) error {
 	s.Log.Info("Menghubungkan ke database target...")
 
-	client, err := profilehelper.ConnectWithProfile(s.Profile, consts.DefaultInitialDatabase)
+	client, err := profileshared.ConnectWithProfile(s.Profile, consts.DefaultInitialDatabase)
 	if err != nil {
 		return fmt.Errorf("koneksi database target gagal: %w", err)
 	}

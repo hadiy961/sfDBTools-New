@@ -2,7 +2,7 @@
 // Deskripsi : SSH tunnel native Go (port forwarding)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2 Januari 2026
-// Last Modified : 9 Januari 2026
+// Last Modified : 14 Januari 2026
 
 package process
 
@@ -13,20 +13,14 @@ import (
 	"io"
 	"net"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 	"golang.org/x/crypto/ssh/knownhosts"
 )
-
-const defaultSfDBToolsKnownHostsPath = "/etc/sfDBTools/known_hosts"
-
-const fallbackUserKnownHostsPath = ".config/sfdbtools/known_hosts"
 
 type SSHTunnelOptions struct {
 	SSHHost        string
@@ -51,27 +45,6 @@ type SSHTunnel struct {
 	once      sync.Once
 }
 
-func pickLocalPort(requested int) (int, error) {
-	if requested > 0 {
-		return requested, nil
-	}
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return 0, err
-	}
-	defer ln.Close()
-	addr := ln.Addr().String()
-	_, portStr, err := net.SplitHostPort(addr)
-	if err != nil {
-		return 0, err
-	}
-	p, err := strconv.Atoi(portStr)
-	if err != nil {
-		return 0, err
-	}
-	return p, nil
-}
-
 func (o SSHTunnelOptions) validate() error {
 	o.SSHHost = strings.TrimSpace(o.SSHHost)
 	o.SSHUser = strings.TrimSpace(o.SSHUser)
@@ -91,160 +64,6 @@ func (o SSHTunnelOptions) validate() error {
 		o.SSHPort = 22
 	}
 	return nil
-}
-
-func defaultKnownHostsPaths() []string {
-	// Prioritaskan known_hosts khusus sfdbtools agar tidak konflik dengan ~/.ssh/known_hosts.
-	// Jika file ini ada, kita akan pakai secara eksklusif.
-	paths := []string{defaultSfDBToolsKnownHostsPath}
-	if home, err := os.UserHomeDir(); err == nil && strings.TrimSpace(home) != "" {
-		paths = append(paths, filepath.Join(home, ".ssh", "known_hosts"))
-	}
-	paths = append(paths, "/etc/ssh/ssh_known_hosts")
-	return paths
-}
-
-func ensureFile(path string) error {
-	if strings.TrimSpace(path) == "" {
-		return fmt.Errorf("path kosong")
-	}
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	if _, err := os.Stat(path); err == nil {
-		return nil
-	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND, 0o644)
-	if err != nil {
-		return err
-	}
-	return f.Close()
-}
-
-func selectKnownHostsPath() (string, error) {
-	// 1) Prefer /etc/sfDBTools/known_hosts
-	if err := ensureFile(defaultSfDBToolsKnownHostsPath); err == nil {
-		return defaultSfDBToolsKnownHostsPath, nil
-	}
-
-	// 2) Fallback per-user: ~/.config/sfdbtools/known_hosts
-	home, err := os.UserHomeDir()
-	if err != nil || strings.TrimSpace(home) == "" {
-		return "", fmt.Errorf("tidak bisa menentukan home dir untuk fallback known_hosts")
-	}
-	p := filepath.Join(home, fallbackUserKnownHostsPath)
-	if err := ensureFile(p); err != nil {
-		return "", err
-	}
-	return p, nil
-}
-
-func hostPatterns(host string, port int) []string {
-	host = strings.TrimSpace(host)
-	if host == "" {
-		return nil
-	}
-	if port == 0 || port == 22 {
-		return []string{host}
-	}
-	return []string{fmt.Sprintf("[%s]:%d", host, port)}
-}
-
-func appendKnownHost(path string, host string, port int, key ssh.PublicKey) error {
-	if strings.TrimSpace(path) == "" {
-		return fmt.Errorf("known_hosts path kosong")
-	}
-	patterns := hostPatterns(host, port)
-	if len(patterns) == 0 {
-		return fmt.Errorf("host kosong")
-	}
-	line := knownhosts.Line(patterns, key)
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if _, err := f.WriteString(line + "\n"); err != nil {
-		return err
-	}
-	return nil
-}
-
-func buildHostKeyCallbackFor(host string, port int) (ssh.HostKeyCallback, string, error) {
-	knownHostsPath, err := selectKnownHostsPath()
-	if err != nil {
-		// Fallback agar tetap bisa jalan (terutama di environment yang tidak punya permission menulis file).
-		// Ini mengurangi keamanan verifikasi host key.
-		return ssh.InsecureIgnoreHostKey(), "", nil
-	}
-
-	cb, kerr := knownhosts.New(knownHostsPath)
-	if kerr != nil {
-		return nil, knownHostsPath, fmt.Errorf("gagal membaca known_hosts (%s): %w", knownHostsPath, kerr)
-	}
-
-	// Auto-trust seperti client GUI: jika host key belum ada / mismatch,
-	// tambahkan key yang sedang dipresentasikan ke file known_hosts sfdbtools.
-	wrapped := func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-		if err := cb(hostname, remote, key); err == nil {
-			return nil
-		} else {
-			var keyErr *knownhosts.KeyError
-			if errors.As(err, &keyErr) {
-				// Jangan sentuh ~/.ssh/known_hosts; tulis ke file khusus sfdbtools.
-				if werr := appendKnownHost(knownHostsPath, host, port, key); werr == nil {
-					return nil
-				}
-			}
-			return err
-		}
-	}
-
-	return wrapped, knownHostsPath, nil
-}
-
-func buildAuthMethods(opts SSHTunnelOptions) ([]ssh.AuthMethod, error) {
-	methods := []ssh.AuthMethod{}
-
-	if strings.TrimSpace(opts.IdentityFile) != "" {
-		keyPath := opts.IdentityFile
-		if !filepath.IsAbs(keyPath) {
-			if wd, err := os.Getwd(); err == nil {
-				keyPath = filepath.Join(wd, keyPath)
-			}
-		}
-		keyPath = filepath.Clean(keyPath)
-		b, err := os.ReadFile(keyPath)
-		if err != nil {
-			return nil, fmt.Errorf("gagal membaca identity file '%s': %w", keyPath, err)
-		}
-		signer, err := ssh.ParsePrivateKey(b)
-		if err != nil {
-			return nil, fmt.Errorf("gagal parse identity file '%s': %w", keyPath, err)
-		}
-		methods = append(methods, ssh.PublicKeys(signer))
-	}
-
-	if strings.TrimSpace(opts.Password) != "" {
-		methods = append(methods, ssh.Password(opts.Password))
-	}
-
-	// ssh-agent (jika tersedia)
-	if sock := strings.TrimSpace(os.Getenv("SSH_AUTH_SOCK")); sock != "" {
-		if conn, err := net.Dial("unix", sock); err == nil {
-			ag := agent.NewClient(conn)
-			if signers, serr := ag.Signers(); serr == nil && len(signers) > 0 {
-				methods = append(methods, ssh.PublicKeys(signers...))
-			}
-			_ = conn.Close()
-		}
-	}
-
-	if len(methods) == 0 {
-		return nil, fmt.Errorf("metode autentikasi SSH tidak tersedia (isi ssh_password atau identity_file atau gunakan ssh-agent)")
-	}
-	return methods, nil
 }
 
 // StartSSHTunnel memulai SSH tunnel (local port forwarding) menggunakan native Go.

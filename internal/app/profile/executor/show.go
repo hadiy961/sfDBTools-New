@@ -7,24 +7,27 @@ package executor
 
 import (
 	"fmt"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	"strings"
+
+	profiledisplay "sfdbtools/internal/app/profile/display"
+	profilehelpers "sfdbtools/internal/app/profile/helpers"
 	profilemodel "sfdbtools/internal/app/profile/model"
+	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/table"
-	"strings"
 )
 
 func (e *Executor) ShowProfile() error {
 	isInteractive := e.isInteractiveMode()
 
 	if !isInteractive {
-		if e.ProfileShow == nil || strings.TrimSpace(e.ProfileShow.Path) == "" {
+		if e.State.ProfileShow == nil || strings.TrimSpace(e.State.ProfileShow.Path) == "" {
 			return fmt.Errorf(consts.ProfileErrNonInteractiveProfileFlagRequired)
 		}
-		if strings.TrimSpace(e.ProfileInfo.EncryptionKey) == "" {
+		if strings.TrimSpace(e.State.ProfileInfo.EncryptionKey) == "" {
 			return fmt.Errorf(
 				consts.ProfileErrNonInteractiveProfileKeyRequiredFmt,
 				consts.ENV_TARGET_PROFILE_KEY,
@@ -34,58 +37,58 @@ func (e *Executor) ShowProfile() error {
 		}
 	}
 
-	if e.ProfileShow == nil || strings.TrimSpace(e.ProfileShow.Path) == "" {
+	if e.State.ProfileShow == nil || strings.TrimSpace(e.State.ProfileShow.Path) == "" {
 		var revealPassword bool
-		if e.ProfileShow != nil {
-			revealPassword = e.ProfileShow.RevealPassword
+		if e.State.ProfileShow != nil {
+			revealPassword = e.State.ProfileShow.RevealPassword
 		}
 
-		if e.PromptSelectExistingConfig == nil {
+		if e.Ops.PromptSelectExistingConfig == nil {
 			return fmt.Errorf(consts.ProfileErrPromptSelectorUnavailable)
 		}
-		if err := e.PromptSelectExistingConfig(); err != nil {
+		if err := e.Ops.PromptSelectExistingConfig(); err != nil {
 			return err
 		}
-		if e.ProfileShow == nil {
-			e.ProfileShow = &profilemodel.ProfileShowOptions{}
+		if e.State.ProfileShow == nil {
+			e.State.ProfileShow = &profilemodel.ProfileShowOptions{}
 		}
-		e.ProfileShow.Path = e.ProfileInfo.Path
-		e.ProfileShow.RevealPassword = revealPassword
+		e.State.ProfileShow.Path = e.State.ProfileInfo.Path
+		e.State.ProfileShow.RevealPassword = revealPassword
 	} else {
-		abs, name, err := profilehelper.ResolveConfigPath(e.ProfileShow.Path)
+		abs, name, err := profilehelpers.ResolveConfigPath(e.State.ProfileShow.Path)
 		if err != nil {
 			return err
 		}
 		if !fsops.PathExists(abs) {
 			return fmt.Errorf(consts.ProfileErrConfigFileNotFoundFmt, abs)
 		}
-		e.ProfileInfo.Name = name
-		if e.LoadSnapshotFromPath != nil {
-			snap, err := e.LoadSnapshotFromPath(abs)
+		e.State.ProfileInfo.Name = name
+		if e.Ops.LoadSnapshotFromPath != nil {
+			snap, err := e.Ops.LoadSnapshotFromPath(abs)
 			if err != nil {
 				if e.Log != nil {
 					e.Log.Warn(fmt.Sprintf(consts.ProfileLogLoadConfigDetailsFailedFmt, err))
 				}
 				return err
 			}
-			e.OriginalProfileInfo = snap
+			e.State.OriginalProfileInfo = snap
 		}
 	}
 
-	if e.OriginalProfileInfo == nil || e.OriginalProfileInfo.Path == "" {
+	if e.State.OriginalProfileInfo == nil || e.State.OriginalProfileInfo.Path == "" {
 		return fmt.Errorf(consts.ProfileErrNoSnapshotToShow)
 	}
-	if !fsops.PathExists(e.OriginalProfileInfo.Path) {
-		return fmt.Errorf(consts.ProfileErrConfigFileNotFoundFmt, e.OriginalProfileInfo.Path)
+	if !fsops.PathExists(e.State.OriginalProfileInfo.Path) {
+		return fmt.Errorf(consts.ProfileErrConfigFileNotFoundFmt, e.State.OriginalProfileInfo.Path)
 	}
 
-	e.ProfileInfo.Path = e.OriginalProfileInfo.Path
-	if e.OriginalProfileInfo != nil {
-		e.ProfileInfo.DBInfo = e.OriginalProfileInfo.DBInfo
+	e.State.ProfileInfo.Path = e.State.OriginalProfileInfo.Path
+	if e.State.OriginalProfileInfo != nil {
+		e.State.ProfileInfo.DBInfo = e.State.OriginalProfileInfo.DBInfo
 	}
 
-	if c, err := profilehelper.ConnectWithProfile(e.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
-		info := profilehelper.DescribeConnectError(err)
+	if c, err := shared.ConnectWithProfile(e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
+		info := shared.DescribeConnectError(err)
 		print.PrintWarning("⚠️  " + info.Title)
 		if strings.TrimSpace(info.Detail) != "" {
 			print.PrintWarning("Detail (ringkas): " + info.Detail)
@@ -99,8 +102,8 @@ func (e *Executor) ShowProfile() error {
 
 	// Non-interaktif: --reveal-password tidak boleh prompt.
 	// Fail-fast jika key salah/corrupt agar scripting mendapat exit code non-zero.
-	if e.ProfileShow != nil && e.ProfileShow.RevealPassword && !isInteractive {
-		if strings.TrimSpace(e.ProfileInfo.EncryptionKey) == "" {
+	if e.State.ProfileShow != nil && e.State.ProfileShow.RevealPassword && !isInteractive {
+		if strings.TrimSpace(e.State.ProfileInfo.EncryptionKey) == "" {
 			return fmt.Errorf(
 				consts.ProfileErrNonInteractiveProfileKeyRequiredFmt,
 				consts.ENV_TARGET_PROFILE_KEY,
@@ -108,10 +111,10 @@ func (e *Executor) ShowProfile() error {
 				validation.ErrNonInteractive,
 			)
 		}
-		info, err := profilehelper.ResolveAndLoadProfile(profilehelper.ProfileLoadOptions{
+		info, err := profilehelpers.ResolveAndLoadProfile(profilehelpers.ProfileLoadOptions{
 			ConfigDir:      e.ConfigDir,
-			ProfilePath:    e.OriginalProfileInfo.Path,
-			ProfileKey:     e.ProfileInfo.EncryptionKey,
+			ProfilePath:    e.State.OriginalProfileInfo.Path,
+			ProfileKey:     e.State.ProfileInfo.EncryptionKey,
 			RequireProfile: true,
 		})
 		if err != nil {
@@ -128,8 +131,8 @@ func (e *Executor) ShowProfile() error {
 		)
 	}
 
-	if e.DisplayProfileDetails != nil {
-		e.DisplayProfileDetails()
+	if profiledisplay.DisplayProfileDetails != nil {
+		profiledisplay.DisplayProfileDetails(e.ConfigDir, e.State)
 	}
 	return nil
 }

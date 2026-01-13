@@ -12,6 +12,7 @@ import (
 	"sfdbtools/internal/ui/print"
 
 	profilemodel "sfdbtools/internal/app/profile/model"
+	profileshared "sfdbtools/internal/app/profile/shared"
 
 	"github.com/spf13/cobra"
 )
@@ -84,7 +85,7 @@ func executeProfileWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 	case consts.ProfileModeDelete:
 		profileOptions, err = parsing.ParsingDeleteProfile(cmd)
 	default:
-		return ErrInvalidProfileMode
+		return profileshared.ErrInvalidProfileMode
 	}
 
 	if err != nil {
@@ -117,7 +118,7 @@ func executeProfileWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 func GetExecutionConfig(mode string) (profilemodel.ProfileEntryConfig, error) {
 	config, ok := profileExecutionConfigs[mode]
 	if !ok {
-		return profilemodel.ProfileEntryConfig{}, ErrInvalidProfileMode
+		return profilemodel.ProfileEntryConfig{}, profileshared.ErrInvalidProfileMode
 	}
 
 	return config, nil

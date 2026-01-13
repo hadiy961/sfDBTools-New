@@ -2,7 +2,7 @@
 // Deskripsi : Utility untuk load dan parse profil terenkripsi
 // Author : Hadiyatna Muflihun
 // Tanggal : 5 Desember 2025
-// Last Modified : 8 Januari 2026
+// Last Modified : 14 Januari 2026
 package helpers
 
 import (
@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/cli/parsing"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/domain"
@@ -53,14 +54,15 @@ func LoadAndParseProfile(absPath string, key string) (*domain.ProfileInfo, error
 		return nil, fmt.Errorf("gagal mendekripsi file '%s': %s", absPath, hint)
 	}
 
-	parsed := parsing.ParseINIClient(string(plaintext))
+	plainStr := string(plaintext)
+	parsed := parsing.ParseINIClient(plainStr)
 	if parsed == nil {
 		return nil, fmt.Errorf("gagal mem-parse isi konfigurasi '%s': format INI bagian [client] tidak ditemukan atau rusak", absPath)
 	}
 
-	sshParsed := parsing.ParseINISection(string(plaintext), "ssh")
+	sshParsed := parsing.ParseINISection(plainStr, "ssh")
 
-	info.Name = TrimProfileSuffix(filepath.Base(absPath))
+	info.Name = shared.TrimProfileSuffix(filepath.Base(absPath))
 	{
 		if h, ok := parsed["host"]; ok {
 			info.DBInfo.Host = h

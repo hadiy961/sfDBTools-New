@@ -1,36 +1,37 @@
-// File : internal/app/profile/helpers/connect_preflight.go
-// Deskripsi : Preflight validation untuk koneksi DB dan SSH tunnel sebelum mencoba dial
+// File : internal/app/profile/shared/connect_preflight.go
+// Deskripsi : Preflight validation untuk koneksi DB dan SSH tunnel (shared)
 // Author : Hadiyatna Muflihun
 // Tanggal : 9 Januari 2026
-// Last Modified : 9 Januari 2026
+// Last Modified : 13 Januari 2026
 
-package helpers
+package shared
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"sfdbtools/internal/domain"
 )
 
 func ValidateConnectPreflight(profile *domain.ProfileInfo) error {
 	if profile == nil {
-		return fmt.Errorf("profile tidak boleh nil")
+		return ErrProfileNil
 	}
 
 	host := strings.TrimSpace(profile.DBInfo.Host)
 	user := strings.TrimSpace(profile.DBInfo.User)
 	port := profile.DBInfo.Port
 	if host == "" {
-		return fmt.Errorf("host database kosong")
+		return ErrDBHostEmpty
 	}
 	if port <= 0 || port > 65535 {
 		return fmt.Errorf("port database tidak valid: %d", port)
 	}
 	if user == "" {
-		return fmt.Errorf("user database kosong")
+		return ErrDBUserEmpty
 	}
 
 	if !profile.SSHTunnel.Enabled {
@@ -78,4 +79,12 @@ func ValidateConnectPreflight(profile *domain.ProfileInfo) error {
 	}
 
 	return nil
+}
+
+const (
+	defaultProfileConnectTimeout = 15 * time.Second
+)
+
+func ProfileConnectTimeout() time.Duration {
+	return defaultProfileConnectTimeout
 }

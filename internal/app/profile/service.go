@@ -2,74 +2,62 @@
 // Deskripsi : Service utama implementation untuk profile operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 6 Januari 2026
+// Last Modified : 14 Januari 2026
 package profile
 
 import (
-	"errors"
 	profilemodel "sfdbtools/internal/app/profile/model"
+	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/consts"
 )
 
-// Error definitions
-var (
-	ErrInvalidProfileMode = errors.New("mode profile tidak valid")
-)
-
 type Service struct {
-	Config        *appconfig.Config
-	Log           applog.Logger
-	ProfileCreate *profilemodel.ProfileCreateOptions
-	ProfileInfo   *domain.ProfileInfo
-	ProfileShow   *profilemodel.ProfileShowOptions
-	ProfileDelete *profilemodel.ProfileDeleteOptions
-	ProfileEdit   *profilemodel.ProfileEditOptions
-	DBInfo        *domain.DBInfo
-
-	// OriginalProfileName menyimpan nama file profil yang dibuka untuk mode edit.
-	OriginalProfileName string
-	// OriginalProfileInfo menyimpan salinan data profil sebelum diedit (jika tersedia)
-	OriginalProfileInfo *domain.ProfileInfo
+	Config *appconfig.Config
+	Log    applog.Logger
+	State  *profilemodel.ProfileState // Single source of truth untuk semua shared state
+	DBInfo *domain.DBInfo
 }
 
 func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interface{}) *Service {
 	svc := &Service{
 		Log:    logs,
 		Config: cfg,
+		State:  &profilemodel.ProfileState{}, // Initialize shared state
 	}
 
 	setProfileRefs := func(info *domain.ProfileInfo) {
-		svc.ProfileInfo = info
+		svc.State.ProfileInfo = info
 		svc.DBInfo = &info.DBInfo
 	}
 
 	if profile != nil {
 		switch v := profile.(type) {
 		case *profilemodel.ProfileCreateOptions:
-			svc.ProfileCreate = v
+			svc.State.ProfileCreate = v
 			setProfileRefs(&v.ProfileInfo)
 		case *profilemodel.ProfileShowOptions:
-			svc.ProfileShow = v
+			svc.State.ProfileShow = v
 			setProfileRefs(&v.ProfileInfo)
 		case *profilemodel.ProfileEditOptions:
-			svc.ProfileEdit = v
+			svc.State.ProfileEdit = v
 			setProfileRefs(&v.ProfileInfo)
 			// If user provided a file/path via flags, store it as OriginalProfileName
 			if v.ProfileInfo.Path != "" {
-				svc.OriginalProfileName = v.ProfileInfo.Path
+				svc.State.OriginalProfileName = v.ProfileInfo.Path
 			}
 		case *profilemodel.ProfileDeleteOptions:
-			svc.ProfileDelete = v
+			svc.State.ProfileDelete = v
 			setProfileRefs(&v.ProfileInfo)
 		default:
 			logs.Warn(consts.ProfileLogUnknownProfileTypeInService)
-			svc.ProfileInfo = &domain.ProfileInfo{}
+			svc.State.ProfileInfo = &domain.ProfileInfo{}
 		}
 	} else {
 		logs.Warn(consts.ProfileLogUnknownProfileTypeInService)
+		svc.State.ProfileInfo = &domain.ProfileInfo{}
 	}
 
 	return svc
@@ -93,6 +81,6 @@ func (s *Service) ExecuteProfileCommand(config profilemodel.ProfileEntryConfig) 
 	case consts.ProfileModeDelete:
 		return s.PromptDeleteProfile()
 	default:
-		return ErrInvalidProfileMode
+		return shared.ErrInvalidProfileMode
 	}
 }

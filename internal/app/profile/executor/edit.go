@@ -10,24 +10,22 @@ import (
 	"fmt"
 	"strings"
 
-	profilehelper "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/app/profile/shared"
+	profilevalidation "sfdbtools/internal/app/profile/validation"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
+	profilehelpers "sfdbtools/internal/app/profile/helpers"
 )
 
 func (e *Executor) EditProfile() error {
 	for {
-		if e.ProfileEdit != nil && e.ProfileEdit.Interactive {
+		if e.State.ProfileEdit != nil && e.State.ProfileEdit.Interactive {
 			if e.Log != nil {
 				e.Log.Info(consts.ProfileLogModeInteractiveEnabled)
 			}
-			if e.RunWizard == nil {
-				return fmt.Errorf(consts.ProfileErrWizardRunnerUnavailable)
-			}
-			if err := e.RunWizard(consts.ProfileModeEdit); err != nil {
+			if err := e.Ops.NewWizard().Run(consts.ProfileModeEdit); err != nil {
 				if err == validation.ErrUserCancelled {
 					if e.Log != nil {
 						e.Log.Warn(consts.ProfileLogEditCancelledByUser)
@@ -43,14 +41,14 @@ func (e *Executor) EditProfile() error {
 			if e.Log != nil {
 				e.Log.Info(consts.ProfileLogModeNonInteractiveShort)
 			}
-			if strings.TrimSpace(e.OriginalProfileName) == "" {
+			if strings.TrimSpace(e.State.OriginalProfileName) == "" {
 				return fmt.Errorf(consts.ProfileErrNonInteractiveProfileRequired)
 			}
 
-			overrideDB := e.ProfileInfo.DBInfo
-			overrideSSH := e.ProfileInfo.SSHTunnel
+			overrideDB := e.State.ProfileInfo.DBInfo
+			overrideSSH := e.State.ProfileInfo.SSHTunnel
 
-			absPath, name, err := profilehelper.ResolveConfigPath(e.OriginalProfileName)
+			absPath, name, err := profilehelpers.ResolveConfigPath(e.State.OriginalProfileName)
 			if err != nil {
 				return err
 			}
@@ -59,57 +57,54 @@ func (e *Executor) EditProfile() error {
 				return fmt.Errorf(consts.ProfileErrConfigFileNotFoundFmt, absPath)
 			}
 
-			e.ProfileInfo.Name = name
-			e.ProfileInfo.Path = absPath
-			e.OriginalProfileName = name
+			e.State.ProfileInfo.Name = name
+			e.State.ProfileInfo.Path = absPath
+			e.State.OriginalProfileName = name
 
 			if e.Log != nil {
 				e.Log.Info(consts.ProfileLogConfigFileFoundTryLoad)
 			}
-			if e.LoadSnapshotFromPath != nil {
-				if snap, err := e.LoadSnapshotFromPath(absPath); err != nil {
+			if e.Ops.LoadSnapshotFromPath != nil {
+				if snap, err := e.Ops.LoadSnapshotFromPath(absPath); err != nil {
 					print.PrintWarning(fmt.Sprintf(consts.ProfileWarnLoadFileContentFailedProceedFmt, absPath, err))
 				} else {
-					e.OriginalProfileInfo = snap
+					e.State.OriginalProfileInfo = snap
 				}
 			}
 			if e.Log != nil {
 				e.Log.Info(consts.ProfileLogConfigFileLoaded)
 			}
 
-			shared.ApplySnapshotAsBaseline(e.ProfileInfo, e.OriginalProfileInfo)
-			shared.ApplyDBOverrides(e.ProfileInfo, overrideDB)
-			shared.ApplySSHOverrides(e.ProfileInfo, overrideSSH)
+			shared.ApplySnapshotAsBaseline(e.State.ProfileInfo, e.State.OriginalProfileInfo)
+			shared.ApplyDBOverrides(e.State.ProfileInfo, overrideDB)
+			shared.ApplySSHOverrides(e.State.ProfileInfo, overrideSSH)
 
 			if e.Log != nil {
 				e.Log.Info(consts.ProfileLogValidatingParams)
 			}
-			if e.ProfileEdit != nil && strings.TrimSpace(e.ProfileEdit.NewName) != "" {
-				newName := profilehelper.TrimProfileSuffix(strings.TrimSpace(e.ProfileEdit.NewName))
+			if e.State.ProfileEdit != nil && strings.TrimSpace(e.State.ProfileEdit.NewName) != "" {
+				newName := shared.TrimProfileSuffix(strings.TrimSpace(e.State.ProfileEdit.NewName))
 				if newName == "" {
 					return fmt.Errorf(consts.ProfileErrNewNameEmpty)
 				}
 				if strings.Contains(newName, "/") || strings.Contains(newName, "\\") {
 					return fmt.Errorf(consts.ProfileErrNewNameContainsPath)
 				}
-				e.ProfileInfo.Name = newName
+				e.State.ProfileInfo.Name = newName
 			}
 
-			if e.ValidateProfileInfo != nil {
-				if err := e.ValidateProfileInfo(e.ProfileInfo); err != nil {
+			if profilevalidation.ValidateProfileInfo != nil {
+				if err := profilevalidation.ValidateProfileInfo(e.State.ProfileInfo); err != nil {
 					if e.Log != nil {
 						e.Log.Errorf(consts.ProfileLogValidationFailedFmt, err)
 					}
 					return err
 				}
 			}
-			if e.DisplayProfileDetails != nil {
-				e.DisplayProfileDetails()
-			}
 		}
 
-		if e.CheckConfigurationNameUnique != nil {
-			if err := e.CheckConfigurationNameUnique(consts.ProfileModeEdit); err != nil {
+		if e.Ops.CheckConfigurationNameUnique != nil {
+			if err := e.Ops.CheckConfigurationNameUnique(consts.ProfileModeEdit); err != nil {
 				print.PrintError(err.Error())
 				return err
 			}
@@ -117,9 +112,9 @@ func (e *Executor) EditProfile() error {
 
 		// Jika user memilih untuk merubah kunci enkripsi (rotasi), gunakan key baru saat save.
 		// Decrypt snapshot sudah dilakukan sebelumnya memakai key lama.
-		if e.ProfileEdit != nil && strings.TrimSpace(e.ProfileEdit.NewProfileKey) != "" {
-			e.ProfileInfo.EncryptionKey = strings.TrimSpace(e.ProfileEdit.NewProfileKey)
-			e.ProfileInfo.EncryptionSource = strings.TrimSpace(e.ProfileEdit.NewProfileKeySource)
+		if e.State.ProfileEdit != nil && strings.TrimSpace(e.State.ProfileEdit.NewProfileKey) != "" {
+			e.State.ProfileInfo.EncryptionKey = strings.TrimSpace(e.State.ProfileEdit.NewProfileKey)
+			e.State.ProfileInfo.EncryptionSource = strings.TrimSpace(e.State.ProfileEdit.NewProfileKeySource)
 		}
 
 		if err := e.SaveProfile(consts.ProfileSaveModeEdit); err != nil {

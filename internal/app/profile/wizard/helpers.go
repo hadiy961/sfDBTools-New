@@ -81,7 +81,7 @@ func (r *Runner) promptDBHostRequired(defaultValue string) error {
 	if err != nil {
 		return validation.HandleInputError(err)
 	}
-	r.ProfileInfo.DBInfo.Host = strings.TrimSpace(v)
+	r.State.ProfileInfo.DBInfo.Host = strings.TrimSpace(v)
 	return nil
 }
 
@@ -94,7 +94,7 @@ func (r *Runner) promptDBPortRequired(defaultValue int) error {
 	if err != nil {
 		return validation.HandleInputError(err)
 	}
-	r.ProfileInfo.DBInfo.Port = v
+	r.State.ProfileInfo.DBInfo.Port = v
 	return nil
 }
 
@@ -109,7 +109,7 @@ func (r *Runner) promptDBUserRequired(defaultValue string) error {
 	if err != nil {
 		return validation.HandleInputError(err)
 	}
-	r.ProfileInfo.DBInfo.User = strings.TrimSpace(v)
+	r.State.ProfileInfo.DBInfo.User = strings.TrimSpace(v)
 	return nil
 }
 
@@ -126,9 +126,9 @@ func (r *Runner) promptDBPasswordKeepCurrent(existing string) error {
 		return validation.HandleInputError(err)
 	}
 	if strings.TrimSpace(pw) == "" {
-		r.ProfileInfo.DBInfo.Password = existing
+		r.State.ProfileInfo.DBInfo.Password = existing
 	} else {
-		r.ProfileInfo.DBInfo.Password = pw
+		r.State.ProfileInfo.DBInfo.Password = pw
 	}
 	return nil
 }

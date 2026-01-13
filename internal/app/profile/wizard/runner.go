@@ -2,13 +2,15 @@
 // Deskripsi : Runner wizard interaktif untuk create/edit profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 14 Januari 2026
 package wizard
 
 import (
+	profilehelpers "sfdbtools/internal/app/profile/helpers"
 	"fmt"
 
 	profilemodel "sfdbtools/internal/app/profile/model"
+	profiledisplay "sfdbtools/internal/app/profile/display"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/consts"
@@ -17,20 +19,29 @@ import (
 	"sfdbtools/internal/ui/prompt"
 )
 
+// Function types for dependencies
+type CheckNameUniqueFn func(mode string) error
+type LoadSnapshotFn func(absPath string) (*domain.ProfileInfo, error)
+
 type Runner struct {
 	Log       applog.Logger
 	ConfigDir string
+	State     *profilemodel.ProfileState // Shared state pointer, tidak perlu sync
 
-	ProfileInfo         *domain.ProfileInfo
-	ProfileEdit         *profilemodel.ProfileEditOptions
-	ProfileShow         *profilemodel.ProfileShowOptions
-	OriginalProfileName string
-	OriginalProfileInfo *domain.ProfileInfo
+	// Minimal function dependencies
+	CheckNameUnique CheckNameUniqueFn
+	LoadSnapshot    LoadSnapshotFn
+}
 
-	DisplayProfileDetails        func()
-	CheckConfigurationNameUnique func(mode string) error
-	LoadSnapshotFromPath         func(absPath string) (*domain.ProfileInfo, error)
-	ResolveProfileEncryptionKey  func(existing string, allowPrompt bool) (key string, source string, err error)
+// New creates a new Runner instance
+func New(log applog.Logger, configDir string, state *profilemodel.ProfileState, checkName CheckNameUniqueFn, loadSnap LoadSnapshotFn) *Runner {
+	return &Runner{
+		Log:             log,
+		ConfigDir:       configDir,
+		State:           state,
+		CheckNameUnique: checkName,
+		LoadSnapshot:    loadSnap,
+	}
 }
 
 func (r *Runner) Run(mode string) error {
@@ -49,14 +60,12 @@ func (r *Runner) Run(mode string) error {
 			}
 		}
 
-		if r.ProfileInfo == nil || r.ProfileInfo.Name == "" {
+		if r.State.ProfileInfo == nil || r.State.ProfileInfo.Name == "" {
 			return fmt.Errorf(consts.ProfileErrProfileNameEmpty)
 		}
 
 		// Review
-		if r.DisplayProfileDetails != nil {
-			r.DisplayProfileDetails()
-		}
+		profiledisplay.DisplayProfileDetails(r.ConfigDir, r.State)
 
 		confirmSave, err := prompt.Confirm(consts.ProfilePromptConfirmSave, true)
 		if err != nil {
@@ -79,17 +88,13 @@ func (r *Runner) Run(mode string) error {
 
 	print.PrintSuccess(consts.ProfileWizardMsgConfirmAccepted)
 
-	if r.ResolveProfileEncryptionKey == nil {
-		return fmt.Errorf(consts.ProfileErrResolveEncryptionKeyUnavailable)
-	}
-
-	key, source, err := r.ResolveProfileEncryptionKey(r.ProfileInfo.EncryptionKey, true)
+	key, source, err := profilehelpers.ResolveProfileEncryptionKey(r.State.ProfileInfo.EncryptionKey, true)
 	if err != nil {
 		return fmt.Errorf(consts.ProfileErrGetEncryptionPasswordFailedFmt, err)
 	}
 	if r.Log != nil {
 		r.Log.WithField("Sumber Kunci", source).Debug(consts.ProfileLogEncryptionKeyObtained)
 	}
-	r.ProfileInfo.EncryptionKey = key
+	r.State.ProfileInfo.EncryptionKey = key
 	return nil
 }
