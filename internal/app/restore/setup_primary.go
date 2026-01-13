@@ -2,7 +2,7 @@
 // Deskripsi : Setup untuk restore primary database mode
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 6 Januari 2026
+// Last Modified : 14 Januari 2026
 package restore
 
 import (
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"sfdbtools/internal/app/restore/helpers"
 	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/shared/naming"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 )
@@ -143,8 +144,8 @@ func (s *Service) retryPrimaryDatabaseInput(initialErr error) error {
 			return initialErr
 		}
 
-		prefix := inferPrimaryPrefixFromTargetOrFile(s.RestorePrimaryOpts.TargetDB, s.RestorePrimaryOpts.File)
-		defaultClientCode := extractClientCodeFromDB(s.RestorePrimaryOpts.TargetDB, prefix)
+		prefix := naming.InferPrimaryPrefix(s.RestorePrimaryOpts.TargetDB, s.RestorePrimaryOpts.File)
+		defaultClientCode := naming.ExtractClientCode(s.RestorePrimaryOpts.TargetDB, prefix)
 
 		newClientCode, inErr := prompt.AskText(
 			"Masukkan client-code target (contoh: tes123_tes)",
@@ -155,7 +156,7 @@ func (s *Service) retryPrimaryDatabaseInput(initialErr error) error {
 			return fmt.Errorf("gagal mendapatkan nama database: %w", inErr)
 		}
 
-		s.RestorePrimaryOpts.TargetDB = buildPrimaryTargetDBFromClientCode(prefix, newClientCode)
+		s.RestorePrimaryOpts.TargetDB = naming.BuildPrimaryDBName(prefix, newClientCode)
 		s.Log.Infof("Target database: %s", s.RestorePrimaryOpts.TargetDB)
 
 		if vErr := helpers.ValidatePrimaryDatabaseName(s.RestorePrimaryOpts.TargetDB); vErr == nil {
@@ -199,7 +200,7 @@ func (s *Service) resolveTargetDatabasePrimary(_ context.Context) error {
 	}
 
 	defaultClientCode := extractDefaultClientCodeFromFile(s.RestorePrimaryOpts.File)
-	prefix := inferPrimaryPrefixFromTargetOrFile("", s.RestorePrimaryOpts.File)
+	prefix := naming.InferPrimaryPrefix("", s.RestorePrimaryOpts.File)
 
 	clientCode, err := prompt.AskText(
 		"Masukkan client-code target (contoh: tes123_tes)",
@@ -210,7 +211,7 @@ func (s *Service) resolveTargetDatabasePrimary(_ context.Context) error {
 		return fmt.Errorf("gagal mendapatkan client-code: %w", err)
 	}
 
-	s.RestorePrimaryOpts.TargetDB = buildPrimaryTargetDBFromClientCode(prefix, clientCode)
+	s.RestorePrimaryOpts.TargetDB = naming.BuildPrimaryDBName(prefix, clientCode)
 	s.Log.Infof("Target database: %s", s.RestorePrimaryOpts.TargetDB)
 	return nil
 }

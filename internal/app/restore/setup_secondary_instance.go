@@ -2,7 +2,7 @@
 // Deskripsi : Helper untuk penentuan instance pada restore secondary
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 14 Januari 2026
 package restore
 
 import (
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/shared/naming"
 	"sfdbtools/internal/ui/prompt"
 	"strings"
 )
@@ -103,7 +104,7 @@ func validateSecondaryInstanceName(primaryDB, inst string) error {
 	if inst == "" {
 		return fmt.Errorf("instance tidak boleh kosong")
 	}
-	target := secondaryDBName(primaryDB, inst)
+	target := naming.BuildSecondaryDBName(primaryDB, inst)
 	if !backupfile.IsValidDatabaseName(target) {
 		return fmt.Errorf("instance menghasilkan nama database tidak valid: %s", target)
 	}

@@ -2,7 +2,7 @@
 // Deskripsi : Validation functions untuk setup restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 6 Januari 2026
+// Last Modified : 14 Januari 2026
 package restore
 
 import (
@@ -12,28 +12,11 @@ import (
 	"sfdbtools/internal/app/restore/helpers"
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/naming"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"strings"
 )
-
-// validateFileExists memvalidasi keberadaan file
-func validateFileExists(filePath string) error {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return fmt.Errorf("file tidak ditemukan: %s", filePath)
-	} else if err != nil {
-		return fmt.Errorf("gagal membaca file: %w", err)
-	}
-	return nil
-}
-
-// validateFileExtension memvalidasi ekstensi file
-func validateFileExtension(filePath string, validExtensions []string, purpose string) error {
-	if !hasAnySuffix(filePath, validExtensions) {
-		return fmt.Errorf("%s ekstensi tidak didukung: %s", purpose, filePath)
-	}
-	return nil
-}
 
 // validateEncryptionKey memvalidasi encryption key terhadap file
 func validateEncryptionKey(filePath string, key string) error {
@@ -116,7 +99,7 @@ func validatePrimaryClientCodeInput(prefix string) func(interface{}) error {
 			return fmt.Errorf("client-code tidak boleh kosong")
 		}
 
-		candidate := buildPrimaryTargetDBFromClientCode(prefix, str)
+		candidate := naming.BuildPrimaryDBName(prefix, str)
 		if !helpers.IsPrimaryDatabaseName(candidate) {
 			return fmt.Errorf("client-code menghasilkan nama database primary yang tidak valid")
 		}
