@@ -1,8 +1,8 @@
-// File : pkg/fsops/fsops_check.go
+// File : internal/shared/fsops/check.go
 // Deskripsi : Helper functions untuk file dan directory existence checks
 // Author : Hadiyatna Muflihun
 // Tanggal : 11 November 2025
-// Last Modified : 11 November 2025
+// Last Modified : 14 Januari 2026
 
 package fsops
 
