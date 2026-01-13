@@ -58,19 +58,10 @@ func FilterDatabases(ctx context.Context, client *Client, options domain.FilterO
 	if len(options.IncludeDatabases) > 0 {
 		whitelist = append(whitelist, listx.ListTrimNonEmpty(options.IncludeDatabases)...)
 	}
-	// Remove duplicates from whitelist using map
+	// Remove duplicates from whitelist (case-insensitive), preserve order
 	var isFromFile bool
 	if len(whitelist) > 0 {
-		seen := make(map[string]bool)
-		uniqueWhitelist := make([]string, 0, len(whitelist))
-		for _, db := range whitelist {
-			dbLower := strings.ToLower(strings.TrimSpace(db))
-			if dbLower != "" && !seen[dbLower] {
-				seen[dbLower] = true
-				uniqueWhitelist = append(uniqueWhitelist, db)
-			}
-		}
-		whitelist = uniqueWhitelist
+		whitelist = listx.ListUnique(whitelist)
 		// Track if any came from file for warning purposes
 		isFromFile = len(whitelistFromFile) > 0
 	}
@@ -85,18 +76,9 @@ func FilterDatabases(ctx context.Context, client *Client, options domain.FilterO
 	if len(options.ExcludeDatabases) > 0 {
 		blacklist = append(blacklist, listx.ListTrimNonEmpty(options.ExcludeDatabases)...)
 	}
-	// Remove duplicates from blacklist using map
+	// Remove duplicates from blacklist (case-insensitive), preserve order
 	if len(blacklist) > 0 {
-		seen := make(map[string]bool)
-		uniqueBlacklist := make([]string, 0, len(blacklist))
-		for _, db := range blacklist {
-			dbLower := strings.ToLower(strings.TrimSpace(db))
-			if dbLower != "" && !seen[dbLower] {
-				seen[dbLower] = true
-				uniqueBlacklist = append(uniqueBlacklist, db)
-			}
-		}
-		blacklist = uniqueBlacklist
+		blacklist = listx.ListUnique(blacklist)
 	}
 
 	// 6. Validate whitelist - check if databases in whitelist exist on server

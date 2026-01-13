@@ -12,6 +12,7 @@ import (
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/listx"
+	"sfdbtools/internal/shared/naming"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 )
@@ -232,6 +233,9 @@ func (s *Selector) SelectDatabaseAndBuildList(ctx context.Context, client Databa
 			}
 
 			dbName := selectedDB + suffix
+			if suffix == consts.SuffixDmart {
+				dbName = naming.BuildCompanionDBName(selectedDB)
+			}
 			exists := listx.StringSliceContainsFold(allDatabases, dbName)
 			s.Log.Infof("Memeriksa keberadaan database companion: %s ...", dbName)
 			if exists {

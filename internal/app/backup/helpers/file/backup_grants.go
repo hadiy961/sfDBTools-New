@@ -1,12 +1,12 @@
 package file
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
 
 	"sfdbtools/internal/shared/compress"
 	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/fsops"
 )
 
 // GenerateGrantsFilename generate expected grants filename dari backup filename.
@@ -29,7 +29,7 @@ func AutoDetectGrantsFile(backupFile string) string {
 	expectedGrantsFile := GenerateGrantsFilename(basename)
 	expectedGrantsPath := filepath.Join(dir, expectedGrantsFile)
 
-	if _, err := os.Stat(expectedGrantsPath); err == nil {
+	if err := fsops.ValidateFileExists(expectedGrantsPath); err == nil {
 		return expectedGrantsPath
 	}
 
