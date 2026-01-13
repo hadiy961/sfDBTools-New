@@ -1,10 +1,10 @@
 package restorecmd
 
 import (
-	"fmt"
 	"sfdbtools/internal/app/restore"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/flags"
+	"sfdbtools/internal/cli/runner"
 
 	"github.com/spf13/cobra"
 )
@@ -33,14 +33,10 @@ Target secondary dibentuk dari client-code dan instance:
   # 2) Restore secondary dari primary (backup primary dulu)
 	sfdbtools db-restore secondary --from primary --client-code "adaro" --instance "training" --ticket "TICKET-123"`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if appdeps.Deps == nil {
-			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
-			return
-		}
-
-		if err := restore.ExecuteRestoreSecondaryCommand(cmd, appdeps.Deps); err != nil {
-			appdeps.Deps.Logger.Error("restore secondary gagal: " + err.Error())
-		}
+		runner.Run(cmd, func() error {
+			_ = restore.ExecuteRestoreSecondaryCommand(cmd, appdeps.Deps)
+			return nil
+		})
 	},
 }
 

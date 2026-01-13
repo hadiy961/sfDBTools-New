@@ -6,10 +6,10 @@
 package restorecmd
 
 import (
-	"fmt"
 	"sfdbtools/internal/app/restore"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/flags"
+	"sfdbtools/internal/cli/runner"
 
 	"github.com/spf13/cobra"
 )
@@ -42,15 +42,10 @@ PERINGATAN: Operasi ini bersifat DESTRUKTIF massal. Pastikan Anda memiliki backu
   # 4. Simulasi restore (Dry-Run) untuk mengecek isi file dump
   sfdbtools db-restore all --file "full_backup.sql" --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Pastikan dependencies tersedia
-		if appdeps.Deps == nil {
-			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
-			return
-		}
-
-		if err := restore.ExecuteRestoreAllCommand(cmd, appdeps.Deps); err != nil {
-			appdeps.Deps.Logger.Error("restore all gagal: " + err.Error())
-		}
+		runner.Run(cmd, func() error {
+			_ = restore.ExecuteRestoreAllCommand(cmd, appdeps.Deps)
+			return nil
+		})
 	},
 }
 

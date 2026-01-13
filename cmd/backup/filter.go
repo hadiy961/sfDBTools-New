@@ -7,8 +7,11 @@ package backupcmd
 
 import (
 	"fmt"
+	"sfdbtools/internal/app/backup"
 	defaultVal "sfdbtools/internal/cli/defaults"
+	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/flags"
+	"sfdbtools/internal/cli/runner"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/prompt"
@@ -36,9 +39,15 @@ Jika tidak ada database yang ditentukan lewat flag, mode interaktif (multi-selec
   # 3. Backup database spesifik digabung jadi satu file (Single-file)
 	sfdbtools db-backup filter --db "db_utama" --db "db_pendukung" --mode single-file`,
 	Run: func(cmd *cobra.Command, args []string) {
-		runBackupCommand(cmd, func() (string, error) {
-			return getBackupMode(cmd)
-		})
+		runner.RunResolved(cmd,
+			func() (string, error) {
+				return getBackupMode(cmd)
+			},
+			func(mode string) error {
+				_ = backup.ExecuteBackup(cmd, appdeps.Deps, mode)
+				return nil
+			},
+		)
 	},
 }
 

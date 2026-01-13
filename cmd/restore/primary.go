@@ -6,10 +6,10 @@
 package restorecmd
 
 import (
-	"fmt"
 	"sfdbtools/internal/app/restore"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/flags"
+	"sfdbtools/internal/cli/runner"
 
 	"github.com/spf13/cobra"
 )
@@ -43,15 +43,10 @@ Fitur:
 	# 4. Restore dan apply user grants dari file
 	sfdbtools db-restore primary --file "dbsf_nbc_client.sql" --client-code "tes123_tes" --grants-file "users.sql" --ticket "TICKET-123"`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Pastikan dependencies tersedia
-		if appdeps.Deps == nil {
-			fmt.Println("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
-			return
-		}
-
-		if err := restore.ExecuteRestorePrimaryCommand(cmd, appdeps.Deps); err != nil {
-			appdeps.Deps.Logger.Error("restore primary gagal: " + err.Error())
-		}
+		runner.Run(cmd, func() error {
+			_ = restore.ExecuteRestorePrimaryCommand(cmd, appdeps.Deps)
+			return nil
+		})
 	},
 }
 
