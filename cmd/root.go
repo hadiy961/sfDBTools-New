@@ -19,6 +19,7 @@ import (
 	scriptcmd "sfdbtools/cmd/script"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/shared/runtimecfg"
+	"sfdbtools/internal/shared/sanitize"
 	"sfdbtools/internal/ui/print"
 	"strings"
 
@@ -60,7 +61,7 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 
 		// Log bahwa perintah akan dieksekusi, termasuk argumen (tanpa membocorkan secret).
 		bin := filepath.Base(os.Args[0])
-		argsSafe := sanitizeArgs(os.Args[1:])
+		argsSafe := sanitize.Args(os.Args[1:])
 		argLine := strings.Join(argsSafe, " ")
 		if strings.TrimSpace(argLine) == "" {
 			argLine = "-"
