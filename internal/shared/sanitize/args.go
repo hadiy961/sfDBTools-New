@@ -1,20 +1,18 @@
-// File : cmd/args_sanitize.go
+// File : internal/shared/sanitize/args.go
 // Deskripsi : Sanitizer argumen CLI untuk logging (masking nilai sensitif)
 // Author : Hadiyatna Muflihun
-// Tanggal : 2 Januari 2026
-// Last Modified : 2 Januari 2026
+// Tanggal : 13 Januari 2026
+// Last Modified : 13 Januari 2026
 
-package cmd
+package sanitize
 
-import (
-	"strings"
-)
+import "strings"
 
 const maskedValue = "******"
 
-// sanitizeArgs mengembalikan salinan args dengan nilai sensitif dimasking.
+// Args mengembalikan salinan args dengan nilai sensitif dimasking.
 // Tujuan: argumen bisa dicatat di log tanpa membocorkan password/key/token.
-func sanitizeArgs(args []string) []string {
+func Args(args []string) []string {
 	out := make([]string, 0, len(args))
 	maskNext := false
 
