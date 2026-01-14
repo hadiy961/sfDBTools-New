@@ -1,5 +1,5 @@
-// File : internal/app/profile/validation/validator.go
-// Deskripsi : Centralized validation logic untuk profile module (P1 improvement)
+// File : internal/app/profile/validation/input.go
+// Deskripsi : Validasi input untuk wizard prompts
 // Author : Hadiyatna Muflihun
 // Tanggal : 14 Januari 2026
 // Last Modified : 14 Januari 2026
@@ -9,114 +9,11 @@ package validation
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"unicode"
 
 	"sfdbtools/internal/app/profile/shared"
-	"sfdbtools/internal/domain"
 )
-
-// =============================================================================
-// Profile Info Validation
-// =============================================================================
-
-// ValidateProfileInfo melakukan validasi komprehensif terhadap ProfileInfo
-func ValidateProfileInfo(p *domain.ProfileInfo) error {
-	if p == nil {
-		return shared.ErrProfileNil
-	}
-	if strings.TrimSpace(p.Name) == "" {
-		return shared.ErrProfileNameEmpty
-	}
-	if err := ValidateDBInfo(&p.DBInfo); err != nil {
-		return fmt.Errorf("validasi db info gagal: %w", err)
-	}
-	if p.SSHTunnel.Enabled {
-		if strings.TrimSpace(p.SSHTunnel.Host) == "" {
-			return shared.ErrSSHTunnelHostEmpty
-		}
-	}
-	return nil
-}
-
-// ValidateDBInfo melakukan validasi terhadap DBInfo
-func ValidateDBInfo(db *domain.DBInfo) error {
-	if db == nil {
-		return shared.ErrDBInfoNil
-	}
-	if strings.TrimSpace(db.Host) == "" {
-		return shared.ErrDBHostEmpty
-	}
-	if db.Port <= 0 || db.Port > 65535 {
-		return shared.DBPortInvalidError(db.Port)
-	}
-	if strings.TrimSpace(db.User) == "" {
-		return shared.ErrDBUserEmpty
-	}
-	// Password bisa kosong untuk beberapa auth method
-	return nil
-}
-
-// =============================================================================
-// SSH Validation
-// =============================================================================
-
-// ValidateSSHTunnel validates SSH tunnel configuration
-func ValidateSSHTunnel(ssh *domain.SSHTunnelConfig) error {
-	if ssh == nil {
-		return nil // SSH optional
-	}
-	if !ssh.Enabled {
-		return nil
-	}
-	if strings.TrimSpace(ssh.Host) == "" {
-		return shared.ErrSSHHostEmpty
-	}
-	if ssh.Port <= 0 || ssh.Port > 65535 {
-		return shared.SSHPortInvalidError(ssh.Port)
-	}
-	// Validate identity file if provided
-	if ssh.IdentityFile != "" {
-		if err := ValidateSSHIdentityFile(ssh.IdentityFile); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// ValidateSSHIdentityFile validates SSH identity file accessibility
-func ValidateSSHIdentityFile(path string) error {
-	p := strings.TrimSpace(path)
-	if p == "" {
-		return nil // Optional
-	}
-	// Expand home dir
-	if strings.HasPrefix(p, "~/") {
-		home, err := os.UserHomeDir()
-		if err == nil {
-			p = filepath.Join(home, p[2:])
-		}
-	}
-	info, err := os.Stat(p)
-	if err != nil {
-		return shared.SSHIdentityFileError(p, fmt.Sprintf("tidak bisa diakses: %v", err))
-	}
-	if info.IsDir() {
-		return shared.SSHIdentityFileError(p, "path adalah direktori")
-	}
-	// Try to read (check permission)
-	f, err := os.Open(p)
-	if err != nil {
-		return shared.SSHIdentityFileError(p, fmt.Sprintf("tidak bisa dibaca: %v", err))
-	}
-	f.Close()
-	return nil
-}
-
-// =============================================================================
-// Input Validation (untuk wizard prompts)
-// =============================================================================
 
 // ValidateNoLeadingTrailingSpace checks input tidak ada spasi di awal/akhir
 func ValidateNoLeadingTrailingSpace(input string, fieldName string) error {
@@ -190,10 +87,6 @@ func ValidateFileAccessible(path string, fieldName string) error {
 	}
 	return nil
 }
-
-// =============================================================================
-// Combined Validators (chains multiple validations)
-// =============================================================================
 
 // ValidateConfigName validates nama konfigurasi profile
 func ValidateConfigName(name string) error {
