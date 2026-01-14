@@ -17,7 +17,7 @@ import (
 
 func (e *Executor) CreateProfile() error {
 	isInteractive := e.isInteractiveMode()
-	if e.Log != nil && !isInteractive {
+	if !isInteractive {
 		e.Log.Info(consts.ProfileLogCreateStarted)
 	}
 
@@ -31,17 +31,17 @@ func (e *Executor) CreateProfile() error {
 				return err
 			}
 		} else if !skipWizard {
-			if e.Log != nil {
+			{
 				e.Log.Info(consts.ProfileLogModeNonInteractiveEnabled)
 				e.Log.Info(consts.ProfileLogValidatingParams)
 			}
 			if err := profilevalidation.ValidateProfileInfo(e.State.ProfileInfo); err != nil {
-				if e.Log != nil {
+				{
 					e.Log.Errorf(consts.ProfileLogValidationFailedFmt, err)
 				}
 				return err
 			}
-			if e.Log != nil {
+			{
 				e.Log.Info(consts.ProfileLogValidationSuccess)
 			}
 			if !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) {

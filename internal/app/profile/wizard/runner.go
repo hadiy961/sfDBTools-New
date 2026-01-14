@@ -6,11 +6,11 @@
 package wizard
 
 import (
-	profilehelpers "sfdbtools/internal/app/profile/helpers"
 	"fmt"
+	profilehelpers "sfdbtools/internal/app/profile/helpers"
 
-	profilemodel "sfdbtools/internal/app/profile/model"
 	profiledisplay "sfdbtools/internal/app/profile/display"
+	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/consts"
@@ -35,6 +35,9 @@ type Runner struct {
 
 // New creates a new Runner instance
 func New(log applog.Logger, configDir string, state *profilemodel.ProfileState, checkName CheckNameUniqueFn, loadSnap LoadSnapshotFn) *Runner {
+	if log == nil {
+		log = applog.NullLogger()
+	}
 	return &Runner{
 		Log:             log,
 		ConfigDir:       configDir,
@@ -45,9 +48,7 @@ func New(log applog.Logger, configDir string, state *profilemodel.ProfileState, 
 }
 
 func (r *Runner) Run(mode string) error {
-	if r.Log != nil {
-		r.Log.Info(consts.ProfileWizardLogStarted)
-	}
+	r.Log.Info(consts.ProfileWizardLogStarted)
 
 	for {
 		if mode == consts.ProfileModeEdit {
@@ -92,9 +93,7 @@ func (r *Runner) Run(mode string) error {
 	if err != nil {
 		return fmt.Errorf(consts.ProfileErrGetEncryptionPasswordFailedFmt, err)
 	}
-	if r.Log != nil {
-		r.Log.WithField("Sumber Kunci", source).Debug(consts.ProfileLogEncryptionKeyObtained)
-	}
+	r.Log.WithField("Sumber Kunci", source).Debug(consts.ProfileLogEncryptionKeyObtained)
 	r.State.ProfileInfo.EncryptionKey = key
 	return nil
 }

@@ -68,9 +68,7 @@ func (e *Executor) ShowProfile() error {
 		}
 		snap, err := e.Ops.LoadSnapshotFromPath(abs)
 		if err != nil {
-			if e.Log != nil {
-				e.Log.Warn(fmt.Sprintf(consts.ProfileLogLoadConfigDetailsFailedFmt, err))
-			}
+			e.Log.Warn(fmt.Sprintf(consts.ProfileLogLoadConfigDetailsFailedFmt, err))
 			return err
 		}
 		e.State.OriginalProfileInfo = snap

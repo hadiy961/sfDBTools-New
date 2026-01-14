@@ -25,7 +25,7 @@ import (
 
 func (e *Executor) SaveProfile(mode string) error {
 	isInteractive := e.isInteractiveMode()
-	if e.Log != nil && !isInteractive {
+	if !isInteractive {
 		e.Log.Info(consts.ProfileLogStartSave)
 	}
 
@@ -66,10 +66,8 @@ func (e *Executor) SaveProfile(mode string) error {
 		print.PrintWarning(consts.ProfileSaveWarnSavingWithInvalidConn)
 	} else {
 		c.Close()
-		if e.Log != nil {
-			if !isInteractive {
-				e.Log.Info(consts.ProfileLogDBConnectionValid)
-			}
+		if !isInteractive {
+			e.Log.Info(consts.ProfileLogDBConnectionValid)
 		}
 	}
 

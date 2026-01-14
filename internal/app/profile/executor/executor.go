@@ -72,6 +72,9 @@ type Executor struct {
 
 // New creates a new Executor instance
 func New(log applog.Logger, configDir string, state *profilemodel.ProfileState, ops ProfileOps) *Executor {
+	if log == nil {
+		log = applog.NullLogger()
+	}
 	return &Executor{
 		Log:       log,
 		ConfigDir: configDir,

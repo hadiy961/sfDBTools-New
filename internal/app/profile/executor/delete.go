@@ -54,12 +54,10 @@ func (e *Executor) collectValidPathsFromFlags(profiles []string) (validPaths []s
 func (e *Executor) deletePaths(paths []string, logSuccessFmt string, showErrorOnFail bool, logFailAsError bool) {
 	for _, p := range paths {
 		if err := fsops.RemoveFile(p); err != nil {
-			if e.Log != nil {
-				if logFailAsError {
-					e.Log.Error(fmt.Sprintf(consts.ProfileDeleteFailedFmt, p, err))
-				} else {
-					e.Log.Errorf(consts.ProfileLogDeleteFileFailedFmt, p, err)
-				}
+			if logFailAsError {
+				e.Log.Error(fmt.Sprintf(consts.ProfileDeleteFailedFmt, p, err))
+			} else {
+				e.Log.Errorf(consts.ProfileLogDeleteFileFailedFmt, p, err)
 			}
 			if showErrorOnFail {
 				print.PrintError(fmt.Sprintf(consts.ProfileDeleteFailedFmt, p, err))
@@ -67,9 +65,7 @@ func (e *Executor) deletePaths(paths []string, logSuccessFmt string, showErrorOn
 			continue
 		}
 
-		if e.Log != nil {
-			e.Log.Info(fmt.Sprintf(logSuccessFmt, p))
-		}
+		e.Log.Info(fmt.Sprintf(logSuccessFmt, p))
 		// UI success selalu pakai message yang sama seperti sebelumnya.
 		print.PrintSuccess(fmt.Sprintf(consts.ProfileDeleteDeletedFmt, p))
 	}

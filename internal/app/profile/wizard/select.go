@@ -2,7 +2,7 @@
 // Deskripsi : Pemilihan profile secara interaktif
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 14 Januari 2026
 
 package wizard
 
@@ -25,8 +25,6 @@ func (r *Runner) promptSelectExistingConfig() error {
 	r.State.OriginalProfileName = originalName
 	r.State.OriginalProfileInfo = snapshot
 
-	if r.Log != nil {
-		r.Log.Debug(fmt.Sprintf(consts.ProfileLogConfigLoadedFromFmt, info.Path, info.Name))
-	}
+	r.Log.Debug(fmt.Sprintf(consts.ProfileLogConfigLoadedFromFmt, info.Path, info.Name))
 	return nil
 }

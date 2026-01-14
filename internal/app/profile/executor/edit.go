@@ -21,7 +21,7 @@ import (
 func (e *Executor) EditProfile() error {
 	for {
 		if e.State.ProfileEdit != nil && e.State.ProfileEdit.Interactive {
-			if e.Log != nil {
+			{
 				e.Log.Info(consts.ProfileLogModeInteractiveEnabled)
 			}
 			if e.Ops == nil {
@@ -33,18 +33,18 @@ func (e *Executor) EditProfile() error {
 			}
 			if err := runner.Run(consts.ProfileModeEdit); err != nil {
 				if err == validation.ErrUserCancelled {
-					if e.Log != nil {
+					{
 						e.Log.Warn(consts.ProfileLogEditCancelledByUser)
 					}
 					return validation.ErrUserCancelled
 				}
-				if e.Log != nil {
+				{
 					e.Log.Warn(fmt.Sprintf(consts.ProfileLogEditFailedFmt, err))
 				}
 				return err
 			}
 		} else {
-			if e.Log != nil {
+			{
 				e.Log.Info(consts.ProfileLogModeNonInteractiveShort)
 			}
 			if strings.TrimSpace(e.State.OriginalProfileName) == "" {
@@ -67,7 +67,7 @@ func (e *Executor) EditProfile() error {
 			e.State.ProfileInfo.Path = absPath
 			e.State.OriginalProfileName = name
 
-			if e.Log != nil {
+			{
 				e.Log.Info(consts.ProfileLogConfigFileFoundTryLoad)
 			}
 			if e.Ops != nil {
@@ -77,7 +77,7 @@ func (e *Executor) EditProfile() error {
 					e.State.OriginalProfileInfo = snap
 				}
 			}
-			if e.Log != nil {
+			{
 				e.Log.Info(consts.ProfileLogConfigFileLoaded)
 			}
 
@@ -85,7 +85,7 @@ func (e *Executor) EditProfile() error {
 			shared.ApplyDBOverrides(e.State.ProfileInfo, overrideDB)
 			shared.ApplySSHOverrides(e.State.ProfileInfo, overrideSSH)
 
-			if e.Log != nil {
+			{
 				e.Log.Info(consts.ProfileLogValidatingParams)
 			}
 			if e.State.ProfileEdit != nil && strings.TrimSpace(e.State.ProfileEdit.NewName) != "" {
@@ -100,7 +100,7 @@ func (e *Executor) EditProfile() error {
 			}
 
 			if err := profilevalidation.ValidateProfileInfo(e.State.ProfileInfo); err != nil {
-				if e.Log != nil {
+				{
 					e.Log.Errorf(consts.ProfileLogValidationFailedFmt, err)
 				}
 				return err
@@ -136,7 +136,7 @@ func (e *Executor) EditProfile() error {
 		break
 	}
 
-	if e.Log != nil {
+	{
 		if !e.isInteractiveMode() {
 			e.Log.Info(consts.ProfileLogWizardInteractiveFinished)
 		}
