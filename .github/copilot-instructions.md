@@ -86,3 +86,4 @@ Ikuti panduan berikut untuk menjaga kualitas dan keberlanjutan proyek:
 * **Review Filosofis**: Dorong proses *code review* yang berfokus pada kepatuhan terhadap filosofi desain dan kualitas kode.
 * **Bahasa Dokumentasi**: Gunakan **Bahasa Indonesia** untuk penulisan komentar di dalam kode dan dokumentasi teknis lainnya.
 * **Metadata File**: Perbarui tanggal modifikasi terakhir (*last modified date*) pada bagian komentar *header* di setiap file setiap kali melakukan perubahan.
+* **No unit test**: Proyek ini tidak menggunakan unit test; fokus pada integrasi dan pengujian fungsional.

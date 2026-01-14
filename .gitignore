@@ -9,3 +9,5 @@ logs/dbscan/dbscan_background.lock
 /backup/
 /logs/
 /bash/
+/docs/improvement
+/docs/refactor
