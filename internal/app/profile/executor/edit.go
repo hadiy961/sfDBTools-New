@@ -123,17 +123,15 @@ func (e *Executor) EditProfile() error {
 		}
 
 		if err := e.SaveProfile(consts.ProfileSaveModeEdit); err != nil {
-			if err == validation.ErrConnectionFailedRetry {
-				retry, err2 := e.handleConnectionFailedRetry(consts.ProfileMsgRetryEdit, consts.ProfileMsgEditCancelled)
-				if err2 != nil {
-					return err2
-				}
-				if retry {
-					continue
-				}
-				return validation.ErrUserCancelled
+			retry, err2 := e.handleConnectionFailedRetryIfNeeded(err, consts.ProfileMsgRetryEdit, consts.ProfileMsgEditCancelled)
+			if err2 != nil {
+				return err2
 			}
-			return err
+			if retry {
+				continue
+			}
+			// Defensive: seharusnya tidak pernah sampai sini (cancel return error).
+			return validation.ErrUserCancelled
 		}
 		break
 	}
