@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi tampilkan profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 9 Januari 2026
+// Last Modified : 14 Januari 2026
 package executor
 
 import (
@@ -43,7 +43,7 @@ func (e *Executor) ShowProfile() error {
 			revealPassword = e.State.ProfileShow.RevealPassword
 		}
 
-		if e.Ops.PromptSelectExistingConfig == nil {
+		if e.Ops == nil {
 			return fmt.Errorf(consts.ProfileErrPromptSelectorUnavailable)
 		}
 		if err := e.Ops.PromptSelectExistingConfig(); err != nil {
@@ -55,7 +55,7 @@ func (e *Executor) ShowProfile() error {
 		e.State.ProfileShow.Path = e.State.ProfileInfo.Path
 		e.State.ProfileShow.RevealPassword = revealPassword
 	} else {
-		abs, name, err := profilehelpers.ResolveConfigPath(e.State.ProfileShow.Path)
+		abs, name, err := e.resolveProfilePath(e.State.ProfileShow.Path)
 		if err != nil {
 			return err
 		}
@@ -63,16 +63,17 @@ func (e *Executor) ShowProfile() error {
 			return fmt.Errorf(consts.ProfileErrConfigFileNotFoundFmt, abs)
 		}
 		e.State.ProfileInfo.Name = name
-		if e.Ops.LoadSnapshotFromPath != nil {
-			snap, err := e.Ops.LoadSnapshotFromPath(abs)
-			if err != nil {
-				if e.Log != nil {
-					e.Log.Warn(fmt.Sprintf(consts.ProfileLogLoadConfigDetailsFailedFmt, err))
-				}
-				return err
-			}
-			e.State.OriginalProfileInfo = snap
+		if e.Ops == nil {
+			return fmt.Errorf(consts.ProfileErrLoadSnapshotUnavailable)
 		}
+		snap, err := e.Ops.LoadSnapshotFromPath(abs)
+		if err != nil {
+			if e.Log != nil {
+				e.Log.Warn(fmt.Sprintf(consts.ProfileLogLoadConfigDetailsFailedFmt, err))
+			}
+			return err
+		}
+		e.State.OriginalProfileInfo = snap
 	}
 
 	if e.State.OriginalProfileInfo == nil || e.State.OriginalProfileInfo.Path == "" {
@@ -87,17 +88,21 @@ func (e *Executor) ShowProfile() error {
 		e.State.ProfileInfo.DBInfo = e.State.OriginalProfileInfo.DBInfo
 	}
 
-	if c, err := shared.ConnectWithProfile(e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
-		info := shared.DescribeConnectError(err)
-		print.PrintWarning("⚠️  " + info.Title)
-		if strings.TrimSpace(info.Detail) != "" {
-			print.PrintWarning("Detail (ringkas): " + info.Detail)
+	// Mode non-interaktif: jangan coba konek DB dan jangan print warning/hints.
+	// Tujuannya agar output `profile show` stabil untuk scripting/pipeline.
+	if isInteractive {
+		if c, err := shared.ConnectWithProfile(e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
+			info := shared.DescribeConnectError(err)
+			print.PrintWarning("⚠️  " + info.Title)
+			if strings.TrimSpace(info.Detail) != "" {
+				print.PrintWarning("Detail (ringkas): " + info.Detail)
+			}
+			for _, h := range info.Hints {
+				print.PrintInfo("Hint: " + h)
+			}
+		} else {
+			c.Close()
 		}
-		for _, h := range info.Hints {
-			print.PrintInfo("Hint: " + h)
-		}
-	} else {
-		c.Close()
 	}
 
 	// Non-interaktif: --reveal-password tidak boleh prompt.
@@ -131,8 +136,6 @@ func (e *Executor) ShowProfile() error {
 		)
 	}
 
-	if profiledisplay.DisplayProfileDetails != nil {
-		profiledisplay.DisplayProfileDetails(e.ConfigDir, e.State)
-	}
+	profiledisplay.DisplayProfileDetails(e.ConfigDir, e.State)
 	return nil
 }

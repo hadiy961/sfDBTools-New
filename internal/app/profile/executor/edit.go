@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi edit profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 6 Januari 2026
+// Last Modified : 14 Januari 2026
 
 package executor
 
@@ -16,7 +16,6 @@ import (
 	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
-	profilehelpers "sfdbtools/internal/app/profile/helpers"
 )
 
 func (e *Executor) EditProfile() error {
@@ -25,7 +24,14 @@ func (e *Executor) EditProfile() error {
 			if e.Log != nil {
 				e.Log.Info(consts.ProfileLogModeInteractiveEnabled)
 			}
-			if err := e.Ops.NewWizard().Run(consts.ProfileModeEdit); err != nil {
+			if e.Ops == nil {
+				return fmt.Errorf(consts.ProfileErrWizardRunnerUnavailable)
+			}
+			runner := e.Ops.NewWizard()
+			if runner == nil {
+				return fmt.Errorf(consts.ProfileErrWizardRunnerUnavailable)
+			}
+			if err := runner.Run(consts.ProfileModeEdit); err != nil {
 				if err == validation.ErrUserCancelled {
 					if e.Log != nil {
 						e.Log.Warn(consts.ProfileLogEditCancelledByUser)
@@ -48,7 +54,7 @@ func (e *Executor) EditProfile() error {
 			overrideDB := e.State.ProfileInfo.DBInfo
 			overrideSSH := e.State.ProfileInfo.SSHTunnel
 
-			absPath, name, err := profilehelpers.ResolveConfigPath(e.State.OriginalProfileName)
+			absPath, name, err := e.resolveProfilePath(e.State.OriginalProfileName)
 			if err != nil {
 				return err
 			}
@@ -64,7 +70,7 @@ func (e *Executor) EditProfile() error {
 			if e.Log != nil {
 				e.Log.Info(consts.ProfileLogConfigFileFoundTryLoad)
 			}
-			if e.Ops.LoadSnapshotFromPath != nil {
+			if e.Ops != nil {
 				if snap, err := e.Ops.LoadSnapshotFromPath(absPath); err != nil {
 					print.PrintWarning(fmt.Sprintf(consts.ProfileWarnLoadFileContentFailedProceedFmt, absPath, err))
 				} else {
@@ -93,21 +99,20 @@ func (e *Executor) EditProfile() error {
 				e.State.ProfileInfo.Name = newName
 			}
 
-			if profilevalidation.ValidateProfileInfo != nil {
-				if err := profilevalidation.ValidateProfileInfo(e.State.ProfileInfo); err != nil {
-					if e.Log != nil {
-						e.Log.Errorf(consts.ProfileLogValidationFailedFmt, err)
-					}
-					return err
+			if err := profilevalidation.ValidateProfileInfo(e.State.ProfileInfo); err != nil {
+				if e.Log != nil {
+					e.Log.Errorf(consts.ProfileLogValidationFailedFmt, err)
 				}
+				return err
 			}
 		}
 
-		if e.Ops.CheckConfigurationNameUnique != nil {
-			if err := e.Ops.CheckConfigurationNameUnique(consts.ProfileModeEdit); err != nil {
-				print.PrintError(err.Error())
-				return err
-			}
+		if e.Ops == nil {
+			return fmt.Errorf(consts.ProfileErrWizardRunnerUnavailable)
+		}
+		if err := e.Ops.CheckConfigurationNameUnique(consts.ProfileModeEdit); err != nil {
+			print.PrintError(err.Error())
+			return err
 		}
 
 		// Jika user memilih untuk merubah kunci enkripsi (rotasi), gunakan key baru saat save.
