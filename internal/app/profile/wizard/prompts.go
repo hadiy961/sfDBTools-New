@@ -40,8 +40,8 @@ func (r *Runner) promptDBConfigName(mode string) error {
 		}
 
 		r.State.ProfileInfo.Name = strings.TrimSpace(configName)
-		if r.CheckNameUnique != nil {
-			if err = r.CheckNameUnique(mode); err != nil {
+		if r.Validator != nil {
+			if err = r.Validator.CheckNameUnique(mode); err != nil {
 				print.PrintError(err.Error())
 				continue
 			}

@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"strings"
 
+	profiledisplay "sfdbtools/internal/app/profile/display"
 	profilehelper "sfdbtools/internal/app/profile/helpers"
 	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/app/profile/shared"
-	profiledisplay "sfdbtools/internal/app/profile/display"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
@@ -47,10 +47,10 @@ func (r *Runner) runEditFlow() error {
 		if !fsops.PathExists(absPath) {
 			return fmt.Errorf(consts.ProfileErrConfigFileNotFoundFmt, absPath)
 		}
-		if r.LoadSnapshot == nil {
+		if r.Loader == nil {
 			return fmt.Errorf(consts.ProfileErrLoadSnapshotUnavailable)
 		}
-		snap, err := r.LoadSnapshot(absPath)
+		snap, err := r.Loader.LoadSnapshot(absPath)
 		if err != nil {
 			return err
 		}

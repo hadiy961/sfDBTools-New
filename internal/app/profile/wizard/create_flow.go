@@ -26,8 +26,8 @@ func (r *Runner) runCreateFlow(mode string) error {
 		}
 	} else {
 		r.State.ProfileInfo.Name = shared.TrimProfileSuffix(r.State.ProfileInfo.Name)
-		if r.CheckNameUnique != nil {
-			if err := r.CheckNameUnique(mode); err != nil {
+		if r.Validator != nil {
+			if err := r.Validator.CheckNameUnique(mode); err != nil {
 				print.PrintError(err.Error())
 				// Jika nama dari flag/env ternyata bentrok, minta user input nama baru.
 				if err2 := r.promptDBConfigName(mode); err2 != nil {
