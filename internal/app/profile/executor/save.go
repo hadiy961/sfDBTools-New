@@ -2,7 +2,7 @@
 // Deskripsi : Simpan profile ke file (terenkripsi)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 9 Januari 2026
+// Last Modified : 14 Januari 2026
 
 package executor
 
@@ -73,14 +73,11 @@ func (e *Executor) SaveProfile(mode string) error {
 		}
 	}
 
-	if e.Ops.FormatConfigToINI == nil {
+	if e.Ops == nil {
 		return fmt.Errorf(consts.ProfileErrFormatINIUnavailable)
 	}
 	iniContent := e.Ops.FormatConfigToINI()
 
-	if profilehelpers.ResolveProfileEncryptionKey == nil {
-		return fmt.Errorf(consts.ProfileErrResolveEncryptionKeyUnavailable)
-	}
 	key, _, err := profilehelpers.ResolveProfileEncryptionKey(e.State.ProfileInfo.EncryptionKey, isInteractive)
 	if err != nil {
 		return fmt.Errorf(consts.ProfileErrEncryptionKeyUnavailableFmt, err)

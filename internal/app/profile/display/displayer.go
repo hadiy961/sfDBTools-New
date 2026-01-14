@@ -206,3 +206,12 @@ func (d *Displayer) printChangeSummary() {
 
 	table.Render([]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderBefore, consts.ProfileDisplayTableHeaderAfter}, rows)
 }
+
+// DisplayProfileDetails shows profile details
+func DisplayProfileDetails(configDir string, state *profilemodel.ProfileState) {
+	d := &Displayer{
+		ConfigDir: configDir,
+		State:     state,
+	}
+	d.DisplayProfileDetails()
+}

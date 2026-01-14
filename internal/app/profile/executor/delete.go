@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi hapus profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 14 Januari 2026
 
 package executor
 
@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	profilehelpers "sfdbtools/internal/app/profile/helpers"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/validation"
@@ -37,7 +36,7 @@ func (e *Executor) collectValidPathsFromFlags(profiles []string) (validPaths []s
 			continue
 		}
 
-		absPath, name, err := profilehelpers.ResolveConfigPath(p)
+		absPath, name, err := e.resolveProfilePath(p)
 		if err != nil {
 			return nil, nil, err
 		}

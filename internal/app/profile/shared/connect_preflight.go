@@ -88,3 +88,17 @@ const (
 func ProfileConnectTimeout() time.Duration {
 	return defaultProfileConnectTimeout
 }
+
+// EffectiveDBInfo mengembalikan DBInfo yang efektif untuk koneksi.
+// Jika SSH tunnel aktif dan sudah memiliki ResolvedLocalPort, koneksi diarahkan ke localhost.
+func EffectiveDBInfo(profile *domain.ProfileInfo) domain.DBInfo {
+	if profile == nil {
+		return domain.DBInfo{}
+	}
+	info := profile.DBInfo
+	if profile.SSHTunnel.Enabled && profile.SSHTunnel.ResolvedLocalPort > 0 {
+		info.Host = "127.0.0.1"
+		info.Port = profile.SSHTunnel.ResolvedLocalPort
+	}
+	return info
+}

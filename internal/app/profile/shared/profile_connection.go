@@ -9,6 +9,7 @@ package shared
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -18,6 +19,8 @@ import (
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/progress"
+
+	"github.com/mattn/go-isatty"
 )
 
 // ConnectWithProfile membuat koneksi database menggunakan ProfileInfo.
@@ -34,7 +37,8 @@ func ConnectWithProfile(profile *domain.ProfileInfo, initialDB string) (*databas
 	}
 
 	// Spinner message: tampilkan mode koneksi (direct vs SSH tunnel)
-	quiet := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
+	// Non-interaktif (bukan TTY) diperlakukan sama seperti quiet untuk mencegah output spinner merusak pipeline.
+	quiet := runtimecfg.IsQuiet() || runtimecfg.IsDaemon() || !isatty.IsTerminal(os.Stdin.Fd()) || !isatty.IsTerminal(os.Stdout.Fd())
 
 	name := strings.TrimSpace(profile.Name)
 	if name == "" {
@@ -121,4 +125,12 @@ func ConnectWithProfile(profile *domain.ProfileInfo, initialDB string) (*databas
 	}
 
 	return client, nil
+}
+
+// TrimProfileSuffix menghapus suffix ekstensi profile (.cnf/.enc) dari nama jika ada.
+func TrimProfileSuffix(name string) string {
+	n := strings.TrimSpace(name)
+	n = strings.TrimSuffix(n, consts.ExtEnc)
+	n = strings.TrimSuffix(n, consts.ExtCnf)
+	return n
 }

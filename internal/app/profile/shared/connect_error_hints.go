@@ -2,7 +2,7 @@
 // Deskripsi : Helper untuk merangkum error koneksi DB/SSH dengan hint yang actionable (shared)
 // Author : Hadiyatna Muflihun
 // Tanggal : 9 Januari 2026
-// Last Modified : 13 Januari 2026
+// Last Modified : 14 Januari 2026
 
 package shared
 
@@ -52,9 +52,10 @@ func DescribeConnectError(err error) ConnectErrorInfo {
 	if isTimeoutError(err) {
 		t := ProfileConnectTimeout()
 		label := "koneksi"
-		if info.Kind == ConnectErrorKindSSH {
+		switch info.Kind {
+		case ConnectErrorKindSSH:
 			label = "SSH"
-		} else if info.Kind == ConnectErrorKindDB {
+		case ConnectErrorKindDB:
 			label = "database"
 		}
 		info.Hints = append(info.Hints, fmt.Sprintf("Timeout %s (batas: %s). Jika jaringan lambat/VPN putus, cek konektivitas dan coba lagi.", label, formatDurationShort(t)))
