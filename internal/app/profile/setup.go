@@ -14,13 +14,13 @@ import (
 )
 
 // filePathInConfigDir membangun absolute path di dalam config dir untuk nama file konfigurasi yang diberikan.
-func (s *Service) filePathInConfigDir(name string) string {
+func (s *executorOps) filePathInConfigDir(name string) string {
 	cfgDir := s.Config.ConfigDir.DatabaseProfile
 	return filepath.Join(cfgDir, shared.BuildProfileFileName(name))
 }
 
 // loadSnapshotFromPath membaca file terenkripsi, mencoba dekripsi, parse, dan mengisi OriginalProfileInfo.
-func (s *Service) loadSnapshotFromPath(absPath string) error {
+func (s *executorOps) loadSnapshotFromPath(absPath string) error {
 	key := ""
 	if s.State.ProfileInfo != nil {
 		key = s.State.ProfileInfo.EncryptionKey
@@ -40,7 +40,7 @@ func (s *Service) loadSnapshotFromPath(absPath string) error {
 }
 
 // formatConfigToINI mengubah struct DBConfigInfo menjadi format string INI.
-func (s *Service) formatConfigToINI() string {
+func (s *executorOps) formatConfigToINI() string {
 	// [client] adalah header standar untuk file my.cnf
 	content := `[client]
 host=%s

@@ -2,7 +2,7 @@
 // Deskripsi : Pemilihan profile secara interaktif (shared untuk show/edit)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 14 Januari 2026
 
 package profile
 
@@ -12,7 +12,7 @@ import (
 	"sfdbtools/internal/shared/consts"
 )
 
-func (s *Service) promptSelectExistingConfig() error {
+func (s *executorOps) promptSelectExistingConfig() error {
 	info, originalName, snapshot, err := profilehelper.SelectExistingDBConfigWithSnapshot(
 		s.Config.ConfigDir.DatabaseProfile,
 		consts.ProfileWizardPromptSelectExistingConfig,

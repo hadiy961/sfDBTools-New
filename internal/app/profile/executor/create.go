@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi pembuatan profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 9 Januari 2026
+// Last Modified : 14 Januari 2026
 
 package executor
 
@@ -56,24 +56,22 @@ func (e *Executor) CreateProfile() error {
 		}
 
 		if err := e.Ops.SaveProfile(consts.ProfileSaveModeCreate); err != nil {
-			if err == validation.ErrConnectionFailedRetry {
-				retry, err2 := e.handleConnectionFailedRetry(consts.ProfileMsgRetryCreate, consts.ProfileMsgCreateCancelled)
-				if err2 != nil {
-					return err2
-				}
-				if retry {
-					// UX: setelah retry, tampilkan selector field (mirip profile edit), bukan restart wizard dari awal.
-					if e.isInteractiveMode() {
-						if err := e.Ops.NewWizard().PromptCreateRetrySelectedFields(); err != nil {
-							return err
-						}
-						skipWizard = true
-					}
-					continue
-				}
-				return validation.ErrUserCancelled
+			retry, err2 := e.handleConnectionFailedRetryIfNeeded(err, consts.ProfileMsgRetryCreate, consts.ProfileMsgCreateCancelled)
+			if err2 != nil {
+				return err2
 			}
-			return err
+			if retry {
+				// UX: setelah retry, tampilkan selector field (mirip profile edit), bukan restart wizard dari awal.
+				if e.isInteractiveMode() {
+					if err := e.Ops.NewWizard().PromptCreateRetrySelectedFields(); err != nil {
+						return err
+					}
+					skipWizard = true
+				}
+				continue
+			}
+			// Defensive: seharusnya tidak pernah sampai sini (cancel return error).
+			return validation.ErrUserCancelled
 		}
 		break
 	}

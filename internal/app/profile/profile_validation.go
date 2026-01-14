@@ -2,7 +2,7 @@
 // Deskripsi : Validasi dan pengecekan unik untuk profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 6 Januari 2026
+// Last Modified : 14 Januari 2026
 package profile
 
 import (
@@ -61,7 +61,7 @@ func deriveOriginalProfileName(originalProfileName string, profileInfo *domain.P
 }
 
 // CheckConfigurationNameUnique memvalidasi apakah nama konfigurasi unik.
-func (s *Service) checkConfigurationNameUnique(mode string) error {
+func (s *executorOps) checkConfigurationNameUnique(mode string) error {
 	if s.State.ProfileInfo == nil {
 		return shared.ErrProfileNil
 	}
