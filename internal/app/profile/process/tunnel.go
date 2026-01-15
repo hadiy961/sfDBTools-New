@@ -1,8 +1,8 @@
-// File : internal/app/profile/process/ssh_tunnel.go
+// File : internal/app/profile/process/tunnel.go
 // Deskripsi : SSH tunnel native Go (port forwarding)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package process
 
@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"strconv"
@@ -153,33 +152,7 @@ func StartSSHTunnel(ctx context.Context, opts SSHTunnelOptions) (*SSHTunnel, err
 	t := &SSHTunnel{LocalPort: localPort, listener: ln, sshClient: client, cancel: cancel}
 
 	remoteAddr := net.JoinHostPort(opts.RemoteHost, strconv.Itoa(opts.RemotePort))
-	go func() {
-		for {
-			conn, aerr := ln.Accept()
-			if aerr != nil {
-				select {
-				case <-ctx2.Done():
-					return
-				default:
-					return
-				}
-			}
-			go func(c net.Conn) {
-				defer c.Close()
-				rc, derr := client.Dial("tcp", remoteAddr)
-				if derr != nil {
-					return
-				}
-				defer rc.Close()
-
-				// Bidirectional copy
-				done := make(chan struct{}, 2)
-				go func() { _, _ = io.Copy(rc, c); done <- struct{}{} }()
-				go func() { _, _ = io.Copy(c, rc); done <- struct{}{} }()
-				<-done
-			}(conn)
-		}
-	}()
+	go forward(ctx2, ln, client, remoteAddr)
 
 	return t, nil
 }
