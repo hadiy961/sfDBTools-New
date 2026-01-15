@@ -1,11 +1,10 @@
 package connection
+
 // File : internal/app/profile/connection/connector.go
 // Deskripsi : Koneksi database berbasis ProfileInfo
 // Author : Hadiyatna Muflihun
 // Tanggal : 14 Januari 2026
 // Last Modified : 14 Januari 2026
-
-package connection
 
 import (
 	"context"

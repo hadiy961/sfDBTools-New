@@ -1,11 +1,10 @@
 package profileerrors
+
 // File : internal/app/profile/errors/errors.go
 // Deskripsi : Centralized error definitions untuk profile module (P1 improvement)
 // Author : Hadiyatna Muflihun
 // Tanggal : 14 Januari 2026
 // Last Modified : 14 Januari 2026
-
-package profileerrors
 
 import (
 	"errors"
