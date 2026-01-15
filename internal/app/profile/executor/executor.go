@@ -21,46 +21,17 @@ import (
 )
 
 // ProfileOps defines minimal operations needed by executor
-
-// WizardProvider menyediakan runner untuk wizard.
-type WizardProvider interface {
-	NewWizard() *wizard.Runner
-}
-
-// ProfileSaver menyimpan profile state ke file.
-type ProfileSaver interface {
-	SaveProfile(mode string) error
-}
-
-// NameUniquenessChecker memvalidasi nama profile unik.
-type NameUniquenessChecker interface {
-	CheckConfigurationNameUnique(mode string) error
-}
-
-// SnapshotLoader memuat snapshot dari file profile.
-type SnapshotLoader interface {
-	LoadSnapshotFromPath(absPath string) (*domain.ProfileInfo, error)
-}
-
-// ExistingConfigSelector menangani pemilihan profile existing secara interaktif.
-type ExistingConfigSelector interface {
-	PromptSelectExistingConfig() error
-}
-
-// ConfigFormatter mengubah state profile menjadi format INI.
-type ConfigFormatter interface {
-	FormatConfigToINI() string
-}
-
-// ProfileOps adalah composite interface untuk kebutuhan Executor saat ini.
-// Catatan: Executor methods idealnya hanya bergantung pada sub-interface yang dibutuhkan.
+// ProfileOps adalah interface minimal untuk kebutuhan Executor saat ini.
+// Catatan: Sebelumnya dipecah menjadi banyak sub-interface (ISP), namun itu berlebihan
+// karena (saat ini) hanya ada satu implementasi ops. Kita pertahankan 1 interface
+// untuk mengurangi bloat (YAGNI) tanpa mengubah behavior.
 type ProfileOps interface {
-	WizardProvider
-	ProfileSaver
-	NameUniquenessChecker
-	SnapshotLoader
-	ExistingConfigSelector
-	ConfigFormatter
+	NewWizard() *wizard.Runner
+	SaveProfile(mode string) error
+	CheckConfigurationNameUnique(mode string) error
+	LoadSnapshotFromPath(absPath string) (*domain.ProfileInfo, error)
+	PromptSelectExistingConfig() error
+	FormatConfigToINI() string
 }
 
 type Executor struct {

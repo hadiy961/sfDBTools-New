@@ -1,8 +1,8 @@
-// File : internal/profile/profile_validation.go
+// File : internal/app/profile/validation.go
 // Deskripsi : Validasi dan pengecekan unik untuk profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 package profile
 
 import (

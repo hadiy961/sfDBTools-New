@@ -1,8 +1,8 @@
-// File : internal/app/profile/select_existing.go
+// File : internal/app/profile/selector.go
 // Deskripsi : Pemilihan profile secara interaktif (shared untuk show/edit)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package profile
 
