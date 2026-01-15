@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi pembuatan profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package executor
 
@@ -25,7 +25,8 @@ func (e *Executor) CreateProfile() error {
 	skipWizard := false
 
 	for {
-		if !skipWizard && e.State.ProfileCreate != nil && e.State.ProfileCreate.Interactive {
+		createOpts, _ := e.State.CreateOptions()
+		if !skipWizard && createOpts != nil && createOpts.Interactive {
 			// Mode interaktif: hindari log Info agar tidak mengganggu prompt.
 			if err := e.Ops.NewWizard().Run(consts.ProfileModeCreate); err != nil {
 				return err

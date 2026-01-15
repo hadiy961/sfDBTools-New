@@ -2,7 +2,7 @@
 // Deskripsi : Formatter untuk tampilan show profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 14 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package display
 
@@ -45,7 +45,7 @@ func (d *Displayer) printShowDetails() {
 
 	table.Render([]string{consts.ProfileDisplayTableHeaderNo, consts.ProfileDisplayTableHeaderField, consts.ProfileDisplayTableHeaderValue}, rows)
 
-	if d.State.ProfileShow != nil && d.State.ProfileShow.RevealPassword && d.State.ProfileShow.Interactive {
+	if showOpts, ok := d.State.ShowOptions(); ok && showOpts != nil && showOpts.RevealPassword && showOpts.Interactive {
 		d.revealPasswordConfirmAndShow(orig)
 	}
 }

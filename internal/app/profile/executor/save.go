@@ -2,7 +2,7 @@
 // Deskripsi : Simpan profile ke file (terenkripsi)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package executor
 
@@ -98,11 +98,15 @@ func (e *Executor) SaveProfile(mode string) error {
 		return fmt.Errorf(consts.ProfileErrEncryptConfigFailedFmt, err)
 	}
 
-	if mode == consts.ProfileSaveModeEdit && e.State.ProfileEdit != nil && strings.TrimSpace(e.State.ProfileEdit.NewName) != "" {
-		if err := validation.ValidateProfileName(e.State.ProfileEdit.NewName); err != nil {
-			return err
+	if mode == consts.ProfileSaveModeEdit {
+		if editOpts, ok := e.State.EditOptions(); ok && editOpts != nil {
+			if strings.TrimSpace(editOpts.NewName) != "" {
+				if err := validation.ValidateProfileName(editOpts.NewName); err != nil {
+					return err
+				}
+				e.State.ProfileInfo.Name = editOpts.NewName
+			}
 		}
-		e.State.ProfileInfo.Name = e.State.ProfileEdit.NewName
 	}
 	if err := validation.ValidateProfileName(e.State.ProfileInfo.Name); err != nil {
 		return err

@@ -2,7 +2,7 @@
 // Deskripsi : Prompt edit field secara interaktif (multi-select)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 9 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package wizard
 
@@ -52,9 +52,9 @@ func (r *Runner) promptEditSelectedFields() error {
 		if err != nil {
 			return err
 		}
-		if r.State.ProfileEdit != nil {
-			r.State.ProfileEdit.NewProfileKey = strings.TrimSpace(newKey)
-			r.State.ProfileEdit.NewProfileKeySource = "prompt"
+		if editOpts, ok := r.State.EditOptions(); ok && editOpts != nil {
+			editOpts.NewProfileKey = strings.TrimSpace(newKey)
+			editOpts.NewProfileKeySource = "prompt"
 		}
 	}
 

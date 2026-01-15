@@ -2,7 +2,7 @@
 // Deskripsi : Tampilan detail profil (show/create/edit summary)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package display
 
@@ -18,7 +18,7 @@ type Displayer struct {
 }
 
 func (d *Displayer) DisplayProfileDetails() {
-	if d.State.ProfileShow != nil {
+	if showOpts, ok := d.State.ShowOptions(); ok && showOpts != nil {
 		if d.State.OriginalProfileInfo != nil {
 			title := d.State.OriginalProfileInfo.Name
 			if title == "" && d.State.ProfileInfo != nil {

@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi hapus profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package executor
 
@@ -73,14 +73,15 @@ func (e *Executor) deletePaths(paths []string, logSuccessFmt string, showErrorOn
 
 func (e *Executor) PromptDeleteProfile() error {
 	isInteractive := e.isInteractiveMode()
+	deleteOpts, _ := e.State.DeleteOptions()
 
 	force := false
-	if e.State.ProfileDelete != nil {
-		force = e.State.ProfileDelete.Force
+	if deleteOpts != nil {
+		force = deleteOpts.Force
 	}
 
 	if !isInteractive {
-		if e.State.ProfileDelete == nil || len(e.State.ProfileDelete.Profiles) == 0 {
+		if deleteOpts == nil || len(deleteOpts.Profiles) == 0 {
 			return fmt.Errorf(
 				"%sflag --profile wajib disertakan: %w",
 				consts.ProfileMsgNonInteractivePrefix,
@@ -97,8 +98,8 @@ func (e *Executor) PromptDeleteProfile() error {
 	}
 
 	// 1) Jika profile path disediakan via flag --profile (support multiple)
-	if e.State.ProfileDelete != nil && len(e.State.ProfileDelete.Profiles) > 0 {
-		validPaths, displayNames, err := e.collectValidPathsFromFlags(e.State.ProfileDelete.Profiles)
+	if deleteOpts != nil && len(deleteOpts.Profiles) > 0 {
+		validPaths, displayNames, err := e.collectValidPathsFromFlags(deleteOpts.Profiles)
 		if err != nil {
 			return err
 		}
@@ -108,7 +109,7 @@ func (e *Executor) PromptDeleteProfile() error {
 			return nil
 		}
 
-		if e.State.ProfileDelete.Force {
+		if deleteOpts.Force {
 			e.deletePaths(validPaths, consts.ProfileDeleteForceDeletedFmt, false, false)
 			return nil
 		}

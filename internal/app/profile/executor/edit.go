@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi edit profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package executor
 
@@ -21,7 +21,8 @@ import (
 
 func (e *Executor) EditProfile() error {
 	for {
-		if e.State.ProfileEdit != nil && e.State.ProfileEdit.Interactive {
+		editOpts, _ := e.State.EditOptions()
+		if editOpts != nil && editOpts.Interactive {
 			{
 				e.Log.Info(consts.ProfileLogModeInteractiveEnabled)
 			}
@@ -89,8 +90,8 @@ func (e *Executor) EditProfile() error {
 			{
 				e.Log.Info(consts.ProfileLogValidatingParams)
 			}
-			if e.State.ProfileEdit != nil && strings.TrimSpace(e.State.ProfileEdit.NewName) != "" {
-				newName := profileconn.TrimProfileSuffix(strings.TrimSpace(e.State.ProfileEdit.NewName))
+			if editOpts != nil && strings.TrimSpace(editOpts.NewName) != "" {
+				newName := profileconn.TrimProfileSuffix(strings.TrimSpace(editOpts.NewName))
 				if newName == "" {
 					return fmt.Errorf(consts.ProfileErrNewNameEmpty)
 				}
@@ -118,9 +119,9 @@ func (e *Executor) EditProfile() error {
 
 		// Jika user memilih untuk merubah kunci enkripsi (rotasi), gunakan key baru saat save.
 		// Decrypt snapshot sudah dilakukan sebelumnya memakai key lama.
-		if e.State.ProfileEdit != nil && strings.TrimSpace(e.State.ProfileEdit.NewProfileKey) != "" {
-			e.State.ProfileInfo.EncryptionKey = strings.TrimSpace(e.State.ProfileEdit.NewProfileKey)
-			e.State.ProfileInfo.EncryptionSource = strings.TrimSpace(e.State.ProfileEdit.NewProfileKeySource)
+		if editOpts != nil && strings.TrimSpace(editOpts.NewProfileKey) != "" {
+			e.State.ProfileInfo.EncryptionKey = strings.TrimSpace(editOpts.NewProfileKey)
+			e.State.ProfileInfo.EncryptionSource = strings.TrimSpace(editOpts.NewProfileKeySource)
 		}
 
 		if err := e.SaveProfile(consts.ProfileSaveModeEdit); err != nil {

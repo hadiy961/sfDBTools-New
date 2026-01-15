@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi tampilkan profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 package executor
 
 import (
@@ -24,7 +24,8 @@ func (e *Executor) ShowProfile() error {
 	isInteractive := e.isInteractiveMode()
 
 	if !isInteractive {
-		if e.State.ProfileShow == nil || strings.TrimSpace(e.State.ProfileShow.Path) == "" {
+		showOpts, ok := e.State.ShowOptions()
+		if !ok || showOpts == nil || strings.TrimSpace(showOpts.Path) == "" {
 			return fmt.Errorf(consts.ProfileErrNonInteractiveProfileFlagRequired)
 		}
 		if strings.TrimSpace(e.State.ProfileInfo.EncryptionKey) == "" {
@@ -37,10 +38,11 @@ func (e *Executor) ShowProfile() error {
 		}
 	}
 
-	if e.State.ProfileShow == nil || strings.TrimSpace(e.State.ProfileShow.Path) == "" {
+	showOpts, ok := e.State.ShowOptions()
+	if !ok || showOpts == nil || strings.TrimSpace(showOpts.Path) == "" {
 		var revealPassword bool
-		if e.State.ProfileShow != nil {
-			revealPassword = e.State.ProfileShow.RevealPassword
+		if ok && showOpts != nil {
+			revealPassword = showOpts.RevealPassword
 		}
 
 		if e.Ops == nil {
@@ -49,13 +51,15 @@ func (e *Executor) ShowProfile() error {
 		if err := e.Ops.PromptSelectExistingConfig(); err != nil {
 			return err
 		}
-		if e.State.ProfileShow == nil {
-			e.State.ProfileShow = &profilemodel.ProfileShowOptions{}
-		}
-		e.State.ProfileShow.Path = e.State.ProfileInfo.Path
-		e.State.ProfileShow.RevealPassword = revealPassword
+		// Pastikan show options ada dan berisi path dari profile info.
+		newShow := &profilemodel.ProfileShowOptions{}
+		newShow.Path = e.State.ProfileInfo.Path
+		newShow.RevealPassword = revealPassword
+		newShow.Interactive = e.isInteractiveMode()
+		e.State.Options = newShow
+		showOpts = newShow
 	} else {
-		abs, name, err := e.resolveProfilePath(e.State.ProfileShow.Path)
+		abs, name, err := e.resolveProfilePath(showOpts.Path)
 		if err != nil {
 			return err
 		}
@@ -105,7 +109,8 @@ func (e *Executor) ShowProfile() error {
 
 	// Non-interaktif: --reveal-password tidak boleh prompt.
 	// Fail-fast jika key salah/corrupt agar scripting mendapat exit code non-zero.
-	if e.State.ProfileShow != nil && e.State.ProfileShow.RevealPassword && !isInteractive {
+	showOpts, ok = e.State.ShowOptions()
+	if ok && showOpts != nil && showOpts.RevealPassword && !isInteractive {
 		if strings.TrimSpace(e.State.ProfileInfo.EncryptionKey) == "" {
 			return fmt.Errorf(
 				consts.ProfileErrNonInteractiveProfileKeyRequiredFmt,
