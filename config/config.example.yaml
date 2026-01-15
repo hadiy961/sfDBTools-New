@@ -105,6 +105,10 @@ log:
         retention_days: 7
   timezone: Asia/Jakarta
 
+profile:
+  connection:
+    timeout: 30s 
+
 mariadb:
   # Opsional: override path key material MariaDB untuk derive master key ENV terenkripsi.
   # Jika dikosongkan, sfDBTools akan fallback ke default: /var/lib/mysql/key_maria_nbc.txt

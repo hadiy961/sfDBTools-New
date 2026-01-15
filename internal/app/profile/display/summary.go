@@ -9,7 +9,6 @@ package display
 import (
 	"fmt"
 
-	"sfdbtools/internal/app/profile/formatter"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/table"
@@ -27,7 +26,7 @@ func (d *Displayer) printCreateSummary() {
 		{"4", consts.ProfileDisplayFieldUser, d.State.ProfileInfo.DBInfo.User},
 	}
 
-	pwState := formatter.DisplayStateSetOrNotSet(d.State.ProfileInfo.DBInfo.Password)
+	pwState := displayStateSetOrNotSet(d.State.ProfileInfo.DBInfo.Password)
 	rows = append(rows, []string{"5", consts.ProfileDisplayFieldPassword, pwState})
 
 	sshState := consts.ProfileDisplaySSHDisabled
@@ -38,7 +37,7 @@ func (d *Displayer) printCreateSummary() {
 
 	if d.State.ProfileInfo.SSHTunnel.Enabled {
 		rows = append(rows, []string{"7", consts.ProfileLabelSSHHost, d.State.ProfileInfo.SSHTunnel.Host})
-		sshPwState := formatter.DisplayStateSetOrNotSet(d.State.ProfileInfo.SSHTunnel.Password)
+		sshPwState := displayStateSetOrNotSet(d.State.ProfileInfo.SSHTunnel.Password)
 		rows = append(rows, []string{"8", consts.ProfileLabelSSHPassword, sshPwState})
 	}
 
@@ -55,7 +54,7 @@ func (d *Displayer) printChangeSummary() {
 	rows := [][]string{}
 	idx := 1
 
-	pwState := func(pw string) string { return formatter.DisplayStateSetOrNotSet(pw) }
+	pwState := func(pw string) string { return displayStateSetOrNotSet(pw) }
 
 	if orig.Name != d.State.ProfileInfo.Name {
 		rows = append(rows, []string{fmt.Sprintf("%d", idx), consts.ProfileDisplayFieldName, orig.Name, d.State.ProfileInfo.Name})

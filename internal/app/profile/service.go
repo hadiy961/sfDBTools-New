@@ -21,7 +21,20 @@ type Service struct {
 	DBInfo *domain.DBInfo
 }
 
-func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interface{}) *Service {
+func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interface{}) (*Service, error) {
+	// Validasi config
+	if cfg == nil {
+		return nil, profileerrors.ErrConfigIsNil
+	}
+	if cfg.ConfigDir.DatabaseProfile == "" {
+		return nil, profileerrors.ErrConfigDirDatabaseProfileEmpty
+	}
+
+	// Fallback untuk logger jika nil
+	if logs == nil {
+		logs = applog.NullLogger()
+	}
+
 	svc := &Service{
 		Log:    logs,
 		Config: cfg,
@@ -62,7 +75,7 @@ func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interf
 		svc.State.ProfileInfo = &domain.ProfileInfo{}
 	}
 
-	return svc
+	return svc, nil
 }
 
 // ExecuteProfileCommand adalah entry point utama untuk profile execution

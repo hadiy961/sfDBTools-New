@@ -11,6 +11,7 @@ import (
 	profiledisplay "sfdbtools/internal/app/profile/display"
 	"sfdbtools/internal/app/profile/helpers/keys"
 	profilemodel "sfdbtools/internal/app/profile/model"
+	profilevalidation "sfdbtools/internal/app/profile/validation"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/consts"
@@ -76,6 +77,24 @@ func (r *Runner) Run(mode string) error {
 		// Edit no-op: jika benar-benar tidak ada perubahan, batalkan tanpa save.
 		if mode == consts.ProfileModeEdit && r.State != nil && !r.State.HasMeaningfulChanges() {
 			return validation.ErrUserCancelled
+		}
+
+		// Comprehensive validation sebelum user confirm save
+		// Catch validation errors early, before expensive connection test
+		if err := profilevalidation.ValidateProfileInfo(r.State.ProfileInfo); err != nil {
+			r.Log.Errorf("Validasi profile gagal: %v", err)
+			print.PrintError(fmt.Sprintf("❌ Validasi gagal: %v", err))
+
+			// Tanya user apakah mau retry atau cancel
+			confirmRetry, retryErr := prompt.Confirm("Apakah Anda ingin memperbaiki input?", true)
+			if retryErr != nil {
+				return validation.HandleInputError(retryErr)
+			}
+			if confirmRetry {
+				print.PrintWarning(consts.ProfileWizardMsgRestart)
+				continue
+			}
+			return err
 		}
 
 		confirmSave, err := prompt.Confirm(consts.ProfilePromptConfirmSave, true)

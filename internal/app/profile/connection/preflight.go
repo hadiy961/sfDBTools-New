@@ -88,16 +88,31 @@ const (
 )
 
 // ProfileConnectTimeout mengembalikan timeout untuk koneksi database saat create/edit profile.
-// Prioritas: ENV SFDB_PROFILE_CONNECT_TIMEOUT > default (15s)
-func ProfileConnectTimeout() time.Duration {
-	// Check environment variable first
+// Prioritas: Config > ENV SFDB_PROFILE_CONNECT_TIMEOUT > default (15s)
+func ProfileConnectTimeout(cfg interface{}) time.Duration {
+	// Priority 1: Config
+	if cfg != nil {
+		// Type assertion untuk mendapatkan config
+		if configObj, ok := cfg.(interface {
+			GetProfileConnectionTimeout() string
+		}); ok {
+			if timeoutStr := configObj.GetProfileConnectionTimeout(); timeoutStr != "" {
+				if d, err := time.ParseDuration(timeoutStr); err == nil && d > 0 {
+					return d
+				}
+			}
+		}
+	}
+
+	// Priority 2: Environment variable
 	if envVal := os.Getenv(consts.ENV_PROFILE_CONNECT_TIMEOUT); envVal != "" {
 		if d, err := time.ParseDuration(envVal); err == nil && d > 0 {
 			return d
 		}
 		// Invalid format, fallback to default (tidak perlu log karena ini bukan critical error)
 	}
-	// Fallback to default
+
+	// Priority 3: Fallback to default
 	return defaultProfileConnectTimeout
 }
 

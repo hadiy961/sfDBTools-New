@@ -91,7 +91,10 @@ func executeProfileCommon(cmd *cobra.Command, deps *appdeps.Dependencies, config
 		return err
 	}
 
-	svc := NewProfileService(deps.Config, logger, profileOptions)
+	svc, err := NewProfileService(deps.Config, logger, profileOptions)
+	if err != nil {
+		return err
+	}
 
 	if config.HeaderTitle != "" {
 		print.PrintAppHeader(config.HeaderTitle)

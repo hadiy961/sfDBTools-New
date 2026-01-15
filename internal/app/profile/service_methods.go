@@ -13,27 +13,27 @@ import (
 // CreateProfile creates a new profile
 func (s *Service) CreateProfile() error {
 	ops := newExecutorOps(s.Config, s.Log, s.State)
-	e := executor.New(s.Log, ops.configDir(), s.State, ops)
+	e := executor.New(s.Log, s.Config, ops.configDir(), s.State, ops)
 	return e.CreateProfile()
 }
 
 // EditProfile edits an existing profile
 func (s *Service) EditProfile() error {
 	ops := newExecutorOps(s.Config, s.Log, s.State)
-	e := executor.New(s.Log, ops.configDir(), s.State, ops)
+	e := executor.New(s.Log, s.Config, ops.configDir(), s.State, ops)
 	return e.EditProfile()
 }
 
 // ShowProfile shows profile details
 func (s *Service) ShowProfile() error {
 	ops := newExecutorOps(s.Config, s.Log, s.State)
-	e := executor.New(s.Log, ops.configDir(), s.State, ops)
+	e := executor.New(s.Log, s.Config, ops.configDir(), s.State, ops)
 	return e.ShowProfile()
 }
 
 // PromptDeleteProfile deletes a profile
 func (s *Service) PromptDeleteProfile() error {
 	ops := newExecutorOps(s.Config, s.Log, s.State)
-	e := executor.New(s.Log, ops.configDir(), s.State, ops)
+	e := executor.New(s.Log, s.Config, ops.configDir(), s.State, ops)
 	return e.PromptDeleteProfile()
 }

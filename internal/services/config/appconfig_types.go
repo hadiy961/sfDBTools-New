@@ -14,8 +14,22 @@ type Config struct {
 	General     GeneralConfig     `yaml:"general"`
 	Log         LogConfig         `yaml:"log"`
 	Mariadb     MariadbConfig     `yaml:"mariadb"`
+	Profile     ProfileConfig     `yaml:"profile"`
 	SystemUsers SystemUsersConfig `yaml:"system_users"`
 	Script      ScriptConfig      `yaml:"script"`
+}
+
+// Struct untuk bagian 'profile'
+// Konfigurasi untuk operasi profile (create/edit/show/delete)
+type ProfileConfig struct {
+	Connection ProfileConnectionConfig `yaml:"connection"`
+}
+
+// ProfileConnectionConfig mengatur timeout untuk connection test saat create/edit profile
+type ProfileConnectionConfig struct {
+	// Timeout untuk connection test (default: 15s)
+	// Format: "15s", "30s", "1m", dll (Go time.Duration format)
+	Timeout string `yaml:"timeout"`
 }
 
 // Struct untuk bagian 'script'

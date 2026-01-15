@@ -44,7 +44,7 @@ func (s *Service) resolveTargetProfile(profileInfo *domain.ProfileInfo, allowInt
 func (s *Service) connectToTargetDatabase(ctx context.Context) error {
 	s.Log.Info("Menghubungkan ke database target...")
 
-	client, err := profileconn.ConnectWithProfile(s.Profile, consts.DefaultInitialDatabase)
+	client, err := profileconn.ConnectWithProfile(nil, s.Profile, consts.DefaultInitialDatabase)
 	if err != nil {
 		return fmt.Errorf("koneksi database target gagal: %w", err)
 	}

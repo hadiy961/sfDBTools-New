@@ -45,11 +45,11 @@ func (e *Executor) SaveProfile(mode string) error {
 	}
 	e.Log.Info("Menghubungkan ke database target, sebelum menyimpan profile...")
 
-	if c, err := profileconn.ConnectWithProfile(e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
+	if c, err := profileconn.ConnectWithProfile(e.Config, e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
 		if !isInteractive {
 			return err
 		}
-		info := profileconn.DescribeConnectError(err)
+		info := profileconn.DescribeConnectError(e.Config, err)
 		e.Log.Warn(info.Title)
 		if strings.TrimSpace(info.Detail) != "" {
 			e.Log.Warn("Detail (ringkas): " + info.Detail)

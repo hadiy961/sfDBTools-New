@@ -2,13 +2,14 @@
 // Deskripsi : Adapter ops untuk Executor agar Service tetap tipis (thin orchestrator)
 // Author : Hadiyatna Muflihun
 // Tanggal : 14 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package profile
 
 import (
 	"sfdbtools/internal/app/profile/executor"
 	profilemodel "sfdbtools/internal/app/profile/model"
+	"sfdbtools/internal/app/profile/validation"
 	"sfdbtools/internal/app/profile/wizard"
 	"sfdbtools/internal/domain"
 	appconfig "sfdbtools/internal/services/config"
@@ -60,12 +61,12 @@ func (s *executorOps) LoadSnapshot(absPath string) (*domain.ProfileInfo, error) 
 	return s.LoadSnapshotFromPath(absPath)
 }
 func (s *executorOps) SaveProfile(mode string) error {
-	e := executor.New(s.Log, s.configDir(), s.State, s)
+	e := executor.New(s.Log, s.Config, s.configDir(), s.State, s)
 	return e.SaveProfile(mode)
 }
 
 func (s *executorOps) CheckConfigurationNameUnique(mode string) error {
-	return s.checkConfigurationNameUnique(mode)
+	return validation.CheckConfigurationNameUnique(s.Config, s.State, mode)
 }
 
 func (s *executorOps) LoadSnapshotFromPath(absPath string) (*domain.ProfileInfo, error) {

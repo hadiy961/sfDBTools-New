@@ -101,7 +101,7 @@ func (s *Service) prepareScanSession(ctx context.Context, headerTitle string, sh
 	}
 
 	// Connect ke Source Database
-	client, err := profileconn.ConnectWithProfile(&s.ScanOptions.ProfileInfo, consts.DefaultInitialDatabase)
+	client, err := profileconn.ConnectWithProfile(nil, &s.ScanOptions.ProfileInfo, consts.DefaultInitialDatabase)
 	if err != nil {
 		return nil, nil, err
 	}

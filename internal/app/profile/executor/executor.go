@@ -61,6 +61,7 @@ type ProfileOps interface {
 
 type Executor struct {
 	Log          applog.Logger
+	Config       interface{} // Config object (untuk ProfileConnectTimeout)
 	ConfigDir    string
 	State        *profilemodel.ProfileState // Shared state pointer
 	Ops          ProfileOps                 // Operations interface
@@ -68,12 +69,13 @@ type Executor struct {
 }
 
 // New creates a new Executor instance
-func New(log applog.Logger, configDir string, state *profilemodel.ProfileState, ops ProfileOps) *Executor {
+func New(log applog.Logger, cfg interface{}, configDir string, state *profilemodel.ProfileState, ops ProfileOps) *Executor {
 	if log == nil {
 		log = applog.NullLogger()
 	}
 	return &Executor{
 		Log:          log,
+		Config:       cfg,
 		ConfigDir:    configDir,
 		State:        state,
 		Ops:          ops,

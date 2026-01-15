@@ -7,10 +7,28 @@
 package display
 
 import (
+	"strings"
+
 	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
 )
+
+// displayValueOrNotSet mengembalikan nilai apa adanya jika terisi, atau label NotSet jika kosong.
+func displayValueOrNotSet(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return consts.ProfileDisplayStateNotSet
+	}
+	return value
+}
+
+// displayStateSetOrNotSet mengembalikan label Set/NotSet berdasarkan apakah value terisi.
+func displayStateSetOrNotSet(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return consts.ProfileDisplayStateNotSet
+	}
+	return consts.ProfileDisplayStateSet
+}
 
 type Displayer struct {
 	ConfigDir string

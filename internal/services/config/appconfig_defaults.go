@@ -57,6 +57,8 @@ func defaultConfigForPath(configPath string) *Config {
 	cfg.Log.Output.File.Dir = "logs"
 	cfg.Log.Timezone = "Asia/Jakarta"
 
+	cfg.Profile.Connection.Timeout = "15s"
+
 	cfg.ConfigDir.DatabaseProfile = filepath.Join(baseDir, "config", "db_profile")
 	cfg.Script.BundleOutputDir = filepath.Join(baseDir, "scripts")
 

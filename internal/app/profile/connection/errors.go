@@ -29,7 +29,7 @@ type ConnectErrorInfo struct {
 	Hints  []string
 }
 
-func DescribeConnectError(err error) ConnectErrorInfo {
+func DescribeConnectError(cfg interface{}, err error) ConnectErrorInfo {
 	if err == nil {
 		return ConnectErrorInfo{}
 	}
@@ -50,7 +50,7 @@ func DescribeConnectError(err error) ConnectErrorInfo {
 	}
 
 	if isTimeoutError(err) {
-		t := ProfileConnectTimeout()
+		t := ProfileConnectTimeout(cfg)
 		label := "koneksi"
 		switch info.Kind {
 		case ConnectErrorKindSSH:

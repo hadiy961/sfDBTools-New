@@ -93,8 +93,8 @@ func (e *Executor) ShowProfile() error {
 	// Mode non-interaktif: jangan coba konek DB dan jangan print warning/hints.
 	// Tujuannya agar output `profile show` stabil untuk scripting/pipeline.
 	if isInteractive {
-		if c, err := profileconn.ConnectWithProfile(e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
-			info := profileconn.DescribeConnectError(err)
+		if c, err := profileconn.ConnectWithProfile(e.Config, e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
+			info := profileconn.DescribeConnectError(e.Config, err)
 			print.PrintWarning("⚠️  " + info.Title)
 			if strings.TrimSpace(info.Detail) != "" {
 				print.PrintWarning("Detail (ringkas): " + info.Detail)

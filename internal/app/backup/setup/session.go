@@ -45,7 +45,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 		}
 	}
 
-	client, err = profileconn.ConnectWithProfile(&s.Options.Profile, consts.DefaultInitialDatabase)
+	client, err = profileconn.ConnectWithProfile(nil, &s.Options.Profile, consts.DefaultInitialDatabase)
 	if err != nil {
 		return nil, nil, err
 	}

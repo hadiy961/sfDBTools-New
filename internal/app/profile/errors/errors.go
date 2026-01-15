@@ -30,6 +30,10 @@ var (
 	ErrProfilePathEmpty     = errors.New("path profile kosong")
 	ErrConfigNameEmpty      = errors.New("nama konfigurasi kosong")
 
+	// Config validation errors
+	ErrConfigIsNil                   = errors.New("config is nil")
+	ErrConfigDirDatabaseProfileEmpty = errors.New("config.ConfigDir.DatabaseProfile is empty")
+
 	// Database connection errors
 	ErrDBHostEmpty      = errors.New("host database kosong")
 	ErrDBPortInvalid    = errors.New("port database tidak valid")

@@ -225,7 +225,7 @@ func (s *Setup) changeBackupProfileAndReconnect(ctx context.Context, clientPtr *
 		*clientPtr = nil
 	}
 
-	newClient, err := profileconn.ConnectWithProfile(&s.Options.Profile, consts.DefaultInitialDatabase)
+	newClient, err := profileconn.ConnectWithProfile(nil, &s.Options.Profile, consts.DefaultInitialDatabase)
 	if err != nil {
 		return fmt.Errorf("gagal koneksi ke database source dengan profile baru: %w", err)
 	}
