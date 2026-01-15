@@ -12,16 +12,16 @@ import (
 	"strings"
 	"unicode"
 
-	"sfdbtools/internal/app/profile/shared"
+	profileerrors "sfdbtools/internal/app/profile/errors"
 )
 
 // ValidateNoLeadingTrailingSpace checks input tidak ada spasi di awal/akhir
 func ValidateNoLeadingTrailingSpace(input string, fieldName string) error {
 	if input != strings.TrimSpace(input) {
 		if fieldName == "" {
-			return shared.ErrInputHasLeadingTrailingSpace
+			return profileerrors.ErrInputHasLeadingTrailingSpace
 		}
-		return shared.ValidationError(fieldName, shared.ErrInputHasLeadingTrailingSpace)
+		return profileerrors.ValidationError(fieldName, profileerrors.ErrInputHasLeadingTrailingSpace)
 	}
 	return nil
 }
@@ -31,9 +31,9 @@ func ValidateNoControlChars(input string, fieldName string) error {
 	for _, r := range input {
 		if unicode.IsControl(r) && r != '\n' && r != '\r' && r != '\t' {
 			if fieldName == "" {
-				return shared.ErrInputHasControlChars
+				return profileerrors.ErrInputHasControlChars
 			}
-			return shared.ValidationError(fieldName, shared.ErrInputHasControlChars)
+			return profileerrors.ValidationError(fieldName, profileerrors.ErrInputHasControlChars)
 		}
 	}
 	return nil
@@ -43,9 +43,9 @@ func ValidateNoControlChars(input string, fieldName string) error {
 func ValidateNoSpaces(input string, fieldName string) error {
 	if strings.Contains(input, " ") {
 		if fieldName == "" {
-			return shared.ErrInputHasSpaces
+			return profileerrors.ErrInputHasSpaces
 		}
-		return shared.ValidationError(fieldName, shared.ErrInputHasSpaces)
+		return profileerrors.ValidationError(fieldName, profileerrors.ErrInputHasSpaces)
 	}
 	return nil
 }
@@ -54,9 +54,9 @@ func ValidateNoSpaces(input string, fieldName string) error {
 func ValidateNotEmpty(input string, fieldName string) error {
 	if strings.TrimSpace(input) == "" {
 		if fieldName == "" {
-			return shared.ErrInputEmpty
+			return profileerrors.ErrInputEmpty
 		}
-		return shared.ValidationError(fieldName, shared.ErrInputEmpty)
+		return profileerrors.ValidationError(fieldName, profileerrors.ErrInputEmpty)
 	}
 	return nil
 }
@@ -67,7 +67,7 @@ func ValidateIntInRange(value, min, max int, allowZero bool, fieldName string) e
 		return nil
 	}
 	if value < min || value > max {
-		return shared.InputRangeError(fieldName, min, max, allowZero)
+		return profileerrors.InputRangeError(fieldName, min, max, allowZero)
 	}
 	return nil
 }

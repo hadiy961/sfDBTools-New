@@ -12,8 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"sfdbtools/internal/app/profile/connection"
+	profileerrors "sfdbtools/internal/app/profile/errors"
 	"sfdbtools/internal/app/profile/helpers/loader"
-	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 )
@@ -35,7 +36,7 @@ func buildSnapshotFromMeta(absPath string, info *domain.ProfileInfo) *domain.Pro
 		lastMod = fi.ModTime()
 	}
 
-	name := shared.TrimProfileSuffix(filepath.Base(absPath))
+	name := connection.TrimProfileSuffix(filepath.Base(absPath))
 	return &domain.ProfileInfo{
 		Path:         absPath,
 		Name:         name,
@@ -52,7 +53,7 @@ func buildSnapshotFromMeta(absPath string, info *domain.ProfileInfo) *domain.Pro
 // Jika load gagal, snapshot tetap dikembalikan (dengan DBInfo kosong) bersama error.
 func LoadProfileSnapshotFromPath(opts SnapshotLoadOptions) (*domain.ProfileInfo, error) {
 	if strings.TrimSpace(opts.ProfilePath) == "" {
-		return nil, shared.ErrProfilePathEmpty
+		return nil, profileerrors.ErrProfilePathEmpty
 	}
 
 	loaded, err := loader.ResolveAndLoadProfile(loader.ProfileLoadOptions{

@@ -6,8 +6,8 @@
 package profile
 
 import (
+	profileerrors "sfdbtools/internal/app/profile/errors"
 	profilemodel "sfdbtools/internal/app/profile/model"
-	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
@@ -81,6 +81,6 @@ func (s *Service) ExecuteProfileCommand(config profilemodel.ProfileEntryConfig) 
 	case consts.ProfileModeDelete:
 		return s.PromptDeleteProfile()
 	default:
-		return shared.ErrInvalidProfileMode
+		return profileerrors.ErrInvalidProfileMode
 	}
 }

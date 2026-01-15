@@ -9,7 +9,7 @@ package keys
 import (
 	"strings"
 
-	"sfdbtools/internal/app/profile/shared"
+	profileerrors "sfdbtools/internal/app/profile/errors"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/consts"
 )
@@ -33,7 +33,7 @@ func ResolveProfileEncryptionKey(existing string, allowPrompt bool) (key string,
 	}
 
 	if !allowPrompt {
-		return "", "", shared.NonInteractiveProfileKeyRequiredError()
+		return "", "", profileerrors.NonInteractiveProfileKeyRequiredError()
 	}
 
 	// Prompt (interactive). crypto.ResolveKey akan mencoba env var yang diberikan dulu.

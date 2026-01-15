@@ -11,8 +11,8 @@ import (
 
 	profiledisplay "sfdbtools/internal/app/profile/display"
 	profilehelper "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/merger"
 	profilemodel "sfdbtools/internal/app/profile/model"
-	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
@@ -68,9 +68,9 @@ func (r *Runner) runEditFlow() error {
 	}
 
 	// Jadikan snapshot sebagai baseline, lalu apply override dari flag/env.
-	shared.ApplySnapshotAsBaseline(r.State.ProfileInfo, r.State.OriginalProfileInfo)
-	shared.ApplyDBOverrides(r.State.ProfileInfo, overrideDB)
-	shared.ApplySSHOverrides(r.State.ProfileInfo, overrideSSH)
+	merger.ApplySnapshotAsBaseline(r.State.ProfileInfo, r.State.OriginalProfileInfo)
+	merger.ApplyDBOverrides(r.State.ProfileInfo, overrideDB)
+	merger.ApplySSHOverrides(r.State.ProfileInfo, overrideSSH)
 
 	// Tampilkan isi profil terlebih dahulu (seperti profile show), lalu beri opsi ubah/batal.
 	// Ini tetap dijalankan walaupun ada override flag/env, supaya user selalu lihat kondisi awal.

@@ -11,8 +11,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"sfdbtools/internal/app/profile/connection"
+	profileerrors "sfdbtools/internal/app/profile/errors"
 	"sfdbtools/internal/app/profile/helpers/parser"
-	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/validation"
@@ -40,7 +41,7 @@ func SelectExistingDBConfig(configDir, purpose string) (domain.ProfileInfo, erro
 	if len(filtered) == 0 {
 		print.PrintWarn("Tidak ditemukan file konfigurasi di direktori: " + configDir)
 		print.PrintInfo("Silakan buat file konfigurasi baru terlebih dahulu dengan perintah 'profile create'.")
-		return profileInfo, shared.ErrNoConfigToSelect
+		return profileInfo, profileerrors.ErrNoConfigToSelect
 	}
 
 	options := filtered
@@ -49,7 +50,7 @@ func SelectExistingDBConfig(configDir, purpose string) (domain.ProfileInfo, erro
 	if err != nil {
 		return profileInfo, validation.HandleInputError(err)
 	}
-	name := shared.TrimProfileSuffix(selected)
+	name := connection.TrimProfileSuffix(selected)
 
 	filePath := filepath.Join(configDir, selected)
 	profileInfo.Path = filePath

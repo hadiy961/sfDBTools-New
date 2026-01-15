@@ -9,7 +9,7 @@ package wizard
 import (
 	"strings"
 
-	"sfdbtools/internal/app/profile/shared"
+	profileerrors "sfdbtools/internal/app/profile/errors"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/prompt"
@@ -23,7 +23,7 @@ import (
 // - Hanya re-prompt field yang dipilih.
 func (r *Runner) PromptCreateRetrySelectedFields() error {
 	if r.State.ProfileInfo == nil {
-		return shared.ErrProfileNil
+		return profileerrors.ErrProfileNil
 	}
 
 	fields := []string{

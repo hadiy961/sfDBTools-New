@@ -10,15 +10,15 @@ import (
 	"fmt"
 	"strings"
 
+	profileerrors "sfdbtools/internal/app/profile/errors"
 	"sfdbtools/internal/app/profile/helpers/loader"
-	"sfdbtools/internal/app/profile/shared"
 )
 
 // LoadProfilePasswordFromPath memuat profile dari path dan mengembalikan password DB.
 // Fungsi ini tidak melakukan prompt; caller bertanggung jawab menyediakan key jika dibutuhkan.
 func LoadProfilePasswordFromPath(configDir string, profilePath string, profileKey string) (string, error) {
 	if strings.TrimSpace(profilePath) == "" {
-		return "", shared.ErrProfilePathEmpty
+		return "", profileerrors.ErrProfilePathEmpty
 	}
 	info, err := loader.ResolveAndLoadProfile(loader.ProfileLoadOptions{
 		ConfigDir:      configDir,

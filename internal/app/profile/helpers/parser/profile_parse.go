@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/app/profile/connection"
 	"sfdbtools/internal/cli/parsing"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/domain"
@@ -62,7 +62,7 @@ func LoadAndParseProfile(absPath string, key string) (*domain.ProfileInfo, error
 
 	sshParsed := parsing.ParseINISection(plainStr, "ssh")
 
-	info.Name = shared.TrimProfileSuffix(filepath.Base(absPath))
+	info.Name = connection.TrimProfileSuffix(filepath.Base(absPath))
 	{
 		if h, ok := parsed["host"]; ok {
 			info.DBInfo.Host = h

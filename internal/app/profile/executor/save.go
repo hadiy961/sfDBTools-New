@@ -13,8 +13,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	profileconn "sfdbtools/internal/app/profile/connection"
 	profilehelpers "sfdbtools/internal/app/profile/helpers"
-	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/app/profile/merger"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
@@ -44,11 +45,11 @@ func (e *Executor) SaveProfile(mode string) error {
 		}
 	}
 
-	if c, err := shared.ConnectWithProfile(e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
+	if c, err := profileconn.ConnectWithProfile(e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
 		if !isInteractive {
 			return err
 		}
-		info := shared.DescribeConnectError(err)
+		info := profileconn.DescribeConnectError(err)
 		print.PrintWarning("\n⚠️  " + info.Title)
 		if strings.TrimSpace(info.Detail) != "" {
 			print.PrintWarning("Detail (ringkas): " + info.Detail)
@@ -107,8 +108,8 @@ func (e *Executor) SaveProfile(mode string) error {
 		return err
 	}
 
-	e.State.ProfileInfo.Name = shared.TrimProfileSuffix(e.State.ProfileInfo.Name)
-	newFileName := shared.BuildProfileFileName(e.State.ProfileInfo.Name)
+	e.State.ProfileInfo.Name = profileconn.TrimProfileSuffix(e.State.ProfileInfo.Name)
+	newFileName := merger.BuildProfileFileName(e.State.ProfileInfo.Name)
 	newFilePath := filepath.Join(baseDir, newFileName)
 
 	if mode == consts.ProfileSaveModeEdit && e.State.OriginalProfileName != "" && e.State.OriginalProfileName != e.State.ProfileInfo.Name {
@@ -121,13 +122,13 @@ func (e *Executor) SaveProfile(mode string) error {
 			oldFilePath = e.State.OriginalProfileInfo.Path
 		}
 		if oldFilePath == "" {
-			oldFilePath = filepath.Join(baseDir, shared.BuildProfileFileName(e.State.OriginalProfileName))
+			oldFilePath = filepath.Join(baseDir, merger.BuildProfileFileName(e.State.OriginalProfileName))
 		}
 
 		if err := os.Remove(oldFilePath); err != nil {
 			print.PrintWarning(fmt.Sprintf(consts.ProfileWarnSavedButDeleteOldFailedFmt, newFileName, oldFilePath, err))
 		}
-		print.PrintSuccess(fmt.Sprintf(consts.ProfileSuccessSavedRenamedFmt, newFileName, shared.BuildProfileFileName(e.State.OriginalProfileName)))
+		print.PrintSuccess(fmt.Sprintf(consts.ProfileSuccessSavedRenamedFmt, newFileName, merger.BuildProfileFileName(e.State.OriginalProfileName)))
 		print.PrintInfo(consts.ProfileMsgConfigSavedAtPrefix + newFilePath)
 		return nil
 	}

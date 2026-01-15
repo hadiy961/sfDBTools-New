@@ -10,24 +10,24 @@ import (
 	"fmt"
 	"strings"
 
-	"sfdbtools/internal/app/profile/shared"
+	profileerrors "sfdbtools/internal/app/profile/errors"
 	"sfdbtools/internal/domain"
 )
 
 // ValidateProfileInfo melakukan validasi komprehensif terhadap ProfileInfo
 func ValidateProfileInfo(p *domain.ProfileInfo) error {
 	if p == nil {
-		return shared.ErrProfileNil
+		return profileerrors.ErrProfileNil
 	}
 	if strings.TrimSpace(p.Name) == "" {
-		return shared.ErrProfileNameEmpty
+		return profileerrors.ErrProfileNameEmpty
 	}
 	if err := ValidateDBInfo(&p.DBInfo); err != nil {
 		return fmt.Errorf("validasi db info gagal: %w", err)
 	}
 	if p.SSHTunnel.Enabled {
 		if strings.TrimSpace(p.SSHTunnel.Host) == "" {
-			return shared.ErrSSHTunnelHostEmpty
+			return profileerrors.ErrSSHTunnelHostEmpty
 		}
 	}
 	return nil

@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfdbtools/internal/app/profile/shared"
+	profileerrors "sfdbtools/internal/app/profile/errors"
 	"sfdbtools/internal/domain"
 )
 
@@ -25,10 +25,10 @@ func ValidateSSHTunnel(ssh *domain.SSHTunnelConfig) error {
 		return nil
 	}
 	if strings.TrimSpace(ssh.Host) == "" {
-		return shared.ErrSSHHostEmpty
+		return profileerrors.ErrSSHHostEmpty
 	}
 	if ssh.Port <= 0 || ssh.Port > 65535 {
-		return shared.SSHPortInvalidError(ssh.Port)
+		return profileerrors.SSHPortInvalidError(ssh.Port)
 	}
 	// Validate identity file if provided
 	if ssh.IdentityFile != "" {
@@ -54,15 +54,15 @@ func ValidateSSHIdentityFile(path string) error {
 	}
 	info, err := os.Stat(p)
 	if err != nil {
-		return shared.SSHIdentityFileError(p, fmt.Sprintf("tidak bisa diakses: %v", err))
+		return profileerrors.SSHIdentityFileError(p, fmt.Sprintf("tidak bisa diakses: %v", err))
 	}
 	if info.IsDir() {
-		return shared.SSHIdentityFileError(p, "path adalah direktori")
+		return profileerrors.SSHIdentityFileError(p, "path adalah direktori")
 	}
 	// Try to read (check permission)
 	f, err := os.Open(p)
 	if err != nil {
-		return shared.SSHIdentityFileError(p, fmt.Sprintf("tidak bisa dibaca: %v", err))
+		return profileerrors.SSHIdentityFileError(p, fmt.Sprintf("tidak bisa dibaca: %v", err))
 	}
 	f.Close()
 	return nil

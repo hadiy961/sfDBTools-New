@@ -2,7 +2,7 @@
 // Deskripsi : Setup session backup (termasuk loop interaktif untuk mode ALL)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2026-01-05
+// Last Modified : 14 Januari 2026
 
 package setup
 
@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"sfdbtools/internal/app/backup/display"
-	profileshared "sfdbtools/internal/app/profile/shared"
+	profileconn "sfdbtools/internal/app/profile/connection"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
@@ -45,7 +45,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 		}
 	}
 
-	client, err = profileshared.ConnectWithProfile(&s.Options.Profile, consts.DefaultInitialDatabase)
+	client, err = profileconn.ConnectWithProfile(&s.Options.Profile, consts.DefaultInitialDatabase)
 	if err != nil {
 		return nil, nil, err
 	}

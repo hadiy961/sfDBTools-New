@@ -6,7 +6,7 @@ import (
 	"sfdbtools/internal/app/profile/helpers/parser"
 	"sfdbtools/internal/app/profile/helpers/paths"
 	"sfdbtools/internal/app/profile/helpers/selection"
-	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/app/profile/merger"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/envx"
@@ -126,6 +126,6 @@ func SelectExistingDBConfigWithSnapshot(configDir string, promptText string) (in
 	}
 
 	originalName = loaded.Name
-	snapshot = shared.CloneAsOriginalProfileInfo(loaded)
+	snapshot = merger.CloneAsOriginalProfileInfo(loaded)
 	return loaded, originalName, snapshot, nil
 }

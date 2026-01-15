@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"strings"
 
+	profileconn "sfdbtools/internal/app/profile/connection"
 	profiledisplay "sfdbtools/internal/app/profile/display"
 	profilehelpers "sfdbtools/internal/app/profile/helpers"
 	profilemodel "sfdbtools/internal/app/profile/model"
-	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/validation"
@@ -89,8 +89,8 @@ func (e *Executor) ShowProfile() error {
 	// Mode non-interaktif: jangan coba konek DB dan jangan print warning/hints.
 	// Tujuannya agar output `profile show` stabil untuk scripting/pipeline.
 	if isInteractive {
-		if c, err := shared.ConnectWithProfile(e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
-			info := shared.DescribeConnectError(err)
+		if c, err := profileconn.ConnectWithProfile(e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
+			info := profileconn.DescribeConnectError(err)
 			print.PrintWarning("⚠️  " + info.Title)
 			if strings.TrimSpace(info.Detail) != "" {
 				print.PrintWarning("Detail (ringkas): " + info.Detail)

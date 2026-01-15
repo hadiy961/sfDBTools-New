@@ -9,23 +9,23 @@ package validation
 import (
 	"strings"
 
-	"sfdbtools/internal/app/profile/shared"
+	profileerrors "sfdbtools/internal/app/profile/errors"
 	"sfdbtools/internal/domain"
 )
 
 // ValidateDBInfo melakukan validasi terhadap DBInfo
 func ValidateDBInfo(db *domain.DBInfo) error {
 	if db == nil {
-		return shared.ErrDBInfoNil
+		return profileerrors.ErrDBInfoNil
 	}
 	if strings.TrimSpace(db.Host) == "" {
-		return shared.ErrDBHostEmpty
+		return profileerrors.ErrDBHostEmpty
 	}
 	if db.Port <= 0 || db.Port > 65535 {
-		return shared.DBPortInvalidError(db.Port)
+		return profileerrors.DBPortInvalidError(db.Port)
 	}
 	if strings.TrimSpace(db.User) == "" {
-		return shared.ErrDBUserEmpty
+		return profileerrors.ErrDBUserEmpty
 	}
 	// Password bisa kosong untuk beberapa auth method
 	return nil

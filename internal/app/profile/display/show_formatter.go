@@ -9,7 +9,7 @@ package display
 import (
 	"fmt"
 
-	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/app/profile/formatter"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/table"
@@ -22,7 +22,7 @@ func (d *Displayer) printShowDetails() {
 		return
 	}
 
-	pwState := shared.DisplayStateSetOrNotSet(orig.DBInfo.Password)
+	pwState := formatter.DisplayStateSetOrNotSet(orig.DBInfo.Password)
 
 	rows := [][]string{
 		{"1", consts.ProfileDisplayFieldName, orig.Name},
@@ -39,7 +39,7 @@ func (d *Displayer) printShowDetails() {
 		rows = append(rows, []string{"10", consts.ProfileLabelSSHHost, orig.SSHTunnel.Host})
 		rows = append(rows, []string{"11", consts.ProfileLabelSSHUser, orig.SSHTunnel.User})
 		rows = append(rows, []string{"12", consts.ProfileLabelSSHPort, fmt.Sprintf("%d", orig.SSHTunnel.Port)})
-		sshPwState := shared.DisplayStateSetOrNotSet(orig.SSHTunnel.Password)
+		sshPwState := formatter.DisplayStateSetOrNotSet(orig.SSHTunnel.Password)
 		rows = append(rows, []string{"13", consts.ProfileLabelSSHPassword, sshPwState})
 	}
 

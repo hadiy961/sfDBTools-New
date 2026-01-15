@@ -7,8 +7,8 @@
 package display
 
 import (
+	"sfdbtools/internal/app/profile/formatter"
 	"sfdbtools/internal/app/profile/helpers"
-	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
@@ -39,7 +39,7 @@ func (d *Displayer) revealPasswordConfirmAndShow(orig *domain.ProfileInfo) {
 		print.PrintWarning(consts.ProfileDisplayInvalidKeyOrCorrupt)
 		return
 	}
-	display := shared.DisplayValueOrNotSet(realPw)
+	display := formatter.DisplayValueOrNotSet(realPw)
 
 	print.PrintSubHeader(consts.ProfileDisplayRevealedPasswordTitle)
 	table.Render(

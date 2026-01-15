@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/app/profile/connection"
 	appconfig "sfdbtools/internal/services/config"
 	"sfdbtools/internal/shared/validation"
 )
@@ -32,7 +32,7 @@ func ResolveConfigPathInDir(configDir string, spec string) (string, string, erro
 	}
 	absPath = validation.ProfileExt(absPath)
 
-	name := shared.TrimProfileSuffix(filepath.Base(absPath))
+	name := connection.TrimProfileSuffix(filepath.Base(absPath))
 	return absPath, name, nil
 }
 

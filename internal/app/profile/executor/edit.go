@@ -10,7 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"sfdbtools/internal/app/profile/shared"
+	profileconn "sfdbtools/internal/app/profile/connection"
+	"sfdbtools/internal/app/profile/merger"
 	profilevalidation "sfdbtools/internal/app/profile/validation"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
@@ -81,15 +82,15 @@ func (e *Executor) EditProfile() error {
 				e.Log.Info(consts.ProfileLogConfigFileLoaded)
 			}
 
-			shared.ApplySnapshotAsBaseline(e.State.ProfileInfo, e.State.OriginalProfileInfo)
-			shared.ApplyDBOverrides(e.State.ProfileInfo, overrideDB)
-			shared.ApplySSHOverrides(e.State.ProfileInfo, overrideSSH)
+			merger.ApplySnapshotAsBaseline(e.State.ProfileInfo, e.State.OriginalProfileInfo)
+			merger.ApplyDBOverrides(e.State.ProfileInfo, overrideDB)
+			merger.ApplySSHOverrides(e.State.ProfileInfo, overrideSSH)
 
 			{
 				e.Log.Info(consts.ProfileLogValidatingParams)
 			}
 			if e.State.ProfileEdit != nil && strings.TrimSpace(e.State.ProfileEdit.NewName) != "" {
-				newName := shared.TrimProfileSuffix(strings.TrimSpace(e.State.ProfileEdit.NewName))
+				newName := profileconn.TrimProfileSuffix(strings.TrimSpace(e.State.ProfileEdit.NewName))
 				if newName == "" {
 					return fmt.Errorf(consts.ProfileErrNewNameEmpty)
 				}

@@ -2,7 +2,7 @@
 // Deskripsi : Helper functions untuk MySQL restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 17 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 14 Januari 2026
 package helpers
 
 import (
@@ -14,7 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
-	profileshared "sfdbtools/internal/app/profile/shared"
+	profileconn "sfdbtools/internal/app/profile/connection"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/compress"
@@ -25,7 +25,7 @@ import (
 
 // BuildMySQLArgs membuat argument list untuk mysql command
 func BuildMySQLArgs(profile *domain.ProfileInfo, database string, extraArgs ...string) []string {
-	eff := profileshared.EffectiveDBInfo(profile)
+	eff := profileconn.EffectiveDBInfo(profile)
 	args := []string{
 		fmt.Sprintf("--host=%s", eff.Host),
 		fmt.Sprintf("--port=%d", eff.Port),
