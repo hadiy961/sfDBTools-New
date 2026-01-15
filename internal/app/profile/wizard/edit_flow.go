@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	profiledisplay "sfdbtools/internal/app/profile/display"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/helpers/paths"
 	"sfdbtools/internal/app/profile/merger"
 	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/domain"
@@ -39,7 +39,8 @@ func (r *Runner) runEditFlow() error {
 	}
 
 	if target != "" {
-		absPath, name, err := profilehelper.ResolveConfigPathInDir(r.ConfigDir, target)
+		resolver := paths.NewPathResolver(r.ConfigDir)
+		absPath, name, err := resolver.Resolve(target)
 		if err != nil {
 			return err
 		}

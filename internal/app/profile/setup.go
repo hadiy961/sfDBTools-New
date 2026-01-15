@@ -8,7 +8,7 @@ package profile
 import (
 	"fmt"
 	"path/filepath"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/helpers/snapshot"
 	"sfdbtools/internal/app/profile/merger"
 	"strings"
 )
@@ -26,7 +26,7 @@ func (s *executorOps) loadSnapshotFromPath(absPath string) error {
 		key = s.State.ProfileInfo.EncryptionKey
 	}
 
-	snap, err := profilehelper.LoadProfileSnapshotFromPath(profilehelper.SnapshotLoadOptions{
+	snap, err := snapshot.LoadProfileSnapshotFromPath(snapshot.SnapshotLoadOptions{
 		ConfigDir:      s.Config.ConfigDir.DatabaseProfile,
 		ProfilePath:    absPath,
 		ProfileKey:     key,

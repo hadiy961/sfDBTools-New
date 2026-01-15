@@ -2,7 +2,7 @@
 // Deskripsi : Preflight validation untuk koneksi DB dan SSH tunnel
 // Author : Hadiyatna Muflihun
 // Tanggal : 9 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package connection
 
@@ -15,6 +15,7 @@ import (
 
 	profileerrors "sfdbtools/internal/app/profile/errors"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/consts"
 )
 
 func ValidateConnectPreflight(profile *domain.ProfileInfo) error {
@@ -86,7 +87,17 @@ const (
 	defaultProfileConnectTimeout = 15 * time.Second
 )
 
+// ProfileConnectTimeout mengembalikan timeout untuk koneksi database saat create/edit profile.
+// Prioritas: ENV SFDB_PROFILE_CONNECT_TIMEOUT > default (15s)
 func ProfileConnectTimeout() time.Duration {
+	// Check environment variable first
+	if envVal := os.Getenv(consts.ENV_PROFILE_CONNECT_TIMEOUT); envVal != "" {
+		if d, err := time.ParseDuration(envVal); err == nil && d > 0 {
+			return d
+		}
+		// Invalid format, fallback to default (tidak perlu log karena ini bukan critical error)
+	}
+	// Fallback to default
 	return defaultProfileConnectTimeout
 }
 

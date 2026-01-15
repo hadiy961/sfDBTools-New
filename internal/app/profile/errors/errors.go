@@ -4,7 +4,7 @@ package profileerrors
 // Deskripsi : Centralized error definitions untuk profile module (P1 improvement)
 // Author : Hadiyatna Muflihun
 // Tanggal : 14 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 import (
 	"errors"
@@ -82,6 +82,35 @@ var (
 	ErrCallbackUnavailable           = errors.New("callback tidak tersedia")
 )
 
+// multiWrappedError membungkus beberapa error agar:
+// - pesan tetap stabil (tidak berubah)
+// - errors.Is/As tetap bisa match baik sentinel maupun underlying error
+//
+// Catatan: Go mendukung Unwrap() []error untuk multi-wrap.
+type multiWrappedError struct {
+	msg  string
+	err1 error
+	err2 error
+}
+
+func (e *multiWrappedError) Error() string {
+	return e.msg
+}
+
+func (e *multiWrappedError) Unwrap() []error {
+	if e == nil {
+		return nil
+	}
+	var out []error
+	if e.err1 != nil {
+		out = append(out, e.err1)
+	}
+	if e.err2 != nil {
+		out = append(out, e.err2)
+	}
+	return out
+}
+
 // =============================================================================
 // Error Constructors (untuk error dengan context tambahan)
 // =============================================================================
@@ -113,7 +142,11 @@ func SSHPortInvalidError(port int) error {
 
 // ReadConfigDirError creates error saat gagal baca direktori config
 func ReadConfigDirError(dir string, err error) error {
-	return fmt.Errorf("%w '%s': %v", ErrReadConfigDirFailed, dir, err)
+	return &multiWrappedError{
+		msg:  fmt.Sprintf("%s '%s': %v", ErrReadConfigDirFailed, dir, err),
+		err1: ErrReadConfigDirFailed,
+		err2: err,
+	}
 }
 
 // DecryptionFailedError creates error dengan hint kenapa dekripsi gagal
@@ -128,12 +161,20 @@ func ParseConfigFailedError(path string) error {
 
 // LoadProfileError wraps underlying error saat load profile
 func LoadProfileError(err error) error {
-	return fmt.Errorf("%w: %v", ErrLoadProfileFailed, err)
+	return &multiWrappedError{
+		msg:  fmt.Sprintf("%s: %v", ErrLoadProfileFailed, err),
+		err1: ErrLoadProfileFailed,
+		err2: err,
+	}
 }
 
 // ConnectionFailedError creates error dengan detail koneksi yang gagal
 func ConnectionFailedError(user, host string, port int, err error) error {
-	return fmt.Errorf("%w ke %s@%s:%d: %v", ErrConnectionFailed, user, host, port, err)
+	return &multiWrappedError{
+		msg:  fmt.Sprintf("%s ke %s@%s:%d: %v", ErrConnectionFailed, user, host, port, err),
+		err1: ErrConnectionFailed,
+		err2: err,
+	}
 }
 
 // SSHTunnelError creates error saat ssh tunnel gagal dibuat

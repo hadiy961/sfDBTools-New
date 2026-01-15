@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"sfdbtools/internal/app/backup/model/types_backup"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/helpers/loader"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/consts"
@@ -48,7 +48,7 @@ func (s *Setup) CheckAndSelectConfigFile() error {
 	}
 
 	allowInteractive := isInteractiveMode(s.Options.Mode) && !s.Options.NonInteractive && s.Options.Profile.Path == ""
-	profile, err := profilehelper.LoadSourceProfile(
+	profile, err := loader.LoadSourceProfile(
 		s.Config.ConfigDir.DatabaseProfile,
 		s.Options.Profile.Path,
 		s.Options.Profile.EncryptionKey,

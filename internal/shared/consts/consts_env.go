@@ -48,6 +48,11 @@ const (
 	// Default: verifikasi host key wajib (secure-by-default).
 	ENV_SSH_INSECURE_IGNORE_HOSTKEY = "SFDB_SSH_INSECURE_IGNORE_HOSTKEY"
 
+	// Profile Connection Timeout
+	// Override timeout untuk koneksi database saat create/edit profile (format: "15s", "1m", etc.)
+	// Default: 15s
+	ENV_PROFILE_CONNECT_TIMEOUT = "SFDB_PROFILE_CONNECT_TIMEOUT"
+
 	// Auto Update (GitHub Releases)
 	ENV_AUTO_UPDATE       = "SFDB_AUTO_UPDATE"       // set 1 untuk enable auto-update saat start
 	ENV_NO_AUTO_UPDATE    = "SFDB_NO_AUTO_UPDATE"    // set 1 untuk disable paksa (override)

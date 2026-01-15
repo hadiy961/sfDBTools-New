@@ -2,7 +2,7 @@
 // Deskripsi : Prompt wizard untuk nama/config, DB info, dan SSH tunnel
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 9 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package wizard
 
@@ -65,11 +65,14 @@ func (r *Runner) promptProfileInfo() error {
 			validateNoLeadingTrailingSpaces(consts.ProfileLabelDBHost),
 			validateNoSpaces(consts.ProfileLabelDBHost),
 		)
-		v, err := prompt.AskText(consts.ProfileLabelDBHost, prompt.WithDefault("localhost"), prompt.WithValidator(validator))
-		if err != nil {
-			return validation.HandleInputError(err)
+		if err := r.askAndAssignText(
+			&r.State.ProfileInfo.DBInfo.Host,
+			consts.ProfileLabelDBHost,
+			prompt.WithDefault("localhost"),
+			prompt.WithValidator(validator),
+		); err != nil {
+			return err
 		}
-		r.State.ProfileInfo.DBInfo.Host = strings.TrimSpace(v)
 	}
 
 	// Port
@@ -78,11 +81,14 @@ func (r *Runner) promptProfileInfo() error {
 			survey.Required,
 			validatePortRange(1, 65535, false, consts.ProfileLabelDBPort),
 		)
-		v, err := prompt.AskInt(consts.ProfileLabelDBPort, 3306, validator)
-		if err != nil {
-			return validation.HandleInputError(err)
+		if err := r.askAndAssignInt(
+			&r.State.ProfileInfo.DBInfo.Port,
+			consts.ProfileLabelDBPort,
+			3306,
+			validator,
+		); err != nil {
+			return err
 		}
-		r.State.ProfileInfo.DBInfo.Port = v
 	}
 
 	// User
@@ -93,11 +99,14 @@ func (r *Runner) promptProfileInfo() error {
 			validateNoLeadingTrailingSpaces(consts.ProfileLabelDBUser),
 			validateNoSpaces(consts.ProfileLabelDBUser),
 		)
-		v, err := prompt.AskText(consts.ProfileLabelDBUser, prompt.WithDefault("root"), prompt.WithValidator(validator))
-		if err != nil {
-			return validation.HandleInputError(err)
+		if err := r.askAndAssignText(
+			&r.State.ProfileInfo.DBInfo.User,
+			consts.ProfileLabelDBUser,
+			prompt.WithDefault("root"),
+			prompt.WithValidator(validator),
+		); err != nil {
+			return err
 		}
-		r.State.ProfileInfo.DBInfo.User = strings.TrimSpace(v)
 	}
 
 	// Password
@@ -113,18 +122,17 @@ func (r *Runner) promptProfileInfo() error {
 			if isEditFlow {
 				print.PrintInfo(consts.ProfileTipKeepCurrentDBPasswordUpdate)
 			}
-			pw, err := prompt.AskPassword(
+			if err := r.askAndAssignPassword(
+				&r.State.ProfileInfo.DBInfo.Password,
 				consts.ProfileLabelDBPassword,
 				prompt.ComposeValidators(
 					validateNotBlank(consts.ProfileLabelDBPassword),
 					validateNoControlChars(consts.ProfileLabelDBPassword),
 					validateOptionalNoLeadingTrailingSpaces(consts.ProfileLabelDBPassword),
 				),
-			)
-			if err != nil {
-				return validation.HandleInputError(err)
+			); err != nil {
+				return err
 			}
-			r.State.ProfileInfo.DBInfo.Password = pw
 		}
 	}
 
@@ -138,11 +146,9 @@ func (r *Runner) promptProfileInfo() error {
 func (r *Runner) promptSSHTunnelDetailsIfEnabledOrAsk() error {
 	enabled := r.State.ProfileInfo.SSHTunnel.Enabled
 	if !enabled {
-		v, err := prompt.Confirm(consts.ProfilePromptUseSSHTunnel, false)
-		if err != nil {
-			return validation.HandleInputError(err)
+		if err := r.askAndAssignBool(&enabled, consts.ProfilePromptUseSSHTunnel, false); err != nil {
+			return err
 		}
-		enabled = v
 	}
 	if !enabled {
 		r.State.ProfileInfo.SSHTunnel.Enabled = false
@@ -168,11 +174,14 @@ func (r *Runner) promptSSHTunnelDetailsIfEnabled() error {
 			validateNoLeadingTrailingSpaces(consts.ProfileLabelSSHHost),
 			validateNoSpaces(consts.ProfileLabelSSHHost),
 		)
-		v, err := prompt.AskText(consts.ProfilePromptSSHHost, prompt.WithDefault(""), prompt.WithValidator(validator))
-		if err != nil {
-			return validation.HandleInputError(err)
+		if err := r.askAndAssignText(
+			&ssh.Host,
+			consts.ProfilePromptSSHHost,
+			prompt.WithDefault(""),
+			prompt.WithValidator(validator),
+		); err != nil {
+			return err
 		}
-		ssh.Host = strings.TrimSpace(v)
 	}
 	// Port default 22
 	if ssh.Port == 0 {
@@ -180,11 +189,9 @@ func (r *Runner) promptSSHTunnelDetailsIfEnabled() error {
 			survey.Required,
 			validatePortRange(1, 65535, false, consts.ProfileLabelSSHPort),
 		)
-		v, err := prompt.AskInt(consts.ProfileLabelSSHPort, 22, validator)
-		if err != nil {
-			return validation.HandleInputError(err)
+		if err := r.askAndAssignInt(&ssh.Port, consts.ProfileLabelSSHPort, 22, validator); err != nil {
+			return err
 		}
-		ssh.Port = v
 	}
 	// User optional
 	if strings.TrimSpace(ssh.User) == "" {
@@ -193,25 +200,29 @@ func (r *Runner) promptSSHTunnelDetailsIfEnabled() error {
 			validateNoLeadingTrailingSpaces(consts.ProfileLabelSSHUser),
 			validateNoSpaces(consts.ProfileLabelSSHUser),
 		)
-		v, err := prompt.AskText(consts.ProfilePromptSSHUser, prompt.WithDefault(""), prompt.WithValidator(validator))
-		if err != nil {
-			return validation.HandleInputError(err)
+		if err := r.askAndAssignText(
+			&ssh.User,
+			consts.ProfilePromptSSHUser,
+			prompt.WithDefault(""),
+			prompt.WithValidator(validator),
+		); err != nil {
+			return err
 		}
-		ssh.User = strings.TrimSpace(v)
 	}
 
 	// Password opsional
 	if strings.TrimSpace(ssh.Password) == "" {
 		print.PrintInfo(consts.ProfileTipSSHPasswordOptional)
-		pw, err := prompt.AskPassword(
+		var pw string
+		if err := r.askAndAssignPassword(
+			&pw,
 			consts.ProfilePromptSSHPasswordOptional,
 			prompt.ComposeValidators(
 				validateOptionalNoControlChars(consts.ProfileLabelSSHPassword),
 				validateOptionalNoLeadingTrailingSpaces(consts.ProfileLabelSSHPassword),
 			),
-		)
-		if err != nil {
-			return validation.HandleInputError(err)
+		); err != nil {
+			return err
 		}
 		if strings.TrimSpace(pw) != "" {
 			ssh.Password = pw
@@ -225,21 +236,22 @@ func (r *Runner) promptSSHTunnelDetailsIfEnabled() error {
 			validateNoLeadingTrailingSpaces(consts.ProfileLabelSSHIdentityFile),
 			validateOptionalExistingFilePath(consts.ProfileLabelSSHIdentityFile),
 		)
-		v, err := prompt.AskText(consts.ProfilePromptSSHIdentityFileOptional, prompt.WithDefault(""), prompt.WithValidator(validator))
-		if err != nil {
-			return validation.HandleInputError(err)
+		if err := r.askAndAssignText(
+			&ssh.IdentityFile,
+			consts.ProfilePromptSSHIdentityFileOptional,
+			prompt.WithDefault(""),
+			prompt.WithValidator(validator),
+		); err != nil {
+			return err
 		}
-		ssh.IdentityFile = strings.TrimSpace(v)
 	}
 
 	// Local port opsional
 	if ssh.LocalPort == 0 {
 		validator := validatePortRange(1, 65535, true, consts.ProfileLabelSSHLocalPort)
-		v, err := prompt.AskInt(consts.ProfilePromptSSHLocalPort, 0, validator)
-		if err != nil {
-			return validation.HandleInputError(err)
+		if err := r.askAndAssignInt(&ssh.LocalPort, consts.ProfilePromptSSHLocalPort, 0, validator); err != nil {
+			return err
 		}
-		ssh.LocalPort = v
 	}
 
 	return nil

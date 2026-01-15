@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	profileconn "sfdbtools/internal/app/profile/connection"
-	profilehelpers "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/helpers/keys"
 	"sfdbtools/internal/app/profile/merger"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/consts"
@@ -77,7 +77,7 @@ func (e *Executor) SaveProfile(mode string) error {
 	}
 	iniContent := e.Ops.FormatConfigToINI()
 
-	key, _, err := profilehelpers.ResolveProfileEncryptionKey(e.State.ProfileInfo.EncryptionKey, isInteractive)
+	key, _, err := keys.ResolveProfileEncryptionKey(e.State.ProfileInfo.EncryptionKey, isInteractive)
 	if err != nil {
 		return fmt.Errorf(consts.ProfileErrEncryptionKeyUnavailableFmt, err)
 	}

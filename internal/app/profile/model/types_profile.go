@@ -1,6 +1,9 @@
 package types
 
-import "sfdbtools/internal/domain"
+import (
+	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/consts"
+)
 
 // ProfileOptions adalah union-style interface untuk menyimpan opsi aktif
 // (create/edit/show/delete) dalam ProfileState.
@@ -17,7 +20,7 @@ type ProfileCreateOptions struct {
 	Interactive bool
 }
 
-func (o *ProfileCreateOptions) Mode() string { return "create" }
+func (o *ProfileCreateOptions) Mode() string { return consts.ProfileModeCreate }
 
 func (o *ProfileCreateOptions) IsInteractive() bool { return o != nil && o.Interactive }
 
@@ -30,7 +33,7 @@ type ProfileEditOptions struct {
 	NewProfileKeySource string
 }
 
-func (o *ProfileEditOptions) Mode() string { return "edit" }
+func (o *ProfileEditOptions) Mode() string { return consts.ProfileModeEdit }
 
 func (o *ProfileEditOptions) IsInteractive() bool { return o != nil && o.Interactive }
 
@@ -41,7 +44,7 @@ type ProfileShowOptions struct {
 	Interactive    bool
 }
 
-func (o *ProfileShowOptions) Mode() string { return "show" }
+func (o *ProfileShowOptions) Mode() string { return consts.ProfileModeShow }
 
 func (o *ProfileShowOptions) IsInteractive() bool { return o != nil && o.Interactive }
 
@@ -53,7 +56,7 @@ type ProfileDeleteOptions struct {
 	Interactive bool
 }
 
-func (o *ProfileDeleteOptions) Mode() string { return "delete" }
+func (o *ProfileDeleteOptions) Mode() string { return consts.ProfileModeDelete }
 
 func (o *ProfileDeleteOptions) IsInteractive() bool { return o != nil && o.Interactive }
 

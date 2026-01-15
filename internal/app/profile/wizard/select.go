@@ -8,12 +8,12 @@ package wizard
 
 import (
 	"fmt"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/helpers/loader"
 	"sfdbtools/internal/shared/consts"
 )
 
 func (r *Runner) promptSelectExistingConfig() error {
-	info, originalName, snapshot, err := profilehelper.SelectExistingDBConfigWithSnapshot(
+	info, originalName, snapshot, err := loader.SelectExistingDBConfigWithSnapshot(
 		r.ConfigDir,
 		consts.ProfileWizardPromptSelectExistingConfig,
 	)

@@ -12,7 +12,7 @@ import (
 	"sfdbtools/internal/app/dbscan/helpers"
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
 	profileconn "sfdbtools/internal/app/profile/connection"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/helpers/loader"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
@@ -140,7 +140,7 @@ func (s *Service) prepareScanSession(ctx context.Context, headerTitle string, sh
 
 // CheckAndSelectConfigFile memeriksa atau memilih file profile database.
 func (s *Service) CheckAndSelectConfigFile() error {
-	profile, err := profilehelper.LoadSourceProfile(
+	profile, err := loader.LoadSourceProfile(
 		s.Config.ConfigDir.DatabaseProfile,
 		s.ScanOptions.ProfileInfo.Path,
 		s.ScanOptions.Encryption.Key,

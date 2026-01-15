@@ -7,9 +7,9 @@ package wizard
 
 import (
 	"fmt"
-	profilehelpers "sfdbtools/internal/app/profile/helpers"
 
 	profiledisplay "sfdbtools/internal/app/profile/display"
+	"sfdbtools/internal/app/profile/helpers/keys"
 	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
@@ -99,7 +99,7 @@ func (r *Runner) Run(mode string) error {
 
 	r.Log.Info(consts.ProfileWizardMsgConfirmAccepted)
 
-	key, source, err := profilehelpers.ResolveProfileEncryptionKey(r.State.ProfileInfo.EncryptionKey, true)
+	key, source, err := keys.ResolveProfileEncryptionKey(r.State.ProfileInfo.EncryptionKey, true)
 	if err != nil {
 		return fmt.Errorf(consts.ProfileErrGetEncryptionPasswordFailedFmt, err)
 	}

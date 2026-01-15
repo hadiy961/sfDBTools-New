@@ -11,7 +11,7 @@ import (
 
 	profileconn "sfdbtools/internal/app/profile/connection"
 	profiledisplay "sfdbtools/internal/app/profile/display"
-	profilehelpers "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/helpers/loader"
 	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
@@ -119,7 +119,7 @@ func (e *Executor) ShowProfile() error {
 				validation.ErrNonInteractive,
 			)
 		}
-		info, err := profilehelpers.ResolveAndLoadProfile(profilehelpers.ProfileLoadOptions{
+		info, err := loader.ResolveAndLoadProfile(loader.ProfileLoadOptions{
 			ConfigDir:      e.ConfigDir,
 			ProfilePath:    e.State.OriginalProfileInfo.Path,
 			ProfileKey:     e.State.ProfileInfo.EncryptionKey,

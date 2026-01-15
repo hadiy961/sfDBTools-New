@@ -6,11 +6,9 @@
 package executor
 
 import (
-	"fmt"
 	"os"
-	"strings"
 
-	profilehelpers "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/helpers/paths"
 	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/app/profile/wizard"
 	"sfdbtools/internal/domain"
@@ -62,10 +60,11 @@ type ProfileOps interface {
 }
 
 type Executor struct {
-	Log       applog.Logger
-	ConfigDir string
-	State     *profilemodel.ProfileState // Shared state pointer
-	Ops       ProfileOps                 // Operations interface
+	Log          applog.Logger
+	ConfigDir    string
+	State        *profilemodel.ProfileState // Shared state pointer
+	Ops          ProfileOps                 // Operations interface
+	pathResolver *paths.PathResolver        // Path resolution helper
 }
 
 // New creates a new Executor instance
@@ -74,10 +73,11 @@ func New(log applog.Logger, configDir string, state *profilemodel.ProfileState, 
 		log = applog.NullLogger()
 	}
 	return &Executor{
-		Log:       log,
-		ConfigDir: configDir,
-		State:     state,
-		Ops:       ops,
+		Log:          log,
+		ConfigDir:    configDir,
+		State:        state,
+		Ops:          ops,
+		pathResolver: paths.NewPathResolver(configDir),
 	}
 }
 
@@ -93,13 +93,5 @@ func (e *Executor) isInteractiveMode() bool {
 }
 
 func (e *Executor) resolveProfilePath(spec string) (absPath string, name string, err error) {
-	if strings.TrimSpace(e.ConfigDir) != "" {
-		absPath, name, err = profilehelpers.ResolveConfigPathInDir(e.ConfigDir, spec)
-	} else {
-		absPath, name, err = profilehelpers.ResolveConfigPath(spec)
-	}
-	if err != nil {
-		return "", "", fmt.Errorf("gagal memproses path konfigurasi: %w", err)
-	}
-	return absPath, name, nil
+	return e.pathResolver.Resolve(spec)
 }

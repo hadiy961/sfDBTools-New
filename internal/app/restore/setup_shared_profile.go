@@ -10,13 +10,13 @@ import (
 	"fmt"
 	"path/filepath"
 	profileconn "sfdbtools/internal/app/profile/connection"
-	profilehelper "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/helpers/loader"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 )
 
 func (s *Service) resolveTargetProfile(profileInfo *domain.ProfileInfo, allowInteractive bool) error {
-	loadedProfile, err := profilehelper.ResolveAndLoadProfile(profilehelper.ProfileLoadOptions{
+	loadedProfile, err := loader.ResolveAndLoadProfile(loader.ProfileLoadOptions{
 		ConfigDir:         s.Config.ConfigDir.DatabaseProfile,
 		ProfilePath:       profileInfo.Path,
 		ProfileKey:        profileInfo.EncryptionKey,

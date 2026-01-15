@@ -8,7 +8,7 @@ package display
 
 import (
 	"sfdbtools/internal/app/profile/formatter"
-	"sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/helpers/password"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
@@ -34,7 +34,7 @@ func (d *Displayer) revealPasswordConfirmAndShow(orig *domain.ProfileInfo) {
 		return
 	}
 
-	realPw, err := helpers.LoadProfilePasswordFromPath(d.ConfigDir, orig.Path, key)
+	realPw, err := password.LoadProfilePasswordFromPath(d.ConfigDir, orig.Path, key)
 	if err != nil {
 		print.PrintWarning(consts.ProfileDisplayInvalidKeyOrCorrupt)
 		return
