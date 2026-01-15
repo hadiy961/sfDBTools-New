@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sfdbtools/internal/shared/consts"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
@@ -92,9 +93,16 @@ func appendKnownHost(path string, host string, port int, key ssh.PublicKey) erro
 func buildHostKeyCallbackFor(host string, port int) (ssh.HostKeyCallback, string, error) {
 	knownHostsPath, err := selectKnownHostsPath()
 	if err != nil {
-		// Fallback agar tetap bisa jalan (terutama di environment yang tidak punya permission menulis file).
-		// Ini mengurangi keamanan verifikasi host key.
-		return ssh.InsecureIgnoreHostKey(), "", nil
+		// Security: jangan silently insecure. Izinkan bypass hanya jika user opt-in via env.
+		if strings.TrimSpace(os.Getenv(consts.ENV_SSH_INSECURE_IGNORE_HOSTKEY)) == "1" {
+			return ssh.InsecureIgnoreHostKey(), "", nil
+		}
+		return nil, "", fmt.Errorf(
+			"tidak bisa menentukan known_hosts path (verifikasi host key SSH tidak bisa dilakukan). "+
+				"Perbaiki permission/home dir atau set %s=1 untuk bypass (TIDAK AMAN): %w",
+			consts.ENV_SSH_INSECURE_IGNORE_HOSTKEY,
+			err,
+		)
 	}
 
 	cb, kerr := knownhosts.New(knownHostsPath)

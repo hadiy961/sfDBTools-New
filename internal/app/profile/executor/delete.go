@@ -67,7 +67,7 @@ func (e *Executor) deletePaths(paths []string, logSuccessFmt string, showErrorOn
 
 		e.Log.Info(fmt.Sprintf(logSuccessFmt, p))
 		// UI success selalu pakai message yang sama seperti sebelumnya.
-		print.PrintSuccess(fmt.Sprintf(consts.ProfileDeleteDeletedFmt, p))
+		// print.PrintSuccess(fmt.Sprintf(consts.ProfileDeleteDeletedFmt, p))
 	}
 }
 

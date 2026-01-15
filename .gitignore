@@ -11,3 +11,4 @@ logs/dbscan/dbscan_background.lock
 /bash/
 /docs/improvement
 /docs/refactor
+/docs/example

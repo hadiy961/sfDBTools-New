@@ -43,6 +43,11 @@ const (
 
 	ENV_DAEMON_MODE = "SFDB_DAEMON_MODE"
 
+	// SSH
+	// Jika diset 1, sfdbtools akan mengabaikan verifikasi host key SSH (TIDAK AMAN).
+	// Default: verifikasi host key wajib (secure-by-default).
+	ENV_SSH_INSECURE_IGNORE_HOSTKEY = "SFDB_SSH_INSECURE_IGNORE_HOSTKEY"
+
 	// Auto Update (GitHub Releases)
 	ENV_AUTO_UPDATE       = "SFDB_AUTO_UPDATE"       // set 1 untuk enable auto-update saat start
 	ENV_NO_AUTO_UPDATE    = "SFDB_NO_AUTO_UPDATE"    // set 1 untuk disable paksa (override)

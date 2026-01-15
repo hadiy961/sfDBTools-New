@@ -20,7 +20,6 @@ import (
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/validation"
-	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 )
 
@@ -44,18 +43,19 @@ func (e *Executor) SaveProfile(mode string) error {
 			return fmt.Errorf(consts.ProfileErrCreateConfigDirFailedFmt, err)
 		}
 	}
+	e.Log.Info("Menghubungkan ke database target, sebelum menyimpan profile...")
 
 	if c, err := profileconn.ConnectWithProfile(e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
 		if !isInteractive {
 			return err
 		}
 		info := profileconn.DescribeConnectError(err)
-		print.PrintWarning("\n⚠️  " + info.Title)
+		e.Log.Warn(info.Title)
 		if strings.TrimSpace(info.Detail) != "" {
-			print.PrintWarning("Detail (ringkas): " + info.Detail)
+			e.Log.Warn("Detail (ringkas): " + info.Detail)
 		}
 		for _, h := range info.Hints {
-			print.PrintInfo("Hint: " + h)
+			e.Log.Info("Hint: " + h)
 		}
 		continueAnyway, askErr := prompt.Confirm(consts.ProfileSavePromptContinueDespiteDBFail, false)
 		if askErr != nil {
@@ -64,7 +64,7 @@ func (e *Executor) SaveProfile(mode string) error {
 		if !continueAnyway {
 			return validation.ErrConnectionFailedRetry
 		}
-		print.PrintWarning(consts.ProfileSaveWarnSavingWithInvalidConn)
+		e.Log.Warn(consts.ProfileSaveWarnSavingWithInvalidConn)
 	} else {
 		c.Close()
 		if !isInteractive {
@@ -130,10 +130,10 @@ func (e *Executor) SaveProfile(mode string) error {
 		}
 
 		if err := os.Remove(oldFilePath); err != nil {
-			print.PrintWarning(fmt.Sprintf(consts.ProfileWarnSavedButDeleteOldFailedFmt, newFileName, oldFilePath, err))
+			e.Log.Warn(fmt.Sprintf(consts.ProfileWarnSavedButDeleteOldFailedFmt, newFileName, oldFilePath, err))
 		}
-		print.PrintSuccess(fmt.Sprintf(consts.ProfileSuccessSavedRenamedFmt, newFileName, merger.BuildProfileFileName(e.State.OriginalProfileName)))
-		print.PrintInfo(consts.ProfileMsgConfigSavedAtPrefix + newFilePath)
+		e.Log.Info(fmt.Sprintf(consts.ProfileSuccessSavedRenamedFmt, newFileName, merger.BuildProfileFileName(e.State.OriginalProfileName)))
+		e.Log.Info(consts.ProfileMsgConfigSavedAtPrefix + newFilePath)
 		return nil
 	}
 
@@ -141,7 +141,7 @@ func (e *Executor) SaveProfile(mode string) error {
 		return fmt.Errorf(consts.ProfileErrWriteConfigFailedFmt, err)
 	}
 
-	print.PrintSuccess(fmt.Sprintf(consts.ProfileSuccessSavedSafelyFmt, newFileName))
-	print.PrintInfo(consts.ProfileMsgConfigSavedAtPrefix + newFilePath)
+	e.Log.Info(fmt.Sprintf(consts.ProfileSuccessSavedSafelyFmt, newFileName))
+	e.Log.Info(consts.ProfileMsgConfigSavedAtPrefix + newFilePath)
 	return nil
 }

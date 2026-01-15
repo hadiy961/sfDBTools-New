@@ -2,7 +2,7 @@
 // Deskripsi : Runner wizard interaktif untuk create/edit profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 package wizard
 
 import (
@@ -73,6 +73,11 @@ func (r *Runner) Run(mode string) error {
 		// Review
 		profiledisplay.DisplayProfileDetails(r.ConfigDir, r.State)
 
+		// Edit no-op: jika benar-benar tidak ada perubahan, batalkan tanpa save.
+		if mode == consts.ProfileModeEdit && r.State != nil && !r.State.HasMeaningfulChanges() {
+			return validation.ErrUserCancelled
+		}
+
 		confirmSave, err := prompt.Confirm(consts.ProfilePromptConfirmSave, true)
 		if err != nil {
 			return validation.HandleInputError(err)
@@ -92,7 +97,7 @@ func (r *Runner) Run(mode string) error {
 		return validation.ErrUserCancelled
 	}
 
-	print.PrintSuccess(consts.ProfileWizardMsgConfirmAccepted)
+	r.Log.Info(consts.ProfileWizardMsgConfirmAccepted)
 
 	key, source, err := profilehelpers.ResolveProfileEncryptionKey(r.State.ProfileInfo.EncryptionKey, true)
 	if err != nil {

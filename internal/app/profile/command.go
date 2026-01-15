@@ -9,6 +9,7 @@ import (
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/parsing"
 	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
 
 	profileerrors "sfdbtools/internal/app/profile/errors"
@@ -97,11 +98,23 @@ func executeProfileCommon(cmd *cobra.Command, deps *appdeps.Dependencies, config
 	}
 
 	if err := svc.ExecuteProfileCommand(config); err != nil {
+		if err == validation.ErrUserCancelled {
+			switch config.Mode {
+			case consts.ProfileModeCreate:
+				print.PrintWarning(consts.ProfileMsgCreateCancelled)
+			case consts.ProfileModeEdit:
+				print.PrintWarning(consts.ProfileMsgEditCancelled)
+			case consts.ProfileModeDelete:
+				print.PrintWarning(consts.ProfileDeleteCancelledByUser)
+			default:
+				print.PrintWarning("Proses dibatalkan.")
+			}
+			return nil
+		}
 		return err
 	}
 
 	if config.SuccessMsg != "" {
-		print.PrintSuccess(config.SuccessMsg)
 		logger.Info(config.SuccessMsg)
 	}
 

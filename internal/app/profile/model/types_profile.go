@@ -75,6 +75,59 @@ type ProfileState struct {
 	OriginalProfileInfo *domain.ProfileInfo
 }
 
+// HasMeaningfulChanges mengembalikan true jika ada perubahan yang akan berdampak
+// pada file profil yang disimpan.
+//
+// Catatan: field metadata runtime seperti Path/Size/LastModified dan
+// ResolvedLocalPort tidak dianggap perubahan.
+func (s *ProfileState) HasMeaningfulChanges() bool {
+	if s == nil || s.OriginalProfileInfo == nil || s.ProfileInfo == nil {
+		return false
+	}
+	orig := s.OriginalProfileInfo
+	cur := s.ProfileInfo
+
+	if orig.Name != cur.Name {
+		return true
+	}
+	if orig.DBInfo.Host != cur.DBInfo.Host {
+		return true
+	}
+	if orig.DBInfo.Port != cur.DBInfo.Port {
+		return true
+	}
+	if orig.DBInfo.User != cur.DBInfo.User {
+		return true
+	}
+	if orig.DBInfo.Password != cur.DBInfo.Password {
+		return true
+	}
+
+	if orig.SSHTunnel.Enabled != cur.SSHTunnel.Enabled {
+		return true
+	}
+	if orig.SSHTunnel.Host != cur.SSHTunnel.Host {
+		return true
+	}
+	if orig.SSHTunnel.Port != cur.SSHTunnel.Port {
+		return true
+	}
+	if orig.SSHTunnel.User != cur.SSHTunnel.User {
+		return true
+	}
+	if orig.SSHTunnel.Password != cur.SSHTunnel.Password {
+		return true
+	}
+	if orig.SSHTunnel.IdentityFile != cur.SSHTunnel.IdentityFile {
+		return true
+	}
+	if orig.SSHTunnel.LocalPort != cur.SSHTunnel.LocalPort {
+		return true
+	}
+
+	return false
+}
+
 func (s *ProfileState) CreateOptions() (*ProfileCreateOptions, bool) {
 	o, ok := s.Options.(*ProfileCreateOptions)
 	return o, ok

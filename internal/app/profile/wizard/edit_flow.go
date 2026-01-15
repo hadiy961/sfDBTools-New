@@ -17,7 +17,6 @@ import (
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/validation"
-	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 )
 
@@ -96,8 +95,6 @@ func (r *Runner) runEditFlow() error {
 	if err := r.ensureSSHTunnelMinimumIfEnabled(); err != nil {
 		return err
 	}
-
-	print.PrintSubHeader(consts.ProfileMsgChangeSummaryPrefix + r.State.ProfileInfo.Name)
 	return nil
 }
 

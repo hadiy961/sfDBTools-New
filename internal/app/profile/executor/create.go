@@ -12,7 +12,6 @@ import (
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/shared/validation"
-	"sfdbtools/internal/ui/print"
 )
 
 func (e *Executor) CreateProfile() error {
@@ -52,7 +51,7 @@ func (e *Executor) CreateProfile() error {
 		skipWizard = false
 
 		if err := e.Ops.CheckConfigurationNameUnique(consts.ProfileModeCreate); err != nil {
-			print.PrintError(err.Error())
+			// print.PrintError(err.Error())
 			return err
 		}
 

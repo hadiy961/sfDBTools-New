@@ -124,6 +124,11 @@ func (e *Executor) EditProfile() error {
 			e.State.ProfileInfo.EncryptionSource = strings.TrimSpace(editOpts.NewProfileKeySource)
 		}
 
+		// Jika tidak ada perubahan meaningful, jangan tulis ulang file.
+		if e.State != nil && e.State.OriginalProfileInfo != nil && !e.State.HasMeaningfulChanges() {
+			return validation.ErrUserCancelled
+		}
+
 		if err := e.SaveProfile(consts.ProfileSaveModeEdit); err != nil {
 			retry, err2 := e.handleConnectionFailedRetryIfNeeded(err, consts.ProfileMsgRetryEdit, consts.ProfileMsgEditCancelled)
 			if err2 != nil {
