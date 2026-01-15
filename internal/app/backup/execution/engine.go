@@ -95,7 +95,7 @@ func (e *Engine) ExecuteAndBuildBackup(
 	if e.Client != nil {
 		if v, err := e.Client.GetVersion(ctx); err == nil {
 			dbVersion = v
-			e.Log.Debugf("Database version: %s", dbVersion)
+			e.Log.Infof("Database version: %s", dbVersion)
 		} else {
 			e.Log.Warnf("Gagal mendapatkan database version: %v", err)
 		}
@@ -143,6 +143,14 @@ func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args [
 
 	result, err := exec(args)
 	if err != nil {
+		// Jika eksekusi gagal sebelum menghasilkan result (mis. binary tidak ada, gagal buat file),
+		// jangan menimpa error asli dengan error retry yang generik.
+		if result == nil {
+			if ctx.Err() != nil {
+				cleanupFailedBackup(outputPath, e.Log)
+			}
+			return nil, args, err
+		}
 		if ctx.Err() != nil {
 			cleanupFailedBackup(outputPath, e.Log)
 			return result, args, err
@@ -241,7 +249,8 @@ func (e *Engine) handleBackupError(
 
 	// Log error message
 	if cfg.IsMultiDB {
-		e.Log.Errorf("Gagal menjalankan dump: %v", err)
+		// Untuk multi-DB (backup all/combined), error akan dilaporkan oleh layer command.
+		// Detail sudah tersimpan di error log file, jadi jangan spam log console.
 	} else {
 		e.Log.Error(fmt.Sprintf("gagal backup database %s: %v", cfg.DBName, err))
 	}

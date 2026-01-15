@@ -120,7 +120,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 				s.Log.Infof("Daftar database: %s", strings.Join(dbFiltered, ", "))
 			} else {
 				s.Log.Infof("Daftar database (first %d): %s", consts.MaxDisplayDatabases, strings.Join(dbFiltered[:consts.MaxDisplayDatabases], ", "))
-				s.Log.Debugf("Daftar database lengkap: %v", dbFiltered)
+				// s.Log.Debugf("Daftar database lengkap: %v", dbFiltered)
 			}
 		}
 

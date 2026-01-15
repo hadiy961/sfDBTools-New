@@ -39,7 +39,7 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 		e.service.GetLog().Infof("Daftar database: %s", strings.Join(dbFiltered, ", "))
 	} else {
 		e.service.GetLog().Infof("Daftar database (first %d): %s", consts.MaxDisplayDatabases, strings.Join(dbFiltered[:consts.MaxDisplayDatabases], ", "))
-		e.service.GetLog().Debugf("Daftar database lengkap: %v", dbFiltered)
+		// e.service.GetLog().Debugf("Daftar database lengkap: %v", dbFiltered)
 	}
 
 	// Initialize result statistics
@@ -70,9 +70,8 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 		TotalDBFound: totalDBFound,
 		IsMultiDB:    true,
 	})
-	e.service.GetLog().Infof("Selesai dump combined (%s)", time.Since(start).Round(time.Millisecond))
-
 	if execErr != nil {
+		// Error untuk combined/all dilaporkan oleh layer command agar tidak duplikasi/spam.
 		res.Errors = append(res.Errors, execErr.Error())
 		res.FailedBackups = len(dbFiltered)
 		for _, dbName := range dbFiltered {
@@ -83,6 +82,7 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 		}
 		return res
 	}
+	e.service.GetLog().Infof("Selesai dump combined (%s)", time.Since(start).Round(time.Millisecond))
 
 	// Success - all databases backed up in one file
 	res.SuccessfulBackups = len(dbFiltered)
