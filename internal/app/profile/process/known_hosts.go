@@ -1,8 +1,8 @@
-// File : internal/app/profile/process/ssh_known_hosts.go
+// File : internal/app/profile/process/known_hosts.go
 // Deskripsi : Known hosts handling untuk SSH tunnel
 // Author : Hadiyatna Muflihun
 // Tanggal : 14 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package process
 

@@ -9,14 +9,14 @@ import (
 	"fmt"
 	"path/filepath"
 	profilehelper "sfdbtools/internal/app/profile/helpers"
-	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/app/profile/merger"
 	"strings"
 )
 
 // filePathInConfigDir membangun absolute path di dalam config dir untuk nama file konfigurasi yang diberikan.
 func (s *executorOps) filePathInConfigDir(name string) string {
 	cfgDir := s.Config.ConfigDir.DatabaseProfile
-	return filepath.Join(cfgDir, shared.BuildProfileFileName(name))
+	return filepath.Join(cfgDir, merger.BuildProfileFileName(name))
 }
 
 // loadSnapshotFromPath membaca file terenkripsi, mencoba dekripsi, parse, dan mengisi OriginalProfileInfo.

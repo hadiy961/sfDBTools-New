@@ -1,24 +1,24 @@
-// File : internal/profile/profile_validation.go
+// File : internal/app/profile/validation.go
 // Deskripsi : Validasi dan pengecekan unik untuk profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 package profile
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sfdbtools/internal/app/profile/connection"
+	profileerrors "sfdbtools/internal/app/profile/errors"
+	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/shared/validation"
-	"strings"
-
-	"sfdbtools/internal/app/profile/shared"
-	"sfdbtools/internal/domain"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/mattn/go-isatty"
@@ -26,35 +26,35 @@ import (
 
 func deriveProfileName(profileInfo *domain.ProfileInfo, originalProfileInfo *domain.ProfileInfo) string {
 	if profileInfo != nil {
-		if v := strings.TrimSpace(shared.TrimProfileSuffix(profileInfo.Name)); v != "" {
+		if v := strings.TrimSpace(connection.TrimProfileSuffix(profileInfo.Name)); v != "" {
 			return v
 		}
 	}
 	if originalProfileInfo != nil {
-		if v := strings.TrimSpace(shared.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
+		if v := strings.TrimSpace(connection.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
 			return v
 		}
 	}
 	if profileInfo != nil {
 		if p := strings.TrimSpace(profileInfo.Path); p != "" {
-			return strings.TrimSpace(shared.TrimProfileSuffix(filepath.Base(p)))
+			return strings.TrimSpace(connection.TrimProfileSuffix(filepath.Base(p)))
 		}
 	}
 	return ""
 }
 
 func deriveOriginalProfileName(originalProfileName string, profileInfo *domain.ProfileInfo, originalProfileInfo *domain.ProfileInfo) string {
-	if v := strings.TrimSpace(shared.TrimProfileSuffix(originalProfileName)); v != "" {
+	if v := strings.TrimSpace(connection.TrimProfileSuffix(originalProfileName)); v != "" {
 		return v
 	}
 	if originalProfileInfo != nil {
-		if v := strings.TrimSpace(shared.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
+		if v := strings.TrimSpace(connection.TrimProfileSuffix(originalProfileInfo.Name)); v != "" {
 			return v
 		}
 	}
 	if profileInfo != nil {
 		if p := strings.TrimSpace(profileInfo.Path); p != "" {
-			return strings.TrimSpace(shared.TrimProfileSuffix(filepath.Base(p)))
+			return strings.TrimSpace(connection.TrimProfileSuffix(filepath.Base(p)))
 		}
 	}
 	return ""
@@ -63,9 +63,9 @@ func deriveOriginalProfileName(originalProfileName string, profileInfo *domain.P
 // CheckConfigurationNameUnique memvalidasi apakah nama konfigurasi unik.
 func (s *executorOps) checkConfigurationNameUnique(mode string) error {
 	if s.State.ProfileInfo == nil {
-		return shared.ErrProfileNil
+		return profileerrors.ErrProfileNil
 	}
-	s.State.ProfileInfo.Name = shared.TrimProfileSuffix(s.State.ProfileInfo.Name)
+	s.State.ProfileInfo.Name = connection.TrimProfileSuffix(s.State.ProfileInfo.Name)
 	switch mode {
 	case consts.ProfileModeCreate:
 		abs := s.filePathInConfigDir(s.State.ProfileInfo.Name)
@@ -126,7 +126,7 @@ func (s *executorOps) checkConfigurationNameUnique(mode string) error {
 
 func ValidateProfileInfo(p *domain.ProfileInfo) error {
 	if p == nil {
-		return shared.ErrProfileNil
+		return profileerrors.ErrProfileNil
 	}
 	if p.Name == "" {
 		return fmt.Errorf(consts.ProfileErrProfileNameEmptyAlt)

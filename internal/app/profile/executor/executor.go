@@ -2,7 +2,7 @@
 // Deskripsi : Executor untuk operasi profile (create/edit/show/delete/save)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 package executor
 
 import (
@@ -19,8 +19,6 @@ import (
 
 	"github.com/mattn/go-isatty"
 )
-
-// ProfileOps defines minimal operations needed by executor
 
 // WizardProvider menyediakan runner untuk wizard.
 type WizardProvider interface {
@@ -72,6 +70,9 @@ type Executor struct {
 
 // New creates a new Executor instance
 func New(log applog.Logger, configDir string, state *profilemodel.ProfileState, ops ProfileOps) *Executor {
+	if log == nil {
+		log = applog.NullLogger()
+	}
 	return &Executor{
 		Log:       log,
 		ConfigDir: configDir,
@@ -88,20 +89,7 @@ func (e *Executor) isInteractiveMode() bool {
 	if !isatty.IsTerminal(os.Stdin.Fd()) || !isatty.IsTerminal(os.Stdout.Fd()) {
 		return false
 	}
-
-	if e.State.ProfileCreate != nil {
-		return e.State.ProfileCreate.Interactive
-	}
-	if e.State.ProfileEdit != nil {
-		return e.State.ProfileEdit.Interactive
-	}
-	if e.State.ProfileShow != nil {
-		return e.State.ProfileShow.Interactive
-	}
-	if e.State.ProfileDelete != nil {
-		return e.State.ProfileDelete.Interactive
-	}
-	return false
+	return e.State.IsInteractive()
 }
 
 func (e *Executor) resolveProfilePath(spec string) (absPath string, name string, err error) {

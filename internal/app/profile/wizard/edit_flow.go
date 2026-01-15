@@ -2,17 +2,17 @@
 // Deskripsi : Flow wizard untuk edit profile (honor flag overrides)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 package wizard
 
 import (
 	"fmt"
 	"strings"
 
-	profilehelper "sfdbtools/internal/app/profile/helpers"
-	profilemodel "sfdbtools/internal/app/profile/model"
-	"sfdbtools/internal/app/profile/shared"
 	profiledisplay "sfdbtools/internal/app/profile/display"
+	profilehelper "sfdbtools/internal/app/profile/helpers"
+	"sfdbtools/internal/app/profile/merger"
+	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
@@ -47,10 +47,10 @@ func (r *Runner) runEditFlow() error {
 		if !fsops.PathExists(absPath) {
 			return fmt.Errorf(consts.ProfileErrConfigFileNotFoundFmt, absPath)
 		}
-		if r.LoadSnapshot == nil {
+		if r.Loader == nil {
 			return fmt.Errorf(consts.ProfileErrLoadSnapshotUnavailable)
 		}
-		snap, err := r.LoadSnapshot(absPath)
+		snap, err := r.Loader.LoadSnapshot(absPath)
 		if err != nil {
 			return err
 		}
@@ -68,16 +68,16 @@ func (r *Runner) runEditFlow() error {
 	}
 
 	// Jadikan snapshot sebagai baseline, lalu apply override dari flag/env.
-	shared.ApplySnapshotAsBaseline(r.State.ProfileInfo, r.State.OriginalProfileInfo)
-	shared.ApplyDBOverrides(r.State.ProfileInfo, overrideDB)
-	shared.ApplySSHOverrides(r.State.ProfileInfo, overrideSSH)
+	merger.ApplySnapshotAsBaseline(r.State.ProfileInfo, r.State.OriginalProfileInfo)
+	merger.ApplyDBOverrides(r.State.ProfileInfo, overrideDB)
+	merger.ApplySSHOverrides(r.State.ProfileInfo, overrideSSH)
 
 	// Tampilkan isi profil terlebih dahulu (seperti profile show), lalu beri opsi ubah/batal.
 	// Ini tetap dijalankan walaupun ada override flag/env, supaya user selalu lihat kondisi awal.
-	prevShow := r.State.ProfileShow
-	r.State.ProfileShow = &profilemodel.ProfileShowOptions{}
+	prevOpts := r.State.Options
+	r.State.Options = &profilemodel.ProfileShowOptions{}
 	profiledisplay.DisplayProfileDetails(r.ConfigDir, r.State)
-	r.State.ProfileShow = prevShow
+	r.State.Options = prevOpts
 
 	action, _, err := prompt.SelectOne(consts.ProfilePromptAction, []string{consts.ProfileActionEditData, consts.ProfileActionCancel}, -1)
 	if err != nil {

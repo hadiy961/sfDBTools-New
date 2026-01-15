@@ -2,7 +2,7 @@
 // Deskripsi : Setup connection, configuration loading, dan session preparation
 // Author : Hadiyatna Muflihun
 // Tanggal : 17 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 14 Januari 2026
 
 package dbscan
 
@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"sfdbtools/internal/app/dbscan/helpers"
 	dbscanmodel "sfdbtools/internal/app/dbscan/model"
+	profileconn "sfdbtools/internal/app/profile/connection"
 	profilehelper "sfdbtools/internal/app/profile/helpers"
-	profileshared "sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
@@ -101,7 +101,7 @@ func (s *Service) prepareScanSession(ctx context.Context, headerTitle string, sh
 	}
 
 	// Connect ke Source Database
-	client, err := profileshared.ConnectWithProfile(&s.ScanOptions.ProfileInfo, consts.DefaultInitialDatabase)
+	client, err := profileconn.ConnectWithProfile(&s.ScanOptions.ProfileInfo, consts.DefaultInitialDatabase)
 	if err != nil {
 		return nil, nil, err
 	}

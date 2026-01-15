@@ -2,7 +2,7 @@
 // Deskripsi : Simpan profile ke file (terenkripsi)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package executor
 
@@ -13,8 +13,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	profileconn "sfdbtools/internal/app/profile/connection"
 	profilehelpers "sfdbtools/internal/app/profile/helpers"
-	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/app/profile/merger"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
@@ -25,7 +26,7 @@ import (
 
 func (e *Executor) SaveProfile(mode string) error {
 	isInteractive := e.isInteractiveMode()
-	if e.Log != nil && !isInteractive {
+	if !isInteractive {
 		e.Log.Info(consts.ProfileLogStartSave)
 	}
 
@@ -44,11 +45,11 @@ func (e *Executor) SaveProfile(mode string) error {
 		}
 	}
 
-	if c, err := shared.ConnectWithProfile(e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
+	if c, err := profileconn.ConnectWithProfile(e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
 		if !isInteractive {
 			return err
 		}
-		info := shared.DescribeConnectError(err)
+		info := profileconn.DescribeConnectError(err)
 		print.PrintWarning("\n⚠️  " + info.Title)
 		if strings.TrimSpace(info.Detail) != "" {
 			print.PrintWarning("Detail (ringkas): " + info.Detail)
@@ -66,10 +67,8 @@ func (e *Executor) SaveProfile(mode string) error {
 		print.PrintWarning(consts.ProfileSaveWarnSavingWithInvalidConn)
 	} else {
 		c.Close()
-		if e.Log != nil {
-			if !isInteractive {
-				e.Log.Info(consts.ProfileLogDBConnectionValid)
-			}
+		if !isInteractive {
+			e.Log.Info(consts.ProfileLogDBConnectionValid)
 		}
 	}
 
@@ -99,18 +98,22 @@ func (e *Executor) SaveProfile(mode string) error {
 		return fmt.Errorf(consts.ProfileErrEncryptConfigFailedFmt, err)
 	}
 
-	if mode == consts.ProfileSaveModeEdit && e.State.ProfileEdit != nil && strings.TrimSpace(e.State.ProfileEdit.NewName) != "" {
-		if err := validation.ValidateProfileName(e.State.ProfileEdit.NewName); err != nil {
-			return err
+	if mode == consts.ProfileSaveModeEdit {
+		if editOpts, ok := e.State.EditOptions(); ok && editOpts != nil {
+			if strings.TrimSpace(editOpts.NewName) != "" {
+				if err := validation.ValidateProfileName(editOpts.NewName); err != nil {
+					return err
+				}
+				e.State.ProfileInfo.Name = editOpts.NewName
+			}
 		}
-		e.State.ProfileInfo.Name = e.State.ProfileEdit.NewName
 	}
 	if err := validation.ValidateProfileName(e.State.ProfileInfo.Name); err != nil {
 		return err
 	}
 
-	e.State.ProfileInfo.Name = shared.TrimProfileSuffix(e.State.ProfileInfo.Name)
-	newFileName := shared.BuildProfileFileName(e.State.ProfileInfo.Name)
+	e.State.ProfileInfo.Name = profileconn.TrimProfileSuffix(e.State.ProfileInfo.Name)
+	newFileName := merger.BuildProfileFileName(e.State.ProfileInfo.Name)
 	newFilePath := filepath.Join(baseDir, newFileName)
 
 	if mode == consts.ProfileSaveModeEdit && e.State.OriginalProfileName != "" && e.State.OriginalProfileName != e.State.ProfileInfo.Name {
@@ -123,13 +126,13 @@ func (e *Executor) SaveProfile(mode string) error {
 			oldFilePath = e.State.OriginalProfileInfo.Path
 		}
 		if oldFilePath == "" {
-			oldFilePath = filepath.Join(baseDir, shared.BuildProfileFileName(e.State.OriginalProfileName))
+			oldFilePath = filepath.Join(baseDir, merger.BuildProfileFileName(e.State.OriginalProfileName))
 		}
 
 		if err := os.Remove(oldFilePath); err != nil {
 			print.PrintWarning(fmt.Sprintf(consts.ProfileWarnSavedButDeleteOldFailedFmt, newFileName, oldFilePath, err))
 		}
-		print.PrintSuccess(fmt.Sprintf(consts.ProfileSuccessSavedRenamedFmt, newFileName, shared.BuildProfileFileName(e.State.OriginalProfileName)))
+		print.PrintSuccess(fmt.Sprintf(consts.ProfileSuccessSavedRenamedFmt, newFileName, merger.BuildProfileFileName(e.State.OriginalProfileName)))
 		print.PrintInfo(consts.ProfileMsgConfigSavedAtPrefix + newFilePath)
 		return nil
 	}

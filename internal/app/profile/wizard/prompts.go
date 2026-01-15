@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	"sfdbtools/internal/app/profile/shared"
+	"sfdbtools/internal/app/profile/merger"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
@@ -40,8 +40,8 @@ func (r *Runner) promptDBConfigName(mode string) error {
 		}
 
 		r.State.ProfileInfo.Name = strings.TrimSpace(configName)
-		if r.CheckNameUnique != nil {
-			if err = r.CheckNameUnique(mode); err != nil {
+		if r.Validator != nil {
+			if err = r.Validator.CheckNameUnique(mode); err != nil {
 				print.PrintError(err.Error())
 				continue
 			}
@@ -50,7 +50,7 @@ func (r *Runner) promptDBConfigName(mode string) error {
 	}
 
 	r.State.ProfileInfo.Name = strings.TrimSpace(r.State.ProfileInfo.Name)
-	print.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + shared.BuildProfileFileName(r.State.ProfileInfo.Name))
+	print.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + merger.BuildProfileFileName(r.State.ProfileInfo.Name))
 	return nil
 }
 

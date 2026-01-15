@@ -2,12 +2,12 @@
 // Deskripsi : Service utama implementation untuk profile operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 package profile
 
 import (
+	profileerrors "sfdbtools/internal/app/profile/errors"
 	profilemodel "sfdbtools/internal/app/profile/model"
-	"sfdbtools/internal/app/profile/shared"
 	"sfdbtools/internal/domain"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
@@ -36,27 +36,29 @@ func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interf
 	if profile != nil {
 		switch v := profile.(type) {
 		case *profilemodel.ProfileCreateOptions:
-			svc.State.ProfileCreate = v
+			svc.State.Options = v
 			setProfileRefs(&v.ProfileInfo)
 		case *profilemodel.ProfileShowOptions:
-			svc.State.ProfileShow = v
+			svc.State.Options = v
 			setProfileRefs(&v.ProfileInfo)
 		case *profilemodel.ProfileEditOptions:
-			svc.State.ProfileEdit = v
+			svc.State.Options = v
 			setProfileRefs(&v.ProfileInfo)
 			// If user provided a file/path via flags, store it as OriginalProfileName
 			if v.ProfileInfo.Path != "" {
 				svc.State.OriginalProfileName = v.ProfileInfo.Path
 			}
 		case *profilemodel.ProfileDeleteOptions:
-			svc.State.ProfileDelete = v
+			svc.State.Options = v
 			setProfileRefs(&v.ProfileInfo)
 		default:
 			logs.Warn(consts.ProfileLogUnknownProfileTypeInService)
+			svc.State.Options = nil
 			svc.State.ProfileInfo = &domain.ProfileInfo{}
 		}
 	} else {
 		logs.Warn(consts.ProfileLogUnknownProfileTypeInService)
+		svc.State.Options = nil
 		svc.State.ProfileInfo = &domain.ProfileInfo{}
 	}
 
@@ -81,6 +83,6 @@ func (s *Service) ExecuteProfileCommand(config profilemodel.ProfileEntryConfig) 
 	case consts.ProfileModeDelete:
 		return s.PromptDeleteProfile()
 	default:
-		return shared.ErrInvalidProfileMode
+		return profileerrors.ErrInvalidProfileMode
 	}
 }

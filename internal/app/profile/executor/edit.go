@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi edit profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package executor
 
@@ -10,7 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"sfdbtools/internal/app/profile/shared"
+	profileconn "sfdbtools/internal/app/profile/connection"
+	"sfdbtools/internal/app/profile/merger"
 	profilevalidation "sfdbtools/internal/app/profile/validation"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/fsops"
@@ -20,8 +21,9 @@ import (
 
 func (e *Executor) EditProfile() error {
 	for {
-		if e.State.ProfileEdit != nil && e.State.ProfileEdit.Interactive {
-			if e.Log != nil {
+		editOpts, _ := e.State.EditOptions()
+		if editOpts != nil && editOpts.Interactive {
+			{
 				e.Log.Info(consts.ProfileLogModeInteractiveEnabled)
 			}
 			if e.Ops == nil {
@@ -33,18 +35,18 @@ func (e *Executor) EditProfile() error {
 			}
 			if err := runner.Run(consts.ProfileModeEdit); err != nil {
 				if err == validation.ErrUserCancelled {
-					if e.Log != nil {
+					{
 						e.Log.Warn(consts.ProfileLogEditCancelledByUser)
 					}
 					return validation.ErrUserCancelled
 				}
-				if e.Log != nil {
+				{
 					e.Log.Warn(fmt.Sprintf(consts.ProfileLogEditFailedFmt, err))
 				}
 				return err
 			}
 		} else {
-			if e.Log != nil {
+			{
 				e.Log.Info(consts.ProfileLogModeNonInteractiveShort)
 			}
 			if strings.TrimSpace(e.State.OriginalProfileName) == "" {
@@ -67,7 +69,7 @@ func (e *Executor) EditProfile() error {
 			e.State.ProfileInfo.Path = absPath
 			e.State.OriginalProfileName = name
 
-			if e.Log != nil {
+			{
 				e.Log.Info(consts.ProfileLogConfigFileFoundTryLoad)
 			}
 			if e.Ops != nil {
@@ -77,19 +79,19 @@ func (e *Executor) EditProfile() error {
 					e.State.OriginalProfileInfo = snap
 				}
 			}
-			if e.Log != nil {
+			{
 				e.Log.Info(consts.ProfileLogConfigFileLoaded)
 			}
 
-			shared.ApplySnapshotAsBaseline(e.State.ProfileInfo, e.State.OriginalProfileInfo)
-			shared.ApplyDBOverrides(e.State.ProfileInfo, overrideDB)
-			shared.ApplySSHOverrides(e.State.ProfileInfo, overrideSSH)
+			merger.ApplySnapshotAsBaseline(e.State.ProfileInfo, e.State.OriginalProfileInfo)
+			merger.ApplyDBOverrides(e.State.ProfileInfo, overrideDB)
+			merger.ApplySSHOverrides(e.State.ProfileInfo, overrideSSH)
 
-			if e.Log != nil {
+			{
 				e.Log.Info(consts.ProfileLogValidatingParams)
 			}
-			if e.State.ProfileEdit != nil && strings.TrimSpace(e.State.ProfileEdit.NewName) != "" {
-				newName := shared.TrimProfileSuffix(strings.TrimSpace(e.State.ProfileEdit.NewName))
+			if editOpts != nil && strings.TrimSpace(editOpts.NewName) != "" {
+				newName := profileconn.TrimProfileSuffix(strings.TrimSpace(editOpts.NewName))
 				if newName == "" {
 					return fmt.Errorf(consts.ProfileErrNewNameEmpty)
 				}
@@ -100,7 +102,7 @@ func (e *Executor) EditProfile() error {
 			}
 
 			if err := profilevalidation.ValidateProfileInfo(e.State.ProfileInfo); err != nil {
-				if e.Log != nil {
+				{
 					e.Log.Errorf(consts.ProfileLogValidationFailedFmt, err)
 				}
 				return err
@@ -117,9 +119,9 @@ func (e *Executor) EditProfile() error {
 
 		// Jika user memilih untuk merubah kunci enkripsi (rotasi), gunakan key baru saat save.
 		// Decrypt snapshot sudah dilakukan sebelumnya memakai key lama.
-		if e.State.ProfileEdit != nil && strings.TrimSpace(e.State.ProfileEdit.NewProfileKey) != "" {
-			e.State.ProfileInfo.EncryptionKey = strings.TrimSpace(e.State.ProfileEdit.NewProfileKey)
-			e.State.ProfileInfo.EncryptionSource = strings.TrimSpace(e.State.ProfileEdit.NewProfileKeySource)
+		if editOpts != nil && strings.TrimSpace(editOpts.NewProfileKey) != "" {
+			e.State.ProfileInfo.EncryptionKey = strings.TrimSpace(editOpts.NewProfileKey)
+			e.State.ProfileInfo.EncryptionSource = strings.TrimSpace(editOpts.NewProfileKeySource)
 		}
 
 		if err := e.SaveProfile(consts.ProfileSaveModeEdit); err != nil {
@@ -136,7 +138,7 @@ func (e *Executor) EditProfile() error {
 		break
 	}
 
-	if e.Log != nil {
+	{
 		if !e.isInteractiveMode() {
 			e.Log.Info(consts.ProfileLogWizardInteractiveFinished)
 		}

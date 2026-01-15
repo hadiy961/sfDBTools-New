@@ -8,7 +8,8 @@ package wizard
 import (
 	"strings"
 
-	"sfdbtools/internal/app/profile/shared"
+	profileconn "sfdbtools/internal/app/profile/connection"
+	"sfdbtools/internal/app/profile/merger"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
@@ -25,16 +26,16 @@ func (r *Runner) runCreateFlow(mode string) error {
 			return err
 		}
 	} else {
-		r.State.ProfileInfo.Name = shared.TrimProfileSuffix(r.State.ProfileInfo.Name)
-		if r.CheckNameUnique != nil {
-			if err := r.CheckNameUnique(mode); err != nil {
+		r.State.ProfileInfo.Name = profileconn.TrimProfileSuffix(r.State.ProfileInfo.Name)
+		if r.Validator != nil {
+			if err := r.Validator.CheckNameUnique(mode); err != nil {
 				print.PrintError(err.Error())
 				// Jika nama dari flag/env ternyata bentrok, minta user input nama baru.
 				if err2 := r.promptDBConfigName(mode); err2 != nil {
 					return err2
 				}
 			} else {
-				print.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + shared.BuildProfileFileName(r.State.ProfileInfo.Name))
+				print.PrintInfo(consts.ProfileMsgConfigWillBeSavedAsPrefix + merger.BuildProfileFileName(r.State.ProfileInfo.Name))
 			}
 		}
 	}

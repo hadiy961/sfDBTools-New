@@ -1,5 +1,5 @@
 // File : internal/app/profile/shared/edit_merge.go
-// Deskripsi : Helper shared untuk merge snapshot dan override saat edit profile
+// Deskripsi : (DEPRECATED) Facade merge profile (snapshot/override)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
 // Last Modified : 14 Januari 2026
@@ -7,97 +7,34 @@
 package shared
 
 import (
-	"strings"
-
+	"sfdbtools/internal/app/profile/merger"
 	"sfdbtools/internal/domain"
-	"sfdbtools/internal/shared/validation"
 )
 
 func BuildProfileFileName(name string) string {
-	return validation.ProfileExt(TrimProfileSuffix(name))
+	return merger.BuildProfileFileName(name)
 }
 
 func CloneAsOriginalProfileInfo(info *domain.ProfileInfo) *domain.ProfileInfo {
-	if info == nil {
-		return nil
-	}
-	return &domain.ProfileInfo{
-		Path:         info.Path,
-		Name:         info.Name,
-		DBInfo:       info.DBInfo,
-		SSHTunnel:    info.SSHTunnel,
-		Size:         info.Size,
-		LastModified: info.LastModified,
-	}
+	return merger.CloneAsOriginalProfileInfo(info)
 }
 
 func ApplySnapshotAsBaseline(dst *domain.ProfileInfo, snapshot *domain.ProfileInfo) {
-	if dst == nil || snapshot == nil {
-		return
-	}
-	dst.DBInfo = snapshot.DBInfo
-	dst.SSHTunnel = snapshot.SSHTunnel
-	if strings.TrimSpace(dst.Name) == "" {
-		dst.Name = snapshot.Name
-	}
-	if strings.TrimSpace(dst.Path) == "" {
-		dst.Path = snapshot.Path
-	}
+	merger.ApplySnapshotAsBaseline(dst, snapshot)
 }
 
 func ApplyDBOverrides(dst *domain.ProfileInfo, override domain.DBInfo) {
-	if dst == nil {
-		return
-	}
-	if strings.TrimSpace(override.Host) != "" {
-		dst.DBInfo.Host = override.Host
-	}
-	if override.Port != 0 {
-		dst.DBInfo.Port = override.Port
-	}
-	if strings.TrimSpace(override.User) != "" {
-		dst.DBInfo.User = override.User
-	}
-	if strings.TrimSpace(override.Password) != "" {
-		dst.DBInfo.Password = override.Password
-	}
+	merger.ApplyDBOverrides(dst, override)
 }
 
 func ApplySSHOverrides(dst *domain.ProfileInfo, override domain.SSHTunnelConfig) {
-	if dst == nil {
-		return
-	}
-	// Enabled override hanya jika user mengaktifkan (avoid overwrite baseline dengan default false)
-	if override.Enabled {
-		dst.SSHTunnel.Enabled = true
-	}
-	if strings.TrimSpace(override.Host) != "" {
-		dst.SSHTunnel.Host = override.Host
-	}
-	if override.Port != 0 {
-		dst.SSHTunnel.Port = override.Port
-	}
-	if strings.TrimSpace(override.User) != "" {
-		dst.SSHTunnel.User = override.User
-	}
-	if strings.TrimSpace(override.Password) != "" {
-		dst.SSHTunnel.Password = override.Password
-	}
-	if strings.TrimSpace(override.IdentityFile) != "" {
-		dst.SSHTunnel.IdentityFile = override.IdentityFile
-	}
-	if override.LocalPort != 0 {
-		dst.SSHTunnel.LocalPort = override.LocalPort
-	}
+	merger.ApplySSHOverrides(dst, override)
 }
 
 func HasAnyDBOverride(override domain.DBInfo) bool {
-	return strings.TrimSpace(override.Host) != "" || override.Port != 0 ||
-		strings.TrimSpace(override.User) != "" || strings.TrimSpace(override.Password) != ""
+	return merger.HasAnyDBOverride(override)
 }
 
 func HasAnySSHOverride(override domain.SSHTunnelConfig) bool {
-	return override.Enabled || strings.TrimSpace(override.Host) != "" || override.Port != 0 ||
-		strings.TrimSpace(override.User) != "" || strings.TrimSpace(override.Password) != "" ||
-		strings.TrimSpace(override.IdentityFile) != "" || override.LocalPort != 0
+	return merger.HasAnySSHOverride(override)
 }

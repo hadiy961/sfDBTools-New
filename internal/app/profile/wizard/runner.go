@@ -6,11 +6,11 @@
 package wizard
 
 import (
-	profilehelpers "sfdbtools/internal/app/profile/helpers"
 	"fmt"
+	profilehelpers "sfdbtools/internal/app/profile/helpers"
 
-	profilemodel "sfdbtools/internal/app/profile/model"
 	profiledisplay "sfdbtools/internal/app/profile/display"
+	profilemodel "sfdbtools/internal/app/profile/model"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/consts"
@@ -19,35 +19,41 @@ import (
 	"sfdbtools/internal/ui/prompt"
 )
 
-// Function types for dependencies
-type CheckNameUniqueFn func(mode string) error
-type LoadSnapshotFn func(absPath string) (*domain.ProfileInfo, error)
+// Dependency interfaces (ISP-style): wizard adalah consumer.
+// Catatan: signature mengikuti kebutuhan saat ini (minim perubahan behavior).
+type NameValidator interface {
+	CheckNameUnique(mode string) error
+}
+
+type SnapshotLoader interface {
+	LoadSnapshot(absPath string) (*domain.ProfileInfo, error)
+}
 
 type Runner struct {
 	Log       applog.Logger
 	ConfigDir string
 	State     *profilemodel.ProfileState // Shared state pointer, tidak perlu sync
 
-	// Minimal function dependencies
-	CheckNameUnique CheckNameUniqueFn
-	LoadSnapshot    LoadSnapshotFn
+	Validator NameValidator
+	Loader    SnapshotLoader
 }
 
 // New creates a new Runner instance
-func New(log applog.Logger, configDir string, state *profilemodel.ProfileState, checkName CheckNameUniqueFn, loadSnap LoadSnapshotFn) *Runner {
+func New(log applog.Logger, configDir string, state *profilemodel.ProfileState, validator NameValidator, loader SnapshotLoader) *Runner {
+	if log == nil {
+		log = applog.NullLogger()
+	}
 	return &Runner{
-		Log:             log,
-		ConfigDir:       configDir,
-		State:           state,
-		CheckNameUnique: checkName,
-		LoadSnapshot:    loadSnap,
+		Log:       log,
+		ConfigDir: configDir,
+		State:     state,
+		Validator: validator,
+		Loader:    loader,
 	}
 }
 
 func (r *Runner) Run(mode string) error {
-	if r.Log != nil {
-		r.Log.Info(consts.ProfileWizardLogStarted)
-	}
+	r.Log.Info(consts.ProfileWizardLogStarted)
 
 	for {
 		if mode == consts.ProfileModeEdit {
@@ -92,9 +98,7 @@ func (r *Runner) Run(mode string) error {
 	if err != nil {
 		return fmt.Errorf(consts.ProfileErrGetEncryptionPasswordFailedFmt, err)
 	}
-	if r.Log != nil {
-		r.Log.WithField("Sumber Kunci", source).Debug(consts.ProfileLogEncryptionKeyObtained)
-	}
+	r.Log.WithField("Sumber Kunci", source).Debug(consts.ProfileLogEncryptionKeyObtained)
 	r.State.ProfileInfo.EncryptionKey = key
 	return nil
 }

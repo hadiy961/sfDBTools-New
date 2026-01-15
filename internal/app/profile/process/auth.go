@@ -1,8 +1,8 @@
-// File : internal/app/profile/process/ssh_auth.go
+// File : internal/app/profile/process/auth.go
 // Deskripsi : Auth method builder untuk SSH tunnel
 // Author : Hadiyatna Muflihun
 // Tanggal : 14 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 
 package process
 

@@ -2,7 +2,7 @@
 // Deskripsi : Main backup execution engine dengan orchestration logic
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2026-01-05
+// Last Modified : 14 Januari 2026
 package execution
 
 import (
@@ -12,7 +12,7 @@ import (
 	"sfdbtools/internal/app/backup/gtid"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/backup/writer"
-	profileshared "sfdbtools/internal/app/profile/shared"
+	profileconn "sfdbtools/internal/app/profile/connection"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/database"
@@ -113,7 +113,7 @@ func (e *Engine) ExecuteAndBuildBackup(
 
 	mysqldumpArgs := BuildMysqldumpArgs(
 		e.Config.Backup.MysqlDumpArgs,
-		profileshared.EffectiveDBInfo(&e.Options.Profile),
+		profileconn.EffectiveDBInfo(&e.Options.Profile),
 		e.Options.Filter,
 		dbList,
 		cfg.DBName,
