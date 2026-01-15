@@ -59,7 +59,6 @@ func (s *executorOps) CheckNameUnique(mode string) error {
 func (s *executorOps) LoadSnapshot(absPath string) (*domain.ProfileInfo, error) {
 	return s.LoadSnapshotFromPath(absPath)
 }
-
 func (s *executorOps) SaveProfile(mode string) error {
 	e := executor.New(s.Log, s.configDir(), s.State, s)
 	return e.SaveProfile(mode)
