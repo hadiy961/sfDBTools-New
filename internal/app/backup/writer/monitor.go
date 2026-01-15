@@ -10,7 +10,7 @@ import (
 	"sfdbtools/internal/ui/progress"
 )
 
-// databaseMonitorWriter wraps an io.Writer to track mysqldump progress per database.
+// databaseMonitorWriter wraps an io.Writer untuk tracking progress dump per database.
 type databaseMonitorWriter struct {
 	target    io.Writer
 	spinner   *progress.Spinner

@@ -2,7 +2,7 @@
 // Deskripsi : Builder functions untuk DatabaseBackupInfo dan metadata generation
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-31
-// Last Modified : 2026-01-02
+// Last Modified : 15 Januari 2026
 
 package execution
 
@@ -29,7 +29,7 @@ func (e *Engine) buildDryRunInfo(
 		e.Log.Infof("[DRY-RUN] Akan backup database: %s", cfg.DBName)
 	}
 	e.Log.Info("[DRY-RUN] Output file: " + cfg.OutputPath)
-	e.Log.Debug("[DRY-RUN] Mysqldump command: mysqldump " + strings.Join(args, " "))
+	e.Log.Debug("[DRY-RUN] Dump command (auto): mariadb-dump (fallback mysqldump) " + strings.Join(args, " "))
 
 	return types_backup.DatabaseBackupInfo{
 		DatabaseName:  formatBackupDisplayName(cfg),

@@ -2,7 +2,7 @@
 // Deskripsi : Main backup execution engine dengan orchestration logic
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 14 Januari 2026
+// Last Modified : 15 Januari 2026
 package execution
 
 import (
@@ -33,7 +33,7 @@ type UserGrantsHooks interface {
 }
 
 // Engine adalah core backup execution engine.
-// Menghandle orchestration dari mysqldump execution, retry logic, dan metadata generation.
+// Menghandle orchestration dari dump execution (mariadb-dump/mysqldump), retry logic, dan metadata generation.
 type Engine struct {
 	Log      applog.Logger
 	Config   *appconfig.Config
@@ -76,7 +76,7 @@ func (e *Engine) WithDependencies(
 }
 
 // ExecuteAndBuildBackup menjalankan backup dan menghasilkan DatabaseBackupInfo.
-// Includes: mysqldump execution, retry logic, metadata/manifest generation.
+// Includes: dump execution (mariadb-dump/mysqldump), retry logic, metadata/manifest generation.
 func (e *Engine) ExecuteAndBuildBackup(
 	ctx context.Context,
 	cfg types_backup.BackupExecutionConfig,
@@ -101,7 +101,7 @@ func (e *Engine) ExecuteAndBuildBackup(
 		}
 	}
 
-	// Build mysqldump arguments
+	// Build dump arguments (kompatibel mariadb-dump/mysqldump)
 	if e.Options == nil {
 		return types_backup.DatabaseBackupInfo{}, fmt.Errorf("backup options tidak tersedia")
 	}
@@ -133,7 +133,7 @@ func (e *Engine) ExecuteAndBuildBackup(
 	return e.buildRealBackupInfo(cfg, writeResult, timer, startTime, dbVersion), nil
 }
 
-// executeWithRetry runs mysqldump with automatic retry on common failures.
+// executeWithRetry menjalankan dump dengan automatic retry pada failure yang umum.
 func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args []string) (*types_backup.BackupWriteResult, []string, error) {
 	writeEngine := writer.New(e.Log, e.ErrorLog, e.Options)
 
@@ -185,7 +185,7 @@ func (e *Engine) attemptRetries(
 	}
 
 	// No retry strategy matched, return original error
-	return result, args, fmt.Errorf("mysqldump failed without retry options")
+	return result, args, fmt.Errorf("dump failed without retry options")
 }
 
 // tryRetry adalah helper untuk execute retry dengan args modifier function.
@@ -241,7 +241,7 @@ func (e *Engine) handleBackupError(
 
 	// Log error message
 	if cfg.IsMultiDB {
-		e.Log.Errorf("Gagal menjalankan mysqldump: %v", err)
+		e.Log.Errorf("Gagal menjalankan dump: %v", err)
 	} else {
 		e.Log.Error(fmt.Sprintf("gagal backup database %s: %v", cfg.DBName, err))
 	}

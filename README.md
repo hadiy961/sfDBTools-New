@@ -55,7 +55,7 @@ curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts
 
 ## Requirements (dependensi runtime)
 
-- `mysqldump` wajib tersedia untuk fitur backup (`db-backup`).
+- `mariadb-dump` direkomendasikan untuk fitur backup (`db-backup`), dengan fallback ke `mysqldump`.
 - `mysql` CLI wajib tersedia untuk fitur restore (`db-restore`).
   - Biasanya tersedia dari paket `mysql-client` atau `mariadb-client` (nama paket tergantung distro).
 - Akses network ke server database + user DB yang punya privilege sesuai operasi.

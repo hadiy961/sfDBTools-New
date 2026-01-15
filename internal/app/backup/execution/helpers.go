@@ -2,7 +2,7 @@
 // Deskripsi : Shared utility functions untuk backup execution
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2026-01-05
+// Last Modified : 15 Januari 2026
 package execution
 
 import (
@@ -17,8 +17,8 @@ import (
 	"sfdbtools/internal/shared/fsops"
 )
 
-// ExtractMysqldumpVersion mengambil versi mysqldump dari stderr output.
-// Mencari baris yang mengandung "mysqldump" dan "Ver".
+// ExtractMysqldumpVersion mengambil versi dump tool dari stderr output.
+// Kompatibel untuk mariadb-dump dan mysqldump.
 func ExtractMysqldumpVersion(stderrOutput string) string {
 	if stderrOutput == "" {
 		return ""
@@ -26,7 +26,7 @@ func ExtractMysqldumpVersion(stderrOutput string) string {
 
 	for _, line := range strings.Split(stderrOutput, "\n") {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "mysqldump") && strings.Contains(line, "Ver") {
+		if (strings.HasPrefix(line, "mysqldump") || strings.HasPrefix(line, "mariadb-dump")) && strings.Contains(line, "Ver") {
 			return line
 		}
 	}

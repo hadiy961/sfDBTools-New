@@ -2,7 +2,7 @@
 // Deskripsi : Display logic untuk backup results
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-05
+// Last Modified : 15 Januari 2026
 
 package display
 
@@ -88,7 +88,7 @@ func (d *ResultDisplayer) displayBackupInfo(info types_backup.DatabaseBackupInfo
 
 	// Tampilkan warning jika ada
 	if info.Warnings != "" {
-		print.PrintWarn("\n⚠ Warning dari mysqldump:")
+		print.PrintWarn("\n⚠ Warning dari dump (mariadb-dump/mysqldump):")
 		fmt.Println(text.ColorText(info.Warnings, consts.UIColorYellow))
 	}
 }

@@ -20,7 +20,7 @@ sfdbtools adalah CLI Go untuk operasi MySQL/MariaDB (backup/restore/db-scan/clea
 - Jika config belum ada, tool akan auto-generate default; kalau tidak bisa menulis ke `/etc/...` (non-root), fallback ke `XDG_CONFIG_HOME/sfdbtools/config.yaml` atau `~/.config/sfdbtools/config.yaml` (lihat [internal/services/config/appconfig_defaults.go](../internal/services/config/appconfig_defaults.go)).
 
 ## Pola penting (jangan ubah arah)
-- Streaming backup: `mysqldump` → (opsional) `compress.Writer` → (opsional) `encrypt.Writer` → file. Referensi utama: [internal/app/backup/writer/engine.go](../internal/app/backup/writer/engine.go). Jangan buffer seluruh dump ke memori.
+- Streaming backup: `mariadb-dump` (fallback `mysqldump`) → (opsional) `compress.Writer` → (opsional) `encrypt.Writer` → file. Referensi utama: [internal/app/backup/writer/engine.go](../internal/app/backup/writer/engine.go). Jangan buffer seluruh dump ke memori.
 - Backup modes via factory + interface kecil: [internal/app/backup/modes/interface.go](../internal/app/backup/modes/interface.go), [internal/app/backup/modes/factory.go](../internal/app/backup/modes/factory.go).
 - Restore companion `_dmart`: auto-detect / pilih file + aturan non-interaktif `--force` dan `--continue-on-error`: [internal/app/restore/companion_helpers.go](../internal/app/restore/companion_helpers.go).
 

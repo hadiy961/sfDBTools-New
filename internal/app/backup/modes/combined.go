@@ -2,7 +2,7 @@
 // Deskripsi : Mode backup combined - semua database dalam satu file
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2026-01-02
+// Last Modified : 15 Januari 2026
 
 package modes
 
@@ -62,7 +62,7 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	// Execute backup - gunakan mode dari BackupOptions (bisa 'all' atau 'combined')
 	backupMode := opts.Mode
 	start := time.Now()
-	e.service.GetLog().Infof("Memulai mysqldump combined untuk %d database", totalDBFound)
+	e.service.GetLog().Infof("Memulai dump combined untuk %d database", totalDBFound)
 	backupInfo, execErr := e.service.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
 		DBList:       dbFiltered,
 		OutputPath:   fullOutputPath,
@@ -70,7 +70,7 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 		TotalDBFound: totalDBFound,
 		IsMultiDB:    true,
 	})
-	e.service.GetLog().Infof("Selesai mysqldump combined (%s)", time.Since(start).Round(time.Millisecond))
+	e.service.GetLog().Infof("Selesai dump combined (%s)", time.Since(start).Round(time.Millisecond))
 
 	if execErr != nil {
 		res.Errors = append(res.Errors, execErr.Error())

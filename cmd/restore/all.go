@@ -2,7 +2,7 @@
 // Deskripsi : Command untuk restore all databases dengan streaming filtering
 // Author : Hadiyatna Muflihun
 // Tanggal : 18 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 15 Januari 2026
 package restorecmd
 
 import (
@@ -18,7 +18,7 @@ import (
 var CmdRestoreAll = &cobra.Command{
 	Use:   "all",
 	Short: "Restore seluruh database instance (Full Instance Restore)",
-	Long: `Mengembalikan (Restore) banyak database sekaligus dari file dump besar (misal hasil mysqldump --all-databases).
+	Long: `Mengembalikan (Restore) banyak database sekaligus dari file dump besar (misal hasil mariadb-dump atau mysqldump --all-databases).
 
 Command ini menggunakan teknik "Streaming Filtering" sehingga TIDAK meload seluruh file dump ke RAM,
 melainkan memprosesnya baris per baris. Sangat efisien untuk file dump berukuran besar (GB/TB).

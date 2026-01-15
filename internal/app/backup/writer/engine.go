@@ -15,6 +15,7 @@ import (
 	"sfdbtools/internal/shared/compress"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/errorlog"
+	"sfdbtools/internal/shared/execx"
 	"sfdbtools/internal/ui/progress"
 )
 
@@ -22,6 +23,7 @@ func summarizeStderr(stderr string, maxLines int, maxChars int) string {
 	if stderr == "" {
 		return ""
 	}
+	// Prioritas: mariadb-dump, fallback: mysqldump.
 	lines := strings.Split(stderr, "\n")
 	if maxLines > 0 && len(lines) > maxLines {
 		lines = lines[:maxLines]
@@ -101,13 +103,13 @@ func (e *Engine) createWriterPipeline(baseWriter io.Writer, compressionRequired 
 	return writer, closers, nil
 }
 
-func (e *Engine) isFatalMysqldumpError(err error, stderrOutput string) bool {
+func (e *Engine) isFatalDumpError(err error, stderrOutput string) bool {
 	if err == nil {
 		return false
 	}
 
 	if stderrOutput == "" {
-		e.Log.Debug("mysqldump error with empty stderr, treating as fatal")
+		e.Log.Debug("dump error with empty stderr, treating as fatal")
 		return true
 	}
 
@@ -144,9 +146,15 @@ func (e *Engine) isFatalMysqldumpError(err error, stderrOutput string) bool {
 	return true
 }
 
-// ExecuteMysqldumpWithPipe runs mysqldump and streams into file via (optional) compression and encryption.
+// ExecuteMysqldumpWithPipe menjalankan dump command dan streaming ke file via (opsional) kompresi dan enkripsi.
+// Prioritas: mariadb-dump, fallback: mysqldump.
 func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []string, outputPath string, compressionRequired bool, compressionType string) (*types_backup.BackupWriteResult, error) {
 	encryptionKey, err := e.resolveEncryptionKeyIfNeeded()
+	if err != nil {
+		return nil, err
+	}
+
+	dumpBin, err := execx.ResolveMariaDBDumpOrMysqldump()
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +186,7 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 		}
 	}()
 
-	cmd := exec.CommandContext(ctx, "mysqldump", mysqldumpArgs...)
+	cmd := exec.CommandContext(ctx, dumpBin.Path, mysqldumpArgs...)
 
 	monitor := newDatabaseMonitorWriter(writer, spin, e.Log)
 	cmd.Stdout = monitor
@@ -200,22 +208,22 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 			}, stderrOutput, runErr)
 		}
 
-		if e.isFatalMysqldumpError(runErr, stderrOutput) {
+		if e.isFatalDumpError(runErr, stderrOutput) {
 			result := &types_backup.BackupWriteResult{
 				StderrOutput: stderrOutput,
 				FileSize:     0,
 			}
 			excerpt := summarizeStderr(stderrOutput, 20, 2000)
 			if excerpt != "" {
-				return result, fmt.Errorf("mysqldump gagal: %w (stderr: %s)", runErr, excerpt)
+				return result, fmt.Errorf("%s gagal: %w (stderr: %s)", dumpBin.Name, runErr, excerpt)
 			}
-			return result, fmt.Errorf("mysqldump gagal: %w", runErr)
+			return result, fmt.Errorf("%s gagal: %w", dumpBin.Name, runErr)
 		}
 		excerpt := summarizeStderr(stderrOutput, 12, 1200)
 		if excerpt != "" {
-			e.Log.Warnf("mysqldump exit with non-fatal error, treated as warning. stderr (excerpt):\n%s", excerpt)
+			e.Log.Warnf("%s exit with non-fatal error, treated as warning. stderr (excerpt):\n%s", dumpBin.Name, excerpt)
 		} else {
-			e.Log.Warn("mysqldump exit with non-fatal error, treated as warning")
+			e.Log.Warnf("%s exit with non-fatal error, treated as warning", dumpBin.Name)
 		}
 	}
 
