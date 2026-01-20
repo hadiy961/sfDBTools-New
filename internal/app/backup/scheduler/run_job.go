@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi job scheduler (dipanggil oleh systemd service)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-06
+// Last Modified : 2026-01-20
 package scheduler
 
 import (
@@ -43,14 +43,25 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 
 	mode := strings.TrimSpace(job.Mode)
 	if mode == "" {
-		mode = consts.ModeSeparated
+		return fmt.Errorf("job '%s': mode wajib diisi", job.Name)
 	}
-	// Mapping kompatibilitas: allow user menulis "separated" / "combined".
-	switch mode {
+
+	// Normalize + validate mode
+	switch strings.ToLower(mode) {
 	case "separated":
 		mode = consts.ModeSeparated
 	case "combined":
 		mode = consts.ModeCombined
+	case "all":
+		mode = consts.ModeAll
+	case "single":
+		mode = consts.ModeSingle
+	case "primary":
+		mode = consts.ModePrimary
+	case "secondary":
+		mode = consts.ModeSecondary
+	default:
+		return fmt.Errorf("job '%s': mode '%s' tidak valid (valid: separated|combined|all|single|primary|secondary)", job.Name, mode)
 	}
 
 	opts := defaultVal.DefaultBackupOptions(mode)
