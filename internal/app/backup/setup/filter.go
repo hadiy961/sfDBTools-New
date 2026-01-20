@@ -21,7 +21,17 @@ func (s *Setup) GetFilteredDatabases(ctx context.Context, client *database.Clien
 
 	isFilterMode := s.Options.Filter.IsFilterCommand
 	if isFilterMode {
-		return selection.New(s.Log, s.Options).GetFilteredDatabasesWithMultiSelect(ctx, client)
+		selectedDBs, stats, err := selection.New(s.Log, s.Options).GetFilteredDatabasesWithMultiSelect(ctx, client)
+		if err != nil {
+			return nil, stats, err
+		}
+
+		// Persist pilihan sebagai include list agar flow tidak meminta multi-select lagi
+		// ketika user mengubah opsi (mis: filename/encryption/compression) dan session loop re-run.
+		s.Options.Filter.IncludeDatabases = selectedDBs
+		s.Options.Filter.IncludeFile = ""
+
+		return selectedDBs, stats, nil
 	}
 
 	return filterFromBackupOptions(ctx, client, s.Options)

@@ -91,8 +91,7 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	// Ticket
 	opts.Ticket = strings.TrimSpace(job.Ticket)
 	if opts.Ticket == "" {
-		opts.Ticket = fmt.Sprintf("SCHEDULED_%s", job.Name)
-		deps.Logger.Warnf("ticket kosong, menggunakan default: %s", opts.Ticket)
+		return fmt.Errorf("job '%s': ticket wajib diisi (untuk audit trail)", job.Name)
 	}
 
 	// Filters: scheduler ini fokus untuk backup filter/separated via include file.
