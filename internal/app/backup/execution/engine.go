@@ -135,9 +135,18 @@ func (e *Engine) ExecuteAndBuildBackup(
 
 // executeWithRetry menjalankan dump dengan automatic retry pada failure yang umum.
 func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args []string) (*types_backup.BackupWriteResult, []string, error) {
+	// Jika user sudah cancel (CTRL+C), jangan mulai eksekusi / buat file output.
+	if ctx.Err() != nil {
+		return nil, args, fmt.Errorf("backup cancelled: %w", ctx.Err())
+	}
+
 	writeEngine := writer.New(e.Log, e.ErrorLog, e.Options)
 
 	exec := func(a []string) (*types_backup.BackupWriteResult, error) {
+		// Re-check sebelum tiap eksekusi agar retry tidak jalan saat ctx sudah cancelled.
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("backup cancelled: %w", ctx.Err())
+		}
 		return writeEngine.ExecuteMysqldumpWithPipe(ctx, a, outputPath, e.Options.Compression.Enabled, e.Options.Compression.Type)
 	}
 
@@ -161,7 +170,7 @@ func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args [
 		attempts++
 
 		// Attempt retries dengan berbagai strategy
-		newResult, newArgs, newErr := e.attemptRetries(outputPath, args, result, exec)
+		newResult, newArgs, newErr := e.attemptRetries(ctx, outputPath, args, result, exec)
 		if newErr == nil {
 			return newResult, newArgs, nil
 		}
@@ -191,6 +200,7 @@ func equalStringSlice(a []string, b []string) bool {
 
 // attemptRetries mencoba retry dengan berbagai strategy.
 func (e *Engine) attemptRetries(
+	ctx context.Context,
 	outputPath string,
 	args []string,
 	result *types_backup.BackupWriteResult,
@@ -200,9 +210,14 @@ func (e *Engine) attemptRetries(
 		return result, args, fmt.Errorf("result is nil, cannot retry")
 	}
 
+	if ctx.Err() != nil {
+		cleanupFailedBackup(outputPath, e.Log)
+		return result, args, fmt.Errorf("backup cancelled: %w", ctx.Err())
+	}
+
 	// Strategy 1: SSL mismatch - add --skip-ssl
 	if IsSSLMismatchRequiredButServerNoSupport(result.StderrOutput) {
-		if newResult, newArgs, ok := e.tryRetry(outputPath, args, exec, AddDisableSSLArgs, "Retry dengan --skip-ssl..."); ok {
+		if newResult, newArgs, ok := e.tryRetry(ctx, outputPath, args, exec, AddDisableSSLArgs, "Retry dengan --skip-ssl..."); ok {
 			return newResult, newArgs, nil
 		}
 	}
@@ -210,6 +225,10 @@ func (e *Engine) attemptRetries(
 	// Strategy 2: Unsupported option - remove the problematic option
 	if newArgs, removed, canRetry := RemoveUnsupportedMysqldumpOption(args, result.StderrOutput); canRetry {
 		e.Log.Warnf("Retry tanpa opsi: %s", removed)
+		if ctx.Err() != nil {
+			cleanupFailedBackup(outputPath, e.Log)
+			return result, args, fmt.Errorf("backup cancelled: %w", ctx.Err())
+		}
 		cleanupFailedBackup(outputPath, e.Log)
 		if newResult, err := exec(newArgs); err == nil {
 			return newResult, newArgs, nil
@@ -225,6 +244,7 @@ func (e *Engine) attemptRetries(
 // tryRetry adalah helper untuk execute retry dengan args modifier function.
 // Returns: (result, args, success)
 func (e *Engine) tryRetry(
+	ctx context.Context,
 	outputPath string,
 	args []string,
 	exec func([]string) (*types_backup.BackupWriteResult, error),
@@ -233,6 +253,11 @@ func (e *Engine) tryRetry(
 ) (*types_backup.BackupWriteResult, []string, bool) {
 	newArgs, modified := argsModifier(args)
 	if !modified {
+		return nil, args, false
+	}
+
+	if ctx.Err() != nil {
+		cleanupFailedBackup(outputPath, e.Log)
 		return nil, args, false
 	}
 
