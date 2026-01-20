@@ -7,6 +7,7 @@ package backup
 
 import (
 	"fmt"
+	"os"
 	"sfdbtools/internal/app/backup/gtid"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/backup/modes"
@@ -16,7 +17,6 @@ import (
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/errorlog"
-	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/servicehelper"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/progress"
@@ -30,6 +30,8 @@ type BackupExecutionState struct {
 	CurrentBackupFile string
 	BackupInProgress  bool
 	ExcludedDatabases []string
+	CleanupOnCancel   bool // Flag untuk cleanup partial files saat context cancelled
+	CleanupLog        applog.Logger
 	mu                sync.Mutex
 }
 
@@ -54,6 +56,51 @@ func (s *BackupExecutionState) GetCurrentBackupFile() (string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.CurrentBackupFile, s.BackupInProgress
+}
+
+// EnableCleanup mengaktifkan cleanup on cancel dengan logger yang diberikan.
+// Dipanggil dari ExecuteBackupLoop sebelum memulai backup loop.
+func (s *BackupExecutionState) EnableCleanup(log applog.Logger) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.CleanupOnCancel = true
+	s.CleanupLog = log
+}
+
+// Cleanup menghapus partial backup file saat context cancelled (best-effort cleanup).
+// Dipanggil dari context cancellation handler untuk cleanup incomplete backups.
+func (s *BackupExecutionState) Cleanup() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.CleanupOnCancel || s.CurrentBackupFile == "" || !s.BackupInProgress {
+		return
+	}
+
+	log := s.CleanupLog
+	if log == nil {
+		// Fallback jika log tidak diset (tidak seharusnya terjadi)
+		return
+	}
+
+	// Remove partial backup file (best effort)
+	if err := os.Remove(s.CurrentBackupFile); err != nil {
+		// Log error tapi jangan fail (cleanup is best-effort)
+		log.Debugf("Gagal cleanup partial backup file %s: %v", s.CurrentBackupFile, err)
+	} else {
+		log.Infof("✓ Cleanup partial backup file: %s", s.CurrentBackupFile)
+	}
+
+	// Remove metadata file jika ada (best effort)
+	metaFile := s.CurrentBackupFile + ".meta.json"
+	if err := os.Remove(metaFile); err != nil {
+		log.Debugf("Gagal cleanup metadata file %s: %v (mungkin belum dibuat)", metaFile, err)
+	} else {
+		log.Infof("✓ Cleanup metadata file: %s", metaFile)
+	}
+
+	s.CurrentBackupFile = ""
+	s.BackupInProgress = false
 }
 
 // Service adalah service utama untuk backup operations.
@@ -155,7 +202,7 @@ func (s *Service) HandleShutdown(state *BackupExecutionState) {
 
 		progress.RunWithSpinnerSuspended(func() {
 			s.Log.Warn("Proses backup dihentikan, melakukan rollback...")
-			if err := fsops.RemoveFile(fileToRemove); err != nil {
+			if err := os.Remove(fileToRemove); err != nil {
 				s.Log.Errorf("Gagal menghapus file backup: %v", err)
 				print.PrintError(fmt.Sprintf("⚠ WARNING: File backup partial mungkin masih tersisa: %s", fileToRemove))
 				print.PrintError("Silakan hapus manual jika diperlukan.")

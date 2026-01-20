@@ -25,6 +25,7 @@ import (
 type StateTracker interface {
 	SetCurrentBackupFile(filePath string)
 	ClearCurrentBackupFile()
+	Cleanup() // Cleanup partial backup files on context cancellation
 }
 
 // UserGrantsHooks interface untuk user grants export operations.

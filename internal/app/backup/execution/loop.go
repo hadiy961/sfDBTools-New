@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"sfdbtools/internal/app/backup/model/types_backup"
+	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/consts"
 )
 
@@ -33,6 +34,28 @@ func (e *Engine) ExecuteBackupLoop(
 		e.Log.Warn("Tidak ada database yang dipilih untuk backup")
 		result.Errors = append(result.Errors, "tidak ada database yang dipilih")
 		return result
+	}
+
+	// Register cleanup handler untuk context cancellation
+	// Cleanup akan dijalankan jika user cancel backup (CTRL+C)
+	// Type assertion untuk mengakses concrete type BackupExecutionState
+	type cleanupState interface {
+		StateTracker
+		EnableCleanup(log applog.Logger)
+	}
+	if cs, ok := e.State.(cleanupState); ok && cs != nil {
+		cs.EnableCleanup(e.Log)
+
+		cleanupCtx, cancelCleanup := context.WithCancel(ctx)
+		defer cancelCleanup()
+
+		go func() {
+			<-cleanupCtx.Done()
+			if cleanupCtx.Err() == context.Canceled {
+				e.Log.Warn("⚠️  Backup cancelled, cleaning up partial files...")
+				cs.Cleanup()
+			}
+		}()
 	}
 
 	for idx, dbName := range databases {
@@ -59,6 +82,17 @@ func (e *Engine) executeSingleBackupInLoop(
 	outputPathFunc func(string) (string, error),
 	result *types_backup.BackupLoopResult,
 ) {
+	// Early context check BEFORE starting backup
+	// Mencegah partial backup jika context sudah cancelled
+	select {
+	case <-ctx.Done():
+		e.Log.Warnf("⚠️  Backup cancelled before database %s (context done)", dbName)
+		result.Errors = append(result.Errors, fmt.Sprintf("Backup cancelled before %s", dbName))
+		return
+	default:
+		// Context masih aktif, lanjut backup
+	}
+
 	start := time.Now()
 	e.Log.Infof("[%d/%d] Backup database: %s", currentIdx, totalDBs, dbName)
 
