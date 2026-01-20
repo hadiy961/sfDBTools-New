@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sfdbtools/internal/app/backup/model"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/consts"
@@ -18,7 +19,7 @@ import (
 // Menggunakan temporary file + rename pattern untuk atomicity
 func SaveBackupMetadata(meta *types_backup.BackupMetadata, logger applog.Logger) (string, error) {
 	if meta == nil {
-		return "", fmt.Errorf("metadata is nil")
+		return "", fmt.Errorf("WriteMetadataToFile: %w", model.ErrMetadataIsNil)
 	}
 
 	manifestPath := meta.BackupFile + consts.ExtMetaJSON

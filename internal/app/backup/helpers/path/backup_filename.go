@@ -3,6 +3,7 @@ package path
 import (
 	"fmt"
 	"path/filepath"
+	"sfdbtools/internal/app/backup/model"
 	"strings"
 	"time"
 
@@ -41,7 +42,7 @@ func GenerateBackupFilename(database string, mode string, hostname string, compr
 
 func GenerateBackupFilenameWithCount(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, dbCount int, excludeData bool) (string, error) {
 	if mode == "separated" && database == "" {
-		return "", fmt.Errorf("database name tidak boleh kosong untuk mode separated")
+		return "", fmt.Errorf("buildBackupFilename: %w (separated mode)", model.ErrDatabaseNameRequired)
 	}
 
 	if mode == "combined" || mode == "all" {

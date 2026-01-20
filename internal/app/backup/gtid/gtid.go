@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sfdbtools/internal/app/backup/model"
 
 	"sfdbtools/internal/shared/database"
 )
@@ -27,7 +28,7 @@ func GetMasterStatus(ctx context.Context, client *database.Client) (*GTIDInfo, e
 	defer rows.Close()
 
 	if !rows.Next() {
-		return nil, fmt.Errorf("SHOW MASTER STATUS tidak mengembalikan hasil. Pastikan binary logging diaktifkan")
+		return nil, fmt.Errorf("GetGTIDInfo: %w (enable binary logging)", model.ErrBinlogNotEnabled)
 	}
 
 	columns, err := rows.Columns()
@@ -76,7 +77,7 @@ func GetBinlogGTIDPos(ctx context.Context, client *database.Client, binlogFile s
 	}
 
 	if !gtidPos.Valid {
-		return "", fmt.Errorf("BINLOG_GTID_POS mengembalikan NULL")
+		return "", fmt.Errorf("GetGTIDPos: %w", model.ErrGTIDPosNull)
 	}
 
 	return gtidPos.String, nil

@@ -50,7 +50,7 @@ func (s *Setup) changeBackupFilenameInteractive() error {
 		prompt.WithValidator(func(ans interface{}) error {
 			v, ok := ans.(string)
 			if !ok {
-				return fmt.Errorf("input tidak valid")
+				return fmt.Errorf("handleCompressionLevelChange: handleOutputDirectoryChange: input validation failed")
 			}
 			return validation.ValidateCustomFilenameBase(v)
 		}),
@@ -127,15 +127,15 @@ func (s *Setup) changeBackupCompressionInteractive() error {
 	lvl, err := prompt.AskInt("Compression level (1-9)", s.Options.Compression.Level, func(ans interface{}) error {
 		v, ok := ans.(string)
 		if !ok {
-			return fmt.Errorf("input tidak valid")
+			return fmt.Errorf("input validation failed")
 		}
 		v = strings.TrimSpace(v)
 		if v == "" {
-			return fmt.Errorf("compression level wajib diisi")
+			return fmt.Errorf("handleCompressionLevelChange: compression level required")
 		}
 		parsed, convErr := strconv.Atoi(v)
 		if convErr != nil {
-			return fmt.Errorf("compression level harus berupa angka")
+			return fmt.Errorf("handleCompressionLevelChange: compression level must be numeric")
 		}
 		if _, err := compress.ValidateCompressionLevel(parsed); err != nil {
 			return err

@@ -17,6 +17,7 @@ import (
 
 	"sfdbtools/internal/app/backup"
 	backuppath "sfdbtools/internal/app/backup/helpers/path"
+	"sfdbtools/internal/app/backup/model"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/cleanup"
 	cleanupmodel "sfdbtools/internal/app/cleanup/model"
@@ -29,7 +30,7 @@ import (
 
 func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) error {
 	if strings.TrimSpace(jobName) == "" {
-		return fmt.Errorf("--job wajib diisi")
+		return fmt.Errorf("RunScheduledJob: %w", model.ErrJobNameRequired)
 	}
 	jobs, err := getTargetJobs(deps, jobName, false)
 	if err != nil {

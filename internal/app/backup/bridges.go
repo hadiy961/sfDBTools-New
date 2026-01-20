@@ -9,6 +9,7 @@ package backup
 import (
 	"context"
 	"fmt"
+	"sfdbtools/internal/app/backup/model"
 
 	"sfdbtools/internal/app/backup/execution"
 	"sfdbtools/internal/app/backup/grants"
@@ -59,7 +60,7 @@ func (s *Service) ExecuteAndBuildBackup(ctx context.Context, state modes.BackupS
 	// Type assert to access fields
 	execState, ok := state.(*BackupExecutionState)
 	if !ok {
-		return types_backup.DatabaseBackupInfo{}, fmt.Errorf("invalid state type")
+		return types_backup.DatabaseBackupInfo{}, fmt.Errorf("toBackupInfo: %w", model.ErrInvalidStateType)
 	}
 	eng := execution.New(s.Log, s.Config, s.BackupDBOptions, s.ErrorLog).
 		WithDependencies(s.Client, execState.GTIDInfo, execState.ExcludedDatabases, execState, s)

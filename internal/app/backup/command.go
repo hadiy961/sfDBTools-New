@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"sfdbtools/internal/app/backup/display"
+	"sfdbtools/internal/app/backup/model"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/parsing"
@@ -108,7 +109,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 		// Backup background harus non-interaktif agar tidak hang tanpa TTY.
 		nonInteractive := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
 		if !nonInteractive {
-			return fmt.Errorf("mode background membutuhkan --quiet (non-interaktif)")
+			return fmt.Errorf("RunBackupCommand: %w", model.ErrBackgroundModeRequiresQuiet)
 		}
 
 		wd, _ := os.Getwd()

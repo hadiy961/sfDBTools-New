@@ -7,6 +7,7 @@ import (
 
 	"sfdbtools/internal/app/backup/helpers/compression"
 	backuppath "sfdbtools/internal/app/backup/helpers/path"
+	"sfdbtools/internal/app/backup/model"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
@@ -46,7 +47,7 @@ func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, clie
 	}
 
 	if len(allDatabases) == 0 {
-		return nil, stats, fmt.Errorf("tidak ada database yang ditemukan di server")
+		return nil, stats, fmt.Errorf("SelectDatabases: %w", model.ErrNoDatabaseFound)
 	}
 
 	nonSystemDBs := make([]string, 0, len(allDatabases))
@@ -63,7 +64,7 @@ func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, clie
 	}
 
 	if len(nonSystemDBs) == 0 {
-		return nil, stats, fmt.Errorf("tidak ada database non-system yang tersedia untuk dipilih")
+		return nil, stats, fmt.Errorf("GetFilteredDatabasesWithMultiSelect: tidak ada database non-system tersedia: %w", model.ErrNoDatabaseFound)
 	}
 
 	print.PrintSubHeader("Pilih Database untuk Backup")
@@ -73,7 +74,7 @@ func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, clie
 	}
 
 	if len(selectedDBs) == 0 {
-		return nil, stats, fmt.Errorf("tidak ada database yang dipilih")
+		return nil, stats, fmt.Errorf("GetFilteredDatabasesWithMultiSelect: %w", model.ErrNoDatabaseSelected)
 	}
 
 	stats.TotalIncluded = len(selectedDBs)
@@ -91,7 +92,7 @@ func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, clie
 
 func (s *Selector) selectMultipleDatabases(databases []string) ([]string, error) {
 	if len(databases) == 0 {
-		return nil, fmt.Errorf("tidak ada database yang tersedia untuk dipilih")
+		return nil, fmt.Errorf("SelectDatabasesInteractive: %w", model.ErrNoDatabaseFound)
 	}
 
 	s.Log.Info(fmt.Sprintf("Tersedia %d database non-system", len(databases)))
@@ -103,7 +104,7 @@ func (s *Selector) selectMultipleDatabases(databases []string) ([]string, error)
 	}
 
 	if len(selectedDBs) == 0 {
-		return nil, fmt.Errorf("tidak ada database yang dipilih")
+		return nil, fmt.Errorf("selectMultipleDatabases: %w", model.ErrNoDatabaseSelected)
 	}
 
 	s.Log.Info(fmt.Sprintf("Dipilih %d database: %s", len(selectedDBs), strings.Join(selectedDBs, ", ")))
@@ -191,7 +192,7 @@ func (s *Selector) SelectDatabaseAndBuildList(ctx context.Context, client Databa
 		}
 
 		if len(candidates) == 0 {
-			return nil, "", nil, fmt.Errorf("tidak ada database yang tersedia untuk dipilih")
+			return nil, "", nil, fmt.Errorf("GetFilteredDatabaseForSingleBackup: %w", model.ErrNoDatabaseFound)
 		}
 
 		if selectedDB == "" {
@@ -200,7 +201,7 @@ func (s *Selector) SelectDatabaseAndBuildList(ctx context.Context, client Databa
 				return nil, "", nil, choiceErr
 			}
 			if idx < 0 || idx >= len(candidates) {
-				return nil, "", nil, fmt.Errorf("pemilihan database dibatalkan")
+				return nil, "", nil, fmt.Errorf("GetFilteredDatabaseForSingleBackup: %w", model.ErrOperationCancelled)
 			}
 			selectedDB = candidates[idx]
 		}

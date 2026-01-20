@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"sfdbtools/internal/app/backup/display"
+	"sfdbtools/internal/app/backup/model"
 	profileconn "sfdbtools/internal/app/profile/connection"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
@@ -69,7 +70,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 	}
 
 	if genPaths == nil {
-		return nil, nil, fmt.Errorf("path generator tidak tersedia")
+		return nil, nil, fmt.Errorf("PrepareSession: %w", model.ErrPathGeneratorNotAvailable)
 	}
 
 	customOutputDir := s.Options.OutputDir
@@ -101,7 +102,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 			if stats != nil {
 				s.DisplayFilterWarnings(stats)
 			}
-			return nil, nil, fmt.Errorf("tidak ada database tersedia untuk backup setelah filtering")
+			return nil, nil, fmt.Errorf("PrepareSession: %w (setelah filtering)", model.ErrNoDatabaseFound)
 		}
 
 		// Generate output directory and filename preview (and expand dbFiltered for single/primary/secondary).
@@ -110,7 +111,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 			return nil, nil, err
 		}
 		if len(dbFiltered) == 0 {
-			return nil, nil, fmt.Errorf("path generation menghasilkan daftar database kosong")
+			return nil, nil, fmt.Errorf("PrepareSession: %w (path generation menghasilkan daftar kosong)", model.ErrNoDatabaseFound)
 		}
 
 		// Log daftar database yang akan di-backup untuk mode ALL (penting untuk mode background).
