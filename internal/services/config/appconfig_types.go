@@ -67,6 +67,7 @@ type BackupSchedulerJob struct {
 	Enabled     bool   `yaml:"enabled"`
 	Schedule    string `yaml:"schedule"` // Cron format (5 kolom)
 	Mode        string `yaml:"mode"`     // "separated" atau "combined" (awal: fokus separated)
+	Timeout     string `yaml:"timeout"`  // Execution timeout (e.g., "30m", "2h", "6h"). Empty = default 6h. Issue #55
 	IncludeFile string `yaml:"include_file"`
 	Profile     string `yaml:"profile"` // Path profile; optional (bisa via env SFDB_SOURCE_PROFILE)
 	Ticket      string `yaml:"ticket"`  // Ticket; optional (akan auto jika kosong)

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 )
 
 const (
@@ -91,7 +92,71 @@ func validateSchedulerJobs(jobs []BackupSchedulerJob) error {
 			return fmt.Errorf("backup.scheduler.jobs[%d]: duplicate job name '%s'", i, job.Name)
 		}
 		seen[job.Name] = true
+
+		// Validate timeout format (Issue #55)
+		if err := ValidateJobTimeout(job.Timeout, i, job.Name); err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+// ValidateJobTimeout melakukan validasi terhadap timeout format dan value
+// Issue #55: Scheduler jobs harus memiliki reasonable timeout untuk mencegah hang indefinitely
+func ValidateJobTimeout(timeoutStr string, jobIndex int, jobName string) error {
+	// Empty timeout = will use default, OK
+	if timeoutStr == "" {
+		return nil
+	}
+
+	timeout, err := ParseTimeout(timeoutStr)
+	if err != nil {
+		return fmt.Errorf("backup.scheduler.jobs[%d] (%s): invalid timeout format '%s': %w", jobIndex, jobName, timeoutStr, err)
+	}
+
+	// Minimum timeout: 1 minute (prevent misconfiguration)
+	if timeout < 1*time.Minute {
+		return fmt.Errorf("backup.scheduler.jobs[%d] (%s): timeout too short (min: 1m): %v", jobIndex, jobName, timeout)
+	}
+
+	// Maximum timeout: 48 hours (warning only, tidak error)
+	// Beberapa backup very large databases bisa butuh waktu lama
+	if timeout > 48*time.Hour {
+		// Log warning via fmt.Errorf tapi tidak return error (warning only)
+		// Logger belum tersedia di validation phase, jadi kita skip warning di sini
+		// Warning akan di-log saat RunJob() execution
+	}
+
+	return nil
+}
+
+// ParseTimeout mengkonversi timeout string ke time.Duration
+// Format yang didukung:
+//   - Duration string: "30m", "2h", "6h30m"
+//   - Integer (backward compat): "6" = 6 hours
+//   - Empty string: return 0 (caller akan use default)
+func ParseTimeout(timeoutStr string) (time.Duration, error) {
+	if timeoutStr == "" {
+		return 0, nil
+	}
+
+	// Try parse as duration first (preferred format)
+	timeout, err := time.ParseDuration(timeoutStr)
+	if err == nil {
+		return timeout, nil
+	}
+
+	// Backward compatibility: parse as integer hours
+	// "6" → 6 hours
+	var hours int
+	if _, parseErr := fmt.Sscanf(timeoutStr, "%d", &hours); parseErr == nil {
+		if hours < 0 {
+			return 0, fmt.Errorf("negative timeout not allowed")
+		}
+		return time.Duration(hours) * time.Hour, nil
+	}
+
+	// Neither duration nor integer, return original error
+	return 0, fmt.Errorf("invalid duration format (use '30m', '2h', etc): %w", err)
 }

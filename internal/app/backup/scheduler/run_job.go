@@ -147,10 +147,29 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	// Buat execution state untuk tracking (dibuat early agar bisa diakses oleh signal handler)
 	execState := backup.NewExecutionState()
 
-	// Setup context + cancellation
-	runCtx, cancel := context.WithCancel(ctx)
+	// Parse dan enforce timeout (Issue #55: Prevent hung jobs)
+	timeout, err := appconfig.ParseTimeout(job.Timeout)
+	if err != nil {
+		// Validation seharusnya sudah catch ini, tapi defensive check
+		return fmt.Errorf("invalid timeout for job '%s': %w", job.Name, err)
+	}
+	if timeout == 0 {
+		// Default timeout jika tidak dikonfigurasi (conservative)
+		timeout = 6 * time.Hour
+		deps.Logger.Warnf("No timeout configured for job '%s', using default: %v", job.Name, timeout)
+	}
+
+	// Warning untuk timeout yang sangat lama
+	if timeout > 48*time.Hour {
+		deps.Logger.Warnf("Job '%s' has very long timeout (>48h): %v", job.Name, timeout)
+	}
+
+	// Setup context dengan timeout
+	runCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	svc.SetCancelFunc(cancel)
+
+	deps.Logger.Infof("Starting job '%s' with timeout: %v", job.Name, timeout)
 
 	// Setup signal handler (SIGTERM dari systemd)
 	sigChan := make(chan os.Signal, 1)
@@ -181,8 +200,14 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	if err := svc.ExecuteBackupCommand(runCtx, execState, backupCfg); err != nil {
 		duration := time.Since(start)
 
+		// Handle timeout (Issue #55: Job exceeded configured timeout)
+		if errors.Is(err, context.DeadlineExceeded) || runCtx.Err() == context.DeadlineExceeded {
+			deps.Logger.Errorf("Job '%s' exceeded timeout (%v) after %v", job.Name, timeout, duration)
+			return fmt.Errorf("job timeout exceeded: %v (limit: %v)", duration, timeout)
+		}
+
 		// Handle cancellation (SIGTERM/SIGINT) - ini bukan error
-		if errors.Is(err, context.Canceled) || runCtx.Err() != nil {
+		if errors.Is(err, context.Canceled) || runCtx.Err() == context.Canceled {
 			deps.Logger.Warnf("Backup job '%s' dibatalkan (duration=%s)", job.Name, duration)
 			return nil
 		}
@@ -193,7 +218,9 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 
 		return wrappedErr
 	}
-	deps.Logger.Infof("✓ Backup job '%s' selesai dalam %s", job.Name, time.Since(start))
+
+	elapsed := time.Since(start)
+	deps.Logger.Infof("✓ Backup job '%s' selesai dalam %v (timeout: %v)", job.Name, elapsed, timeout)
 
 	// Cleanup (retention) per job
 	if job.Cleanup.Enabled && job.Cleanup.RetentionDays > 0 {
