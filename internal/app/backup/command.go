@@ -51,15 +51,21 @@ func ExecuteBackup(cmd *cobra.Command, deps *appdeps.Dependencies, mode string) 
 // ExecuteBackupCommand adalah unified entry point untuk semua jenis backup
 func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecutionState, config types_backup.BackupEntryConfig) error {
 	// Setup session (koneksi database source)
+	// RESOURCE OWNERSHIP: PrepareBackupSession transfer ownership ke caller.
+	// Jika PrepareBackupSession return error, client sudah di-close otomatis (tidak perlu cleanup).
+	// Jika return success, WAJIB close client sebelum function exit.
 	sourceClient, dbFiltered, err := s.PrepareBackupSession(ctx, state, config.HeaderTitle, config.NonInteractive)
 	if err != nil {
+		// Client sudah di-close di PrepareBackupSession jika error
 		return err
 	}
 
-	// Cleanup function untuk close semua connections
+	// CRITICAL: Register cleanup IMMEDIATELY setelah resource acquisition berhasil.
+	// Pattern ini memastikan client selalu di-close bahkan jika terjadi panic/error.
 	defer func() {
 		if sourceClient != nil {
 			sourceClient.Close()
+			sourceClient = nil // prevent double-close
 		}
 	}()
 

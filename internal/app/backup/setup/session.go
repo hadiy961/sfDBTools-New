@@ -25,6 +25,8 @@ import (
 type PathGenerator func(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error)
 
 // PrepareBackupSession runs the whole pre-backup preparation flow.
+// RESOURCE OWNERSHIP: Caller MUST call client.Close() jika function return tanpa error.
+// Jika function return dengan error, client sudah di-close otomatis (tidak perlu close lagi).
 func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, nonInteractive bool, genPaths PathGenerator) (client *database.Client, dbFiltered []string, err error) {
 	if headerTitle != "" {
 		print.PrintAppHeader(headerTitle)
@@ -51,10 +53,13 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 		return nil, nil, err
 	}
 
+	// CRITICAL: Ensure client selalu di-close jika function return dengan error.
+	// success flag pattern memastikan cleanup hanya dilakukan saat error.
 	var success bool
 	defer func() {
 		if !success && client != nil {
 			client.Close()
+			client = nil // prevent double-close dan set nil untuk clarity
 		}
 	}()
 
@@ -102,15 +107,18 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 			if stats != nil {
 				s.DisplayFilterWarnings(stats)
 			}
+			// success tetap false, defer akan cleanup client
 			return nil, nil, fmt.Errorf("PrepareSession: %w (setelah filtering)", model.ErrNoDatabaseFound)
 		}
 
 		// Generate output directory and filename preview (and expand dbFiltered for single/primary/secondary).
 		dbFiltered, err = genPaths(ctx, client, dbFiltered)
 		if err != nil {
+			// success tetap false, defer akan cleanup client
 			return nil, nil, err
 		}
 		if len(dbFiltered) == 0 {
+			// success tetap false, defer akan cleanup client
 			return nil, nil, fmt.Errorf("PrepareSession: %w (path generation menghasilkan daftar kosong)", model.ErrNoDatabaseFound)
 		}
 
@@ -178,6 +186,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 			return nil, nil, validation.ErrUserCancelled
 		case "Ubah opsi":
 			if err := s.editBackupOptionsInteractive(ctx, &client, &customOutputDir, s.Options.Mode); err != nil {
+				// success tetap false, defer akan cleanup client
 				return nil, nil, err
 			}
 			// Loop lagi untuk re-filter & re-generate preview sesuai opsi terbaru

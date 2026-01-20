@@ -39,6 +39,10 @@ func (s *Service) SetupBackupExecution(state *BackupExecutionState) error {
 	return setup.New(s.Log, s.Config, s.BackupDBOptions, &state.ExcludedDatabases).SetupBackupExecution()
 }
 
+// PrepareBackupSession bridge to setup.PrepareBackupSession.
+// RESOURCE OWNERSHIP CONTRACT:
+// - Jika return error: client sudah di-close otomatis (caller tidak perlu cleanup)
+// - Jika return success: caller WAJIB close client (transfer ownership)
 func (s *Service) PrepareBackupSession(ctx context.Context, state *BackupExecutionState, headerTitle string, nonInteractive bool) (client *database.Client, dbFiltered []string, err error) {
 	// Create closure that captures state for GenerateBackupPaths callback
 	pathGenerator := func(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error) {
