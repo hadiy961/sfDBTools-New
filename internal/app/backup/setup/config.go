@@ -94,6 +94,11 @@ func (s *Setup) SetupBackupExecution() error {
 		s.Log.Info("Enkripsi AES-256-GCM diaktifkan untuk backup (kompatibel dengan OpenSSL)")
 	} else {
 		s.Log.Info("Enkripsi tidak diaktifkan, melewati langkah kunci enkripsi...")
+		s.Log.Warn("⚠️  Backup encryption DISABLED - file akan disimpan dalam plaintext!")
+		remoteHost := strings.TrimSpace(s.Options.Profile.DBInfo.Host)
+		if remoteHost != "" && remoteHost != "localhost" && remoteHost != "127.0.0.1" {
+			s.Log.Warn("⚠️  Backup dari remote host tanpa encryption adalah SECURITY RISK")
+		}
 	}
 
 	if s.Options.Compression.Enabled {
