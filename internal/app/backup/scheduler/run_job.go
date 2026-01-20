@@ -32,6 +32,13 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	if strings.TrimSpace(jobName) == "" {
 		return fmt.Errorf("RunScheduledJob: %w", model.ErrJobNameRequired)
 	}
+
+	// SECURITY: Validate job name untuk mencegah path traversal dan injection attacks
+	// Issue #52: Scheduler Job Name Not Validated
+	if err := ValidateJobName(jobName); err != nil {
+		return fmt.Errorf("RunScheduledJob: invalid job name: %w", err)
+	}
+
 	jobs, err := getTargetJobs(deps, jobName, false)
 	if err != nil {
 		return err

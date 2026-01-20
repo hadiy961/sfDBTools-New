@@ -82,6 +82,11 @@ func LoadConfig(configPath string) (*Config, error) {
 	// setelah parsing berhasil (misalnya, cek apakah BaseDirectory tidak kosong)
 	applyRuntimeDefaults(cfg, configPath)
 
+	// Validate scheduler jobs untuk fail-fast (Issue #52)
+	if err := validateSchedulerJobs(cfg.Backup.Scheduler.Jobs); err != nil {
+		return nil, fmt.Errorf("invalid scheduler configuration: %w", err)
+	}
+
 	return cfg, nil
 }
 
