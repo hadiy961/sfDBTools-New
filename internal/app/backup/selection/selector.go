@@ -284,7 +284,13 @@ func (s *Selector) HandleSingleModeSetup(ctx context.Context, client DatabaseLis
 	previewFilename, err := backuppath.GenerateBackupFilename(
 		selectedDB,
 		s.Options.Mode,
-		s.Options.Profile.DBInfo.HostName,
+		func() string {
+			h := s.Options.Profile.DBInfo.HostName
+			if h == "" {
+				h = s.Options.Profile.DBInfo.Host
+			}
+			return h
+		}(),
 		compressionSettings.Type,
 		s.Options.Encryption.Enabled,
 		s.Options.Filter.ExcludeData,
@@ -293,7 +299,7 @@ func (s *Selector) HandleSingleModeSetup(ctx context.Context, client DatabaseLis
 		s.Log.Warn("gagal generate filename: " + err.Error())
 		previewFilename = consts.FilenameGenerateErrorPlaceholder
 	}
-	s.Options.File.Path = previewFilename
+	s.Options.File.Path = backuppath.ApplyCustomBaseFilename(previewFilename, s.Options.File.Filename)
 
 	return companionDbs, nil
 }

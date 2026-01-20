@@ -2,7 +2,7 @@
 // Deskripsi : Fungsi untuk export dan menyimpan user grants
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2026-01-05
+// Last Modified : 20 Januari 2026
 package metadata
 
 import (
@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/timex"
 	"strings"
@@ -111,9 +110,5 @@ func ExportUserGrantsIfNeededWithLogging(ctx context.Context, client *database.C
 func GenerateUserFilePath(backupFilePath string) string {
 	dir := filepath.Dir(backupFilePath)
 	base := filepath.Base(backupFilePath)
-
-	// Remove backup extensions (.sql + optional compression + optional .enc)
-	nameWithoutExt, _ := backupfile.ExtractFileExtensions(base)
-	userFileName := nameWithoutExt + consts.UsersSQLSuffix
-	return filepath.Join(dir, userFileName)
+	return filepath.Join(dir, backupfile.GenerateGrantsFilename(base))
 }

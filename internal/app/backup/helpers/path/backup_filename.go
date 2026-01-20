@@ -2,12 +2,38 @@ package path
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"sfdbtools/internal/shared/compress"
 	"sfdbtools/internal/shared/consts"
 )
+
+// ApplyCustomBaseFilename menerapkan custom base filename (tanpa ekstensi) ke filename default.
+// Jika user sudah memasukkan ".sql" (atau full filename dengan chain ekstensi), nilai akan dipakai apa adanya.
+// Jika tidak, ekstensi mengikuti default generated filename (mis. .sql.gz.enc / .sql / .sql.enc).
+func ApplyCustomBaseFilename(defaultFilename string, customBase string) string {
+	customBase = strings.TrimSpace(customBase)
+	if customBase == "" {
+		return defaultFilename
+	}
+	// Jika user sudah memasukkan .sql (atau full filename), biarkan apa adanya.
+	if strings.Contains(customBase, ".sql") {
+		return customBase
+	}
+
+	ext := ""
+	if defaultFilename != "" && defaultFilename != consts.FilenameGenerateErrorPlaceholder {
+		if idx := strings.Index(defaultFilename, ".sql"); idx >= 0 {
+			ext = defaultFilename[idx:]
+		} else {
+			ext = filepath.Ext(defaultFilename)
+		}
+	}
+
+	return customBase + ext
+}
 
 func GenerateBackupFilename(database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, excludeData bool) (string, error) {
 	return GenerateBackupFilenameWithCount(database, mode, hostname, compressionType, encrypted, 0, excludeData)

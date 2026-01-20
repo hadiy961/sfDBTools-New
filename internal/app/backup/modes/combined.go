@@ -2,7 +2,7 @@
 // Deskripsi : Mode backup combined - semua database dalam satu file
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 15 Januari 2026
+// Last Modified : 20 Januari 2026
 
 package modes
 
@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/shared/consts"
 	"strings"
@@ -49,7 +50,7 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	filename := opts.File.Path
 	// Mode all/combined bisa override lewat --filename (base name tanpa ekstensi).
 	if (opts.Mode == consts.ModeAll || opts.Mode == consts.ModeCombined) && opts.File.Filename != "" {
-		filename = applyCustomBaseFilename(filename, opts.File.Filename)
+		filename = backuppath.ApplyCustomBaseFilename(filename, opts.File.Filename)
 	}
 	fullOutputPath := filepath.Join(opts.OutputDir, filename)
 	e.service.GetLog().Debug("Backup file: " + fullOutputPath)

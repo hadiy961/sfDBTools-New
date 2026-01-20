@@ -3,7 +3,7 @@
 //              Menggabungkan logika single.go dan separated.go untuk mengurangi duplikasi.
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-11
-// Last Modified : 2026-01-02
+// Last Modified : 20 Januari 2026
 
 package modes
 
@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/metadata"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/shared/consts"
@@ -99,7 +100,7 @@ func (e *IterativeExecutor) createOutputPathFunc(dbList []string) func(string) (
 		defaultPath, derr := e.service.GenerateFullBackupPath(primaryDBName, opts.Mode)
 		if derr == nil {
 			defaultName := filepath.Base(defaultPath)
-			primaryFinalFilename = applyCustomBaseFilename(defaultName, primaryFilename)
+			primaryFinalFilename = backuppath.ApplyCustomBaseFilename(defaultName, primaryFilename)
 		}
 	}
 
@@ -117,7 +118,7 @@ func (e *IterativeExecutor) createOutputPathFunc(dbList []string) func(string) (
 				return "", derr
 			}
 			defaultName := filepath.Base(defaultPath)
-			finalName := applyCustomBaseFilename(defaultName, primaryFilename)
+			finalName := backuppath.ApplyCustomBaseFilename(defaultName, primaryFilename)
 			return filepath.Join(opts.OutputDir, finalName), nil
 		}
 
