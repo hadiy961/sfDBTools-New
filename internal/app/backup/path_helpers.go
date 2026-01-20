@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"path/filepath"
+	"sfdbtools/internal/app/backup/helpers/compression"
 	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/modes"
 	"sfdbtools/internal/domain"
@@ -17,7 +18,7 @@ import (
 
 // GenerateFullBackupPath membuat full path untuk backup file
 func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, error) {
-	compressionSettings := s.buildCompressionSettings()
+	compressionSettings := compression.BuildCompressionSettings(s.BackupDBOptions)
 
 	// Konsisten: selalu gunakan hostname (DBInfo.HostName) untuk semua mode.
 	// Fallback ke DBInfo.Host hanya jika HostName kosong.
@@ -48,7 +49,7 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Clie
 	if dbHostname == "" {
 		dbHostname = s.BackupDBOptions.Profile.DBInfo.Host
 	}
-	compressionSettings := s.buildCompressionSettings()
+	compressionSettings := compression.BuildCompressionSettings(s.BackupDBOptions)
 
 	// Generate output directory
 	var err error

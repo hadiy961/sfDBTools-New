@@ -32,11 +32,6 @@ func New(log applog.Logger, opts *types_backup.BackupDBOptions) *Selector {
 	return &Selector{Log: log, Options: opts}
 }
 
-// buildCompressionSettings delegates ke shared helper untuk avoid duplication
-func (s *Selector) buildCompressionSettings() types_backup.CompressionSettings {
-	return compression.BuildCompressionSettings(s.Options)
-}
-
 // GetFilteredDatabasesWithMultiSelect shows interactive multi-select for databases.
 func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, client DatabaseLister) ([]string, *domain.FilterStats, error) {
 	allDatabases, err := client.GetDatabaseList(ctx)
@@ -253,7 +248,7 @@ func (s *Selector) SelectDatabaseAndBuildList(ctx context.Context, client Databa
 
 // HandleSingleModeSetup updates options based on selected DB and companions for single/primary/secondary modes.
 func (s *Selector) HandleSingleModeSetup(ctx context.Context, client DatabaseLister, dbFiltered []string) ([]string, error) {
-	compressionSettings := s.buildCompressionSettings()
+	compressionSettings := compression.BuildCompressionSettings(s.Options)
 
 	allDatabases, err := client.GetDatabaseList(ctx)
 	if err != nil {

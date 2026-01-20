@@ -2,13 +2,12 @@
 // Deskripsi : Service utama untuk backup operations dengan interface implementation
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-20
 package backup
 
 import (
 	"fmt"
 	"sfdbtools/internal/app/backup/gtid"
-	"sfdbtools/internal/app/backup/helpers/compression"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/backup/modes"
 	"sfdbtools/internal/domain"
@@ -75,11 +74,6 @@ func NewBackupService(logs applog.Logger, cfg *appconfig.Config, backup interfac
 
 // Verify interface implementation at compile time
 var _ modes.BackupService = (*Service)(nil)
-
-// buildCompressionSettings delegates ke shared helper
-func (s *Service) buildCompressionSettings() types_backup.CompressionSettings {
-	return compression.BuildCompressionSettings(s.BackupDBOptions)
-}
 
 // =============================================================================
 // Interface helpers (used by modes.BackupService)
