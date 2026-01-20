@@ -2,7 +2,7 @@
 // Deskripsi : Main backup execution engine dengan orchestration logic
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 15 Januari 2026
+// Last Modified : 20 Januari 2026
 package execution
 
 import (
@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"sfdbtools/internal/app/backup/gtid"
+	"sfdbtools/internal/app/backup/model"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/backup/writer"
 	profileconn "sfdbtools/internal/app/profile/connection"
@@ -24,12 +25,13 @@ import (
 type StateTracker interface {
 	SetCurrentBackupFile(filePath string)
 	ClearCurrentBackupFile()
+	Cleanup() // Cleanup partial backup files on context cancellation
 }
 
 // UserGrantsHooks interface untuk user grants export operations.
 type UserGrantsHooks interface {
 	ExportUserGrantsIfNeeded(ctx context.Context, outputPath string, dbNames []string) string
-	UpdateMetadataUserGrantsPath(outputPath string, userGrantsPath string)
+	UpdateMetadataUserGrantsPath(outputPath string, userGrantsPath string, permissions string)
 }
 
 // Engine adalah core backup execution engine.
@@ -103,7 +105,7 @@ func (e *Engine) ExecuteAndBuildBackup(
 
 	// Build dump arguments (kompatibel mariadb-dump/mysqldump)
 	if e.Options == nil {
-		return types_backup.DatabaseBackupInfo{}, fmt.Errorf("backup options tidak tersedia")
+		return types_backup.DatabaseBackupInfo{}, fmt.Errorf("ExecuteAndBuildBackup: %w", model.ErrBackupOptionsNotAvailable)
 	}
 
 	var dbList []string
@@ -135,14 +137,22 @@ func (e *Engine) ExecuteAndBuildBackup(
 
 // executeWithRetry menjalankan dump dengan automatic retry pada failure yang umum.
 func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args []string) (*types_backup.BackupWriteResult, []string, error) {
-	writeEngine := writer.New(e.Log, e.ErrorLog, e.Options)
-
-	exec := func(a []string) (*types_backup.BackupWriteResult, error) {
-		return writeEngine.ExecuteMysqldumpWithPipe(ctx, a, outputPath, e.Options.Compression.Enabled, e.Options.Compression.Type)
+	// Check context sebelum execute
+	if ctx.Err() != nil {
+		return nil, args, fmt.Errorf("backup cancelled: %w", ctx.Err())
 	}
 
+	writeEngine := writer.New(e.Log, e.ErrorLog, e.Options)
+
+	permissions := e.Config.Backup.Output.FilePermissions
+	exec := func(a []string) (*types_backup.BackupWriteResult, error) {
+		return writeEngine.ExecuteMysqldumpWithPipe(ctx, a, outputPath, e.Options.Compression.Enabled, e.Options.Compression.Type, permissions)
+	}
+
+	attempts := 0
 	result, err := exec(args)
-	if err != nil {
+
+	for err != nil && attempts < maxRetries {
 		// Jika eksekusi gagal sebelum menghasilkan result (mis. binary tidak ada, gagal buat file),
 		// jangan menimpa error asli dengan error retry yang generik.
 		if result == nil {
@@ -156,11 +166,35 @@ func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args [
 			return result, args, err
 		}
 
+		attempts++
+
 		// Attempt retries dengan berbagai strategy
-		result, args, err = e.attemptRetries(outputPath, args, result, exec)
+		newResult, newArgs, newErr := e.attemptRetries(outputPath, args, result, exec)
+		if newErr == nil {
+			return newResult, newArgs, nil
+		}
+
+		// Jika tidak ada perubahan args (tidak ada strategi retry yang match), stop lebih awal.
+		if equalStringSlice(args, newArgs) {
+			return newResult, newArgs, newErr
+		}
+
+		result, args, err = newResult, newArgs, newErr
 	}
 
 	return result, args, err
+}
+
+func equalStringSlice(a []string, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // attemptRetries mencoba retry dengan berbagai strategy.
@@ -171,8 +205,12 @@ func (e *Engine) attemptRetries(
 	exec func([]string) (*types_backup.BackupWriteResult, error),
 ) (*types_backup.BackupWriteResult, []string, error) {
 	if result == nil {
-		return result, args, fmt.Errorf("result is nil, cannot retry")
+		return result, args, fmt.Errorf("attemptRetries: result is nil (likely exec func panic): %w", model.ErrInvalidRetryState)
 	}
+
+	// Note: attemptRetries tidak punya akses ke ctx, tapi caller (executeWithRetry)
+	// sudah check ctx.Err() sebelum memanggil attemptRetries, jadi context
+	// cancellation sudah ditangani di level yang lebih tinggi.
 
 	// Strategy 1: SSL mismatch - add --skip-ssl
 	if IsSSLMismatchRequiredButServerNoSupport(result.StderrOutput) {
@@ -193,7 +231,8 @@ func (e *Engine) attemptRetries(
 	}
 
 	// No retry strategy matched, return original error
-	return result, args, fmt.Errorf("dump failed without retry options")
+	// Note: Ini bukan sentinel error karena ini adalah final fallback untuk retry mechanism
+	return result, args, fmt.Errorf("attemptRetries: dump failed, no retry strategy matched")
 }
 
 // tryRetry adalah helper untuk execute retry dengan args modifier function.

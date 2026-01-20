@@ -3,7 +3,7 @@
 //              Menggabungkan logika single.go dan separated.go untuk mengurangi duplikasi.
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-11
-// Last Modified : 2026-01-02
+// Last Modified : 20 Januari 2026
 
 package modes
 
@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/metadata"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/shared/consts"
@@ -23,13 +24,15 @@ import (
 // Digunakan untuk mode: single, primary, secondary, dan separated
 type IterativeExecutor struct {
 	service BackupService
+	state   BackupStateAccessor
 	mode    string
 }
 
 // NewIterativeExecutor membuat instance baru IterativeExecutor
-func NewIterativeExecutor(svc BackupService, mode string) *IterativeExecutor {
+func NewIterativeExecutor(svc BackupService, state BackupStateAccessor, mode string) *IterativeExecutor {
 	return &IterativeExecutor{
 		service: svc,
+		state:   state,
 		mode:    mode,
 	}
 }
@@ -46,7 +49,7 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 	outputPathFunc := e.createOutputPathFunc(dbList)
 
 	// Jalankan backup loop
-	loopResult := e.service.ExecuteBackupLoop(ctx, dbList, types_backup.BackupLoopConfig{
+	loopResult := e.service.ExecuteBackupLoop(ctx, e.state, dbList, types_backup.BackupLoopConfig{
 		Mode:       e.mode,
 		TotalDBs:   len(dbList),
 		BackupType: e.mode,
@@ -62,7 +65,8 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 		// Untuk primary/secondary, export user grants yang punya akses ke database dalam list
 		actualUserGrantsPath := e.service.ExportUserGrantsIfNeeded(ctx, loopResult.BackupInfos[0].OutputFile, dbList)
 		// Update metadata dengan actual path (atau "none" jika gagal)
-		e.service.UpdateMetadataUserGrantsPath(loopResult.BackupInfos[0].OutputFile, actualUserGrantsPath)
+		permissions := e.service.GetConfig().Backup.Output.MetadataPermissions
+		e.service.UpdateMetadataUserGrantsPath(loopResult.BackupInfos[0].OutputFile, actualUserGrantsPath, permissions)
 
 		// Generate satu metadata untuk semua database yang berhasil di-backup
 		e.generateCombinedMetadata(loopResult, dbList)
@@ -99,7 +103,7 @@ func (e *IterativeExecutor) createOutputPathFunc(dbList []string) func(string) (
 		defaultPath, derr := e.service.GenerateFullBackupPath(primaryDBName, opts.Mode)
 		if derr == nil {
 			defaultName := filepath.Base(defaultPath)
-			primaryFinalFilename = applyCustomBaseFilename(defaultName, primaryFilename)
+			primaryFinalFilename = backuppath.ApplyCustomBaseFilename(defaultName, primaryFilename)
 		}
 	}
 
@@ -117,7 +121,7 @@ func (e *IterativeExecutor) createOutputPathFunc(dbList []string) func(string) (
 				return "", derr
 			}
 			defaultName := filepath.Base(defaultPath)
-			finalName := applyCustomBaseFilename(defaultName, primaryFilename)
+			finalName := backuppath.ApplyCustomBaseFilename(defaultName, primaryFilename)
 			return filepath.Join(opts.OutputDir, finalName), nil
 		}
 
@@ -182,7 +186,8 @@ func (e *IterativeExecutor) generateCombinedMetadata(loopResult types_backup.Bac
 
 	// Update metadata pertama dengan full database list dan details
 	primaryBackupFile := loopResult.BackupInfos[0].OutputFile
-	if err := metadata.UpdateMetadataWithDatabaseDetails(primaryBackupFile, dbList, loopResult.BackupInfos, e.service.GetLog()); err != nil {
+	permissions := e.service.GetConfig().Backup.Output.MetadataPermissions
+	if err := metadata.UpdateMetadataWithDatabaseDetails(primaryBackupFile, dbList, loopResult.BackupInfos, permissions, e.service.GetLog()); err != nil {
 		e.service.GetLog().Warn("Gagal update combined metadata: " + err.Error())
 	}
 

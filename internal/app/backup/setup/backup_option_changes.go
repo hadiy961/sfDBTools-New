@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"sfdbtools/internal/app/backup/model"
 	"sfdbtools/internal/app/backup/selection"
 	profileconn "sfdbtools/internal/app/profile/connection"
 	"sfdbtools/internal/shared/consts"
@@ -34,10 +35,10 @@ func (s *Setup) changeBackupTicketInteractive() error {
 		prompt.WithValidator(func(ans interface{}) error {
 			v, ok := ans.(string)
 			if !ok {
-				return fmt.Errorf("input tidak valid")
+				return fmt.Errorf("handleTicketNumberChange: input tidak valid")
 			}
 			if strings.TrimSpace(v) == "" {
-				return fmt.Errorf("ticket number tidak boleh kosong")
+				return fmt.Errorf("handleTicketNumberChange: ticket number tidak boleh kosong")
 			}
 			return nil
 		}),
@@ -143,7 +144,7 @@ func (s *Setup) changeBackupIncludeSelectionResetInteractive() error {
 
 func (s *Setup) changeBackupIncludeSelectionSelectDatabasesInteractive(ctx context.Context, clientPtr **database.Client) error {
 	if clientPtr == nil || *clientPtr == nil {
-		return fmt.Errorf("koneksi database belum tersedia")
+		return fmt.Errorf("Database Selection : %w", model.ErrConnectionNotAvailable)
 	}
 
 	selected, _, err := selection.New(s.Log, s.Options).GetFilteredDatabasesWithMultiSelect(ctx, *clientPtr)

@@ -2,7 +2,7 @@
 // Deskripsi : Eksekusi job scheduler (dipanggil oleh systemd service)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2026-01-02
-// Last Modified : 2026-01-06
+// Last Modified : 2026-01-20
 package scheduler
 
 import (
@@ -17,6 +17,7 @@ import (
 
 	"sfdbtools/internal/app/backup"
 	backuppath "sfdbtools/internal/app/backup/helpers/path"
+	"sfdbtools/internal/app/backup/model"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/cleanup"
 	cleanupmodel "sfdbtools/internal/app/cleanup/model"
@@ -29,8 +30,15 @@ import (
 
 func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) error {
 	if strings.TrimSpace(jobName) == "" {
-		return fmt.Errorf("--job wajib diisi")
+		return fmt.Errorf("RunScheduledJob: %w", model.ErrJobNameRequired)
 	}
+
+	// SECURITY: Validate job name untuk mencegah path traversal dan injection attacks
+	// Issue #52: Scheduler Job Name Not Validated
+	if err := ValidateJobName(jobName); err != nil {
+		return fmt.Errorf("RunScheduledJob: invalid job name: %w", err)
+	}
+
 	jobs, err := getTargetJobs(deps, jobName, false)
 	if err != nil {
 		return err
@@ -42,14 +50,25 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 
 	mode := strings.TrimSpace(job.Mode)
 	if mode == "" {
-		mode = consts.ModeSeparated
+		return fmt.Errorf("job '%s': mode wajib diisi", job.Name)
 	}
-	// Mapping kompatibilitas: allow user menulis "separated" / "combined".
-	switch mode {
+
+	// Normalize + validate mode
+	switch strings.ToLower(mode) {
 	case "separated":
 		mode = consts.ModeSeparated
 	case "combined":
 		mode = consts.ModeCombined
+	case "all":
+		mode = consts.ModeAll
+	case "single":
+		mode = consts.ModeSingle
+	case "primary":
+		mode = consts.ModePrimary
+	case "secondary":
+		mode = consts.ModeSecondary
+	default:
+		return fmt.Errorf("job '%s': mode '%s' tidak valid (valid: separated|combined|all|single|primary|secondary)", job.Name, mode)
 	}
 
 	opts := defaultVal.DefaultBackupOptions(mode)
@@ -79,8 +98,7 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	// Ticket
 	opts.Ticket = strings.TrimSpace(job.Ticket)
 	if opts.Ticket == "" {
-		opts.Ticket = fmt.Sprintf("SCHEDULED_%s", job.Name)
-		deps.Logger.Warnf("ticket kosong, menggunakan default: %s", opts.Ticket)
+		return fmt.Errorf("job '%s': ticket wajib diisi (untuk audit trail)", job.Name)
 	}
 
 	// Filters: scheduler ini fokus untuk backup filter/separated via include file.
@@ -126,10 +144,32 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	// Inisialisasi service backup
 	svc := backup.NewBackupService(deps.Logger, deps.Config, &opts)
 
-	// Setup context + cancellation
-	runCtx, cancel := context.WithCancel(ctx)
+	// Buat execution state untuk tracking (dibuat early agar bisa diakses oleh signal handler)
+	execState := backup.NewExecutionState()
+
+	// Parse dan enforce timeout (Issue #55: Prevent hung jobs)
+	timeout, err := appconfig.ParseTimeout(job.Timeout)
+	if err != nil {
+		// Validation seharusnya sudah catch ini, tapi defensive check
+		return fmt.Errorf("invalid timeout for job '%s': %w", job.Name, err)
+	}
+	if timeout == 0 {
+		// Default timeout jika tidak dikonfigurasi (conservative)
+		timeout = 6 * time.Hour
+		deps.Logger.Warnf("No timeout configured for job '%s', using default: %v", job.Name, timeout)
+	}
+
+	// Warning untuk timeout yang sangat lama
+	if timeout > 48*time.Hour {
+		deps.Logger.Warnf("Job '%s' has very long timeout (>48h): %v", job.Name, timeout)
+	}
+
+	// Setup context dengan timeout
+	runCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	svc.SetCancelFunc(cancel)
+
+	deps.Logger.Infof("Starting job '%s' with timeout: %v", job.Name, timeout)
 
 	// Setup signal handler (SIGTERM dari systemd)
 	sigChan := make(chan os.Signal, 1)
@@ -139,7 +179,7 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	go func() {
 		sig := <-sigChan
 		deps.Logger.Warnf("Menerima signal %v, menghentikan backup job '%s'...", sig, job.Name)
-		svc.HandleShutdown()
+		svc.HandleShutdown(execState)
 		cancel()
 	}()
 
@@ -157,14 +197,30 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	}
 
 	start := time.Now()
-	if err := svc.ExecuteBackupCommand(runCtx, backupCfg); err != nil {
-		if errors.Is(err, context.Canceled) || runCtx.Err() != nil {
-			deps.Logger.Warn("Backup dibatalkan")
+	if err := svc.ExecuteBackupCommand(runCtx, execState, backupCfg); err != nil {
+		duration := time.Since(start)
+
+		// Handle timeout (Issue #55: Job exceeded configured timeout)
+		if errors.Is(err, context.DeadlineExceeded) || runCtx.Err() == context.DeadlineExceeded {
+			deps.Logger.Errorf("Job '%s' exceeded timeout (%v) after %v", job.Name, timeout, duration)
+			return fmt.Errorf("job timeout exceeded: %v (limit: %v)", duration, timeout)
+		}
+
+		// Handle cancellation (SIGTERM/SIGINT) - ini bukan error
+		if errors.Is(err, context.Canceled) || runCtx.Err() == context.Canceled {
+			deps.Logger.Warnf("Backup job '%s' dibatalkan (duration=%s)", job.Name, duration)
 			return nil
 		}
-		return err
+
+		// Wrap error dengan scheduler context untuk troubleshooting
+		wrappedErr := wrapSchedulerError(err, job.Name, mode, duration)
+		deps.Logger.Error(wrappedErr.Error())
+
+		return wrappedErr
 	}
-	deps.Logger.Infof("Backup job '%s' selesai dalam %s", job.Name, time.Since(start))
+
+	elapsed := time.Since(start)
+	deps.Logger.Infof("✓ Backup job '%s' selesai dalam %v (timeout: %v)", job.Name, elapsed, timeout)
 
 	// Cleanup (retention) per job
 	if job.Cleanup.Enabled && job.Cleanup.RetentionDays > 0 {
@@ -186,8 +242,16 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 		cleanupCfg.LogPrefix = fmt.Sprintf("schedule-%s-cleanup", job.Name)
 
 		deps.Logger.Infof("Menjalankan cleanup job '%s' (retention=%d hari)", job.Name, job.Cleanup.RetentionDays)
+		cleanupStart := time.Now()
 		if err := cleanupSvc.ExecuteCleanupCommand(cleanupCfg); err != nil {
-			return err
+			// Cleanup error tidak boleh membatalkan backup yang sudah berhasil
+			// Log as warning dan lanjutkan (cleanup akan di-retry di next run)
+			deps.Logger.Warnf("Cleanup job '%s' gagal (duration=%s): %v",
+				job.Name, time.Since(cleanupStart), err)
+			deps.Logger.Warn("Backup berhasil, tapi cleanup gagal. Cleanup akan di-retry di run berikutnya.")
+			// Tidak return error agar systemd tidak menganggap job gagal
+		} else {
+			deps.Logger.Infof("✓ Cleanup job '%s' selesai dalam %s", job.Name, time.Since(cleanupStart))
 		}
 	}
 
@@ -199,4 +263,49 @@ func cloneConfig(cfg *appconfig.Config) appconfig.Config {
 		return appconfig.Config{}
 	}
 	return *cfg
+}
+
+// IsTransientError mengklasifikasikan error sebagai transient (bisa di-retry) atau permanent.
+// Transient errors adalah error yang kemungkinan besar akan berhasil jika di-retry setelah beberapa waktu.
+// Function ini di-export untuk digunakan di cmd layer untuk semantic exit codes.
+func IsTransientError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	msg := strings.ToLower(err.Error())
+
+	// Pattern untuk transient errors (network, resource, temporary issues)
+	transientPatterns := []string{
+		"connection refused",
+		"connection reset",
+		"timeout",
+		"timed out",
+		"too many connections",
+		"no space left",
+		"disk full",
+		"temporary failure",
+		"resource temporarily unavailable",
+		"i/o timeout",
+		"broken pipe",
+		"network is unreachable",
+		"host is unreachable",
+	}
+
+	for _, pattern := range transientPatterns {
+		if strings.Contains(msg, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// wrapSchedulerError menambahkan context scheduler ke error message untuk troubleshooting.
+func wrapSchedulerError(err error, jobName, mode string, duration time.Duration) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("scheduled job '%s' failed (mode=%s, duration=%s): %w",
+		jobName, mode, duration, err)
 }

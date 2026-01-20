@@ -2,7 +2,7 @@
 // Deskripsi : Metadata update operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-22
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-20
 package metadata
 
 import (
@@ -15,7 +15,7 @@ import (
 )
 
 // UpdateMetadataUserGrantsFile membaca metadata yang ada, update UserGrantsFile field, dan save kembali
-func UpdateMetadataUserGrantsFile(backupFilePath string, userGrantsPath string, logger applog.Logger) error {
+func UpdateMetadataUserGrantsFile(backupFilePath string, userGrantsPath string, permissions string, logger applog.Logger) error {
 	manifestPath := backupFilePath + consts.ExtMetaJSON
 
 	// Baca metadata yang ada
@@ -38,12 +38,12 @@ func UpdateMetadataUserGrantsFile(backupFilePath string, userGrantsPath string, 
 	}
 
 	// Save kembali
-	_, err = SaveBackupMetadata(&meta, logger)
+	_, err = SaveBackupMetadata(&meta, permissions, logger)
 	return err
 }
 
 // UpdateMetadataWithDatabaseDetails update metadata dengan detail lengkap per database
-func UpdateMetadataWithDatabaseDetails(backupFilePath string, databaseNames []string, backupInfos []types_backup.DatabaseBackupInfo, logger applog.Logger) error {
+func UpdateMetadataWithDatabaseDetails(backupFilePath string, databaseNames []string, backupInfos []types_backup.DatabaseBackupInfo, permissions string, logger applog.Logger) error {
 	metadataPath := backupFilePath + consts.ExtMetaJSON
 
 	// Baca metadata file
@@ -83,6 +83,6 @@ func UpdateMetadataWithDatabaseDetails(backupFilePath string, databaseNames []st
 	logger.Debugf("Update metadata dengan %d database details", len(details))
 
 	// Save kembali
-	_, err = SaveBackupMetadata(&meta, logger)
+	_, err = SaveBackupMetadata(&meta, permissions, logger)
 	return err
 }

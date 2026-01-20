@@ -2,13 +2,13 @@
 // Deskripsi : Service utama untuk backup operations dengan interface implementation
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2026-01-05
+// Last Modified : 20 Januari 2026
 package backup
 
 import (
 	"fmt"
+	"os"
 	"sfdbtools/internal/app/backup/gtid"
-	"sfdbtools/internal/app/backup/helpers/compression"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/backup/modes"
 	"sfdbtools/internal/domain"
@@ -17,13 +17,94 @@ import (
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/errorlog"
-	"sfdbtools/internal/shared/fsops"
 	"sfdbtools/internal/shared/servicehelper"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/progress"
+	"sync"
 )
 
-// Service adalah service utama untuk backup operations
+// BackupExecutionState menyimpan state yang mutable selama eksekusi backup.
+// State ini dibuat per-execution untuk menghindari race condition.
+type BackupExecutionState struct {
+	GTIDInfo          *gtid.GTIDInfo
+	CurrentBackupFile string
+	BackupInProgress  bool
+	ExcludedDatabases []string
+	CleanupOnCancel   bool // Flag untuk cleanup partial files saat context cancelled
+	CleanupLog        applog.Logger
+	mu                sync.Mutex
+}
+
+// SetCurrentBackupFile mencatat file backup yang sedang dibuat (thread-safe)
+func (s *BackupExecutionState) SetCurrentBackupFile(filePath string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.CurrentBackupFile = filePath
+	s.BackupInProgress = true
+}
+
+// ClearCurrentBackupFile menghapus catatan file backup setelah selesai (thread-safe)
+func (s *BackupExecutionState) ClearCurrentBackupFile() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.CurrentBackupFile = ""
+	s.BackupInProgress = false
+}
+
+// GetCurrentBackupFile returns current backup file path (thread-safe)
+func (s *BackupExecutionState) GetCurrentBackupFile() (string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.CurrentBackupFile, s.BackupInProgress
+}
+
+// EnableCleanup mengaktifkan cleanup on cancel dengan logger yang diberikan.
+// Dipanggil dari ExecuteBackupLoop sebelum memulai backup loop.
+func (s *BackupExecutionState) EnableCleanup(log applog.Logger) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.CleanupOnCancel = true
+	s.CleanupLog = log
+}
+
+// Cleanup menghapus partial backup file saat context cancelled (best-effort cleanup).
+// Dipanggil dari context cancellation handler untuk cleanup incomplete backups.
+func (s *BackupExecutionState) Cleanup() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.CleanupOnCancel || s.CurrentBackupFile == "" || !s.BackupInProgress {
+		return
+	}
+
+	log := s.CleanupLog
+	if log == nil {
+		// Fallback jika log tidak diset (tidak seharusnya terjadi)
+		return
+	}
+
+	// Remove partial backup file (best effort)
+	if err := os.Remove(s.CurrentBackupFile); err != nil {
+		// Log error tapi jangan fail (cleanup is best-effort)
+		log.Debugf("Gagal cleanup partial backup file %s: %v", s.CurrentBackupFile, err)
+	} else {
+		log.Infof("✓ Cleanup partial backup file: %s", s.CurrentBackupFile)
+	}
+
+	// Remove metadata file jika ada (best effort)
+	metaFile := s.CurrentBackupFile + ".meta.json"
+	if err := os.Remove(metaFile); err != nil {
+		log.Debugf("Gagal cleanup metadata file %s: %v (mungkin belum dibuat)", metaFile, err)
+	} else {
+		log.Infof("✓ Cleanup metadata file: %s", metaFile)
+	}
+
+	s.CurrentBackupFile = ""
+	s.BackupInProgress = false
+}
+
+// Service adalah service utama untuk backup operations.
+// Service bersifat stateless dan immutable setelah dibuat, sehingga thread-safe.
 type Service struct {
 	servicehelper.BaseService
 
@@ -35,14 +116,9 @@ type Service struct {
 	BackupDBOptions *types_backup.BackupDBOptions
 	BackupEntry     *types_backup.BackupEntryConfig
 	Client          *database.Client
-
-	gtidInfo          *gtid.GTIDInfo
-	currentBackupFile string
-	backupInProgress  bool
-	excludedDatabases []string // List database yang dikecualikan (untuk mode 'all')
 }
 
-// NewBackupService membuat instance baru Service
+// NewBackupService membuat instance baru Service (stateless)
 func NewBackupService(logs applog.Logger, cfg *appconfig.Config, backup interface{}) *Service {
 	logDir := cfg.Log.Output.File.Dir
 	if logDir == "" {
@@ -50,10 +126,9 @@ func NewBackupService(logs applog.Logger, cfg *appconfig.Config, backup interfac
 	}
 
 	svc := &Service{
-		Log:               logs,
-		Config:            cfg,
-		ErrorLog:          errorlog.NewErrorLogger(logs, logDir, consts.FeatureBackup),
-		excludedDatabases: []string{}, // Initialize dengan empty slice, bukan nil
+		Log:      logs,
+		Config:   cfg,
+		ErrorLog: errorlog.NewErrorLogger(logs, logDir, consts.FeatureBackup),
 	}
 
 	if backup != nil {
@@ -73,13 +148,15 @@ func NewBackupService(logs applog.Logger, cfg *appconfig.Config, backup interfac
 	return svc
 }
 
+// NewExecutionState membuat execution state baru untuk backup operation
+func NewExecutionState() *BackupExecutionState {
+	return &BackupExecutionState{
+		ExcludedDatabases: []string{},
+	}
+}
+
 // Verify interface implementation at compile time
 var _ modes.BackupService = (*Service)(nil)
-
-// buildCompressionSettings delegates ke shared helper
-func (s *Service) buildCompressionSettings() types_backup.CompressionSettings {
-	return compression.BuildCompressionSettings(s.BackupDBOptions)
-}
 
 // =============================================================================
 // Interface helpers (used by modes.BackupService)
@@ -87,6 +164,9 @@ func (s *Service) buildCompressionSettings() types_backup.CompressionSettings {
 
 // GetLog returns logger instance
 func (s *Service) GetLog() applog.Logger { return s.Log }
+
+// GetConfig returns config instance
+func (s *Service) GetConfig() *appconfig.Config { return s.Config }
 
 // GetOptions returns backup options
 func (s *Service) GetOptions() *types_backup.BackupDBOptions { return s.BackupDBOptions }
@@ -101,43 +181,28 @@ func (s *Service) ToBackupResult(loopResult types_backup.BackupLoopResult) types
 }
 
 // =============================================================================
-// Service state / shutdown
+// Service shutdown
 // =============================================================================
 
-// SetCurrentBackupFile mencatat file backup yang sedang dibuat
-func (s *Service) SetCurrentBackupFile(filePath string) {
-	s.WithLock(func() {
-		s.currentBackupFile = filePath
-		s.backupInProgress = true
-	})
-}
+// HandleShutdown menangani graceful shutdown saat CTRL+C atau interrupt.
+// State di-pass sebagai parameter untuk menghindari shared mutable state di Service.
+func (s *Service) HandleShutdown(state *BackupExecutionState) {
+	if state == nil {
+		progress.RunWithSpinnerSuspended(func() {
+			s.Log.Warn("Menerima signal interrupt, tidak ada execution state")
+		})
+		s.Cancel()
+		return
+	}
 
-// ClearCurrentBackupFile menghapus catatan file backup setelah selesai
-func (s *Service) ClearCurrentBackupFile() {
-	s.WithLock(func() {
-		s.currentBackupFile = ""
-		s.backupInProgress = false
-	})
-}
+	fileToRemove, inProgress := state.GetCurrentBackupFile()
+	if inProgress && fileToRemove != "" {
+		// Clear state sebelum cleanup
+		state.ClearCurrentBackupFile()
 
-// HandleShutdown menangani graceful shutdown saat CTRL+C atau interrupt
-func (s *Service) HandleShutdown() {
-	var shouldRemoveFile bool
-	var fileToRemove string
-
-	s.WithLock(func() {
-		if s.backupInProgress && s.currentBackupFile != "" {
-			shouldRemoveFile = true
-			fileToRemove = s.currentBackupFile
-			s.currentBackupFile = ""
-			s.backupInProgress = false
-		}
-	})
-
-	if shouldRemoveFile {
 		progress.RunWithSpinnerSuspended(func() {
 			s.Log.Warn("Proses backup dihentikan, melakukan rollback...")
-			if err := fsops.RemoveFile(fileToRemove); err != nil {
+			if err := os.Remove(fileToRemove); err != nil {
 				s.Log.Errorf("Gagal menghapus file backup: %v", err)
 				print.PrintError(fmt.Sprintf("⚠ WARNING: File backup partial mungkin masih tersisa: %s", fileToRemove))
 				print.PrintError("Silakan hapus manual jika diperlukan.")

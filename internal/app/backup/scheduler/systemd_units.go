@@ -14,6 +14,7 @@ import (
 
 	"github.com/joho/godotenv"
 
+	"sfdbtools/internal/app/backup/model"
 	appdeps "sfdbtools/internal/cli/deps"
 	appconfig "sfdbtools/internal/services/config"
 	"sfdbtools/internal/services/scheduler"
@@ -39,7 +40,7 @@ func Start(ctx context.Context, deps *appdeps.Dependencies, jobName string) erro
 		return err
 	}
 	if len(jobs) == 0 {
-		return fmt.Errorf("tidak ada job scheduler yang aktif")
+		return fmt.Errorf("Start: %w", model.ErrNoSchedulerJobs)
 	}
 	if err := validateJobsForStart(deps, jobs); err != nil {
 		return err
@@ -82,14 +83,14 @@ func Stop(ctx context.Context, deps *appdeps.Dependencies, jobName string, killR
 		return err
 	}
 	if killRunning && strings.TrimSpace(jobName) == "" {
-		return fmt.Errorf("--kill-running harus dikombinasi dengan --job")
+		return fmt.Errorf("Stop: --kill-running requires --job: %w", model.ErrJobNameRequired)
 	}
 	jobs, err := getTargetJobs(deps, jobName, true)
 	if err != nil {
 		return err
 	}
 	if len(jobs) == 0 {
-		return fmt.Errorf("tidak ada job scheduler yang aktif")
+		return fmt.Errorf("Start: %w", model.ErrNoSchedulerJobs)
 	}
 
 	for _, job := range jobs {
@@ -113,7 +114,7 @@ func Status(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 		return err
 	}
 	if len(jobs) == 0 {
-		return fmt.Errorf("tidak ada job scheduler di config")
+		return fmt.Errorf("EnableScheduledJobsInteractive: %w", model.ErrNoSchedulerJobs)
 	}
 
 	deps.Logger.Info("Status scheduler backup (systemd timer)")
@@ -128,7 +129,7 @@ func Status(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 
 func getTargetJobs(deps *appdeps.Dependencies, jobName string, onlyEnabled bool) ([]appconfig.BackupSchedulerJob, error) {
 	if deps == nil || deps.Config == nil {
-		return nil, fmt.Errorf("config belum tersedia")
+		return nil, fmt.Errorf("config not available: %w", model.ErrConfigNotAvailable)
 	}
 	jobs := deps.Config.Backup.Scheduler.Jobs
 	var out []appconfig.BackupSchedulerJob
@@ -201,7 +202,7 @@ func detectBinaryPathForSystemd() string {
 
 func writeTimerForJob(job appconfig.BackupSchedulerJob) error {
 	if strings.TrimSpace(job.Name) == "" {
-		return fmt.Errorf("job name tidak boleh kosong")
+		return fmt.Errorf("job name required: %w", model.ErrJobNameRequired)
 	}
 	if strings.TrimSpace(job.Schedule) == "" {
 		return fmt.Errorf("schedule untuk job '%s' tidak boleh kosong", job.Name)
@@ -237,14 +238,14 @@ func writeTimerForJob(job appconfig.BackupSchedulerJob) error {
 func ensureRoot() error {
 	// Butuh akses tulis /etc/systemd/system dan systemctl enable/disable.
 	if os.Geteuid() != 0 {
-		return fmt.Errorf("perintah ini butuh root (gunakan sudo)")
+		return fmt.Errorf("enableScheduledJob: %w (gunakan sudo)", model.ErrRootRequired)
 	}
 	return nil
 }
 
 func validateJobsForStart(deps *appdeps.Dependencies, jobs []appconfig.BackupSchedulerJob) error {
 	if deps == nil || deps.Config == nil {
-		return fmt.Errorf("config belum tersedia")
+		return fmt.Errorf("config not available: %w", model.ErrConfigNotAvailable)
 	}
 	if err := ensureEnvFileSecure(defaultEnvFile); err != nil {
 		return err
@@ -266,7 +267,7 @@ func validateJobsForStart(deps *appdeps.Dependencies, jobs []appconfig.BackupSch
 
 	for _, job := range jobs {
 		if strings.TrimSpace(job.Name) == "" {
-			return fmt.Errorf("job name tidak boleh kosong")
+			return fmt.Errorf("job name required: %w", model.ErrJobNameRequired)
 		}
 		if !job.Enabled {
 			continue

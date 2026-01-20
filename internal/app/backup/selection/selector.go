@@ -7,6 +7,7 @@ import (
 
 	"sfdbtools/internal/app/backup/helpers/compression"
 	backuppath "sfdbtools/internal/app/backup/helpers/path"
+	"sfdbtools/internal/app/backup/model"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
@@ -32,11 +33,6 @@ func New(log applog.Logger, opts *types_backup.BackupDBOptions) *Selector {
 	return &Selector{Log: log, Options: opts}
 }
 
-// buildCompressionSettings delegates ke shared helper untuk avoid duplication
-func (s *Selector) buildCompressionSettings() types_backup.CompressionSettings {
-	return compression.BuildCompressionSettings(s.Options)
-}
-
 // GetFilteredDatabasesWithMultiSelect shows interactive multi-select for databases.
 func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, client DatabaseLister) ([]string, *domain.FilterStats, error) {
 	allDatabases, err := client.GetDatabaseList(ctx)
@@ -51,7 +47,7 @@ func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, clie
 	}
 
 	if len(allDatabases) == 0 {
-		return nil, stats, fmt.Errorf("tidak ada database yang ditemukan di server")
+		return nil, stats, fmt.Errorf("SelectDatabases: %w", model.ErrNoDatabaseFound)
 	}
 
 	nonSystemDBs := make([]string, 0, len(allDatabases))
@@ -68,7 +64,7 @@ func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, clie
 	}
 
 	if len(nonSystemDBs) == 0 {
-		return nil, stats, fmt.Errorf("tidak ada database non-system yang tersedia untuk dipilih")
+		return nil, stats, fmt.Errorf("GetFilteredDatabasesWithMultiSelect: tidak ada database non-system tersedia: %w", model.ErrNoDatabaseFound)
 	}
 
 	print.PrintSubHeader("Pilih Database untuk Backup")
@@ -78,25 +74,20 @@ func (s *Selector) GetFilteredDatabasesWithMultiSelect(ctx context.Context, clie
 	}
 
 	if len(selectedDBs) == 0 {
-		return nil, stats, fmt.Errorf("tidak ada database yang dipilih")
+		return nil, stats, fmt.Errorf("GetFilteredDatabasesWithMultiSelect: %w", model.ErrNoDatabaseSelected)
 	}
 
 	stats.TotalIncluded = len(selectedDBs)
 	stats.TotalExcluded = len(allDatabases) - len(selectedDBs)
 
-	// Persist pilihan sebagai include list agar flow tidak meminta multi-select lagi
-	// ketika user mengubah opsi (mis: filename/encryption/compression) dan session loop re-run.
-	if s.Options != nil {
-		s.Options.Filter.IncludeDatabases = selectedDBs
-		s.Options.Filter.IncludeFile = ""
-	}
-
+	// Return selected databases tanpa mutate Options (pure function).
+	// Caller yang decide untuk persist ke Options jika diperlukan.
 	return selectedDBs, stats, nil
 }
 
 func (s *Selector) selectMultipleDatabases(databases []string) ([]string, error) {
 	if len(databases) == 0 {
-		return nil, fmt.Errorf("tidak ada database yang tersedia untuk dipilih")
+		return nil, fmt.Errorf("SelectDatabasesInteractive: %w", model.ErrNoDatabaseFound)
 	}
 
 	s.Log.Info(fmt.Sprintf("Tersedia %d database non-system", len(databases)))
@@ -108,7 +99,7 @@ func (s *Selector) selectMultipleDatabases(databases []string) ([]string, error)
 	}
 
 	if len(selectedDBs) == 0 {
-		return nil, fmt.Errorf("tidak ada database yang dipilih")
+		return nil, fmt.Errorf("selectMultipleDatabases: %w", model.ErrNoDatabaseSelected)
 	}
 
 	s.Log.Info(fmt.Sprintf("Dipilih %d database: %s", len(selectedDBs), strings.Join(selectedDBs, ", ")))
@@ -196,7 +187,7 @@ func (s *Selector) SelectDatabaseAndBuildList(ctx context.Context, client Databa
 		}
 
 		if len(candidates) == 0 {
-			return nil, "", nil, fmt.Errorf("tidak ada database yang tersedia untuk dipilih")
+			return nil, "", nil, fmt.Errorf("GetFilteredDatabaseForSingleBackup: %w", model.ErrNoDatabaseFound)
 		}
 
 		if selectedDB == "" {
@@ -205,7 +196,7 @@ func (s *Selector) SelectDatabaseAndBuildList(ctx context.Context, client Databa
 				return nil, "", nil, choiceErr
 			}
 			if idx < 0 || idx >= len(candidates) {
-				return nil, "", nil, fmt.Errorf("pemilihan database dibatalkan")
+				return nil, "", nil, fmt.Errorf("GetFilteredDatabaseForSingleBackup: %w", model.ErrOperationCancelled)
 			}
 			selectedDB = candidates[idx]
 		}
@@ -253,7 +244,7 @@ func (s *Selector) SelectDatabaseAndBuildList(ctx context.Context, client Databa
 
 // HandleSingleModeSetup updates options based on selected DB and companions for single/primary/secondary modes.
 func (s *Selector) HandleSingleModeSetup(ctx context.Context, client DatabaseLister, dbFiltered []string) ([]string, error) {
-	compressionSettings := s.buildCompressionSettings()
+	compressionSettings := compression.BuildCompressionSettings(s.Options)
 
 	allDatabases, err := client.GetDatabaseList(ctx)
 	if err != nil {
@@ -284,7 +275,13 @@ func (s *Selector) HandleSingleModeSetup(ctx context.Context, client DatabaseLis
 	previewFilename, err := backuppath.GenerateBackupFilename(
 		selectedDB,
 		s.Options.Mode,
-		s.Options.Profile.DBInfo.HostName,
+		func() string {
+			h := s.Options.Profile.DBInfo.HostName
+			if h == "" {
+				h = s.Options.Profile.DBInfo.Host
+			}
+			return h
+		}(),
 		compressionSettings.Type,
 		s.Options.Encryption.Enabled,
 		s.Options.Filter.ExcludeData,
@@ -293,7 +290,7 @@ func (s *Selector) HandleSingleModeSetup(ctx context.Context, client DatabaseLis
 		s.Log.Warn("gagal generate filename: " + err.Error())
 		previewFilename = consts.FilenameGenerateErrorPlaceholder
 	}
-	s.Options.File.Path = previewFilename
+	s.Options.File.Path = backuppath.ApplyCustomBaseFilename(previewFilename, s.Options.File.Filename)
 
 	return companionDbs, nil
 }

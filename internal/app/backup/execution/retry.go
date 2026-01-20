@@ -2,11 +2,15 @@
 // Deskripsi : Error detection dan retry strategies untuk mysqldump failures
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
+// Last Modified : 20 Januari 2026
 
 package execution
 
 import "strings"
+
+// maxRetries membatasi jumlah retry agar tidak terjadi loop tak berujung
+// jika pola error yang sama terus terdeteksi.
+const maxRetries = 2
 
 // IsSSLMismatchRequiredButServerNoSupport mendeteksi client/server SSL mismatch:
 // client requires SSL tapi server tidak support.

@@ -3,13 +3,13 @@ package backup
 import (
 	"context"
 	"path/filepath"
+	"sfdbtools/internal/app/backup/helpers/compression"
 	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/modes"
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/ui/print"
-	"strings"
 )
 
 // =============================================================================
@@ -18,7 +18,7 @@ import (
 
 // GenerateFullBackupPath membuat full path untuk backup file
 func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, error) {
-	compressionSettings := s.buildCompressionSettings()
+	compressionSettings := compression.BuildCompressionSettings(s.BackupDBOptions)
 
 	// Konsisten: selalu gunakan hostname (DBInfo.HostName) untuk semua mode.
 	// Fallback ke DBInfo.Host hanya jika HostName kosong.
@@ -44,12 +44,13 @@ func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, er
 
 // GenerateBackupPaths generates output directory and filename for backup
 // Returns updated dbFiltered for single/primary/secondary mode (selected database + companions)
-func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error) {
+// state parameter provides access to ExcludedDatabases for statistics display
+func (s *Service) GenerateBackupPaths(ctx context.Context, state *BackupExecutionState, client *database.Client, dbFiltered []string) ([]string, error) {
 	dbHostname := s.BackupDBOptions.Profile.DBInfo.HostName
 	if dbHostname == "" {
 		dbHostname = s.BackupDBOptions.Profile.DBInfo.Host
 	}
-	compressionSettings := s.buildCompressionSettings()
+	compressionSettings := compression.BuildCompressionSettings(s.BackupDBOptions)
 
 	// Generate output directory
 	var err error
@@ -103,7 +104,7 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Clie
 			TotalFound:        len(allDatabases),
 			TotalIncluded:     len(dbFiltered),
 			TotalExcluded:     len(allDatabases) - len(dbFiltered),
-			ExcludedDatabases: s.excludedDatabases,
+			ExcludedDatabases: state.ExcludedDatabases,
 		}
 		print.PrintFilterStats(stats, consts.FeatureBackup, s.Log)
 	}
@@ -111,23 +112,7 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Clie
 	// Jika user set custom filename untuk mode all/combined, treat sebagai base name tanpa ekstensi.
 	// Ekstensi mengikuti default generated filename (mis. .sql.gz.enc / .sql / .sql.enc).
 	if (s.BackupDBOptions.Mode == consts.ModeAll || s.BackupDBOptions.Mode == consts.ModeCombined) && s.BackupDBOptions.File.Filename != "" {
-		defaultName := s.BackupDBOptions.File.Path
-		customBase := s.BackupDBOptions.File.Filename
-
-		// Jika user sudah memasukkan .sql (atau full filename), biarkan apa adanya.
-		if !strings.Contains(customBase, ".sql") {
-			ext := ""
-			if defaultName != "" && defaultName != consts.FilenameGenerateErrorPlaceholder {
-				if idx := strings.Index(defaultName, ".sql"); idx >= 0 {
-					ext = defaultName[idx:]
-				} else {
-					ext = filepath.Ext(defaultName)
-				}
-			}
-			s.BackupDBOptions.File.Path = customBase + ext
-		} else {
-			s.BackupDBOptions.File.Path = customBase
-		}
+		s.BackupDBOptions.File.Path = backuppath.ApplyCustomBaseFilename(s.BackupDBOptions.File.Path, s.BackupDBOptions.File.Filename)
 	}
 
 	return dbFiltered, nil

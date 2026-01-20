@@ -150,8 +150,11 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 	// Reuse current target connection for grants/GTID helpers.
 	backupSvc.Client = s.TargetClient
 
+	// Create temporary execution state for backup operation
+	backupState := backup.NewExecutionState()
+
 	// Capture GTID (best-effort; follow behavior in combined mode executor)
-	if capErr := backupSvc.CaptureAndSaveGTID(ctx, outputPath); capErr != nil {
+	if capErr := backupSvc.CaptureAndSaveGTID(ctx, backupState, outputPath); capErr != nil {
 		s.Log.Warnf("GTID handling error: %v", capErr)
 	}
 
@@ -170,7 +173,7 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 		IsMultiDB:    mode == consts.ModeAll || mode == consts.ModeCombined,
 	}
 
-	_, err := backupSvc.ExecuteAndBuildBackup(ctx, backupConfig)
+	_, err := backupSvc.ExecuteAndBuildBackup(ctx, backupState, backupConfig)
 	if err != nil {
 		return "", fmt.Errorf("gagal backup database: %w", err)
 	}
@@ -178,7 +181,8 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 	// Export user grants untuk combined (single-file) agar konsisten dengan backup filter --mode single-file
 	if mode == consts.ModeCombined {
 		actualUserGrantsPath := backupSvc.ExportUserGrantsIfNeeded(ctx, outputPath, dbList)
-		backupSvc.UpdateMetadataUserGrantsPath(outputPath, actualUserGrantsPath)
+		permissions := s.Config.Backup.Output.MetadataPermissions
+		backupSvc.UpdateMetadataUserGrantsPath(outputPath, actualUserGrantsPath, permissions)
 	}
 
 	return outputPath, nil

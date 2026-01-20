@@ -2,7 +2,7 @@
 // Deskripsi : Definisi struktur config.yaml
 // Author : Hadiyatna Muflihun
 // Tanggal : 2 Januari 2026
-// Last Modified : 6 Januari 2026
+// Last Modified : 20 Januari 2026
 
 package appconfig
 
@@ -67,6 +67,7 @@ type BackupSchedulerJob struct {
 	Enabled     bool   `yaml:"enabled"`
 	Schedule    string `yaml:"schedule"` // Cron format (5 kolom)
 	Mode        string `yaml:"mode"`     // "separated" atau "combined" (awal: fokus separated)
+	Timeout     string `yaml:"timeout"`  // Execution timeout (e.g., "30m", "2h", "6h"). Empty = default 6h. Issue #55
 	IncludeFile string `yaml:"include_file"`
 	Profile     string `yaml:"profile"` // Path profile; optional (bisa via env SFDB_SOURCE_PROFILE)
 	Ticket      string `yaml:"ticket"`  // Ticket; optional (akan auto jika kosong)
@@ -112,9 +113,11 @@ type EncryptionConfig struct {
 }
 
 type OutputConfig struct {
-	BaseDirectory string `yaml:"base_directory"`
-	CleanupTemp   bool   `yaml:"cleanup_temp"`
-	Structure     struct {
+	BaseDirectory       string `yaml:"base_directory"`
+	CleanupTemp         bool   `yaml:"cleanup_temp"`
+	FilePermissions     string `yaml:"file_permissions"`     // File permissions untuk backup files (default: 0600)
+	MetadataPermissions string `yaml:"metadata_permissions"` // File permissions untuk metadata (default: 0600)
+	Structure           struct {
 		CreateSubdirs bool   `yaml:"create_subdirs"`
 		Pattern       string `yaml:"pattern"`
 	} `yaml:"structure"`

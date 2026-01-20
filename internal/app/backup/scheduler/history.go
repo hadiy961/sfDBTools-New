@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sfdbtools/internal/app/backup/model"
 	"strings"
 
 	appdeps "sfdbtools/internal/cli/deps"
@@ -30,7 +31,7 @@ func History(ctx context.Context, deps *appdeps.Dependencies, jobName string, op
 	}
 	jobName = strings.TrimSpace(jobName)
 	if jobName == "" {
-		return fmt.Errorf("job wajib diisi")
+		return fmt.Errorf("ShowHistory: %w", model.ErrJobNameRequired)
 	}
 	if opt.Lines <= 0 {
 		opt.Lines = 200

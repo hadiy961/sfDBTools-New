@@ -3,6 +3,7 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"sfdbtools/internal/app/backup/model"
 	"strings"
 
 	"sfdbtools/internal/shared/database"
@@ -77,7 +78,7 @@ func ExportAllUserGrants(ctx context.Context, client *database.Client) (string, 
 	}
 
 	if len(users) == 0 {
-		return "", fmt.Errorf("tidak ada user yang ditemukan")
+		return "", fmt.Errorf("QueryUserGrants: %w", model.ErrNoUserFound)
 	}
 
 	var builder strings.Builder
@@ -106,7 +107,7 @@ func ExportAllUserGrants(ctx context.Context, client *database.Client) (string, 
 // ExportUserGrantsForDatabases mengambil user grants hanya untuk user yang memiliki akses ke database tertentu.
 func ExportUserGrantsForDatabases(ctx context.Context, client *database.Client, databases []string) (string, error) {
 	if len(databases) == 0 {
-		return "", fmt.Errorf("daftar database kosong")
+		return "", fmt.Errorf("QueryUserGrantsByDatabase: %w", model.ErrEmptyDatabaseList)
 	}
 
 	allUsers, err := GetUserList(ctx, client)
@@ -114,7 +115,7 @@ func ExportUserGrantsForDatabases(ctx context.Context, client *database.Client, 
 		return "", err
 	}
 	if len(allUsers) == 0 {
-		return "", fmt.Errorf("tidak ada user yang ditemukan")
+		return "", fmt.Errorf("QueryUserGrants: %w", model.ErrNoUserFound)
 	}
 
 	var builder strings.Builder
@@ -175,7 +176,7 @@ func ExportUserGrantsForDatabases(ctx context.Context, client *database.Client, 
 	}
 
 	if totalUsersWithGrants == 0 {
-		return "", fmt.Errorf("tidak ada user dengan grants ke database yang ditentukan")
+		return "", fmt.Errorf("QueryUserGrantsByDatabase: no users with grants to specified databases")
 	}
 
 	builder.WriteString("\nFLUSH PRIVILEGES;\n")

@@ -12,6 +12,8 @@ import (
 	"os"
 	"os/signal"
 	"sfdbtools/internal/app/backup/display"
+	"sfdbtools/internal/app/backup/helpers/path"
+	"sfdbtools/internal/app/backup/model"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/parsing"
@@ -48,22 +50,28 @@ func ExecuteBackup(cmd *cobra.Command, deps *appdeps.Dependencies, mode string) 
 // =============================================================================
 
 // ExecuteBackupCommand adalah unified entry point untuk semua jenis backup
-func (s *Service) ExecuteBackupCommand(ctx context.Context, config types_backup.BackupEntryConfig) error {
+func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecutionState, config types_backup.BackupEntryConfig) error {
 	// Setup session (koneksi database source)
-	sourceClient, dbFiltered, err := s.PrepareBackupSession(ctx, config.HeaderTitle, config.NonInteractive)
+	// RESOURCE OWNERSHIP: PrepareBackupSession transfer ownership ke caller.
+	// Jika PrepareBackupSession return error, client sudah di-close otomatis (tidak perlu cleanup).
+	// Jika return success, WAJIB close client sebelum function exit.
+	sourceClient, dbFiltered, err := s.PrepareBackupSession(ctx, state, config.HeaderTitle, config.NonInteractive)
 	if err != nil {
+		// Client sudah di-close di PrepareBackupSession jika error
 		return err
 	}
 
-	// Cleanup function untuk close semua connections
+	// CRITICAL: Register cleanup IMMEDIATELY setelah resource acquisition berhasil.
+	// Pattern ini memastikan client selalu di-close bahkan jika terjadi panic/error.
 	defer func() {
 		if sourceClient != nil {
 			sourceClient.Close()
+			sourceClient = nil // prevent double-close
 		}
 	}()
 
-	// Lakukan backup
-	result, err := s.ExecuteBackup(ctx, sourceClient, dbFiltered, config.BackupMode)
+	// Lakukan backup (returns result, state, error)
+	result, _, err := s.ExecuteBackup(ctx, state, sourceClient, dbFiltered, config.BackupMode)
 	if err != nil {
 		return err
 	}
@@ -108,8 +116,13 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 		// Backup background harus non-interaktif agar tidak hang tanpa TTY.
 		nonInteractive := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
 		if !nonInteractive {
-			return fmt.Errorf("mode background membutuhkan --quiet (non-interaktif)")
+			return fmt.Errorf("RunBackupCommand: %w", model.ErrBackgroundModeRequiresQuiet)
 		}
+
+		// Parse profile path untuk generate unique lock file
+		// Setiap profile mendapat lock file sendiri untuk prevent concurrent backup conflicts
+		profilePath, _ := cmd.Flags().GetString("profile")
+		lockFilePath := path.GenerateForProfile(profilePath)
 
 		wd, _ := os.Getwd()
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -122,7 +135,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 			Collect:       true,
 			NoAskPass:     true,
 			WrapWithFlock: true,
-			FlockPath:     "/var/lock/sfdbtools-backup.lock",
+			FlockPath:     lockFilePath,
 		})
 		if runErr != nil {
 			return runErr
@@ -151,6 +164,9 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 	// Inisialisasi service backup
 	svc := NewBackupService(logger, deps.Config, &parsedOpts)
 
+	// Buat execution state untuk tracking (dibuat early agar bisa diakses oleh signal handler)
+	execState := NewExecutionState()
+
 	// Setup context dengan cancellation untuk graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -169,7 +185,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 			print.Println()
 		}
 		logger.Warnf("Menerima signal %v, menghentikan backup... (Tekan sekali lagi untuk force exit)", sig)
-		svc.HandleShutdown()
+		svc.HandleShutdown(execState)
 		cancel()
 
 		<-sigChan
@@ -177,6 +193,15 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 			print.Println()
 		}
 		logger.Warn("Menerima signal kedua, memaksa berhenti (force exit)...")
+
+		// Issue #58: Lakukan critical cleanup sebelum os.Exit()
+		// os.Exit() bypasses all deferred cleanup, menyebabkan:
+		// - Stale lock files (deadlock pada backup selanjutnya)
+		// - Partial backup files tidak ter-cleanup (disk space waste)
+		// - File handles tidak ter-flush (corrupted files)
+		// Critical cleanup memastikan resources kritis di-cleanup sebelum force exit
+		criticalCleanup(execState, logger)
+
 		os.Exit(1)
 	}()
 
@@ -189,7 +214,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 		BackupMode:     config.Mode,
 	}
 
-	if err := svc.ExecuteBackupCommand(ctx, backupConfig); err != nil {
+	if err := svc.ExecuteBackupCommand(ctx, execState, backupConfig); err != nil {
 		if errors.Is(err, validation.ErrUserCancelled) {
 			logger.Warn("Proses dibatalkan oleh pengguna.")
 			return nil

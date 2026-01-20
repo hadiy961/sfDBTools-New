@@ -2,7 +2,7 @@
 // Deskripsi : Mode backup combined - semua database dalam satu file
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 15 Januari 2026
+// Last Modified : 20 Januari 2026
 
 package modes
 
@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/shared/consts"
 	"strings"
@@ -19,11 +20,15 @@ import (
 // CombinedExecutor menangani backup combined mode
 type CombinedExecutor struct {
 	service BackupService
+	state   BackupStateAccessor
 }
 
 // NewCombinedExecutor membuat instance baru CombinedExecutor
-func NewCombinedExecutor(svc BackupService) *CombinedExecutor {
-	return &CombinedExecutor{service: svc}
+func NewCombinedExecutor(svc BackupService, state BackupStateAccessor) *CombinedExecutor {
+	return &CombinedExecutor{
+		service: svc,
+		state:   state,
+	}
 }
 
 // Execute melakukan backup semua database dalam satu file
@@ -49,21 +54,15 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	filename := opts.File.Path
 	// Mode all/combined bisa override lewat --filename (base name tanpa ekstensi).
 	if (opts.Mode == consts.ModeAll || opts.Mode == consts.ModeCombined) && opts.File.Filename != "" {
-		filename = applyCustomBaseFilename(filename, opts.File.Filename)
+		filename = backuppath.ApplyCustomBaseFilename(filename, opts.File.Filename)
 	}
 	fullOutputPath := filepath.Join(opts.OutputDir, filename)
 	e.service.GetLog().Debug("Backup file: " + fullOutputPath)
 
-	// Capture GTID sebelum backup dimulai
-	if err := e.service.CaptureAndSaveGTID(ctx, fullOutputPath); err != nil {
-		e.service.GetLog().Warn("GTID handling error: " + err.Error())
-	}
-
-	// Execute backup - gunakan mode dari BackupOptions (bisa 'all' atau 'combined')
 	backupMode := opts.Mode
 	start := time.Now()
 	e.service.GetLog().Infof("Memulai dump combined untuk %d database", totalDBFound)
-	backupInfo, execErr := e.service.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
+	backupInfo, execErr := e.service.ExecuteAndBuildBackup(ctx, e.state, types_backup.BackupExecutionConfig{
 		DBList:       dbFiltered,
 		OutputPath:   fullOutputPath,
 		BackupType:   backupMode,
@@ -84,6 +83,15 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	}
 	e.service.GetLog().Infof("Selesai dump combined (%s)", time.Since(start).Round(time.Millisecond))
 
+	// GTID Capture: Dilakukan SETELAH dump selesai untuk menghindari TOCTOU race.
+	// mysqldump --single-transaction membuat consistent snapshot, jadi GTID yang
+	// di-capture setelah dump akan lebih akurat untuk PITR (Point-in-Time Recovery).
+	// Note: GTID position akan sedikit ahead dari snapshot point, tapi ini lebih aman
+	// daripada capture SEBELUM dump (yang bisa miss transactions).
+	if err := e.service.CaptureAndSaveGTID(ctx, e.state, fullOutputPath); err != nil {
+		e.service.GetLog().Warn("GTID handling error: " + err.Error())
+	}
+
 	// Success - all databases backed up in one file
 	res.SuccessfulBackups = len(dbFiltered)
 
@@ -99,7 +107,8 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 
 	actualUserGrantsPath := e.service.ExportUserGrantsIfNeeded(ctx, fullOutputPath, databasesToFilter)
 	// Update metadata dengan actual path (atau "none" jika gagal)
-	e.service.UpdateMetadataUserGrantsPath(fullOutputPath, actualUserGrantsPath)
+	permissions := e.service.GetConfig().Backup.Output.MetadataPermissions
+	e.service.UpdateMetadataUserGrantsPath(fullOutputPath, actualUserGrantsPath, permissions)
 
 	// Format display name dengan helper
 	backupInfo.DatabaseName = e.formatCombinedBackupDisplayName(dbFiltered)

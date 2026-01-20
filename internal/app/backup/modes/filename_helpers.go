@@ -2,37 +2,13 @@
 // Deskripsi : Helper penamaan file untuk mode backup (custom base name + auto ekstensi)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2025-12-30
+// Last Modified : 20 Januari 2026
 
 package modes
 
 import (
-	"path/filepath"
 	"strings"
-
-	"sfdbtools/internal/shared/consts"
 )
-
-func applyCustomBaseFilename(defaultFilename string, customBase string) string {
-	customBase = strings.TrimSpace(customBase)
-	if customBase == "" {
-		return defaultFilename
-	}
-	// Jika user sudah memasukkan .sql (atau full filename), biarkan apa adanya.
-	if strings.Contains(customBase, ".sql") {
-		return customBase
-	}
-
-	ext := ""
-	if defaultFilename != "" && defaultFilename != consts.FilenameGenerateErrorPlaceholder {
-		if idx := strings.Index(defaultFilename, ".sql"); idx >= 0 {
-			ext = defaultFilename[idx:]
-		} else {
-			ext = filepath.Ext(defaultFilename)
-		}
-	}
-	return customBase + ext
-}
 
 func getCompanionSuffix(primaryDBName string, dbName string) (string, bool) {
 	if primaryDBName == "" || dbName == "" {

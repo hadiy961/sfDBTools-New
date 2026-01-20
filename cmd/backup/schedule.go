@@ -7,8 +7,10 @@ package backupcmd
 
 import (
 	"fmt"
+	"os"
 	"sfdbtools/internal/app/backup/scheduler"
 	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/shared/consts"
 
 	"github.com/spf13/cobra"
 )
@@ -112,10 +114,21 @@ var cmdBackupScheduleRun = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if appdeps.Deps == nil {
 			cmd.PrintErrln("✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar.")
-			return fmt.Errorf("dependencies tidak tersedia")
+			os.Exit(consts.ExitCodePermanentError)
 		}
 		jobName, _ := cmd.Flags().GetString("job")
-		return scheduler.RunJob(cmd.Context(), appdeps.Deps, jobName)
+		err := scheduler.RunJob(cmd.Context(), appdeps.Deps, jobName)
+		if err != nil {
+			// Semantic exit codes untuk systemd restart policy
+			if scheduler.IsTransientError(err) {
+				appdeps.Deps.Logger.Warnf("Transient error detected, exit dengan code %d untuk systemd retry", consts.ExitCodeTransientError)
+				os.Exit(consts.ExitCodeTransientError)
+			}
+			// Permanent error - systemd should not retry
+			appdeps.Deps.Logger.Errorf("Permanent error detected, exit dengan code %d", consts.ExitCodePermanentError)
+			os.Exit(consts.ExitCodePermanentError)
+		}
+		return nil
 	},
 	Hidden: true,
 }

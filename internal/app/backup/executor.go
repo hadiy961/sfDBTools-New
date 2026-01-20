@@ -2,7 +2,7 @@
 // Deskripsi : Entry point dan executor logic untuk backup operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2025-12-30
+// Last Modified : 20 Januari 2026
 
 package backup
 
@@ -15,33 +15,34 @@ import (
 	"sfdbtools/internal/shared/timex"
 )
 
-// ExecuteBackup melakukan proses backup database - entry point utama
-func (s *Service) ExecuteBackup(ctx context.Context, sourceClient *database.Client, dbFiltered []string, backupMode string) (*types_backup.BackupResult, error) {
+// ExecuteBackup melakukan proses backup database - entry point utama.
+// Menerima execution state dari caller untuk menghindari shared mutable state.
+func (s *Service) ExecuteBackup(ctx context.Context, state *BackupExecutionState, sourceClient *database.Client, dbFiltered []string, backupMode string) (*types_backup.BackupResult, *BackupExecutionState, error) {
 	// Simpan client ke service
 	s.Client = sourceClient
 
 	// Setup konfigurasi backup
-	if err := s.SetupBackupExecution(); err != nil {
-		return nil, fmt.Errorf("gagal setup backup execution: %w", err)
+	if err := s.SetupBackupExecution(state); err != nil {
+		return nil, state, fmt.Errorf("gagal setup backup execution: %w", err)
 	}
 
 	// Jalankan backup sesuai mode
 	timer := timex.NewTimer()
-	result := s.executeBackupByMode(ctx, dbFiltered, backupMode)
+	result := s.executeBackupByMode(ctx, state, dbFiltered, backupMode)
 	result.TotalTimeTaken = timer.Elapsed()
 
 	// Handle errors
 	finalResult, err := s.handleBackupErrors(result)
 	if err != nil {
-		return &finalResult, err
+		return &finalResult, state, err
 	}
 
-	return &finalResult, nil
+	return &finalResult, state, nil
 }
 
 // executeBackupByMode menjalankan backup sesuai mode yang dipilih
-func (s *Service) executeBackupByMode(ctx context.Context, dbFiltered []string, backupMode string) types_backup.BackupResult {
-	executor, err := modes.GetExecutor(backupMode, s)
+func (s *Service) executeBackupByMode(ctx context.Context, state *BackupExecutionState, dbFiltered []string, backupMode string) types_backup.BackupResult {
+	executor, err := modes.GetExecutor(backupMode, s, state)
 	if err != nil {
 		s.Log.Errorf("Gagal mendapatkan executor: %v", err)
 		return types_backup.BackupResult{
