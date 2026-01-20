@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"sfdbtools/internal/app/backup/display"
+	"sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/model"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	appdeps "sfdbtools/internal/cli/deps"
@@ -118,6 +119,11 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 			return fmt.Errorf("RunBackupCommand: %w", model.ErrBackgroundModeRequiresQuiet)
 		}
 
+		// Parse profile path untuk generate unique lock file
+		// Setiap profile mendapat lock file sendiri untuk prevent concurrent backup conflicts
+		profilePath, _ := cmd.Flags().GetString("profile")
+		lockFilePath := path.GenerateForProfile(profilePath)
+
 		wd, _ := os.Getwd()
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -129,7 +135,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 			Collect:       true,
 			NoAskPass:     true,
 			WrapWithFlock: true,
-			FlockPath:     "/var/lock/sfdbtools-backup.lock",
+			FlockPath:     lockFilePath,
 		})
 		if runErr != nil {
 			return runErr
