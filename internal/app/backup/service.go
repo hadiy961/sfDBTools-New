@@ -118,6 +118,9 @@ var _ modes.BackupService = (*Service)(nil)
 // GetLog returns logger instance
 func (s *Service) GetLog() applog.Logger { return s.Log }
 
+// GetConfig returns config instance
+func (s *Service) GetConfig() *appconfig.Config { return s.Config }
+
 // GetOptions returns backup options
 func (s *Service) GetOptions() *types_backup.BackupDBOptions { return s.BackupDBOptions }
 

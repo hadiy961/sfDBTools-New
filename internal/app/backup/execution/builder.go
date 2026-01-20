@@ -2,7 +2,7 @@
 // Deskripsi : Builder functions untuk DatabaseBackupInfo dan metadata generation
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-31
-// Last Modified : 15 Januari 2026
+// Last Modified : 20 Januari 2026
 
 package execution
 
@@ -61,7 +61,7 @@ func (e *Engine) buildRealBackupInfo(
 
 	manifestPath := ""
 	if e.Config.Backup.Output.SaveBackupInfo {
-		manifestPath = metadata.TrySaveBackupMetadata(meta, e.Log)
+		manifestPath = metadata.TrySaveBackupMetadata(meta, e.Config.Backup.Output.MetadataPermissions, e.Log)
 	}
 
 	return (&metadata.DatabaseBackupInfoBuilder{

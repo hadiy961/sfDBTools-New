@@ -88,8 +88,8 @@ func (s *Service) ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupF
 	return grants.ExportUserGrantsIfNeeded(ctx, s.Client, s.Log, referenceBackupFile, s.BackupDBOptions.ExcludeUser, s.BackupDBOptions.DryRun, databases)
 }
 
-func (s *Service) UpdateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string) {
-	grants.UpdateMetadataUserGrantsPath(s.Log, backupFilePath, userGrantsPath)
+func (s *Service) UpdateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string, permissions string) {
+	grants.UpdateMetadataUserGrantsPath(s.Log, backupFilePath, userGrantsPath, permissions)
 }
 
 // =============================================================================

@@ -18,8 +18,8 @@ func ExportUserGrantsIfNeeded(ctx context.Context, client *database.Client, log 
 }
 
 // UpdateMetadataUserGrantsPath updates backup metadata with the actual user grants file path.
-func UpdateMetadataUserGrantsPath(log applog.Logger, backupFilePath string, userGrantsPath string) {
-	if err := metadata.UpdateMetadataUserGrantsFile(backupFilePath, userGrantsPath, log); err != nil {
+func UpdateMetadataUserGrantsPath(log applog.Logger, backupFilePath string, userGrantsPath string, permissions string) {
+	if err := metadata.UpdateMetadataUserGrantsFile(backupFilePath, userGrantsPath, permissions, log); err != nil {
 		log.Warnf("Gagal update metadata user grants path: %v", err)
 	}
 }

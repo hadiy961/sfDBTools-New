@@ -104,7 +104,8 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 
 	actualUserGrantsPath := e.service.ExportUserGrantsIfNeeded(ctx, fullOutputPath, databasesToFilter)
 	// Update metadata dengan actual path (atau "none" jika gagal)
-	e.service.UpdateMetadataUserGrantsPath(fullOutputPath, actualUserGrantsPath)
+	permissions := e.service.GetConfig().Backup.Output.MetadataPermissions
+	e.service.UpdateMetadataUserGrantsPath(fullOutputPath, actualUserGrantsPath, permissions)
 
 	// Format display name dengan helper
 	backupInfo.DatabaseName = e.formatCombinedBackupDisplayName(dbFiltered)

@@ -8,6 +8,7 @@ package modes
 import (
 	"context"
 	"sfdbtools/internal/app/backup/model/types_backup"
+	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
 )
 
@@ -35,6 +36,7 @@ type BackupStateAccessor interface {
 // BackupContext menyediakan akses ke logger dan configuration
 type BackupContext interface {
 	GetLog() applog.Logger
+	GetConfig() *appconfig.Config
 	GetOptions() *types_backup.BackupDBOptions
 }
 
@@ -53,7 +55,7 @@ type BackupPathProvider interface {
 type BackupMetadata interface {
 	CaptureAndSaveGTID(ctx context.Context, state BackupStateAccessor, backupFilePath string) error
 	ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) string
-	UpdateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string)
+	UpdateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string, permissions string)
 }
 
 // BackupResultConverter mengkonversi loop result ke backup result

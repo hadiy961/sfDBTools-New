@@ -36,6 +36,8 @@ backup:
     # Contoh: mydb_20251110_143025_dbserver1.sql.gz.enc
     base_directory: /media/ArchiveDB
     filename_pattern: "{database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}"
+    file_permissions: "0600" # File permissions untuk backup files (default: 0600 untuk keamanan)
+    metadata_permissions: "0600" # File permissions untuk metadata (default: 0600 untuk keamanan)
     structure:
       create_subdirs: true
       pattern: "{year}{month}{day}/"

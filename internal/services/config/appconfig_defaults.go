@@ -2,7 +2,7 @@
 // Deskripsi : Default config + auto-init config file (zero-config first run)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2 Januari 2026
-// Last Modified : 5 Januari 2026
+// Last Modified : 20 Januari 2026
 package appconfig
 
 import (
@@ -42,6 +42,8 @@ func defaultConfigForPath(configPath string) *Config {
 	cfg.Backup.Encryption.Enabled = true
 
 	cfg.Backup.Output.BaseDirectory = "backup"
+	cfg.Backup.Output.FilePermissions = "0600"
+	cfg.Backup.Output.MetadataPermissions = "0600"
 	cfg.Backup.Output.Structure.CreateSubdirs = true
 	cfg.Backup.Output.Structure.Pattern = "{year}{month}{day}/"
 	cfg.Backup.Output.SaveBackupInfo = true

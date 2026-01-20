@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"sfdbtools/internal/app/backup/model/types_backup"
@@ -68,8 +69,9 @@ func (e *Engine) resolveEncryptionKeyIfNeeded() (string, error) {
 	return resolvedKey, nil
 }
 
-func (e *Engine) createBufferedOutputFile(outputPath string) (*os.File, *bufio.Writer, error) {
-	outputFile, err := os.Create(outputPath)
+func (e *Engine) createBufferedOutputFile(outputPath string, permissions string) (*os.File, *bufio.Writer, error) {
+	perm := parseFilePermissions(permissions, e.Log)
+	outputFile, err := os.OpenFile(outputPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, perm)
 	if err != nil {
 		return nil, nil, fmt.Errorf("gagal membuat file output: %w", err)
 	}
@@ -182,9 +184,28 @@ func (e *Engine) isFatalDumpError(err error, stderrOutput string, exitCode int) 
 	return true
 }
 
+// parseFilePermissions mengkonversi string permissions (e.g., "0600") ke os.FileMode
+// Jika parsing gagal atau permissions kosong, return default 0600 (lebih restrictive)
+func parseFilePermissions(permStr string, logger applog.Logger) os.FileMode {
+	const defaultPerm = 0600
+
+	if permStr == "" {
+		return defaultPerm
+	}
+
+	// Parse octal string to uint32
+	perm, err := strconv.ParseUint(permStr, 8, 32)
+	if err != nil {
+		logger.Warnf("Invalid file_permissions '%s', using default 0600: %v", permStr, err)
+		return defaultPerm
+	}
+
+	return os.FileMode(perm)
+}
+
 // ExecuteMysqldumpWithPipe menjalankan dump command dan streaming ke file via (opsional) kompresi dan enkripsi.
 // Prioritas: mariadb-dump, fallback: mysqldump.
-func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []string, outputPath string, compressionRequired bool, compressionType string) (*types_backup.BackupWriteResult, error) {
+func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []string, outputPath string, compressionRequired bool, compressionType string, permissions string) (*types_backup.BackupWriteResult, error) {
 	encryptionKey, err := e.resolveEncryptionKeyIfNeeded()
 	if err != nil {
 		return nil, err
@@ -199,7 +220,7 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 	spin.Start()
 	defer spin.Stop()
 
-	outputFile, bufWriter, err := e.createBufferedOutputFile(outputPath)
+	outputFile, bufWriter, err := e.createBufferedOutputFile(outputPath, permissions)
 	if err != nil {
 		return nil, err
 	}

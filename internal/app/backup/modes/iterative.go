@@ -65,7 +65,8 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 		// Untuk primary/secondary, export user grants yang punya akses ke database dalam list
 		actualUserGrantsPath := e.service.ExportUserGrantsIfNeeded(ctx, loopResult.BackupInfos[0].OutputFile, dbList)
 		// Update metadata dengan actual path (atau "none" jika gagal)
-		e.service.UpdateMetadataUserGrantsPath(loopResult.BackupInfos[0].OutputFile, actualUserGrantsPath)
+		permissions := e.service.GetConfig().Backup.Output.MetadataPermissions
+		e.service.UpdateMetadataUserGrantsPath(loopResult.BackupInfos[0].OutputFile, actualUserGrantsPath, permissions)
 
 		// Generate satu metadata untuk semua database yang berhasil di-backup
 		e.generateCombinedMetadata(loopResult, dbList)
@@ -185,7 +186,8 @@ func (e *IterativeExecutor) generateCombinedMetadata(loopResult types_backup.Bac
 
 	// Update metadata pertama dengan full database list dan details
 	primaryBackupFile := loopResult.BackupInfos[0].OutputFile
-	if err := metadata.UpdateMetadataWithDatabaseDetails(primaryBackupFile, dbList, loopResult.BackupInfos, e.service.GetLog()); err != nil {
+	permissions := e.service.GetConfig().Backup.Output.MetadataPermissions
+	if err := metadata.UpdateMetadataWithDatabaseDetails(primaryBackupFile, dbList, loopResult.BackupInfos, permissions, e.service.GetLog()); err != nil {
 		e.service.GetLog().Warn("Gagal update combined metadata: " + err.Error())
 	}
 

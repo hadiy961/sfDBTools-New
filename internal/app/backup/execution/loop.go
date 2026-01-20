@@ -103,7 +103,8 @@ func (e *Engine) executeSingleBackupInLoop(
 		if config.Mode == consts.ModeSeparated || config.Mode == consts.ModeSingle {
 			path := e.UserGrants.ExportUserGrantsIfNeeded(ctx, outputPath, []string{dbName})
 			if e.Config.Backup.Output.SaveBackupInfo {
-				e.UserGrants.UpdateMetadataUserGrantsPath(outputPath, path)
+				permissions := e.Config.Backup.Output.MetadataPermissions
+				e.UserGrants.UpdateMetadataUserGrantsPath(outputPath, path, permissions)
 			}
 		}
 	}

@@ -30,7 +30,7 @@ type StateTracker interface {
 // UserGrantsHooks interface untuk user grants export operations.
 type UserGrantsHooks interface {
 	ExportUserGrantsIfNeeded(ctx context.Context, outputPath string, dbNames []string) string
-	UpdateMetadataUserGrantsPath(outputPath string, userGrantsPath string)
+	UpdateMetadataUserGrantsPath(outputPath string, userGrantsPath string, permissions string)
 }
 
 // Engine adalah core backup execution engine.
@@ -143,8 +143,9 @@ func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args [
 
 	writeEngine := writer.New(e.Log, e.ErrorLog, e.Options)
 
+	permissions := e.Config.Backup.Output.FilePermissions
 	exec := func(a []string) (*types_backup.BackupWriteResult, error) {
-		return writeEngine.ExecuteMysqldumpWithPipe(ctx, a, outputPath, e.Options.Compression.Enabled, e.Options.Compression.Type)
+		return writeEngine.ExecuteMysqldumpWithPipe(ctx, a, outputPath, e.Options.Compression.Enabled, e.Options.Compression.Type, permissions)
 	}
 
 	attempts := 0
