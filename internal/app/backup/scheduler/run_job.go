@@ -172,13 +172,21 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 
 	start := time.Now()
 	if err := svc.ExecuteBackupCommand(runCtx, execState, backupCfg); err != nil {
+		duration := time.Since(start)
+
+		// Handle cancellation (SIGTERM/SIGINT) - ini bukan error
 		if errors.Is(err, context.Canceled) || runCtx.Err() != nil {
-			deps.Logger.Warn("Backup dibatalkan")
+			deps.Logger.Warnf("Backup job '%s' dibatalkan (duration=%s)", job.Name, duration)
 			return nil
 		}
-		return err
+
+		// Wrap error dengan scheduler context untuk troubleshooting
+		wrappedErr := wrapSchedulerError(err, job.Name, mode, duration)
+		deps.Logger.Error(wrappedErr.Error())
+
+		return wrappedErr
 	}
-	deps.Logger.Infof("Backup job '%s' selesai dalam %s", job.Name, time.Since(start))
+	deps.Logger.Infof("✓ Backup job '%s' selesai dalam %s", job.Name, time.Since(start))
 
 	// Cleanup (retention) per job
 	if job.Cleanup.Enabled && job.Cleanup.RetentionDays > 0 {
@@ -200,8 +208,16 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 		cleanupCfg.LogPrefix = fmt.Sprintf("schedule-%s-cleanup", job.Name)
 
 		deps.Logger.Infof("Menjalankan cleanup job '%s' (retention=%d hari)", job.Name, job.Cleanup.RetentionDays)
+		cleanupStart := time.Now()
 		if err := cleanupSvc.ExecuteCleanupCommand(cleanupCfg); err != nil {
-			return err
+			// Cleanup error tidak boleh membatalkan backup yang sudah berhasil
+			// Log as warning dan lanjutkan (cleanup akan di-retry di next run)
+			deps.Logger.Warnf("Cleanup job '%s' gagal (duration=%s): %v",
+				job.Name, time.Since(cleanupStart), err)
+			deps.Logger.Warn("Backup berhasil, tapi cleanup gagal. Cleanup akan di-retry di run berikutnya.")
+			// Tidak return error agar systemd tidak menganggap job gagal
+		} else {
+			deps.Logger.Infof("✓ Cleanup job '%s' selesai dalam %s", job.Name, time.Since(cleanupStart))
 		}
 	}
 
@@ -213,4 +229,49 @@ func cloneConfig(cfg *appconfig.Config) appconfig.Config {
 		return appconfig.Config{}
 	}
 	return *cfg
+}
+
+// IsTransientError mengklasifikasikan error sebagai transient (bisa di-retry) atau permanent.
+// Transient errors adalah error yang kemungkinan besar akan berhasil jika di-retry setelah beberapa waktu.
+// Function ini di-export untuk digunakan di cmd layer untuk semantic exit codes.
+func IsTransientError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	msg := strings.ToLower(err.Error())
+
+	// Pattern untuk transient errors (network, resource, temporary issues)
+	transientPatterns := []string{
+		"connection refused",
+		"connection reset",
+		"timeout",
+		"timed out",
+		"too many connections",
+		"no space left",
+		"disk full",
+		"temporary failure",
+		"resource temporarily unavailable",
+		"i/o timeout",
+		"broken pipe",
+		"network is unreachable",
+		"host is unreachable",
+	}
+
+	for _, pattern := range transientPatterns {
+		if strings.Contains(msg, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// wrapSchedulerError menambahkan context scheduler ke error message untuk troubleshooting.
+func wrapSchedulerError(err error, jobName, mode string, duration time.Duration) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("scheduled job '%s' failed (mode=%s, duration=%s): %w",
+		jobName, mode, duration, err)
 }
