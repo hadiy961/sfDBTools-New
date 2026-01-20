@@ -193,6 +193,15 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 			print.Println()
 		}
 		logger.Warn("Menerima signal kedua, memaksa berhenti (force exit)...")
+
+		// Issue #58: Lakukan critical cleanup sebelum os.Exit()
+		// os.Exit() bypasses all deferred cleanup, menyebabkan:
+		// - Stale lock files (deadlock pada backup selanjutnya)
+		// - Partial backup files tidak ter-cleanup (disk space waste)
+		// - File handles tidak ter-flush (corrupted files)
+		// Critical cleanup memastikan resources kritis di-cleanup sebelum force exit
+		criticalCleanup(execState, logger)
+
 		os.Exit(1)
 	}()
 
