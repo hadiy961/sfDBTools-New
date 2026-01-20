@@ -24,13 +24,15 @@ import (
 // Digunakan untuk mode: single, primary, secondary, dan separated
 type IterativeExecutor struct {
 	service BackupService
+	state   BackupStateAccessor
 	mode    string
 }
 
 // NewIterativeExecutor membuat instance baru IterativeExecutor
-func NewIterativeExecutor(svc BackupService, mode string) *IterativeExecutor {
+func NewIterativeExecutor(svc BackupService, state BackupStateAccessor, mode string) *IterativeExecutor {
 	return &IterativeExecutor{
 		service: svc,
+		state:   state,
 		mode:    mode,
 	}
 }
@@ -47,7 +49,7 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 	outputPathFunc := e.createOutputPathFunc(dbList)
 
 	// Jalankan backup loop
-	loopResult := e.service.ExecuteBackupLoop(ctx, dbList, types_backup.BackupLoopConfig{
+	loopResult := e.service.ExecuteBackupLoop(ctx, e.state, dbList, types_backup.BackupLoopConfig{
 		Mode:       e.mode,
 		TotalDBs:   len(dbList),
 		BackupType: e.mode,

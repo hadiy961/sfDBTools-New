@@ -20,11 +20,15 @@ import (
 // CombinedExecutor menangani backup combined mode
 type CombinedExecutor struct {
 	service BackupService
+	state   BackupStateAccessor
 }
 
 // NewCombinedExecutor membuat instance baru CombinedExecutor
-func NewCombinedExecutor(svc BackupService) *CombinedExecutor {
-	return &CombinedExecutor{service: svc}
+func NewCombinedExecutor(svc BackupService, state BackupStateAccessor) *CombinedExecutor {
+	return &CombinedExecutor{
+		service: svc,
+		state:   state,
+	}
 }
 
 // Execute melakukan backup semua database dalam satu file
@@ -56,7 +60,7 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	e.service.GetLog().Debug("Backup file: " + fullOutputPath)
 
 	// Capture GTID sebelum backup dimulai
-	if err := e.service.CaptureAndSaveGTID(ctx, fullOutputPath); err != nil {
+	if err := e.service.CaptureAndSaveGTID(ctx, e.state, fullOutputPath); err != nil {
 		e.service.GetLog().Warn("GTID handling error: " + err.Error())
 	}
 
@@ -64,7 +68,7 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	backupMode := opts.Mode
 	start := time.Now()
 	e.service.GetLog().Infof("Memulai dump combined untuk %d database", totalDBFound)
-	backupInfo, execErr := e.service.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
+	backupInfo, execErr := e.service.ExecuteAndBuildBackup(ctx, e.state, types_backup.BackupExecutionConfig{
 		DBList:       dbFiltered,
 		OutputPath:   fullOutputPath,
 		BackupType:   backupMode,

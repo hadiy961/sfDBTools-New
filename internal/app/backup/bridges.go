@@ -8,14 +8,15 @@ package backup
 
 import (
 	"context"
+	"fmt"
 
 	"sfdbtools/internal/app/backup/execution"
 	"sfdbtools/internal/app/backup/grants"
 	"sfdbtools/internal/app/backup/gtid"
 	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/app/backup/modes"
 	"sfdbtools/internal/app/backup/selection"
 	"sfdbtools/internal/app/backup/setup"
-	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/database"
 )
 
@@ -33,21 +34,17 @@ func (s *Service) handleSingleModeSetup(ctx context.Context, client interface {
 // Setup bridges
 // =============================================================================
 
-func (s *Service) CheckAndSelectConfigFile() error {
-	return setup.New(s.Log, s.Config, s.BackupDBOptions, &s.excludedDatabases).CheckAndSelectConfigFile()
+func (s *Service) SetupBackupExecution(state *BackupExecutionState) error {
+	return setup.New(s.Log, s.Config, s.BackupDBOptions, &state.ExcludedDatabases).SetupBackupExecution()
 }
 
-func (s *Service) SetupBackupExecution() error {
-	return setup.New(s.Log, s.Config, s.BackupDBOptions, &s.excludedDatabases).SetupBackupExecution()
-}
-
-func (s *Service) GetFilteredDatabases(ctx context.Context, client *database.Client) ([]string, *domain.FilterStats, error) {
-	return setup.New(s.Log, s.Config, s.BackupDBOptions, &s.excludedDatabases).GetFilteredDatabases(ctx, client)
-}
-
-func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, nonInteractive bool) (client *database.Client, dbFiltered []string, err error) {
-	return setup.New(s.Log, s.Config, s.BackupDBOptions, &s.excludedDatabases).
-		PrepareBackupSession(ctx, headerTitle, nonInteractive, s.GenerateBackupPaths)
+func (s *Service) PrepareBackupSession(ctx context.Context, state *BackupExecutionState, headerTitle string, nonInteractive bool) (client *database.Client, dbFiltered []string, err error) {
+	// Create closure that captures state for GenerateBackupPaths callback
+	pathGenerator := func(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error) {
+		return s.GenerateBackupPaths(ctx, state, client, dbFiltered)
+	}
+	return setup.New(s.Log, s.Config, s.BackupDBOptions, &state.ExcludedDatabases).
+		PrepareBackupSession(ctx, headerTitle, nonInteractive, pathGenerator)
 }
 
 // =============================================================================
@@ -58,15 +55,27 @@ func (s *Service) PrepareBackupSession(ctx context.Context, headerTitle string, 
 // Execution bridges
 // =============================================================================
 
-func (s *Service) ExecuteAndBuildBackup(ctx context.Context, cfg types_backup.BackupExecutionConfig) (types_backup.DatabaseBackupInfo, error) {
+func (s *Service) ExecuteAndBuildBackup(ctx context.Context, state modes.BackupStateAccessor, cfg types_backup.BackupExecutionConfig) (types_backup.DatabaseBackupInfo, error) {
+	// Type assert to access fields
+	execState, ok := state.(*BackupExecutionState)
+	if !ok {
+		return types_backup.DatabaseBackupInfo{}, fmt.Errorf("invalid state type")
+	}
 	eng := execution.New(s.Log, s.Config, s.BackupDBOptions, s.ErrorLog).
-		WithDependencies(s.Client, s.gtidInfo, s.excludedDatabases, s, s)
+		WithDependencies(s.Client, execState.GTIDInfo, execState.ExcludedDatabases, execState, s)
 	return eng.ExecuteAndBuildBackup(ctx, cfg)
 }
 
-func (s *Service) ExecuteBackupLoop(ctx context.Context, databases []string, config types_backup.BackupLoopConfig, outputPathFunc func(dbName string) (string, error)) types_backup.BackupLoopResult {
+func (s *Service) ExecuteBackupLoop(ctx context.Context, state modes.BackupStateAccessor, databases []string, config types_backup.BackupLoopConfig, outputPathFunc func(dbName string) (string, error)) types_backup.BackupLoopResult {
+	// Type assert to access fields
+	execState, ok := state.(*BackupExecutionState)
+	if !ok {
+		return types_backup.BackupLoopResult{
+			Errors: []string{"invalid state type"},
+		}
+	}
 	eng := execution.New(s.Log, s.Config, s.BackupDBOptions, s.ErrorLog).
-		WithDependencies(s.Client, s.gtidInfo, s.excludedDatabases, s, s)
+		WithDependencies(s.Client, execState.GTIDInfo, execState.ExcludedDatabases, execState, s)
 	return eng.ExecuteBackupLoop(ctx, databases, config, outputPathFunc)
 }
 
@@ -86,13 +95,16 @@ func (s *Service) UpdateMetadataUserGrantsPath(backupFilePath string, userGrants
 // GTID bridge
 // =============================================================================
 
-func (s *Service) CaptureAndSaveGTID(ctx context.Context, backupFilePath string) error {
+func (s *Service) CaptureAndSaveGTID(ctx context.Context, state modes.BackupStateAccessor, backupFilePath string) error {
 	gtidInfo, err := gtid.Capture(ctx, s.Client, s.Log, s.BackupDBOptions.CaptureGTID)
 	if err != nil {
 		return err
 	}
 	if gtidInfo != nil {
-		s.gtidInfo = gtidInfo
+		// Type assert state to *BackupExecutionState to access GTIDInfo field
+		if execState, ok := state.(*BackupExecutionState); ok {
+			execState.GTIDInfo = gtidInfo
+		}
 	}
 	return nil
 }

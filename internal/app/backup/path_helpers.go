@@ -44,7 +44,8 @@ func (s *Service) GenerateFullBackupPath(dbName string, mode string) (string, er
 
 // GenerateBackupPaths generates output directory and filename for backup
 // Returns updated dbFiltered for single/primary/secondary mode (selected database + companions)
-func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error) {
+// state parameter provides access to ExcludedDatabases for statistics display
+func (s *Service) GenerateBackupPaths(ctx context.Context, state *BackupExecutionState, client *database.Client, dbFiltered []string) ([]string, error) {
 	dbHostname := s.BackupDBOptions.Profile.DBInfo.HostName
 	if dbHostname == "" {
 		dbHostname = s.BackupDBOptions.Profile.DBInfo.Host
@@ -103,7 +104,7 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, client *database.Clie
 			TotalFound:        len(allDatabases),
 			TotalIncluded:     len(dbFiltered),
 			TotalExcluded:     len(allDatabases) - len(dbFiltered),
-			ExcludedDatabases: s.excludedDatabases,
+			ExcludedDatabases: state.ExcludedDatabases,
 		}
 		print.PrintFilterStats(stats, consts.FeatureBackup, s.Log)
 	}

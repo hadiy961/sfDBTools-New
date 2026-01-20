@@ -48,9 +48,9 @@ func ExecuteBackup(cmd *cobra.Command, deps *appdeps.Dependencies, mode string) 
 // =============================================================================
 
 // ExecuteBackupCommand adalah unified entry point untuk semua jenis backup
-func (s *Service) ExecuteBackupCommand(ctx context.Context, config types_backup.BackupEntryConfig) error {
+func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecutionState, config types_backup.BackupEntryConfig) error {
 	// Setup session (koneksi database source)
-	sourceClient, dbFiltered, err := s.PrepareBackupSession(ctx, config.HeaderTitle, config.NonInteractive)
+	sourceClient, dbFiltered, err := s.PrepareBackupSession(ctx, state, config.HeaderTitle, config.NonInteractive)
 	if err != nil {
 		return err
 	}
@@ -62,8 +62,8 @@ func (s *Service) ExecuteBackupCommand(ctx context.Context, config types_backup.
 		}
 	}()
 
-	// Lakukan backup
-	result, err := s.ExecuteBackup(ctx, sourceClient, dbFiltered, config.BackupMode)
+	// Lakukan backup (returns result, state, error)
+	result, _, err := s.ExecuteBackup(ctx, state, sourceClient, dbFiltered, config.BackupMode)
 	if err != nil {
 		return err
 	}
@@ -151,6 +151,9 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 	// Inisialisasi service backup
 	svc := NewBackupService(logger, deps.Config, &parsedOpts)
 
+	// Buat execution state untuk tracking (dibuat early agar bisa diakses oleh signal handler)
+	execState := NewExecutionState()
+
 	// Setup context dengan cancellation untuk graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -169,7 +172,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 			print.Println()
 		}
 		logger.Warnf("Menerima signal %v, menghentikan backup... (Tekan sekali lagi untuk force exit)", sig)
-		svc.HandleShutdown()
+		svc.HandleShutdown(execState)
 		cancel()
 
 		<-sigChan
@@ -189,7 +192,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 		BackupMode:     config.Mode,
 	}
 
-	if err := svc.ExecuteBackupCommand(ctx, backupConfig); err != nil {
+	if err := svc.ExecuteBackupCommand(ctx, execState, backupConfig); err != nil {
 		if errors.Is(err, validation.ErrUserCancelled) {
 			logger.Warn("Proses dibatalkan oleh pengguna.")
 			return nil

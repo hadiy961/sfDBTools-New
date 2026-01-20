@@ -126,6 +126,9 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	// Inisialisasi service backup
 	svc := backup.NewBackupService(deps.Logger, deps.Config, &opts)
 
+	// Buat execution state untuk tracking (dibuat early agar bisa diakses oleh signal handler)
+	execState := backup.NewExecutionState()
+
 	// Setup context + cancellation
 	runCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -139,7 +142,7 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	go func() {
 		sig := <-sigChan
 		deps.Logger.Warnf("Menerima signal %v, menghentikan backup job '%s'...", sig, job.Name)
-		svc.HandleShutdown()
+		svc.HandleShutdown(execState)
 		cancel()
 	}()
 
@@ -157,7 +160,7 @@ func RunJob(ctx context.Context, deps *appdeps.Dependencies, jobName string) err
 	}
 
 	start := time.Now()
-	if err := svc.ExecuteBackupCommand(runCtx, backupCfg); err != nil {
+	if err := svc.ExecuteBackupCommand(runCtx, execState, backupCfg); err != nil {
 		if errors.Is(err, context.Canceled) || runCtx.Err() != nil {
 			deps.Logger.Warn("Backup dibatalkan")
 			return nil
