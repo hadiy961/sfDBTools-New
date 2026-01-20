@@ -59,12 +59,6 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	fullOutputPath := filepath.Join(opts.OutputDir, filename)
 	e.service.GetLog().Debug("Backup file: " + fullOutputPath)
 
-	// Capture GTID sebelum backup dimulai
-	if err := e.service.CaptureAndSaveGTID(ctx, e.state, fullOutputPath); err != nil {
-		e.service.GetLog().Warn("GTID handling error: " + err.Error())
-	}
-
-	// Execute backup - gunakan mode dari BackupOptions (bisa 'all' atau 'combined')
 	backupMode := opts.Mode
 	start := time.Now()
 	e.service.GetLog().Infof("Memulai dump combined untuk %d database", totalDBFound)
@@ -88,6 +82,15 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 		return res
 	}
 	e.service.GetLog().Infof("Selesai dump combined (%s)", time.Since(start).Round(time.Millisecond))
+
+	// GTID Capture: Dilakukan SETELAH dump selesai untuk menghindari TOCTOU race.
+	// mysqldump --single-transaction membuat consistent snapshot, jadi GTID yang
+	// di-capture setelah dump akan lebih akurat untuk PITR (Point-in-Time Recovery).
+	// Note: GTID position akan sedikit ahead dari snapshot point, tapi ini lebih aman
+	// daripada capture SEBELUM dump (yang bisa miss transactions).
+	if err := e.service.CaptureAndSaveGTID(ctx, e.state, fullOutputPath); err != nil {
+		e.service.GetLog().Warn("GTID handling error: " + err.Error())
+	}
 
 	// Success - all databases backed up in one file
 	res.SuccessfulBackups = len(dbFiltered)
