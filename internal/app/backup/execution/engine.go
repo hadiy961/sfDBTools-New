@@ -2,7 +2,7 @@
 // Deskripsi : Main backup execution engine dengan orchestration logic
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 15 Januari 2026
+// Last Modified : 20 Januari 2026
 package execution
 
 import (
@@ -141,8 +141,10 @@ func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args [
 		return writeEngine.ExecuteMysqldumpWithPipe(ctx, a, outputPath, e.Options.Compression.Enabled, e.Options.Compression.Type)
 	}
 
+	attempts := 0
 	result, err := exec(args)
-	if err != nil {
+
+	for err != nil && attempts < maxRetries {
 		// Jika eksekusi gagal sebelum menghasilkan result (mis. binary tidak ada, gagal buat file),
 		// jangan menimpa error asli dengan error retry yang generik.
 		if result == nil {
@@ -156,11 +158,35 @@ func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args [
 			return result, args, err
 		}
 
+		attempts++
+
 		// Attempt retries dengan berbagai strategy
-		result, args, err = e.attemptRetries(outputPath, args, result, exec)
+		newResult, newArgs, newErr := e.attemptRetries(outputPath, args, result, exec)
+		if newErr == nil {
+			return newResult, newArgs, nil
+		}
+
+		// Jika tidak ada perubahan args (tidak ada strategi retry yang match), stop lebih awal.
+		if equalStringSlice(args, newArgs) {
+			return newResult, newArgs, newErr
+		}
+
+		result, args, err = newResult, newArgs, newErr
 	}
 
 	return result, args, err
+}
+
+func equalStringSlice(a []string, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // attemptRetries mencoba retry dengan berbagai strategy.
