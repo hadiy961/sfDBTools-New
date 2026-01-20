@@ -1,3 +1,8 @@
+// File : internal/app/backup/writer/engine.go
+// Deskripsi : Core backup execution engine dengan streaming pipeline
+// Author : Hadiyatna Muflihun
+// Last Modified : 20 Januari 2026
+
 package writer
 
 import (
@@ -103,45 +108,76 @@ func (e *Engine) createWriterPipeline(baseWriter io.Writer, compressionRequired 
 	return writer, closers, nil
 }
 
-func (e *Engine) isFatalDumpError(err error, stderrOutput string) bool {
+// isFatalDumpError menentukan apakah error dari mysqldump/mariadb-dump adalah fatal atau non-fatal.
+// Strategi:
+// 1. Primary: gunakan exit code sebagai indikator utama
+//   - Exit 0: Success (tidak error)
+//   - Exit 1: Ambiguous (bisa warning atau error ringan) - cek pattern
+//   - Exit 2+: Fatal error
+//
+// 2. Secondary: pattern matching untuk edge cases (hanya untuk exit code 1)
+// 3. Log stderr yang tidak ter-classify untuk future improvement
+func (e *Engine) isFatalDumpError(err error, stderrOutput string, exitCode int) bool {
 	if err == nil {
 		return false
 	}
 
-	if stderrOutput == "" {
-		e.Log.Debug("dump error with empty stderr, treating as fatal")
+	// Primary check: exit code
+	if exitCode == 0 {
+		return false
+	}
+
+	if exitCode >= 2 {
+		e.Log.Debugf("mysqldump exit code %d (>=2), treating as fatal", exitCode)
 		return true
 	}
 
+	// Exit code 1: ambiguous case, perlu secondary check
+	if stderrOutput == "" {
+		// No stderr tapi exit 1 = suspicious, treat as fatal
+		e.Log.Debug("dump error with exit 1 and empty stderr, treating as fatal")
+		return true
+	}
+
+	// Pattern matching untuk mendeteksi known non-fatal warnings pada exit code 1
 	stderrLower := strings.ToLower(stderrOutput)
 
+	// Known non-fatal patterns (biasanya warnings yang aman diabaikan)
+	nonFatalPatterns := []string{
+		"couldn't read keys from table",
+		"references invalid table(s) or column(s) or function(s)",
+		"definer/invoker of view lack rights",
+		"warning:",
+		"note:",
+	}
+	for _, p := range nonFatalPatterns {
+		if strings.Contains(stderrLower, p) {
+			e.Log.Debugf("mysqldump exit 1 matched non-fatal pattern: %s", p)
+			return false
+		}
+	}
+
+	// Known fatal patterns (untuk memastikan edge cases terdeteksi)
 	fatalPatterns := []string{
 		"access denied",
 		"unknown database",
 		"unknown server",
 		"can't connect",
 		"connection refused",
-		"got error:",
-		"error:",
-		"failed",
+		"permission denied",
+		"no such file or directory",
 	}
 	for _, p := range fatalPatterns {
 		if strings.Contains(stderrLower, p) {
+			e.Log.Debugf("mysqldump exit 1 matched fatal pattern: %s", p)
 			return true
 		}
 	}
 
-	nonFatalPatterns := []string{
-		"couldn't read keys from table",
-		"references invalid table(s) or column(s) or function(s)",
-		"definer/invoker of view lack rights",
-		"warning:",
-	}
-	for _, p := range nonFatalPatterns {
-		if strings.Contains(stderrLower, p) {
-			return false
-		}
-	}
+	// Unclassified exit code 1 dengan stderr yang tidak dikenali
+	// Default ke fatal untuk safety, tapi log untuk future improvement
+	excerpt := summarizeStderr(stderrOutput, 5, 500)
+	e.Log.Warnf("Unclassified mysqldump exit 1 stderr (treating as fatal for safety): %s", excerpt)
 
 	return true
 }
@@ -208,7 +244,13 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 			}, stderrOutput, runErr)
 		}
 
-		if e.isFatalDumpError(runErr, stderrOutput) {
+		// Extract exit code dari error
+		exitCode := 1 // default exit code untuk generic error
+		if exitErr, ok := runErr.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		}
+
+		if e.isFatalDumpError(runErr, stderrOutput, exitCode) {
 			result := &types_backup.BackupWriteResult{
 				StderrOutput: stderrOutput,
 				FileSize:     0,
