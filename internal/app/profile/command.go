@@ -7,7 +7,7 @@ package profile
 
 import (
 	appdeps "sfdbtools/internal/cli/deps"
-	"sfdbtools/internal/cli/parsing"
+	profileparsing "sfdbtools/internal/cli/parsing/profile"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
@@ -48,6 +48,12 @@ var profileExecutionConfigs = map[string]profilemodel.ProfileEntryConfig{
 		Mode:        consts.ProfileModeDelete,
 		SuccessMsg:  consts.ProfileSuccessDeleted,
 		LogPrefix:   consts.ProfileLogPrefixDelete,
+	},
+	consts.ProfileModeClone: {
+		HeaderTitle: consts.ProfileUIHeaderClone,
+		Mode:        consts.ProfileModeClone,
+		SuccessMsg:  consts.ProfileSuccessCloned,
+		LogPrefix:   consts.ProfileLogPrefixClone,
 	},
 }
 
@@ -109,6 +115,8 @@ func executeProfileCommon(cmd *cobra.Command, deps *appdeps.Dependencies, config
 				print.PrintWarning(consts.ProfileMsgEditCancelled)
 			case consts.ProfileModeDelete:
 				print.PrintWarning(consts.ProfileDeleteCancelledByUser)
+			case consts.ProfileModeClone:
+				print.PrintWarning(consts.ProfileMsgCloneCancelled)
 			default:
 				print.PrintWarning("Proses dibatalkan.")
 			}
@@ -132,7 +140,7 @@ type createProfileCommand struct {
 
 func (c *createProfileCommand) Execute() error {
 	return executeProfileCommon(c.cmd, c.deps, c.config, func() (interface{}, error) {
-		return parsing.ParsingCreateProfile(c.cmd, c.deps.Logger)
+		return profileparsing.ParsingCreateProfile(c.cmd, c.deps.Logger)
 	})
 }
 
@@ -144,7 +152,7 @@ type showProfileCommand struct {
 
 func (c *showProfileCommand) Execute() error {
 	return executeProfileCommon(c.cmd, c.deps, c.config, func() (interface{}, error) {
-		return parsing.ParsingShowProfile(c.cmd)
+		return profileparsing.ParsingShowProfile(c.cmd)
 	})
 }
 
@@ -156,7 +164,7 @@ type editProfileCommand struct {
 
 func (c *editProfileCommand) Execute() error {
 	return executeProfileCommon(c.cmd, c.deps, c.config, func() (interface{}, error) {
-		return parsing.ParsingEditProfile(c.cmd)
+		return profileparsing.ParsingEditProfile(c.cmd)
 	})
 }
 
@@ -168,7 +176,19 @@ type deleteProfileCommand struct {
 
 func (c *deleteProfileCommand) Execute() error {
 	return executeProfileCommon(c.cmd, c.deps, c.config, func() (interface{}, error) {
-		return parsing.ParsingDeleteProfile(c.cmd)
+		return profileparsing.ParsingDeleteProfile(c.cmd)
+	})
+}
+
+type cloneProfileCommand struct {
+	cmd    *cobra.Command
+	deps   *appdeps.Dependencies
+	config profilemodel.ProfileEntryConfig
+}
+
+func (c *cloneProfileCommand) Execute() error {
+	return executeProfileCommon(c.cmd, c.deps, c.config, func() (interface{}, error) {
+		return profileparsing.ParsingCloneProfile(c.cmd)
 	})
 }
 
@@ -183,6 +203,8 @@ func NewProfileCommand(mode string, cmd *cobra.Command, deps *appdeps.Dependenci
 		return &editProfileCommand{cmd: cmd, deps: deps, config: config}, nil
 	case consts.ProfileModeDelete:
 		return &deleteProfileCommand{cmd: cmd, deps: deps, config: config}, nil
+	case consts.ProfileModeClone:
+		return &cloneProfileCommand{cmd: cmd, deps: deps, config: config}, nil
 	default:
 		return nil, profileerrors.ErrInvalidProfileMode
 	}

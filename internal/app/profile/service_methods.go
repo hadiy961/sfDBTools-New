@@ -37,3 +37,10 @@ func (s *Service) PromptDeleteProfile() error {
 	e := executor.New(s.Log, s.Config, ops.configDir(), s.State, ops)
 	return e.PromptDeleteProfile()
 }
+
+// CloneProfile clones an existing profile
+func (s *Service) CloneProfile() error {
+	ops := newExecutorOps(s.Config, s.Log, s.State)
+	e := executor.New(s.Log, s.Config, ops.configDir(), s.State, ops)
+	return e.CloneProfile()
+}

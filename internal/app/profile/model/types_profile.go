@@ -60,6 +60,23 @@ func (o *ProfileDeleteOptions) Mode() string { return consts.ProfileModeDelete }
 
 func (o *ProfileDeleteOptions) IsInteractive() bool { return o != nil && o.Interactive }
 
+// ProfileCloneOptions - Options for cloning an existing profile
+type ProfileCloneOptions struct {
+	SourceProfile string              // Source profile path/name to clone from
+	TargetName    string              // Target profile name
+	TargetHost    string              // Override host (optional)
+	TargetPort    int                 // Override port (optional)
+	ProfileKey    string              // Encryption key for source profile
+	NewProfileKey string              // Encryption key for target profile (optional, defaults to same as source)
+	OutputDir     string              // Output directory for cloned profile
+	Interactive   bool                // Interactive mode with pre-fill wizard
+	SourceInfo    *domain.ProfileInfo // Loaded source profile info (filled during execution)
+}
+
+func (o *ProfileCloneOptions) Mode() string { return consts.ProfileModeClone }
+
+func (o *ProfileCloneOptions) IsInteractive() bool { return o != nil && o.Interactive }
+
 // ProfileEntryConfig menyimpan konfigurasi untuk entry point profile operations
 type ProfileEntryConfig struct {
 	HeaderTitle string // UI header title
@@ -148,6 +165,11 @@ func (s *ProfileState) ShowOptions() (*ProfileShowOptions, bool) {
 
 func (s *ProfileState) DeleteOptions() (*ProfileDeleteOptions, bool) {
 	o, ok := s.Options.(*ProfileDeleteOptions)
+	return o, ok
+}
+
+func (s *ProfileState) CloneOptions() (*ProfileCloneOptions, bool) {
+	o, ok := s.Options.(*ProfileCloneOptions)
 	return o, ok
 }
 

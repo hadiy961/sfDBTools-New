@@ -2,7 +2,7 @@
 // Deskripsi : Runner wizard interaktif untuk create/edit profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 15 Januari 2026
+// Last Modified : 21 Januari 2026
 package wizard
 
 import (
@@ -57,11 +57,17 @@ func (r *Runner) Run(mode string) error {
 	r.Log.Info(consts.ProfileWizardLogStarted)
 
 	for {
-		if mode == consts.ProfileModeEdit {
+		switch mode {
+		case consts.ProfileModeEdit:
 			if err := r.runEditFlow(); err != nil {
 				return err
 			}
-		} else {
+		case consts.ProfileModeClone:
+			// Clone mode: state sudah pre-fill dari source, tampilkan ringkasan + action menu.
+			if err := r.runCloneFlow(); err != nil {
+				return err
+			}
+		default:
 			if err := r.runCreateFlow(mode); err != nil {
 				return err
 			}
@@ -71,8 +77,10 @@ func (r *Runner) Run(mode string) error {
 			return fmt.Errorf(consts.ProfileErrProfileNameEmpty)
 		}
 
-		// Review
-		profiledisplay.DisplayProfileDetails(r.ConfigDir, r.State)
+		// Review (clone sudah menampilkan ringkasan di action menu)
+		if mode != consts.ProfileModeClone {
+			profiledisplay.DisplayProfileDetails(r.ConfigDir, r.State)
+		}
 
 		// Edit no-op: jika benar-benar tidak ada perubahan, batalkan tanpa save.
 		if mode == consts.ProfileModeEdit && r.State != nil && !r.State.HasMeaningfulChanges() {
@@ -95,6 +103,11 @@ func (r *Runner) Run(mode string) error {
 				continue
 			}
 			return err
+		}
+
+		// Clone: sudah ada pilihan eksplisit "Simpan Clone" di action menu.
+		if mode == consts.ProfileModeClone {
+			break
 		}
 
 		confirmSave, err := prompt.Confirm(consts.ProfilePromptConfirmSave, true)
