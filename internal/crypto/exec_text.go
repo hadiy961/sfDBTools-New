@@ -29,10 +29,6 @@ func ExecuteEncryptText(logger applog.Logger, opts EncryptTextOptions) error {
 	text := strings.TrimSpace(opts.InputText)
 	var plaintext []byte
 	if text != "" {
-		// Validate not empty
-		if text == "" {
-			return fmt.Errorf("plaintext kosong, tidak ada yang di-encrypt")
-		}
 		plaintext = []byte(text)
 	} else {
 		// Jika stdin adalah TTY, jangan hang menunggu input tanpa prompt.
@@ -67,8 +63,14 @@ func ExecuteEncryptText(logger applog.Logger, opts EncryptTextOptions) error {
 	if err != nil {
 		return err
 	}
+	keyBytes := []byte(keyStr)
+	defer func() {
+		for i := range keyBytes {
+			keyBytes[i] = 0
+		}
+	}()
 
-	cipherBytes, err := EncryptData(plaintext, []byte(keyStr))
+	cipherBytes, err := EncryptData(plaintext, keyBytes)
 	audit.LogOperation(logger, audit.OpEncryptText, "<stdin>", err == nil, err)
 	if err != nil {
 		return err
@@ -122,8 +124,14 @@ func ExecuteDecryptText(logger applog.Logger, opts DecryptTextOptions) error {
 	if err != nil {
 		return err
 	}
+	keyBytes := []byte(keyStr)
+	defer func() {
+		for i := range keyBytes {
+			keyBytes[i] = 0
+		}
+	}()
 
-	plain, err := DecryptData(cipherBytes, []byte(keyStr))
+	plain, err := DecryptData(cipherBytes, keyBytes)
 	audit.LogOperation(logger, audit.OpDecryptText, "<stdin>", err == nil, err)
 	if err != nil {
 		return err
