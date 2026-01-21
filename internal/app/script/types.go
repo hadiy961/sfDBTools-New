@@ -75,4 +75,23 @@ const (
 
 	// bundleVersion adalah versi format bundle
 	bundleVersion = 1
+
+	// BundleExtension adalah ekstensi file bundle
+	BundleExtension = ".sftools"
+
+	// DefaultShell adalah shell default untuk eksekusi script
+	// Gunakan bash untuk kompatibilitas, fallback ke sh jika tidak ada
+	DefaultShell = "bash"
+
+	// Security: File/Directory Permissions
+	// 0600 = owner read/write only (rw-------)
+	// 0700 = owner rwx only (rwx------)
+	SecureFilePermission = 0600
+	SecureDirPermission  = 0700
+
+	// Security: Resource Limits
+	// Prevent zip bombs dan resource exhaustion
+	MaxExtractedSize = 1 << 30   // 1 GB limit untuk total extracted size
+	MaxPathLength    = 4096      // PATH_MAX di Linux
+	MaxFileSize      = 512 << 20 // 512 MB per file
 )

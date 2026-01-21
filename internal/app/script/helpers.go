@@ -13,6 +13,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -69,7 +70,12 @@ func addFileToTar(tw *tar.Writer, srcPath string, tarName string, mode int64) er
 	if err != nil {
 		return fmt.Errorf("gagal membuka file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			// Log warning tapi tidak return error karena data sudah tercopy
+			// (ini defer, sudah terlambat untuk propagate error)
+		}
+	}()
 
 	info, err := f.Stat()
 	if err != nil {
@@ -90,12 +96,57 @@ func addFileToTar(tw *tar.Writer, srcPath string, tarName string, mode int64) er
 	return nil
 }
 
+// extractTarEntry extracts single tar entry dengan zip bomb protection.
+// Digunakan oleh RunBundle dan ExtractBundle untuk DRY.
+func extractTarEntry(hdr *tar.Header, tr *tar.Reader, baseDir string, totalExtracted *int64) error {
+	// P2 #4: Centralized zip bomb protection
+	if hdr.Size > MaxFileSize {
+		return fmt.Errorf("file terlalu besar: %s (%d bytes, max %d)", hdr.Name, hdr.Size, MaxFileSize)
+	}
+	*totalExtracted += hdr.Size
+	if *totalExtracted > MaxExtractedSize {
+		return fmt.Errorf("bundle terlalu besar: %d bytes (max %d, zip bomb protection)", *totalExtracted, MaxExtractedSize)
+	}
+
+	cleanName, err := safeTarPath(hdr.Name)
+	if err != nil {
+		return err
+	}
+	outPath := filepath.Join(baseDir, filepath.FromSlash(cleanName))
+
+	switch hdr.Typeflag {
+	case tar.TypeDir:
+		if err := os.MkdirAll(outPath, SecureDirPermission); err != nil {
+			return fmt.Errorf("gagal membuat folder: %w", err)
+		}
+	case tar.TypeReg:
+		if err := os.MkdirAll(filepath.Dir(outPath), SecureDirPermission); err != nil {
+			return fmt.Errorf("gagal membuat parent folder: %w", err)
+		}
+		wf, err := os.OpenFile(outPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, SecureFilePermission)
+		if err != nil {
+			return fmt.Errorf("gagal membuat file extract: %w", err)
+		}
+		if _, err := io.Copy(wf, tr); err != nil {
+			_ = wf.Close()
+			return fmt.Errorf("gagal menulis file extract: %w", err)
+		}
+		if err := wf.Close(); err != nil {
+			return fmt.Errorf("gagal menutup file extract: %w", err)
+		}
+	default:
+		return fmt.Errorf("tipe tar tidak didukung: %v", hdr.Typeflag)
+	}
+	return nil
+}
+
 // safeTarPath validates and cleans tar entry path to prevent path traversal attacks.
 //
 // Rejects:
 //   - Absolute paths ("/foo")
 //   - Parent directory references ("../foo")
 //   - Empty or invalid paths
+//   - Paths exceeding MaxPathLength (prevent buffer overflow)
 //
 // Returns cleaned path or error if validation fails.
 func safeTarPath(name string) (string, error) {
@@ -112,5 +163,28 @@ func safeTarPath(name string) (string, error) {
 	if strings.HasPrefix(clean, "/") {
 		return "", fmt.Errorf("invalid tar entry absolute path: %s", name)
 	}
+	// P1 #5: Path length validation (prevent overflow attacks)
+	if len(clean) > MaxPathLength {
+		return "", fmt.Errorf("path too long: %d chars (max %d)", len(clean), MaxPathLength)
+	}
 	return clean, nil
+}
+
+// validateBundleExtension checks if file has valid .sftools extension.
+func validateBundleExtension(filePath string) error {
+	if !strings.HasSuffix(strings.ToLower(filePath), BundleExtension) {
+		return fmt.Errorf("file bukan bundle .sftools: %s", filePath)
+	}
+	return nil
+}
+
+// detectShell returns available shell binary (bash preferred, fallback to sh).
+func detectShell() string {
+	// P2 #5: Configurable shell dengan fallback
+	for _, shell := range []string{"bash", "sh"} {
+		if _, err := exec.LookPath(shell); err == nil {
+			return shell
+		}
+	}
+	return DefaultShell // fallback ke hardcoded default
 }

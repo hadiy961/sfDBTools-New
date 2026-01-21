@@ -7,6 +7,7 @@
 package script
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -51,8 +52,9 @@ func ExecuteRunBundle(logger applog.Logger, cfg *appconfig.Config, opts RunOptio
 		opts.FilePath = normalizeSFToolsFlagPath(opts.FilePath, configuredDir)
 	}
 
-	// Core operation: run bundle
-	return RunBundle(opts)
+	// Core operation: run bundle dengan context
+	ctx := context.Background()
+	return RunBundle(ctx, opts)
 }
 
 // normalizeSFToolsFlagPath normalizes file path dengan auto-append .sftools dan config dir resolution.

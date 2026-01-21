@@ -7,6 +7,7 @@
 package script
 
 import (
+	"context"
 	"path/filepath"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
@@ -47,8 +48,9 @@ func ExecuteExtractBundle(logger applog.Logger, cfg *appconfig.Config, opts Extr
 		opts.OutDir = strings.TrimSpace(out)
 	}
 
-	// Core operation: extract bundle
-	if err := ExtractBundle(opts); err != nil {
+	// Core operation: extract bundle dengan context
+	ctx := context.Background()
+	if err := ExtractBundle(ctx, opts); err != nil {
 		return err
 	}
 

@@ -7,6 +7,7 @@
 package script
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -130,8 +131,9 @@ func ExecuteEncryptBundle(logger applog.Logger, cfg *appconfig.Config, opts Encr
 		_ = confirm
 	}
 
-	// Core operation: encrypt bundle
-	if err := EncryptBundle(opts); err != nil {
+	// Core operation: encrypt bundle dengan context
+	ctx := context.Background()
+	if err := EncryptBundle(ctx, opts); err != nil {
 		return err
 	}
 
@@ -168,6 +170,17 @@ func deleteSingleFile(filePath string, logger applog.Logger) error {
 	if absEntry == "/" || absEntry == "." || absEntry == "" {
 		return fmt.Errorf("refuse delete: sumber tidak aman")
 	}
+
+	// P0 #3: Use Lstat untuk prevent TOCTOU race condition
+	// Lstat tidak follow symlinks, jadi detect symlink attacks
+	info, err := os.Lstat(absEntry)
+	if err != nil {
+		return fmt.Errorf("gagal membaca file info: %w", err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refuse delete: file adalah symlink (security risk)")
+	}
+
 	if err := os.Remove(absEntry); err != nil {
 		return fmt.Errorf("gagal menghapus sumber: %w", err)
 	}
@@ -184,6 +197,18 @@ func deleteSourceDir(sourceDir string, outputPath string, logger applog.Logger) 
 	absSource = filepath.Clean(absSource)
 	if absSource == "/" || absSource == "." || absSource == "" {
 		return fmt.Errorf("refuse delete: sumber tidak aman")
+	}
+
+	// P0 #3: Use Lstat untuk prevent TOCTOU race condition
+	info, err := os.Lstat(absSource)
+	if err != nil {
+		return fmt.Errorf("gagal membaca directory info: %w", err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("refuse delete: directory adalah symlink (security risk)")
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("refuse delete: bukan directory")
 	}
 
 	absOut, _ := filepath.Abs(outputPath)

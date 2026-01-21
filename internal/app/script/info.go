@@ -8,9 +8,11 @@ package script
 
 import (
 	"archive/tar"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"sfdbtools/internal/crypto"
@@ -27,12 +29,22 @@ import (
 //   - File count and list of .sh scripts
 //
 // Does NOT require application password (read-only operation).
-func GetBundleInfo(opts InfoOptions) (BundleInfo, error) {
+// Context dapat digunakan untuk cancellation.
+func GetBundleInfo(ctx context.Context, opts InfoOptions) (BundleInfo, error) {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return BundleInfo{}, fmt.Errorf("operasi dibatalkan: %w", err)
+	}
 	bundlePath := strings.TrimSpace(opts.FilePath)
 	if bundlePath == "" {
 		return BundleInfo{}, fmt.Errorf("--file wajib diisi")
 	}
 	bundlePath = envx.ExpandPath(bundlePath)
+
+	// P2 #7: Validate bundle extension
+	if err := validateBundleExtension(bundlePath); err != nil {
+		return BundleInfo{}, err
+	}
 
 	key, _, err := crypto.ResolveKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY, true)
 	if err != nil {
@@ -43,7 +55,11 @@ func GetBundleInfo(opts InfoOptions) (BundleInfo, error) {
 	if err != nil {
 		return BundleInfo{}, fmt.Errorf("gagal membuka .sftools: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			log.Printf("Warning: gagal menutup bundle file: %v", closeErr)
+		}
+	}()
 
 	decReader, err := crypto.NewStreamDecryptor(f, key)
 	if err != nil {

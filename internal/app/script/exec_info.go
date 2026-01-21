@@ -7,6 +7,7 @@
 package script
 
 import (
+	"context"
 	"fmt"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
@@ -35,8 +36,9 @@ func ExecuteGetBundleInfo(logger applog.Logger, cfg *appconfig.Config, opts Info
 		opts.FilePath = normalizeSFToolsFlagPath(opts.FilePath, configuredDir)
 	}
 
-	// Core operation: get bundle info
-	info, err := GetBundleInfo(opts)
+	// Core operation: get bundle info dengan context
+	ctx := context.Background()
+	info, err := GetBundleInfo(ctx, opts)
 	if err != nil {
 		return err
 	}
