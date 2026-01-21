@@ -124,11 +124,8 @@ func ExecuteBase64Decode(logger applog.Logger, opts Base64DecodeOptions) error {
 		return fmt.Errorf("gagal decode base64: %w\n\nPossible causes:\n  - Input bukan base64 yang valid\n  - Input corrupted atau incomplete\n\nHint: Pastikan input adalah base64 encoding yang benar", decErr)
 	}
 
-	// Tambahkan newline di akhir output agar konsisten dengan ExecuteBase64Encode.
-	if _, decErr = io.WriteString(out, "\n"); decErr != nil {
-		audit.LogOperation(logger, audit.OpBase64Dec, "<stdin>", false, decErr)
-		return fmt.Errorf("gagal menulis newline ke output: %w", decErr)
-	}
+	// Catatan: Tidak menambahkan newline di akhir output.
+	// Decoder base64 harus mempertahankan data asli byte-for-byte, termasuk untuk file biner.
 	audit.LogOperation(logger, audit.OpBase64Dec, "<stdin>", true, nil)
 	return nil
 }

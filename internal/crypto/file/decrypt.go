@@ -79,9 +79,11 @@ func decryptSimple(inputPath, outputPath string, passphrase []byte) error {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
 	tmpPath := tmpFile.Name()
+	shouldCleanup := true
 	defer func() {
-		// Cleanup temp file on error
-		_ = os.Remove(tmpPath)
+		if shouldCleanup {
+			_ = os.Remove(tmpPath)
+		}
 	}()
 
 	if err := tmpFile.Chmod(core.SecureFilePermission); err != nil {
@@ -102,6 +104,7 @@ func decryptSimple(inputPath, outputPath string, passphrase []byte) error {
 	if err := os.Rename(tmpPath, outputPath); err != nil {
 		return fmt.Errorf("failed to write output file: %w", err)
 	}
+	shouldCleanup = false // Setelah rename sukses, file sudah dipindahkan
 
 	return nil
 }

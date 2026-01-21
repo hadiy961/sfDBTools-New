@@ -7,6 +7,7 @@ package file
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 )
 
@@ -17,12 +18,16 @@ func ValidatePath(path string) error {
 		return fmt.Errorf("invalid path: contains null byte")
 	}
 
+	// Normalisasi path untuk menghapus slash ganda, resolve . (current directory),
+	// dan menormalkan separator ke OS-specific format.
+	cleanPath := filepath.Clean(path)
+
 	// Deteksi path traversal berbasis komponen, bukan sekadar substring.
 	// Pisahkan path menggunakan pemisah '/' dan '\\' agar aman di berbagai OS.
 	separator := func(r rune) bool {
 		return r == '/' || r == '\\'
 	}
-	parts := strings.FieldsFunc(path, separator)
+	parts := strings.FieldsFunc(cleanPath, separator)
 	for _, part := range parts {
 		if part == ".." {
 			return fmt.Errorf("invalid path: contains path traversal component '..': %s", path)
