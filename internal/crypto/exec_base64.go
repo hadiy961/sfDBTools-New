@@ -13,6 +13,7 @@ import (
 	"os"
 	"strings"
 
+	"sfdbtools/internal/crypto/audit"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
@@ -22,7 +23,7 @@ import (
 )
 
 // ExecuteBase64Encode melakukan encoding base64 dari text/stdin ke stdout/file.
-func ExecuteBase64Encode(_ applog.Logger, opts Base64EncodeOptions) error {
+func ExecuteBase64Encode(logger applog.Logger, opts Base64EncodeOptions) error {
 	var in io.Reader
 	if strings.TrimSpace(opts.InputText) != "" {
 		in = strings.NewReader(opts.InputText)
@@ -58,13 +59,17 @@ func ExecuteBase64Encode(_ applog.Logger, opts Base64EncodeOptions) error {
 	}
 
 	enc := base64.NewEncoder(base64.StdEncoding, out)
-	if _, err := io.Copy(enc, in); err != nil {
+	var encErr error
+	if _, encErr = io.Copy(enc, in); encErr != nil {
 		_ = enc.Close()
-		return fmt.Errorf("gagal encode base64: %w", err)
+		audit.LogOperation(logger, audit.OpBase64Enc, "<stdin>", false, encErr)
+		return fmt.Errorf("gagal encode base64: %w", encErr)
 	}
-	if err := enc.Close(); err != nil {
-		return fmt.Errorf("gagal finalize base64: %w", err)
+	if encErr = enc.Close(); encErr != nil {
+		audit.LogOperation(logger, audit.OpBase64Enc, "<stdin>", false, encErr)
+		return fmt.Errorf("gagal finalize base64: %w", encErr)
 	}
+	audit.LogOperation(logger, audit.OpBase64Enc, "<stdin>", true, nil)
 
 	// Always output newline untuk consistency (scripting-friendly)
 	if isStdout {
@@ -77,7 +82,7 @@ func ExecuteBase64Encode(_ applog.Logger, opts Base64EncodeOptions) error {
 }
 
 // ExecuteBase64Decode melakukan decoding base64 dari text/stdin ke stdout/file.
-func ExecuteBase64Decode(_ applog.Logger, opts Base64DecodeOptions) error {
+func ExecuteBase64Decode(logger applog.Logger, opts Base64DecodeOptions) error {
 	var in io.Reader
 	if strings.TrimSpace(opts.InputData) != "" {
 		in = strings.NewReader(opts.InputData)
@@ -113,8 +118,17 @@ func ExecuteBase64Decode(_ applog.Logger, opts Base64DecodeOptions) error {
 	}
 
 	dec := base64.NewDecoder(base64.StdEncoding, in)
-	if _, err := io.Copy(out, dec); err != nil {
-		return fmt.Errorf("gagal decode base64: %w\n\nPossible causes:\n  - Input bukan base64 yang valid\n  - Input corrupted atau incomplete\n\nHint: Pastikan input adalah base64 encoding yang benar", err)
+	var decErr error
+	if _, decErr = io.Copy(out, dec); decErr != nil {
+		audit.LogOperation(logger, audit.OpBase64Dec, "<stdin>", false, decErr)
+		return fmt.Errorf("gagal decode base64: %w\n\nPossible causes:\n  - Input bukan base64 yang valid\n  - Input corrupted atau incomplete\n\nHint: Pastikan input adalah base64 encoding yang benar", decErr)
 	}
+
+	// Tambahkan newline di akhir output agar konsisten dengan ExecuteBase64Encode.
+	if _, decErr = io.WriteString(out, "\n"); decErr != nil {
+		audit.LogOperation(logger, audit.OpBase64Dec, "<stdin>", false, decErr)
+		return fmt.Errorf("gagal menulis newline ke output: %w", decErr)
+	}
+	audit.LogOperation(logger, audit.OpBase64Dec, "<stdin>", true, nil)
 	return nil
 }

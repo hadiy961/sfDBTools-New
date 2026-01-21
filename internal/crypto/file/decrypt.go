@@ -73,8 +73,33 @@ func decryptSimple(inputPath, outputPath string, passphrase []byte) error {
 		}
 	}()
 
-	// Write to output file
-	if err := os.WriteFile(outputPath, plaintext, core.SecureFilePermission); err != nil {
+	// Write to temp file first untuk atomic operation
+	tmpFile, err := os.CreateTemp("", "sfdbtools-decrypt-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	tmpPath := tmpFile.Name()
+	defer func() {
+		// Cleanup temp file on error
+		_ = os.Remove(tmpPath)
+	}()
+
+	if err := tmpFile.Chmod(core.SecureFilePermission); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("failed to set temp file permissions: %w", err)
+	}
+
+	if _, err := tmpFile.Write(plaintext); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("failed to write to temp file: %w", err)
+	}
+
+	if err := tmpFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+
+	// Atomic rename dari temp ke output
+	if err := os.Rename(tmpPath, outputPath); err != nil {
 		return fmt.Errorf("failed to write output file: %w", err)
 	}
 

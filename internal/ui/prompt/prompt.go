@@ -64,8 +64,9 @@ func Confirm(label string, defaultYes bool) (bool, error) {
 	return input.AskYesNo(label, defaultYes)
 }
 
+// AskConfirm adalah alias untuk Confirm untuk backward compatibility.
 func AskConfirm(label string, defaultYes bool) (bool, error) {
-	return input.AskYesNo(label, defaultYes)
+	return Confirm(label, defaultYes)
 }
 
 func PromptPassword(message string) (string, error) {

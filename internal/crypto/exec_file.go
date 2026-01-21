@@ -71,8 +71,14 @@ func ExecuteEncryptFile(logger applog.Logger, opts EncryptFileOptions) error {
 	if err != nil {
 		return err
 	}
+	keyBytes := []byte(keyStr)
+	defer func() {
+		for i := range keyBytes {
+			keyBytes[i] = 0
+		}
+	}()
 
-	err = EncryptFile(inPath, outPath, []byte(keyStr))
+	err = EncryptFile(inPath, outPath, keyBytes)
 	audit.LogOperation(logger, audit.OpEncryptFile, inPath, err == nil, err)
 	if err != nil {
 		return err
@@ -135,8 +141,14 @@ func ExecuteDecryptFile(logger applog.Logger, opts DecryptFileOptions) error {
 	if err != nil {
 		return err
 	}
+	keyBytes := []byte(keyStr)
+	defer func() {
+		for i := range keyBytes {
+			keyBytes[i] = 0
+		}
+	}()
 
-	err = DecryptFile(inPath, outPath, []byte(keyStr))
+	err = DecryptFile(inPath, outPath, keyBytes)
 	audit.LogOperation(logger, audit.OpDecryptFile, inPath, err == nil, err)
 	if err != nil {
 		return err
