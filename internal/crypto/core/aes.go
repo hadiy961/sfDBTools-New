@@ -138,5 +138,7 @@ func DecryptAES(encryptedPayload, passphrase []byte) ([]byte, error) {
 		return nil, fmt.Errorf("decryption failed (wrong key or corrupted data): %w", err)
 	}
 
+	// Note: Caller is responsible for zeroing plaintext after use
+	// Example: defer func() { for i := range plaintext { plaintext[i] = 0 } }()
 	return plaintext, nil
 }

@@ -5,6 +5,7 @@ import (
 	"sfdbtools/internal/cli/flags"
 	"sfdbtools/internal/cli/parsing"
 	"sfdbtools/internal/crypto"
+	"sfdbtools/internal/ui/print"
 
 	"github.com/spf13/cobra"
 )
@@ -25,6 +26,14 @@ var CmdEncryptFile = &cobra.Command{
 	sfdbtools crypto encrypt-file
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
+		print.PrintAppHeader("Encrypt File Tools")
+
+		// Validasi password aplikasi terlebih dahulu
+		if err := crypto.ValidateApplicationPassword(); err != nil {
+			appdeps.Deps.Logger.Error("Autentikasi gagal: " + err.Error())
+			return
+		}
+
 		opts := parsing.ParsingEncryptFileOptions(cmd)
 		if err := crypto.ExecuteEncryptFile(appdeps.Deps.Logger, opts); err != nil {
 			appdeps.Deps.Logger.Error(err.Error())

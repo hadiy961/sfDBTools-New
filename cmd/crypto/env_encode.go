@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"sfdbtools/internal/crypto"
+	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -33,6 +34,13 @@ var CmdEnvEncode = &cobra.Command{
 	sfdbtools crypto env-encode --text 'my-secret-key'
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		print.PrintAppHeader("Env Encode Tools")
+
+		// Validasi password aplikasi terlebih dahulu
+		if err := crypto.ValidateApplicationPassword(); err != nil {
+			return fmt.Errorf("autentikasi gagal: %w", err)
+		}
+
 		text, _ := cmd.Flags().GetString("text")
 		if strings.TrimSpace(text) == "" {
 			// Jika stdin adalah TTY, jangan hang menunggu input tanpa prompt.
