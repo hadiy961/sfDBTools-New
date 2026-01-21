@@ -1,17 +1,22 @@
+// File : internal/app/script/bundle.go
+// Deskripsi : Bundle creation and execution untuk encrypted script bundles
+// Author : Hadiyatna Muflihun
+// Tanggal : 21 Januari 2026
+// Last Modified : 21 Januari 2026
+
 package script
 
 import (
 	"archive/tar"
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"io/fs"
+	"log"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
-	scriptmodel "sfdbtools/internal/app/script/model"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/envx"
@@ -19,20 +24,19 @@ import (
 	"time"
 )
 
-const (
-	manifestFilename = ".sftools-manifest.json"
-	bundleVersion    = 1
-)
-
-type manifest struct {
-	Version    int    `json:"version"`
-	Entrypoint string `json:"entrypoint"`
-	CreatedAt  string `json:"created_at"`
-	Mode       string `json:"mode,omitempty"`
-	RootDir    string `json:"root_dir,omitempty"`
-}
-
-func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
+// EncryptBundle creates encrypted script bundle (.sftools) from script file(s).
+//
+// Modes:
+//   - "bundle": Package entire directory with entrypoint
+//   - "single": Package only the entrypoint file
+//
+// Output format: encrypted tar archive with manifest + script files
+// Context dapat digunakan untuk cancellation.
+func EncryptBundle(ctx context.Context, opts EncryptOptions) error {
+	// Check context cancellation sebelum operasi berat
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("operasi dibatalkan: %w", err)
+	}
 	entryPath := strings.TrimSpace(opts.FilePath)
 	if entryPath == "" {
 		return fmt.Errorf("--file wajib diisi")
@@ -61,7 +65,7 @@ func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 		return fmt.Errorf("output tidak boleh menimpa file entrypoint")
 	}
 
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(outputPath), SecureDirPermission); err != nil {
 		return fmt.Errorf("gagal membuat folder output: %w", err)
 	}
 
@@ -98,11 +102,15 @@ func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 		return fmt.Errorf("mode tidak valid: %s (pilih: bundle|single)", opts.Mode)
 	}
 
-	outFile, err := os.OpenFile(outputPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	outFile, err := os.OpenFile(outputPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, SecureFilePermission)
 	if err != nil {
 		return fmt.Errorf("gagal membuat output file: %w", err)
 	}
-	defer outFile.Close()
+	defer func() {
+		if closeErr := outFile.Close(); closeErr != nil {
+			log.Printf("Warning: gagal menutup output file: %v", closeErr)
+		}
+	}()
 
 	ew, err := crypto.NewStreamEncryptor(outFile, []byte(key))
 	if err != nil {
@@ -119,7 +127,7 @@ func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 		RootDir:    filepath.Base(rootDir),
 	}
 	manifestBytes, _ := json.MarshalIndent(m, "", "  ")
-	if err := writeTarBytes(tarWriter, manifestFilename, manifestBytes, 0600); err != nil {
+	if err := writeTarBytes(tarWriter, manifestFilename, manifestBytes, SecureFilePermission); err != nil {
 		_ = tarWriter.Close()
 		_ = ew.Close()
 		return err
@@ -147,7 +155,7 @@ func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 			continue
 		}
 
-		if err := addFileToTar(tarWriter, filePath, rel, 0600); err != nil {
+		if err := addFileToTar(tarWriter, filePath, rel, SecureFilePermission); err != nil {
 			_ = tarWriter.Close()
 			_ = ew.Close()
 			return err
@@ -165,12 +173,31 @@ func EncryptBundle(opts scriptmodel.ScriptEncryptOptions) error {
 	return nil
 }
 
-func RunBundle(opts scriptmodel.ScriptRunOptions) error {
+// RunBundle decrypts and executes script bundle in temporary directory.
+//
+// Steps:
+//  1. Decrypt bundle to temp dir
+//  2. Extract tar archive
+//  3. Read manifest for entrypoint
+//  4. Execute entrypoint with bash
+//  5. Cleanup temp dir
+//
+// Context dapat digunakan untuk cancellation.
+func RunBundle(ctx context.Context, opts RunOptions) error {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("operasi dibatalkan: %w", err)
+	}
 	bundlePath := strings.TrimSpace(opts.FilePath)
 	if bundlePath == "" {
 		return fmt.Errorf("--file wajib diisi")
 	}
 	bundlePath = envx.ExpandPath(bundlePath)
+
+	// P2 #7: Validate bundle extension
+	if err := validateBundleExtension(bundlePath); err != nil {
+		return err
+	}
 
 	key, _, err := crypto.ResolveKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY, true)
 	if err != nil {
@@ -181,7 +208,11 @@ func RunBundle(opts scriptmodel.ScriptRunOptions) error {
 	if err != nil {
 		return fmt.Errorf("gagal membuka .sftools: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			log.Printf("Warning: gagal menutup bundle file: %v", closeErr)
+		}
+	}()
 
 	decReader, err := crypto.NewStreamDecryptor(f, key)
 	if err != nil {
@@ -192,9 +223,15 @@ func RunBundle(opts scriptmodel.ScriptRunOptions) error {
 	if err != nil {
 		return fmt.Errorf("gagal membuat temp dir: %w", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		if rmErr := os.RemoveAll(tmpDir); rmErr != nil {
+			log.Printf("Warning: gagal cleanup temp dir %s: %v", tmpDir, rmErr)
+		}
+	}()
 
 	tr := tar.NewReader(decReader)
+	// P2 #4: Use shared extraction logic dengan zip bomb protection
+	var totalExtracted int64
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -203,35 +240,8 @@ func RunBundle(opts scriptmodel.ScriptRunOptions) error {
 		if err != nil {
 			return fmt.Errorf("gagal membaca tar: %w", err)
 		}
-
-		cleanName, err := safeTarPath(hdr.Name)
-		if err != nil {
+		if err := extractTarEntry(hdr, tr, tmpDir, &totalExtracted); err != nil {
 			return err
-		}
-		outPath := filepath.Join(tmpDir, filepath.FromSlash(cleanName))
-
-		switch hdr.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(outPath, 0700); err != nil {
-				return fmt.Errorf("gagal membuat folder: %w", err)
-			}
-		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(outPath), 0700); err != nil {
-				return fmt.Errorf("gagal membuat parent folder: %w", err)
-			}
-			wf, err := os.OpenFile(outPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-			if err != nil {
-				return fmt.Errorf("gagal membuat file extract: %w", err)
-			}
-			if _, err := io.Copy(wf, tr); err != nil {
-				_ = wf.Close()
-				return fmt.Errorf("gagal menulis file extract: %w", err)
-			}
-			if err := wf.Close(); err != nil {
-				return fmt.Errorf("gagal menutup file extract: %w", err)
-			}
-		default:
-			return fmt.Errorf("tipe tar tidak didukung: %v", hdr.Typeflag)
 		}
 	}
 
@@ -251,105 +261,45 @@ func RunBundle(opts scriptmodel.ScriptRunOptions) error {
 	if strings.TrimSpace(m.Entrypoint) == "" {
 		return fmt.Errorf("manifest entrypoint kosong")
 	}
+	// P1 #6: Validasi manifest fields untuk prevent path traversal
+	// Clean paths dulu untuk prevent bypass via foo/../../../bar
+	cleanEntry := path.Clean(m.Entrypoint)
+	if strings.Contains(cleanEntry, "..") || strings.HasPrefix(cleanEntry, "/") {
+		return fmt.Errorf("manifest entrypoint tidak valid: %s", m.Entrypoint)
+	}
+	if m.RootDir != "" {
+		cleanRoot := path.Clean(m.RootDir)
+		if strings.Contains(cleanRoot, "..") || strings.HasPrefix(cleanRoot, "/") {
+			return fmt.Errorf("manifest root_dir tidak valid: %s", m.RootDir)
+		}
+	}
 
 	entry := filepath.Join(tmpDir, filepath.FromSlash(m.Entrypoint))
 	if _, err := os.Stat(entry); err != nil {
 		return fmt.Errorf("entrypoint tidak ditemukan: %w", err)
 	}
 
+	// P0 #1: Sanitize args untuk prevent command injection
+	for i, arg := range opts.Args {
+		if strings.ContainsAny(arg, ";|&$`><\n") {
+			return fmt.Errorf("argument %d mengandung karakter berbahaya: %q", i+1, arg)
+		}
+	}
+
 	cmdArgs := append([]string{entry}, opts.Args...)
-	cmd := exec.Command("bash", cmdArgs...)
+	// P2 #5: Use detected shell (bash preferred, fallback to sh)
+	shell := detectShell()
+	cmd := exec.CommandContext(ctx, shell, cmdArgs...)
 	cmd.Dir = tmpDir
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			return fmt.Errorf("script dibatalkan: %w", ctx.Err())
+		}
 		return fmt.Errorf("script gagal dijalankan: %w", err)
 	}
 
 	return nil
-}
-
-func defaultBundleOutputPath(entryPath string) string {
-	ext := strings.ToLower(filepath.Ext(entryPath))
-	if ext == ".sh" {
-		return strings.TrimSuffix(entryPath, filepath.Ext(entryPath)) + ".sftools"
-	}
-	return entryPath + ".sftools"
-}
-
-func listFilesRecursive(rootDir string) ([]string, error) {
-	var files []string
-	walkErr := filepath.WalkDir(rootDir, func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		files = append(files, p)
-		return nil
-	})
-	if walkErr != nil {
-		return nil, fmt.Errorf("gagal scan folder: %w", walkErr)
-	}
-	return files, nil
-}
-
-func writeTarBytes(tw *tar.Writer, name string, b []byte, mode int64) error {
-	h := &tar.Header{
-		Name: name,
-		Mode: mode,
-		Size: int64(len(b)),
-	}
-	if err := tw.WriteHeader(h); err != nil {
-		return fmt.Errorf("gagal menulis tar header: %w", err)
-	}
-	if _, err := tw.Write(b); err != nil {
-		return fmt.Errorf("gagal menulis tar data: %w", err)
-	}
-	return nil
-}
-
-func addFileToTar(tw *tar.Writer, srcPath string, tarName string, mode int64) error {
-	f, err := os.Open(srcPath)
-	if err != nil {
-		return fmt.Errorf("gagal membuka file: %w", err)
-	}
-	defer f.Close()
-
-	info, err := f.Stat()
-	if err != nil {
-		return fmt.Errorf("gagal stat file: %w", err)
-	}
-
-	h := &tar.Header{
-		Name: tarName,
-		Mode: mode,
-		Size: info.Size(),
-	}
-	if err := tw.WriteHeader(h); err != nil {
-		return fmt.Errorf("gagal menulis tar header: %w", err)
-	}
-	if _, err := io.Copy(tw, f); err != nil {
-		return fmt.Errorf("gagal menulis tar payload: %w", err)
-	}
-	return nil
-}
-
-func safeTarPath(name string) (string, error) {
-	// Tar paths menggunakan '/', gunakan path.Clean.
-	clean := path.Clean(name)
-	clean = strings.TrimPrefix(clean, "./")
-
-	if clean == "." || clean == "" {
-		return "", errors.New("invalid tar entry name")
-	}
-	if strings.HasPrefix(clean, "../") || clean == ".." {
-		return "", fmt.Errorf("invalid tar entry path: %s", name)
-	}
-	if strings.HasPrefix(clean, "/") {
-		return "", fmt.Errorf("invalid tar entry absolute path: %s", name)
-	}
-	return clean, nil
 }
