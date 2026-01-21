@@ -64,6 +64,10 @@ func Confirm(label string, defaultYes bool) (bool, error) {
 	return input.AskYesNo(label, defaultYes)
 }
 
+func AskConfirm(label string, defaultYes bool) (bool, error) {
+	return input.AskYesNo(label, defaultYes)
+}
+
 func PromptPassword(message string) (string, error) {
 	return input.PromptPassword(message)
 }

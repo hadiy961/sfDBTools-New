@@ -5,6 +5,7 @@ import (
 	"sfdbtools/internal/cli/flags"
 	"sfdbtools/internal/cli/parsing"
 	"sfdbtools/internal/crypto"
+	"sfdbtools/internal/ui/print"
 
 	"github.com/spf13/cobra"
 )
@@ -16,6 +17,14 @@ var CmdBase64Decode = &cobra.Command{
 	Short:   "Base64-decode data dari --data, stdin, atau mode interaktif",
 	Long:    "Decode data dari format base64. Bisa dari flag --data, pipe stdin, atau mode interaktif (paste & Ctrl+D).",
 	Run: func(cmd *cobra.Command, args []string) {
+		print.PrintAppHeader("Base 64 Decode Tools")
+
+		// Validasi password aplikasi terlebih dahulu
+		if err := crypto.ValidateApplicationPassword(); err != nil {
+			appdeps.Deps.Logger.Error("Autentikasi gagal: " + err.Error())
+			return
+		}
+
 		opts := parsing.ParsingBase64DecodeOptions(cmd)
 		if err := crypto.ExecuteBase64Decode(appdeps.Deps.Logger, opts); err != nil {
 			appdeps.Deps.Logger.Error(err.Error())

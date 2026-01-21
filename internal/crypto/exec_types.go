@@ -1,10 +1,17 @@
-// File : internal/crypto/model/options.go
-// Deskripsi : Model options untuk perintah crypto (CLI)
+// File : internal/crypto/exec_types.go
+// Deskripsi : Type definitions untuk CLI executor options
 // Author : Hadiyatna Muflihun
-// Tanggal : 9 Januari 2026
-// Last Modified : 9 Januari 2026
+// Tanggal : 21 Januari 2026
+// Last Modified : 21 Januari 2026
 
-package model
+package crypto
+
+// ========================
+// CLI Options Structs
+// ========================
+// Note: Struct ini didefinisikan di sini (bukan di package terpisah) sesuai prinsip:
+// "Sedikit penyalinan lebih baik daripada sedikit dependensi."
+// Struct ini hanya digunakan untuk CLI operations, tidak perlu package model/ tersendiri.
 
 // Base64EncodeOptions menyimpan opsi untuk base64 encode.
 type Base64EncodeOptions struct {
