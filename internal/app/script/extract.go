@@ -1,3 +1,9 @@
+// File : internal/app/script/extract.go
+// Deskripsi : Bundle extraction untuk encrypted script bundles
+// Author : Hadiyatna Muflihun
+// Tanggal : 21 Januari 2026
+// Last Modified : 21 Januari 2026
+
 package script
 
 import (
@@ -6,7 +12,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	scriptmodel "sfdbtools/internal/app/script/model"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/envx"
@@ -14,7 +19,13 @@ import (
 	"strings"
 )
 
-func ExtractBundle(opts scriptmodel.ScriptExtractOptions) error {
+// ExtractBundle decrypts and extracts script bundle to output directory.
+//
+// Security:
+//   - Requires encryption key + application password
+//   - Output directory must be empty
+//   - Path traversal protection via safeTarPath()
+func ExtractBundle(opts ExtractOptions) error {
 	bundlePath := strings.TrimSpace(opts.FilePath)
 	if bundlePath == "" {
 		return fmt.Errorf("--file wajib diisi")

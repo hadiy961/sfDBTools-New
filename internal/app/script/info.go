@@ -1,3 +1,9 @@
+// File : internal/app/script/info.go
+// Deskripsi : Bundle metadata inspection
+// Author : Hadiyatna Muflihun
+// Tanggal : 21 Januari 2026
+// Last Modified : 21 Januari 2026
+
 package script
 
 import (
@@ -7,7 +13,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	scriptmodel "sfdbtools/internal/app/script/model"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/envx"
@@ -15,17 +20,14 @@ import (
 	"strings"
 )
 
-type BundleInfo struct {
-	Version    int      `json:"version"`
-	Entrypoint string   `json:"entrypoint"`
-	CreatedAt  string   `json:"created_at"`
-	Mode       string   `json:"mode"`
-	RootDir    string   `json:"root_dir"`
-	Scripts    []string `json:"scripts"`
-	FileCount  int      `json:"file_count"`
-}
-
-func GetBundleInfo(opts scriptmodel.ScriptInfoOptions) (BundleInfo, error) {
+// GetBundleInfo reads and returns metadata from encrypted script bundle.
+//
+// Reads without extracting:
+//   - Manifest (version, entrypoint, created_at, mode)
+//   - File count and list of .sh scripts
+//
+// Does NOT require application password (read-only operation).
+func GetBundleInfo(opts InfoOptions) (BundleInfo, error) {
 	bundlePath := strings.TrimSpace(opts.FilePath)
 	if bundlePath == "" {
 		return BundleInfo{}, fmt.Errorf("--file wajib diisi")
