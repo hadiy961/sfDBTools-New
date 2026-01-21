@@ -15,6 +15,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/consts"
@@ -261,11 +262,16 @@ func RunBundle(ctx context.Context, opts RunOptions) error {
 		return fmt.Errorf("manifest entrypoint kosong")
 	}
 	// P1 #6: Validasi manifest fields untuk prevent path traversal
-	if strings.Contains(m.Entrypoint, "..") || strings.HasPrefix(m.Entrypoint, "/") {
+	// Clean paths dulu untuk prevent bypass via foo/../../../bar
+	cleanEntry := path.Clean(m.Entrypoint)
+	if strings.Contains(cleanEntry, "..") || strings.HasPrefix(cleanEntry, "/") {
 		return fmt.Errorf("manifest entrypoint tidak valid: %s", m.Entrypoint)
 	}
-	if strings.Contains(m.RootDir, "..") || strings.HasPrefix(m.RootDir, "/") {
-		return fmt.Errorf("manifest root_dir tidak valid: %s", m.RootDir)
+	if m.RootDir != "" {
+		cleanRoot := path.Clean(m.RootDir)
+		if strings.Contains(cleanRoot, "..") || strings.HasPrefix(cleanRoot, "/") {
+			return fmt.Errorf("manifest root_dir tidak valid: %s", m.RootDir)
+		}
 	}
 
 	entry := filepath.Join(tmpDir, filepath.FromSlash(m.Entrypoint))
