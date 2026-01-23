@@ -11,7 +11,7 @@ import (
 )
 
 func ensureInteractiveAllowed() error {
-	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+	if runtimecfg.IsQuiet() {
 		return fmt.Errorf("mode non-interaktif (--quiet): input interaktif tidak tersedia: %w", validation.ErrNonInteractive)
 	}
 	// survey butuh TTY supaya input/output rapi.

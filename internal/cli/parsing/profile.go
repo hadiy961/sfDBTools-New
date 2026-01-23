@@ -34,7 +34,7 @@ func ParsingCreateProfile(cmd *cobra.Command, logger applog.Logger) (*profilemod
 			return nil, err
 		}
 	}
-	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
+	interactive := !runtimecfg.IsQuiet() &&
 		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
 
 	sshEnabled := resolver.GetBoolFlagOrEnv(cmd, "ssh", "")
@@ -151,7 +151,7 @@ func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, e
 			}
 		}
 	}
-	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
+	interactive := !runtimecfg.IsQuiet() &&
 		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
 
 	if !interactive {
@@ -230,7 +230,7 @@ func ParsingShowProfile(cmd *cobra.Command) (*profilemodel.ProfileShowOptions, e
 		}
 	}
 	RevealPassword := resolver.GetBoolFlagOrEnv(cmd, "reveal-password", "")
-	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
+	interactive := !runtimecfg.IsQuiet() &&
 		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
 
 	if !interactive {
@@ -266,7 +266,7 @@ func ParsingShowProfile(cmd *cobra.Command) (*profilemodel.ProfileShowOptions, e
 func ParsingDeleteProfile(cmd *cobra.Command) (*profilemodel.ProfileDeleteOptions, error) {
 	profilePaths := resolver.GetStringSliceFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE)
 	force := resolver.GetBoolFlagOrEnv(cmd, "force", "")
-	interactive := !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
+	interactive := !runtimecfg.IsQuiet() &&
 		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
 
 	if !interactive {

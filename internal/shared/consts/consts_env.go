@@ -41,8 +41,6 @@ const (
 	ENV_SOURCE_PROFILE = "SFDB_SOURCE_PROFILE"
 	ENV_TARGET_PROFILE = "SFDB_TARGET_PROFILE"
 
-	ENV_DAEMON_MODE = "SFDB_DAEMON_MODE"
-
 	// SSH
 	// Jika diset 1, sfdbtools akan mengabaikan verifikasi host key SSH (TIDAK AMAN).
 	// Default: verifikasi host key wajib (secure-by-default).

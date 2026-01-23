@@ -66,7 +66,7 @@ func ClearAndShowHeader(title string) error {
 
 // PrintAppHeader menampilkan header aplikasi dan melakukan clear screen bila output TTY.
 func PrintAppHeader(title string) {
-	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+	if runtimecfg.IsQuiet() {
 		return
 	}
 

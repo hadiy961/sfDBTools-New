@@ -70,7 +70,7 @@ func Time(key string, t time.Time) Field {
 func NewLogger(appCfg *appconfig.Config) Logger {
 	// Quiet mode berbasis parameter (tanpa env): log ke stderr (bukan stdout) supaya pipeline aman,
 	// tapi tetap boleh tulis ke file jika file logging diaktifkan.
-	quiet := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
+	quiet := runtimecfg.IsQuiet()
 
 	// Default config (aman untuk mode completion / tanpa config)
 	cfg := appconfig.LogConfig{

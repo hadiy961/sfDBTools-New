@@ -87,7 +87,7 @@ func PrintDashedSeparator() {
 // WaitForEnter waits for the user to press Enter with optional message.
 func WaitForEnter(message ...string) {
 	// Jangan pernah block di mode non-interaktif (mis. saat output dipipe atau --quiet).
-	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+	if runtimecfg.IsQuiet() {
 		return
 	}
 	if !isatty.IsTerminal(os.Stdin.Fd()) || !isatty.IsTerminal(os.Stdout.Fd()) {

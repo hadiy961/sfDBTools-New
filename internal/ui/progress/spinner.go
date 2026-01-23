@@ -23,7 +23,7 @@ type Spinner struct {
 
 // NewSpinner membuat spinner tanpa elapsed time.
 func NewSpinner(label string) *Spinner {
-	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+	if runtimecfg.IsQuiet() {
 		return &Spinner{}
 	}
 

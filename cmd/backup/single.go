@@ -2,7 +2,7 @@
 // Deskripsi : Command untuk backup satu database
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-23
 package backupcmd
 
 import (
@@ -35,8 +35,7 @@ Jika nama database tidak diberikan via flag, akan muncul menu interaktif untuk m
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
-			_ = backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModeSingle)
-			return nil
+			return backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModeSingle)
 		})
 	},
 }

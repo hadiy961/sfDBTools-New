@@ -2,7 +2,7 @@
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2026-01-06
+// Last Modified : 2026-01-23
 package backup
 
 import (
@@ -12,19 +12,16 @@ import (
 	"os"
 	"os/signal"
 	"sfdbtools/internal/app/backup/display"
-	"sfdbtools/internal/app/backup/helpers/path"
-	"sfdbtools/internal/app/backup/model"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/parsing"
-	"sfdbtools/internal/services/scheduler"
+	resolver "sfdbtools/internal/cli/resolver"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/internal/ui/style"
-	"sfdbtools/internal/ui/text"
+	"strings"
 	"syscall"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -76,8 +73,8 @@ func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecuti
 		return err
 	}
 
-	// Tampilkan hasil (skip output interaktif saat quiet/daemon)
-	if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
+	// Tampilkan hasil (skip output interaktif saat quiet)
+	if !runtimecfg.IsQuiet() {
 		display.NewResultDisplayer(
 			result,
 			s.BackupDBOptions.Compression.Enabled,
@@ -88,7 +85,7 @@ func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecuti
 
 	// Print success message jika ada
 	if config.SuccessMsg != "" {
-		if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
+		if !runtimecfg.IsQuiet() {
 			print.PrintSuccess(config.SuccessMsg)
 		}
 		s.Log.Info(config.SuccessMsg)
@@ -103,56 +100,6 @@ func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecuti
 func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, config types_backup.ExecutionConfig) error {
 	logger := deps.Logger
 	logger.Info("Memulai proses backup database - " + config.Mode)
-
-	// Jika diminta background dan bukan proses daemon, jalankan ulang command via systemd-run.
-	bg := false
-	if cmd.Flags().Lookup("background") != nil {
-		v, err := cmd.Flags().GetBool("background")
-		if err == nil {
-			bg = v
-		}
-	}
-	if bg && !runtimecfg.IsDaemon() {
-		// Backup background harus non-interaktif agar tidak hang tanpa TTY.
-		nonInteractive := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
-		if !nonInteractive {
-			return fmt.Errorf("RunBackupCommand: %w", model.ErrBackgroundModeRequiresQuiet)
-		}
-
-		// Parse profile path untuk generate unique lock file
-		// Setiap profile mendapat lock file sendiri untuk prevent concurrent backup conflicts
-		profilePath, _ := cmd.Flags().GetString("profile")
-		lockFilePath := path.GenerateForProfile(profilePath)
-
-		wd, _ := os.Getwd()
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		res, runErr := scheduler.SpawnSelfInBackground(ctx, scheduler.SpawnSelfOptions{
-			UnitPrefix:    "sfdbtools-backup",
-			Mode:          scheduler.RunModeAuto,
-			EnvFile:       "/etc/sfDBTools/.env",
-			WorkDir:       wd,
-			Collect:       true,
-			NoAskPass:     true,
-			WrapWithFlock: true,
-			FlockPath:     lockFilePath,
-		})
-		if runErr != nil {
-			return runErr
-		}
-
-		print.PrintHeader("DB BACKUP - BACKGROUND MODE")
-		print.PrintSuccess("Background backup dimulai via systemd")
-		print.PrintInfo(fmt.Sprintf("Unit: %s", text.Color(res.UnitName, style.ColorCyan)))
-		if res.Mode == scheduler.RunModeUser {
-			print.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
-			print.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
-		} else {
-			print.PrintInfo(fmt.Sprintf("Status: sudo systemctl status %s", res.UnitName))
-			print.PrintInfo(fmt.Sprintf("Logs: sudo journalctl -u %s -f", res.UnitName))
-		}
-		return nil
-	}
 
 	// Parsing opsi berdasarkan mode
 	parsedOpts, err := parsing.ParsingBackupOptions(cmd, config.Mode)
@@ -181,7 +128,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 	// Goroutine untuk menangani signal
 	go func() {
 		sig := <-sigChan
-		if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
+		if !runtimecfg.IsQuiet() {
 			print.Println()
 		}
 		logger.Warnf("Menerima signal %v, menghentikan backup... (Tekan sekali lagi untuk force exit)", sig)
@@ -189,7 +136,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 		cancel()
 
 		<-sigChan
-		if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
+		if !runtimecfg.IsQuiet() {
 			print.Println()
 		}
 		logger.Warn("Menerima signal kedua, memaksa berhenti (force exit)...")
@@ -225,6 +172,69 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 		}
 		logger.Error("backup gagal (" + config.Mode + "): " + err.Error())
 		return err
+	}
+
+	return nil
+}
+
+func validateBackupNonInteractivePreflight(cmd *cobra.Command, deps *appdeps.Dependencies, mode string) error {
+	// Preflight ini mengikuti aturan parsing non-interaktif (ParsingBackupOptions).
+	// Tujuannya agar background mode tidak membuat transient unit yang langsung gagal.
+
+	ticket := strings.TrimSpace(resolver.GetStringFlagOrEnv(cmd, "ticket", ""))
+	if ticket == "" {
+		return fmt.Errorf("ticket wajib diisi pada mode background: gunakan --ticket")
+	}
+
+	profilePath := strings.TrimSpace(resolver.GetStringFlagOrEnv(cmd, "profile", consts.ENV_SOURCE_PROFILE))
+	if profilePath == "" {
+		return fmt.Errorf("profile wajib diisi pada mode background: gunakan --profile atau env %s", consts.ENV_SOURCE_PROFILE)
+	}
+	profileKey, err := resolver.GetSecretStringFlagOrEnv(cmd, "profile-key", consts.ENV_SOURCE_PROFILE_KEY)
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(profileKey) == "" {
+		return fmt.Errorf("profile-key wajib diisi pada mode background: gunakan --profile-key atau env %s", consts.ENV_SOURCE_PROFILE_KEY)
+	}
+
+	// Encryption key requirement (jika enkripsi aktif dan tidak di-skip).
+	skipEncrypt := resolver.GetBoolFlagOrEnv(cmd, "skip-encrypt", "")
+	encryptionEnabledByDefault := false
+	if deps != nil && deps.Config != nil {
+		encryptionEnabledByDefault = deps.Config.Backup.Encryption.Enabled || strings.TrimSpace(deps.Config.Backup.Encryption.Key) != ""
+	}
+	if encryptionEnabledByDefault && !skipEncrypt {
+		backupKey, err := resolver.GetSecretStringFlagOrEnv(cmd, "backup-key", consts.ENV_BACKUP_ENCRYPTION_KEY)
+		if err != nil {
+			return err
+		}
+		if strings.TrimSpace(backupKey) == "" {
+			return fmt.Errorf("backup-key wajib diisi saat enkripsi aktif pada mode background: gunakan --backup-key atau env %s (atau set --skip-encrypt)", consts.ENV_BACKUP_ENCRYPTION_KEY)
+		}
+	}
+
+	// Mode-specific requirements.
+	if mode == consts.ModeSingle {
+		dbName := strings.TrimSpace(resolver.GetStringFlagOrEnv(cmd, "database", ""))
+		if dbName == "" {
+			return fmt.Errorf("database wajib diisi pada mode backup single saat background: gunakan --database")
+		}
+	}
+	// Mode primary: saat background WAJIB pakai client-code untuk menghindari backup massal tanpa sengaja.
+	if mode == consts.ModePrimary {
+		clientCode := strings.TrimSpace(resolver.GetStringFlagOrEnv(cmd, "client-code", ""))
+		if clientCode == "" {
+			return fmt.Errorf("mode backup primary saat background wajib mengisi client-code: gunakan --client-code")
+		}
+	}
+	// Filter command: butuh include list saat background/non-interaktif.
+	if cmd.Use == "filter" || cmd.Name() == "filter" {
+		dbFile := strings.TrimSpace(resolver.GetStringFlagOrEnv(cmd, "db-file", ""))
+		db := resolver.GetStringArrayFlagOrEnv(cmd, "db", "")
+		if len(db) == 0 && dbFile == "" {
+			return fmt.Errorf("mode backup filter background membutuhkan include list: gunakan --db atau --db-file")
+		}
 	}
 
 	return nil

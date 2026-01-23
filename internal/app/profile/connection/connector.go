@@ -39,7 +39,7 @@ func ConnectWithProfile(cfg interface{}, profile *domain.ProfileInfo, initialDB 
 
 	// Spinner message: tampilkan mode koneksi (direct vs SSH tunnel)
 	// Non-interaktif (bukan TTY) diperlakukan sama seperti quiet untuk mencegah output spinner merusak pipeline.
-	quiet := runtimecfg.IsQuiet() || runtimecfg.IsDaemon() || !isatty.IsTerminal(os.Stdin.Fd()) || !isatty.IsTerminal(os.Stdout.Fd())
+	quiet := runtimecfg.IsQuiet() || !isatty.IsTerminal(os.Stdin.Fd()) || !isatty.IsTerminal(os.Stdout.Fd())
 
 	name := strings.TrimSpace(profile.Name)
 	if name == "" {
