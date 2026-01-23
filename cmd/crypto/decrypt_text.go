@@ -5,6 +5,7 @@ import (
 	"sfdbtools/internal/cli/flags"
 	"sfdbtools/internal/cli/parsing"
 	"sfdbtools/internal/crypto"
+	"sfdbtools/internal/ui/print"
 
 	"github.com/spf13/cobra"
 )
@@ -22,6 +23,14 @@ var CmdDecryptText = &cobra.Command{
 	sfdbtools crypto decrypt-text --data 'BASE64DATA...' -k "mypassword" --out secret.txt
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
+		print.PrintAppHeader("Decrypt Text Tools")
+
+		// Validasi password aplikasi terlebih dahulu
+		if err := crypto.ValidateApplicationPassword(); err != nil {
+			appdeps.Deps.Logger.Error("Autentikasi gagal: " + err.Error())
+			return
+		}
+
 		opts := parsing.ParsingDecryptTextOptions(cmd)
 		if err := crypto.ExecuteDecryptText(appdeps.Deps.Logger, opts); err != nil {
 			appdeps.Deps.Logger.Error(err.Error())

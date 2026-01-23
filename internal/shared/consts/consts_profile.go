@@ -4,7 +4,7 @@ package consts
 // Deskripsi : Konstanta yang digunakan oleh fitur profile (prompt, header, dan pesan umum)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 9 Januari 2026
+// Last Modified : 21 Januari 2026
 
 // =============================================================================
 // Header + Success message
@@ -14,6 +14,7 @@ const (
 	ProfileSuccessCreated = "✓ Profile berhasil dibuat"
 	ProfileSuccessUpdated = "✓ Profile berhasil diupdate"
 	ProfileSuccessDeleted = "✓ Profile berhasil dihapus"
+	ProfileSuccessCloned  = "✓ Profile berhasil di-clone"
 )
 
 // =============================================================================
@@ -29,14 +30,17 @@ const (
 	ProfileModeShow   = "show"
 	ProfileModeEdit   = "edit"
 	ProfileModeDelete = "delete"
+	ProfileModeClone  = "clone"
 
 	// UI text / action labels
 	ProfileUIHeaderCreate         = "Pembuatan Profil Baru"
 	ProfileUIHeaderEdit           = "Pengeditan Profil Database"
 	ProfileUIHeaderShow           = "Detail Profil Database"
 	ProfileUIHeaderDelete         = "Penghapusan Profil Database"
+	ProfileUIHeaderClone          = "Clone Profil Database"
 	ProfilePromptAction           = "Aksi:"
 	ProfileActionEditData         = "Ubah data"
+	ProfileActionSaveClone        = "Simpan Clone"
 	ProfileActionCancel           = "Batalkan"
 	ProfileMsgChangeSummaryPrefix = "Ringkasan Perubahan : "
 
@@ -137,6 +141,8 @@ const (
 	ProfileMsgCreateCancelled = "Proses pembuatan profil dibatalkan."
 	ProfileMsgRetryEdit       = "Mengulang proses pengeditan profil..."
 	ProfileMsgEditCancelled   = "Proses pengeditan profil dibatalkan."
+	ProfileMsgRetryClone      = "Mengulang proses clone profil..."
+	ProfileMsgCloneCancelled  = "Proses clone profil dibatalkan."
 
 	ProfileDeleteNoValidProfiles        = "Tidak ada profil valid yang ditemukan untuk dihapus."
 	ProfileDeleteForceDeletedFmt        = "Berhasil menghapus (force): %s"
@@ -212,6 +218,7 @@ const (
 	ProfileLogPrefixShow   = "profile-show"
 	ProfileLogPrefixEdit   = "profile-edit"
 	ProfileLogPrefixDelete = "profile-delete"
+	ProfileLogPrefixClone  = "profile-clone"
 )
 
 // Label field untuk multi-select edit (wizard)
@@ -267,11 +274,21 @@ const (
 	ProfileDisplayInvalidKeyOrCorrupt   = "Enkripsi key salah atau file rusak. Tidak dapat menampilkan password asli."
 	ProfileDisplayRevealedPasswordTitle = "Revealed Password"
 
-	ProfileDisplayTableHeaderNo     = "No"
-	ProfileDisplayTableHeaderField  = "Field"
-	ProfileDisplayTableHeaderValue  = "Value"
-	ProfileDisplayTableHeaderBefore = "Before"
-	ProfileDisplayTableHeaderAfter  = "After"
+	ProfileDisplayTableHeaderNo       = "No"
+	ProfileDisplayTableHeaderCategory = "Kategori"
+	ProfileDisplayTableHeaderField    = "Field"
+	ProfileDisplayTableHeaderValue    = "Value"
+	ProfileDisplayTableHeaderBefore   = "Before"
+	ProfileDisplayTableHeaderAfter    = "After"
+
+	ProfileDisplayCategoryProfileInfo = "Profile Info"
+	ProfileDisplayCategoryDBInfo      = "DB Info"
+	ProfileDisplayCategorySSHTunnel   = "SSH Tunnel"
+	ProfileDisplayCategoryTestResult  = "Test Result"
+	ProfileDisplayCategoryStatus      = "Status"
+
+	ProfileDisplayValueYes = "Yes"
+	ProfileDisplayValueNo  = "No"
 
 	ProfileDisplayFieldName         = "Nama"
 	ProfileDisplayFieldFilePath     = "File Path"

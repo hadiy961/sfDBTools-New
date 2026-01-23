@@ -15,14 +15,15 @@ import (
 
 // ValidateApplicationPassword prompts user for application password and validates.
 //
-// If password is wrong, prompts again until correct or user cancels (Ctrl+C).
+// Allows maximum 3 attempts. If password is wrong 3 times, returns error.
 // Used by crypto utilities to ensure authorized access.
 //
-// Returns error if user cancels or read fails.
+// Returns error if user cancels, read fails, or exceeds max attempts.
 func ValidateApplicationPassword() error {
 	expectedPassword := consts.ENV_PASSWORD_APP
+	const maxAttempts = 3
 
-	for {
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		password, _, err := PromptPassword("", "Masukkan password untuk crypto utilities")
 		if err != nil {
 			return fmt.Errorf("gagal membaca password: %w", err)
@@ -32,9 +33,13 @@ func ValidateApplicationPassword() error {
 			return nil
 		}
 
-		print.PrintError("Password salah! Coba lagi atau tekan Ctrl+C untuk batal.")
-		print.Println()
+		if attempt < maxAttempts {
+			print.PrintError(fmt.Sprintf("Password salah! Percobaan %d/%d. Coba lagi atau tekan Ctrl+C untuk batal.", attempt, maxAttempts))
+			print.Println()
+		}
 	}
+
+	return fmt.Errorf("maksimum percobaan password tercapai (%d kali)", maxAttempts)
 }
 
 // MustValidateApplicationPassword validates application password or exits.

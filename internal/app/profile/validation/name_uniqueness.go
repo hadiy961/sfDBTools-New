@@ -73,7 +73,7 @@ func CheckConfigurationNameUnique(cfg *appconfig.Config, state *profilemodel.Pro
 	state.ProfileInfo.Name = connection.TrimProfileSuffix(state.ProfileInfo.Name)
 
 	switch mode {
-	case consts.ProfileModeCreate:
+	case consts.ProfileModeCreate, consts.ProfileModeClone:
 		return checkCreateModeUniqueness(cfg, state)
 	case consts.ProfileModeEdit:
 		return checkEditModeUniqueness(cfg, state)

@@ -2,7 +2,7 @@
 // Deskripsi : Flow wizard untuk edit profile (honor flag overrides)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 15 Januari 2026
+// Last Modified : 21 Januari 2026
 package wizard
 
 import (
@@ -75,7 +75,7 @@ func (r *Runner) runEditFlow() error {
 	// Tampilkan isi profil terlebih dahulu (seperti profile show), lalu beri opsi ubah/batal.
 	// Ini tetap dijalankan walaupun ada override flag/env, supaya user selalu lihat kondisi awal.
 	prevOpts := r.State.Options
-	r.State.Options = &profilemodel.ProfileShowOptions{}
+	r.State.Options = &profilemodel.ProfileShowOptions{Interactive: true}
 	profiledisplay.DisplayProfileDetails(r.ConfigDir, r.State)
 	r.State.Options = prevOpts
 

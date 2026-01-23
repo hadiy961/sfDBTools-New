@@ -306,6 +306,25 @@ sfdbtools profile edit --file ./configs/prod-db.cnf.enc
 sfdbtools profile delete --file ./configs/prod-db.cnf.enc
 ```
 
+#### Clone Profile
+
+Clone existing profile dengan modifikasi minimal (berguna untuk setup replicas):
+
+```bash
+# Interactive - pilih source profile dari list
+sfdbtools profile clone
+
+# Interactive - langsung specify source
+sfdbtools profile clone --source "prod-db"
+
+# Non-interactive - clone dengan host override
+sfdbtools profile clone --quiet \
+  --source "prod-db" \
+  --name "prod-db-replica" \
+  --host "10.0.0.6" \
+  --profile-key "my-secret-key"
+```
+
 ### 7) Crypto Utilities
 
 #### Encrypt File

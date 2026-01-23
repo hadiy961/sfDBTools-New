@@ -64,6 +64,11 @@ func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interf
 		case *profilemodel.ProfileDeleteOptions:
 			svc.State.Options = v
 			setProfileRefs(&v.ProfileInfo)
+		case *profilemodel.ProfileCloneOptions:
+			svc.State.Options = v
+			// For clone, we'll initialize ProfileInfo after loading source
+			svc.State.ProfileInfo = &domain.ProfileInfo{}
+			svc.DBInfo = &svc.State.ProfileInfo.DBInfo
 		default:
 			logs.Warn(consts.ProfileLogUnknownProfileTypeInService)
 			svc.State.Options = nil
@@ -95,6 +100,8 @@ func (s *Service) ExecuteProfileCommand(config profilemodel.ProfileEntryConfig) 
 		return s.EditProfile()
 	case consts.ProfileModeDelete:
 		return s.PromptDeleteProfile()
+	case consts.ProfileModeClone:
+		return s.CloneProfile()
 	default:
 		return profileerrors.ErrInvalidProfileMode
 	}

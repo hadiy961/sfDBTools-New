@@ -33,4 +33,5 @@ func init() {
 	CmdProfileMain.AddCommand(CmdProfileShow)
 	CmdProfileMain.AddCommand(CmdProfileDelete)
 	CmdProfileMain.AddCommand(CmdProfileEdit)
+	CmdProfileMain.AddCommand(CmdProfileClone)
 }
