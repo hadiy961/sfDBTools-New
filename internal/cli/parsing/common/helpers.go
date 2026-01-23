@@ -2,7 +2,7 @@
 // Deskripsi : Common helper functions untuk parsing operations (shared across all parsers)
 // Author : Hadiyatna Muflihun
 // Tanggal : 21 Januari 2026
-// Last Modified : 21 Januari 2026
+// Last Modified : 23 Januari 2026
 
 package common
 
@@ -60,14 +60,11 @@ func ResolveEncryptionKey(cmd *cobra.Command, primaryEnv, fallbackEnv string) (k
 	return key, source, nil
 }
 
-// ParseDBConfig parsing DB configuration dari flags/env
+// ParseDBConfig parsing DB configuration dari flags/env.
+// Catatan: fungsi ini tidak melakukan defaulting port. Port=0 dianggap "unset"
+// dan akan ditangani oleh caller (mis. wizard interaktif atau create non-interaktif).
 func ParseDBConfig(cmd *cobra.Command) domain.DBInfo {
 	port := resolver.GetIntFlagOrEnv(cmd, "port", consts.ENV_TARGET_DB_PORT)
-	// Default port jika tidak diset (untuk non-interactive)
-	if port == 0 {
-		port = 3306
-	}
-
 	return domain.DBInfo{
 		Host:     resolver.GetStringFlagOrEnv(cmd, "host", consts.ENV_TARGET_DB_HOST),
 		Port:     port,

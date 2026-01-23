@@ -1,6 +1,8 @@
 package profile
 
 import (
+	"fmt"
+	"os"
 	profilemodel "sfdbtools/internal/app/profile/model"
 	parsingcommon "sfdbtools/internal/cli/parsing/common"
 	resolver "sfdbtools/internal/cli/resolver"
@@ -25,6 +27,21 @@ func ParsingCreateProfile(cmd *cobra.Command, logger applog.Logger) (*profilemod
 	interactive := parsingcommon.IsInteractiveMode()
 	dbConfig := parsingcommon.ParseDBConfig(cmd)
 	sshConfig := parsingcommon.ParseSSHConfig(cmd)
+
+	// Port default hanya untuk mode non-interaktif (create). Untuk mode interaktif,
+	// biarkan port=0 agar wizard akan prompt dengan default 3306.
+	if !interactive {
+		portExplicit := cmd.Flags().Changed("port") || strings.TrimSpace(os.Getenv(consts.ENV_TARGET_DB_PORT)) != ""
+		if dbConfig.Port == 0 {
+			if portExplicit {
+				return nil, fmt.Errorf("port database tidak valid: 0 (gunakan 1-65535 atau omit --port/ENV %s untuk default 3306)", consts.ENV_TARGET_DB_PORT)
+			}
+			dbConfig.Port = 3306
+		}
+		if dbConfig.Port < 0 || dbConfig.Port > 65535 {
+			return nil, fmt.Errorf("port database tidak valid: %d (range 1-65535)", dbConfig.Port)
+		}
+	}
 
 	if !interactive {
 		missing := make([]string, 0, 5)
@@ -85,6 +102,15 @@ func ParsingEditProfile(cmd *cobra.Command) (*profilemodel.ProfileEditOptions, e
 	interactive := parsingcommon.IsInteractiveMode()
 	dbConfig := parsingcommon.ParseDBConfig(cmd)
 	sshConfig := parsingcommon.ParseSSHConfig(cmd)
+
+	// Jangan default port saat edit: port=0 berarti tidak override snapshot.
+	// Namun jika user/env secara eksplisit memberi nilai di luar range, fail-fast.
+	portExplicit := cmd.Flags().Changed("port") || strings.TrimSpace(os.Getenv(consts.ENV_TARGET_DB_PORT)) != ""
+	if portExplicit {
+		if dbConfig.Port <= 0 || dbConfig.Port > 65535 {
+			return nil, fmt.Errorf("port database tidak valid: %d (range 1-65535)", dbConfig.Port)
+		}
+	}
 
 	if !interactive {
 		missing := make([]string, 0, 2)

@@ -45,13 +45,15 @@ func GetSecretStringFlagOrEnv(cmd *cobra.Command, flagName, envName string) (str
 
 func GetIntFlagOrEnv(cmd *cobra.Command, flagName, envName string) int {
 	val, _ := cmd.Flags().GetInt(flagName)
-	if val != 0 {
+	if cmd.Flags().Changed(flagName) {
 		return val
 	}
-	env := os.Getenv(envName)
-	if env != "" {
-		if i, err := strconv.Atoi(env); err == nil {
-			return i
+	if strings.TrimSpace(envName) != "" {
+		env := os.Getenv(envName)
+		if env != "" {
+			if i, err := strconv.Atoi(env); err == nil {
+				return i
+			}
 		}
 	}
 	return val
