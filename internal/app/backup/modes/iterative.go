@@ -3,7 +3,7 @@
 //              Menggabungkan logika single.go dan separated.go untuk mengurangi duplikasi.
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-11
-// Last Modified : 20 Januari 2026
+// Last Modified : 23 Januari 2026
 
 package modes
 
@@ -58,21 +58,38 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 	// Convert ke BackupResult standar
 	res := e.service.ToBackupResult(loopResult)
 
+	// Helper: deteksi apakah dbList merepresentasikan 1 primary DB + companion DBs.
+	// Jika berisi lebih dari 1 primary (batch), maka jangan perlakukan sebagai paket (agar metadata tidak dihapus).
+	isSinglePrimaryPackage := func(list []string) bool {
+		if len(list) == 0 {
+			return false
+		}
+		primary := list[0]
+		for i := 1; i < len(list); i++ {
+			if _, ok := getCompanionSuffix(primary, list[i]); !ok {
+				return false
+			}
+		}
+		return true
+	}
+
 	// Export user grants dan generate metadata untuk primary/secondary:
 	// - Mode separated/single: sudah di-handle per database di executeBackupLoop
-	// - Mode primary/secondary: export satu file dan satu metadata untuk semua database
+	// - Mode primary/secondary:
+	//   - export user grants sekali
+	//   - update metadata untuk SEMUA file backup
+	//   - jika list adalah 1 primary + companion: generate combined metadata + agregasi display
 	if len(loopResult.BackupInfos) > 0 && (e.mode == consts.ModePrimary || e.mode == consts.ModeSecondary) {
-		// Untuk primary/secondary, export user grants yang punya akses ke database dalam list
 		actualUserGrantsPath := e.service.ExportUserGrantsIfNeeded(ctx, loopResult.BackupInfos[0].OutputFile, dbList)
-		// Update metadata dengan actual path (atau "none" jika gagal)
 		permissions := e.service.GetConfig().Backup.Output.MetadataPermissions
-		e.service.UpdateMetadataUserGrantsPath(loopResult.BackupInfos[0].OutputFile, actualUserGrantsPath, permissions)
+		for _, info := range loopResult.BackupInfos {
+			e.service.UpdateMetadataUserGrantsPath(info.OutputFile, actualUserGrantsPath, permissions)
+		}
 
-		// Generate satu metadata untuk semua database yang berhasil di-backup
-		e.generateCombinedMetadata(loopResult, dbList)
-
-		// Aggregate backup infos menjadi satu entry untuk display
-		res.BackupInfo = e.aggregateBackupInfos(loopResult.BackupInfos)
+		if isSinglePrimaryPackage(dbList) {
+			e.generateCombinedMetadata(loopResult, dbList)
+			res.BackupInfo = e.aggregateBackupInfos(loopResult.BackupInfos)
+		}
 	}
 
 	// Update statistik akhir

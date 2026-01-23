@@ -6,19 +6,11 @@
 package cleanup
 
 import (
-	"context"
-	"fmt"
-	"os"
-	"time"
-
 	cleanupmodel "sfdbtools/internal/app/cleanup/model"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/parsing"
-	"sfdbtools/internal/services/scheduler"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/internal/ui/style"
-	"sfdbtools/internal/ui/text"
 
 	"github.com/spf13/cobra"
 )
@@ -54,37 +46,6 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 		return err
 	}
 
-	// Konsisten dengan backup/dbscan: jika diminta background dan bukan proses daemon,
-	// jalankan ulang command ini via systemd-run (transient unit) dengan flag --daemon.
-	if parsedOpts.Background && !runtimecfg.IsDaemon() {
-		wd, _ := os.Getwd()
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		res, runErr := scheduler.SpawnSelfInBackground(ctx, scheduler.SpawnSelfOptions{
-			UnitPrefix:    "sfdbtools-cleanup",
-			Mode:          scheduler.RunModeAuto,
-			EnvFile:       "/etc/sfDBTools/.env",
-			WorkDir:       wd,
-			Collect:       true,
-			NoAskPass:     true,
-			WrapWithFlock: false,
-		})
-		if runErr != nil {
-			return runErr
-		}
-		print.PrintHeader("CLEANUP - BACKGROUND MODE")
-		print.PrintSuccess("Background cleanup dimulai via systemd")
-		print.PrintInfo(fmt.Sprintf("Unit: %s", text.Color(res.UnitName, style.ColorCyan)))
-		if res.Mode == scheduler.RunModeUser {
-			print.PrintInfo(fmt.Sprintf("Status: systemctl --user status %s", res.UnitName))
-			print.PrintInfo(fmt.Sprintf("Logs: journalctl --user -u %s -f", res.UnitName))
-		} else {
-			print.PrintInfo(fmt.Sprintf("Status: sudo systemctl status %s", res.UnitName))
-			print.PrintInfo(fmt.Sprintf("Logs: sudo journalctl -u %s -f", res.UnitName))
-		}
-		return nil
-	}
-
 	// Inisialisasi service cleanup
 	svc := NewCleanupService(deps.Config, logger, parsedOpts)
 
@@ -96,7 +57,7 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 	}
 
 	// Tampilkan header jika ada (skip saat quiet/daemon)
-	if config.HeaderTitle != "" && !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
+	if config.HeaderTitle != "" && !runtimecfg.IsQuiet() {
 		print.PrintAppHeader(config.HeaderTitle)
 	}
 
@@ -107,7 +68,7 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 
 	// Print success message jika ada (skip stdout saat quiet/daemon)
 	if config.SuccessMsg != "" {
-		if !runtimecfg.IsQuiet() && !runtimecfg.IsDaemon() {
+		if !runtimecfg.IsQuiet() {
 			print.PrintSuccess(config.SuccessMsg)
 		}
 		logger.Info(config.SuccessMsg)

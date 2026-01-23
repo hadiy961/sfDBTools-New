@@ -2,7 +2,7 @@
 // Deskripsi : Mode backup combined - semua database dalam satu file
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 20 Januari 2026
+// Last Modified : 23 Januari 2026
 
 package modes
 
@@ -61,6 +61,14 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 
 	backupMode := opts.Mode
 	start := time.Now()
+
+	// GTID Capture harus dilakukan SEBELUM dump agar metadata (.meta.json)
+	// merekam posisi GTID yang relevan terhadap backup yang akan dibuat.
+	// (Jika diambil setelah dump, metadata sudah terlanjur ditulis tanpa GTID.)
+	if err := e.service.CaptureAndSaveGTID(ctx, e.state, fullOutputPath); err != nil {
+		e.service.GetLog().Warn("GTID handling error: " + err.Error())
+	}
+
 	e.service.GetLog().Infof("Memulai dump combined untuk %d database", totalDBFound)
 	backupInfo, execErr := e.service.ExecuteAndBuildBackup(ctx, e.state, types_backup.BackupExecutionConfig{
 		DBList:       dbFiltered,
@@ -82,15 +90,6 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 		return res
 	}
 	e.service.GetLog().Infof("Selesai dump combined (%s)", time.Since(start).Round(time.Millisecond))
-
-	// GTID Capture: Dilakukan SETELAH dump selesai untuk menghindari TOCTOU race.
-	// mysqldump --single-transaction membuat consistent snapshot, jadi GTID yang
-	// di-capture setelah dump akan lebih akurat untuk PITR (Point-in-Time Recovery).
-	// Note: GTID position akan sedikit ahead dari snapshot point, tapi ini lebih aman
-	// daripada capture SEBELUM dump (yang bisa miss transactions).
-	if err := e.service.CaptureAndSaveGTID(ctx, e.state, fullOutputPath); err != nil {
-		e.service.GetLog().Warn("GTID handling error: " + err.Error())
-	}
 
 	// Success - all databases backed up in one file
 	res.SuccessfulBackups = len(dbFiltered)

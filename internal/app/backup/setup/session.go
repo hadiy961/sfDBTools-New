@@ -103,7 +103,11 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 
 		if len(dbFiltered) == 0 {
 			print.PrintFilterStats(stats, consts.FeatureBackup, s.Log)
-			print.PrintError("Tidak ada database yang tersedia setelah filtering!")
+			if nonInteractive {
+				print.PrintWarning("Tidak ada database yang tersedia setelah filtering (skip)!")
+			} else {
+				print.PrintError("Tidak ada database yang tersedia setelah filtering!")
+			}
 			if stats != nil {
 				s.DisplayFilterWarnings(stats)
 			}

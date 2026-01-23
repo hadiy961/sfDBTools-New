@@ -48,10 +48,6 @@ func defaultConfigForPath(configPath string) *Config {
 	cfg.Backup.Output.Structure.Pattern = "{year}{month}{day}/"
 	cfg.Backup.Output.SaveBackupInfo = true
 
-	// Scheduler default: tidak ada job.
-	// Job scheduler hanya aktif jika user mendefinisikan backup.scheduler.jobs di config.
-	cfg.Backup.Scheduler.Jobs = nil
-
 	cfg.Log.Level = "info"
 	cfg.Log.Format = "text"
 	cfg.Log.Output.Console.Enabled = true

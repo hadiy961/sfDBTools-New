@@ -17,7 +17,6 @@ import (
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/errorlog"
-	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/shared/servicehelper"
 	"sfdbtools/internal/ui/print"
 )
@@ -99,13 +98,8 @@ func (s *Service) handleBackgroundExecution(ctx context.Context, config dbscanmo
 		return fmt.Errorf("background mode memerlukan file konfigurasi database")
 	}
 
-	// Check jika sudah running dalam daemon mode (parameter flag)
-	if runtimecfg.IsDaemon() {
-		return s.executeScanInBackground(ctx, config)
-	}
-
-	// Spawn new process sebagai daemon
-	return helpers.SpawnScanDaemon(config)
+	// Execute scan directly
+	return s.ExecuteScan(config)
 }
 
 // executeScanWithClients melakukan scanning dengan koneksi yang sudah tersedia

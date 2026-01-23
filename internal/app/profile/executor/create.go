@@ -44,7 +44,7 @@ func (e *Executor) CreateProfile() error {
 			{
 				e.Log.Info(consts.ProfileLogValidationSuccess)
 			}
-			if !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) {
+			if !runtimecfg.IsQuiet() {
 				profiledisplay.DisplayProfileDetails(e.ConfigDir, e.State)
 			}
 		}

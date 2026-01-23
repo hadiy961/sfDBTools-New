@@ -21,7 +21,6 @@ var CmdDBScanAllLocal = &cobra.Command{
 Contoh penggunaan:
 	sfdbtools dbscan all-local --profile /path/to/profile.cnf.enc --profile-key SECRET
 	sfdbtools dbscan all-local --profile /path/to/profile.cnf.enc --exclude-system=false
-	sfdbtools dbscan all-local --background
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Pastikan dependencies tersedia

@@ -9,6 +9,8 @@ import (
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
+	"sfdbtools/internal/shared/listx"
+	"sfdbtools/internal/shared/naming"
 	"sfdbtools/internal/ui/print"
 )
 
@@ -67,7 +69,9 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, state *BackupExecutio
 	exampleDBName := ""
 	dbCount := 0
 	if s.BackupDBOptions.Mode == consts.ModeSeparated ||
-		modes.IsSingleModeVariant(s.BackupDBOptions.Mode) {
+		modes.IsSingleModeVariant(s.BackupDBOptions.Mode) ||
+		s.BackupDBOptions.Mode == consts.ModePrimary ||
+		s.BackupDBOptions.Mode == consts.ModeSecondary {
 		exampleDBName = "database_name"
 	} else if s.BackupDBOptions.Mode == consts.ModeCombined || s.BackupDBOptions.Mode == consts.ModeAll {
 		// Untuk combined/all, gunakan jumlah database yang akan di-backup
@@ -90,9 +94,14 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, state *BackupExecutio
 		s.BackupDBOptions.File.Path = consts.FilenameGenerateErrorPlaceholder
 	}
 
-	// Handle single/primary/secondary mode dengan database selection
-	if modes.IsSingleModeVariant(s.BackupDBOptions.Mode) {
-		return s.handleSingleModeSetup(ctx, client, dbFiltered)
+	// Handle pemilihan database (interaktif) untuk mode single/primary/secondary.
+	// Pada mode non-interaktif (daemon/background/quiet), TIDAK boleh prompt.
+	if !s.BackupDBOptions.NonInteractive {
+		if modes.IsSingleModeVariant(s.BackupDBOptions.Mode) ||
+			s.BackupDBOptions.Mode == consts.ModePrimary ||
+			s.BackupDBOptions.Mode == consts.ModeSecondary {
+			return s.handleSingleModeSetup(ctx, client, dbFiltered)
+		}
 	}
 
 	// Untuk mode non-single (all, filter, combined), tampilkan statistik di sini
@@ -107,6 +116,21 @@ func (s *Service) GenerateBackupPaths(ctx context.Context, state *BackupExecutio
 			ExcludedDatabases: state.ExcludedDatabases,
 		}
 		print.PrintFilterStats(stats, consts.FeatureBackup, s.Log)
+	}
+
+	// Mode primary/secondary: optional expand companion DB per database (tanpa prompt).
+	// Companion hanya ditambahkan jika memang ada di server.
+	if (s.BackupDBOptions.Mode == consts.ModePrimary || s.BackupDBOptions.Mode == consts.ModeSecondary) &&
+		s.BackupDBOptions.IncludeDmart && len(dbFiltered) > 0 && len(allDatabases) > 0 {
+		expanded := make([]string, 0, len(dbFiltered)*2)
+		for _, db := range dbFiltered {
+			expanded = append(expanded, db)
+			companion := naming.BuildCompanionDBName(db)
+			if listx.StringSliceContainsFold(allDatabases, companion) {
+				expanded = append(expanded, companion)
+			}
+		}
+		dbFiltered = expanded
 	}
 
 	// Jika user set custom filename untuk mode all/combined, treat sebagai base name tanpa ekstensi.

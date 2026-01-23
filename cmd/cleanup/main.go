@@ -17,6 +17,5 @@ Gunakan flag --dry-run untuk melihat pratinjau tanpa menghapus file.`,
 }
 
 func init() {
-	CmdCleanupMain.AddCommand(CmdCleanupRun)
-	CmdCleanupMain.AddCommand(CmdCleanupSchedule)
+	// Tambahan subcommand lain (pattern, run, dll) bisa ditambahkan di sini di masa depan
 }

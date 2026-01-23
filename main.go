@@ -24,7 +24,7 @@ var appLogger applog.Logger
 func main() {
 	// Bootstrap runtime mode dari parameter (tanpa env).
 	runtimecfg.BootstrapFromArgs(os.Args[1:])
-	quiet := runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
+	quiet := runtimecfg.IsQuiet()
 
 	// Deteksi jika yang dipanggil adalah perintah completion
 	isCompletion := len(os.Args) > 1 && os.Args[1] == "completion"
@@ -51,9 +51,9 @@ func main() {
 		// Logger aman walau cfg nil.
 		tmpLogger := applog.NewLogger(nil)
 
-		// Tampilkan spinner hanya jika auto-update aktif dan tidak dalam quiet/daemon.
+		// Tampilkan spinner hanya jika auto-update aktif dan tidak dalam quiet.
 		var sp *progress.Spinner
-		if autoupdate.AutoUpdateEnabled() && !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) {
+		if autoupdate.AutoUpdateEnabled() && !runtimecfg.IsQuiet() {
 			sp = progress.NewSpinnerWithElapsed("Cek update")
 			sp.Start()
 		}

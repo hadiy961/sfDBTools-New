@@ -84,8 +84,8 @@ func New(log applog.Logger, cfg interface{}, configDir string, state *profilemod
 }
 
 func (e *Executor) isInteractiveMode() bool {
-	// Hard stop: non-interaktif jika quiet/daemon atau tidak berjalan di TTY.
-	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+	// Hard stop: non-interaktif jika quiet atau tidak berjalan di TTY.
+	if runtimecfg.IsQuiet() {
 		return false
 	}
 	if !isatty.IsTerminal(os.Stdin.Fd()) || !isatty.IsTerminal(os.Stdout.Fd()) {

@@ -2,7 +2,7 @@
 // Deskripsi : Command untuk backup database secondary
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-23
 package backupcmd
 
 import (
@@ -35,8 +35,7 @@ Contoh:
   sfdbtools db-backup secondary --backup-dir "/tmp/dev_backups"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
-			_ = backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModeSecondary)
-			return nil
+			return backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModeSecondary)
 		})
 	},
 }
