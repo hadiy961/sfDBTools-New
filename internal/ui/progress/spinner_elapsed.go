@@ -39,9 +39,9 @@ func init() {
 }
 
 func newElapsedSpinner(message string) *elapsedSpinner {
-	// Saat berjalan di background/daemon atau quiet, spinner bikin output tumpang tindih dengan logs.
+	// Saat berjalan di quiet mode, spinner bikin output tumpang tindih dengan logs.
 	// Jadi dimatikan dan diganti no-op.
-	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+	if runtimecfg.IsQuiet() {
 		return &elapsedSpinner{message: message, startTime: time.Now()}
 	}
 

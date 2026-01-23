@@ -2,7 +2,7 @@
 // Deskripsi : Command untuk backup database primary
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-23
 package backupcmd
 
 import (
@@ -27,7 +27,7 @@ Ini berguna jika Anda memiliki konvensi penamaan database development/staging de
 
 Contoh:
   - 'app_db'          -> Primary (Akan dibackup)
-  - 'app_db_secondary'-> Secondary (Akan diabaikan)`,
+	- 'app_db_secondary'-> Secondary (Akan diabaikan)`,
 	Example: `  # 1. Backup semua database primary
   sfdbtools db-backup primary
 
@@ -35,8 +35,7 @@ Contoh:
   sfdbtools db-backup primary --backup-dir "/backups/prod"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
-			_ = backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModePrimary)
-			return nil
+			return backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModePrimary)
 		})
 	},
 }

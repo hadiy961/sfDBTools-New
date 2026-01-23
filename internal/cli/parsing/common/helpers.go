@@ -22,7 +22,7 @@ import (
 
 // IsInteractiveMode mendeteksi apakah mode interaktif aktif
 func IsInteractiveMode() bool {
-	return !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) &&
+	return !runtimecfg.IsQuiet() &&
 		isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
 }
 

@@ -39,7 +39,7 @@ func PrintInfo(message string) {
 
 // PrintHeader prints a header with border
 func PrintHeader(title string) {
-	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+	if runtimecfg.IsQuiet() {
 		return
 	}
 
@@ -77,7 +77,7 @@ func PrintError(message string) {
 
 // PrintSubHeader prints a sub-header
 func PrintSubHeader(title string) {
-	if runtimecfg.IsQuiet() || runtimecfg.IsDaemon() {
+	if runtimecfg.IsQuiet() {
 		return
 	}
 

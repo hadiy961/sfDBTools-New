@@ -13,7 +13,6 @@ import (
 	cleanupcmd "sfdbtools/cmd/cleanup"
 	cryptocmd "sfdbtools/cmd/crypto"
 	dbscancmd "sfdbtools/cmd/dbscan"
-	jobscmd "sfdbtools/cmd/jobs"
 	profilecmd "sfdbtools/cmd/profile"
 	restorecmd "sfdbtools/cmd/restore"
 	scriptcmd "sfdbtools/cmd/script"
@@ -24,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	// Import globals dan sub-command
 )
 
 // rootCmd merepresentasikan perintah dasar ketika tidak ada sub-command yang dipanggil
@@ -36,14 +34,11 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 
 	// PersistentPreRunE akan dijalankan SEBELUM perintah apapun.
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// Apply global runtime flags seawal mungkin untuk memastikan mode daemon/quiet konsisten.
+		// Apply global runtime flags seawal mungkin untuk memastikan mode quiet konsisten.
 		quietFlag, _ := cmd.Flags().GetBool("quiet")
 		quiteFlag, _ := cmd.Flags().GetBool("quite")
 		if quietFlag || quiteFlag {
 			runtimecfg.SetQuiet(true)
-		}
-		if d, _ := cmd.Flags().GetBool("daemon"); d {
-			runtimecfg.SetDaemon(true)
 		}
 
 		// Skip dependensi dan logging untuk perintah completion agar output bersih
@@ -95,13 +90,11 @@ func Execute(deps *appdeps.Dependencies) {
 }
 
 func init() {
-	// Global flags (parameter-only): tanpa perlu SFDB_QUIET / SFDB_DAEMON_MODE.
+	// Global flags (parameter-only): tanpa perlu SFDB_QUIET.
 	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Output lebih senyap (tanpa spinner/header), cocok untuk pipeline")
 	rootCmd.PersistentFlags().Bool("quite", false, "Alias (deprecated) untuk --quiet")
 	_ = rootCmd.PersistentFlags().MarkHidden("quite")
 	_ = rootCmd.PersistentFlags().MarkDeprecated("quite", "gunakan --quiet")
-	rootCmd.PersistentFlags().Bool("daemon", false, "Mode daemon (untuk systemd/background); otomatis quiet")
-	_ = rootCmd.PersistentFlags().MarkHidden("daemon")
 
 	// Tambahkan sub-command yang sudah dibuat
 	// Kita anggap 'versionCmd' ada di cmd/version.go
@@ -113,7 +106,6 @@ func init() {
 	rootCmd.AddCommand(scriptcmd.CmdScriptMain)
 	rootCmd.AddCommand(cleanupcmd.CmdCleanupMain)
 	rootCmd.AddCommand(backupcmd.CmdBackupMain)
-	rootCmd.AddCommand(jobscmd.CmdJobs)
 	rootCmd.AddCommand(restorecmd.CmdRestore)
 	rootCmd.AddCommand(completionCmd)
 }

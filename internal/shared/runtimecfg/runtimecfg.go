@@ -1,45 +1,27 @@
 // File : internal/shared/runtimecfg/runtimecfg.go
-// Deskripsi : Konfigurasi runtime berbasis flag (tanpa env) untuk quiet/daemon
+// Deskripsi : Konfigurasi runtime berbasis flag (tanpa env) untuk quiet
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 4 Januari 2026
+// Last Modified : 23 Januari 2026
 
 package runtimecfg
 
 import "strings"
 
-var (
-	quiet  bool
-	daemon bool
-)
+var quiet bool
 
 // SetQuiet mengaktifkan quiet mode (tanpa spinner/UI noisy, console diarahkan ke stderr oleh logger).
 func SetQuiet(v bool) {
 	quiet = v
 }
 
-// SetDaemon mengaktifkan daemon mode. Daemon selalu dianggap quiet.
-func SetDaemon(v bool) {
-	daemon = v
-	if v {
-		quiet = true
-	}
-}
-
 func IsQuiet() bool {
 	return quiet
 }
 
-func IsDaemon() bool {
-	return daemon
-}
-
-// BootstrapFromArgs mem-parsing args untuk flag global --quiet/-q dan --daemon.
+// BootstrapFromArgs mem-parsing args untuk flag global --quiet/-q.
 // Parsing ini sengaja sederhana supaya bisa dipakai sebelum cobra init.
 func BootstrapFromArgs(args []string) {
-	if hasBoolFlag(args, "--daemon") {
-		SetDaemon(true)
-	}
 	if hasBoolFlag(args, "--quiet") || hasBoolFlag(args, "--quite") || hasShortFlag(args, "-q") {
 		SetQuiet(true)
 	}

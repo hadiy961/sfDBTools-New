@@ -16,7 +16,7 @@ func AddDbScanFilterFlags(cmd *cobra.Command) {
 }
 
 // AddDbScanAllFlags mendaftarkan flags minimal untuk command `dbscan all`.
-// Hanya flag yang diminta: --background, --exclude-system, --profile, --profile-key
+// Flags: --exclude-system, --profile, --profile-key
 func AddDbScanAllFlags(cmd *cobra.Command) {
 	// Profile (Manual definition agar tidak butuh struct binding)
 	cmd.Flags().String("profile", "", "Path ke file konfigurasi database (encrypted)")
@@ -25,6 +25,5 @@ func AddDbScanAllFlags(cmd *cobra.Command) {
 	// Filter option
 	cmd.Flags().Bool("exclude-system", true, "Kecualikan system databases")
 
-	cmd.Flags().Bool("background", false, "Jalankan scanning di background (async mode)")
 	cmd.Flags().Bool("show-options", true, "Tampilkan opsi scanning yang digunakan sebelum eksekusi")
 }

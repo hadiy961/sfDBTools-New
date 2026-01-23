@@ -7,6 +7,7 @@ import (
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/backup/selection"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/ui/print"
 )
@@ -48,6 +49,23 @@ func filterFromBackupOptions(ctx context.Context, client *database.Client, opts 
 	dbFiltered, stats, err := database.FilterDatabases(ctx, client, filterOpts)
 	if err != nil {
 		return nil, stats, err
+	}
+
+	// Mode primary/secondary membutuhkan filtering tambahan berbasis konvensi penamaan.
+	// Ini harus dilakukan TANPA prompt, supaya mode daemon/background tetap bisa berjalan.
+	switch opts.Mode {
+	case consts.ModePrimary, consts.ModeSecondary, consts.ModeSingle:
+		dbFiltered = selection.FilterCandidatesByMode(dbFiltered, opts.Mode)
+	}
+	if opts.Mode == consts.ModePrimary {
+		// Optional: jika client code diisi, sempitkan kandidat.
+		dbFiltered = selection.FilterCandidatesByClientCode(dbFiltered, opts.ClientCode)
+	}
+	if opts.Mode == consts.ModeSecondary {
+		// Optional: client code dan/atau instance bisa dipakai.
+		if opts.ClientCode != "" || opts.Instance != "" {
+			dbFiltered = selection.FilterSecondaryByClientCodeAndInstance(dbFiltered, opts.ClientCode, opts.Instance)
+		}
 	}
 
 	return dbFiltered, stats, nil

@@ -42,42 +42,15 @@ type ScriptConfig struct {
 
 // Struct untuk bagian 'backup'
 type BackupConfig struct {
-	Compression   CompressionConfig     `yaml:"compression"`
-	MysqlDumpArgs string                `yaml:"mysqldump_args"`
-	Exclude       ExcludeConfig         `yaml:"exclude"`
-	Include       IncludeConfig         `yaml:"include"`
-	Cleanup       CleanupConfig         `yaml:"cleanup"`
-	Encryption    EncryptionConfig      `yaml:"encryption"`
-	Output        OutputConfig          `yaml:"output"`
-	Verification  VerificationConfig    `yaml:"verification"`
-	Replication   ReplicationConfig     `yaml:"replication"`
-	Scheduler     BackupSchedulerConfig `yaml:"scheduler"`
-}
-
-// BackupSchedulerConfig menyimpan konfigurasi scheduler backup berbasis systemd.
-// Scheduler tidak berjalan sebagai daemon internal; sfdbtools hanya meng-generate unit systemd.
-type BackupSchedulerConfig struct {
-	Jobs []BackupSchedulerJob `yaml:"jobs"`
-}
-
-// BackupSchedulerJob merepresentasikan satu job backup terjadwal.
-// Catatan: eksekusi job akan dipaksa serial (antri) via global lock pada unit systemd.
-type BackupSchedulerJob struct {
-	Name        string `yaml:"name"`
-	Enabled     bool   `yaml:"enabled"`
-	Schedule    string `yaml:"schedule"` // Cron format (5 kolom)
-	Mode        string `yaml:"mode"`     // "separated" atau "combined" (awal: fokus separated)
-	Timeout     string `yaml:"timeout"`  // Execution timeout (e.g., "30m", "2h", "6h"). Empty = default 6h. Issue #55
-	IncludeFile string `yaml:"include_file"`
-	Profile     string `yaml:"profile"` // Path profile; optional (bisa via env SFDB_SOURCE_PROFILE)
-	Ticket      string `yaml:"ticket"`  // Ticket; optional (akan auto jika kosong)
-	Output      struct {
-		BaseDirectory string `yaml:"base_directory"`
-	} `yaml:"output"`
-	Cleanup struct {
-		Enabled       bool `yaml:"enabled"`
-		RetentionDays int  `yaml:"retention_days"`
-	} `yaml:"cleanup"`
+	Compression   CompressionConfig  `yaml:"compression"`
+	MysqlDumpArgs string             `yaml:"mysqldump_args"`
+	Exclude       ExcludeConfig      `yaml:"exclude"`
+	Include       IncludeConfig      `yaml:"include"`
+	Cleanup       CleanupConfig      `yaml:"cleanup"`
+	Encryption    EncryptionConfig   `yaml:"encryption"`
+	Output        OutputConfig       `yaml:"output"`
+	Verification  VerificationConfig `yaml:"verification"`
+	Replication   ReplicationConfig  `yaml:"replication"`
 }
 
 type IncludeConfig struct {

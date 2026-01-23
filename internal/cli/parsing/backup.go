@@ -48,7 +48,7 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 	opts.DryRun = resolver.GetBoolFlagOrEnv(cmd, "dry-run", "")
 
 	// Non Interactive (global): --quiet / --daemon
-	opts.NonInteractive = runtimecfg.IsQuiet() || runtimecfg.IsDaemon()
+	opts.NonInteractive = runtimecfg.IsQuiet()
 
 	// Backup Directory
 	if v := resolver.GetStringFlagOrEnv(cmd, "backup-dir", ""); v != "" {

@@ -2,7 +2,7 @@
 // Deskripsi : Command untuk backup database dengan filter
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-23
 package backupcmd
 
 import (
@@ -44,8 +44,7 @@ Jika tidak ada database yang ditentukan lewat flag, mode interaktif (multi-selec
 				return getBackupMode(cmd)
 			},
 			func(mode string) error {
-				_ = backup.ExecuteBackup(cmd, appdeps.Deps, mode)
-				return nil
+				return backup.ExecuteBackup(cmd, appdeps.Deps, mode)
 			},
 		)
 	},

@@ -2,7 +2,7 @@
 // Deskripsi : Command untuk backup all databases dengan exclude filters
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-11
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-23
 package backupcmd
 
 import (
@@ -39,8 +39,7 @@ Fitur:
 	sfdbtools db-backup all --backup-dir "/backup/daily" --filename "all_backup_20251224"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
-			_ = backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModeAll)
-			return nil
+			return backup.ExecuteBackup(cmd, appdeps.Deps, consts.ModeAll)
 		})
 	},
 }
