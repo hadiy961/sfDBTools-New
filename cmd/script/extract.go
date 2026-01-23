@@ -1,13 +1,11 @@
 package scriptcmd
 
 import (
-	"path/filepath"
 	"sfdbtools/internal/app/script"
 	"sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/flags"
 	"sfdbtools/internal/cli/parsing"
-	"sfdbtools/internal/ui/prompt"
-	"strings"
+	"sfdbtools/internal/ui/print"
 
 	"github.com/spf13/cobra"
 )
@@ -21,41 +19,12 @@ var CmdScriptExtract = &cobra.Command{
 sfdbtools script extract -f /etc/sfDBTools/scripts/tes.sftools -o ./tes_extracted -k "mypassword"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		print.PrintAppHeader("Script Extract Tools")
+
 		opts := parsing.ParsingScriptExtractOptions(cmd)
-
-		if strings.TrimSpace(opts.FilePath) == "" {
-			p, err := selectSFToolsFileInteractive()
-			if err != nil {
-				deps.Deps.Logger.Error(err.Error())
-				return
-			}
-			opts.FilePath = p
-		} else if cmd.Flags().Changed("file") {
-			configuredDir := ""
-			if deps.Deps != nil && deps.Deps.Config != nil {
-				configuredDir = strings.TrimSpace(deps.Deps.Config.Script.BundleOutputDir)
-			}
-			opts.FilePath = normalizeSFToolsFlagPath(opts.FilePath, configuredDir)
-		}
-
-		if strings.TrimSpace(opts.OutDir) == "" {
-			base := strings.TrimSuffix(filepath.Base(opts.FilePath), filepath.Ext(opts.FilePath))
-			defaultOut := "./" + base + "_extracted"
-			out, err := prompt.AskText("Output directory untuk hasil extract", prompt.WithDefault(defaultOut))
-			if err != nil {
-				deps.Deps.Logger.Error(err.Error())
-				return
-			}
-			opts.OutDir = strings.TrimSpace(out)
-		}
-
-		if err := script.ExtractBundle(opts); err != nil {
+		if err := script.ExecuteExtractBundle(deps.Deps.Logger, deps.Deps.Config, opts); err != nil {
 			deps.Deps.Logger.Error(err.Error())
-			return
 		}
-
-		absOut, _ := filepath.Abs(opts.OutDir)
-		deps.Deps.Logger.Infof("✓ Extract selesai. Output: %s", absOut)
 	},
 }
 

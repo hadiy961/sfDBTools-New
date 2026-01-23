@@ -2,14 +2,13 @@
 // Deskripsi : Eksekusi tampilkan profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 15 Januari 2026
+// Last Modified : 21 Januari 2026
 package executor
 
 import (
 	"fmt"
 	"strings"
 
-	profileconn "sfdbtools/internal/app/profile/connection"
 	profiledisplay "sfdbtools/internal/app/profile/display"
 	"sfdbtools/internal/app/profile/helpers/loader"
 	profilemodel "sfdbtools/internal/app/profile/model"
@@ -88,23 +87,6 @@ func (e *Executor) ShowProfile() error {
 	e.State.ProfileInfo.Path = e.State.OriginalProfileInfo.Path
 	if e.State.OriginalProfileInfo != nil {
 		e.State.ProfileInfo.DBInfo = e.State.OriginalProfileInfo.DBInfo
-	}
-
-	// Mode non-interaktif: jangan coba konek DB dan jangan print warning/hints.
-	// Tujuannya agar output `profile show` stabil untuk scripting/pipeline.
-	if isInteractive {
-		if c, err := profileconn.ConnectWithProfile(e.Config, e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
-			info := profileconn.DescribeConnectError(e.Config, err)
-			print.PrintWarning("⚠️  " + info.Title)
-			if strings.TrimSpace(info.Detail) != "" {
-				print.PrintWarning("Detail (ringkas): " + info.Detail)
-			}
-			for _, h := range info.Hints {
-				print.PrintInfo("Hint: " + h)
-			}
-		} else {
-			c.Close()
-		}
 	}
 
 	// Non-interaktif: --reveal-password tidak boleh prompt.

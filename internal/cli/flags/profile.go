@@ -67,3 +67,18 @@ func ProfileDelete(cmd *cobra.Command) {
 	cmd.Flags().StringSliceP("profile", "f", []string{}, "Nama file profil yang akan dihapus (bisa multiple)")
 	cmd.Flags().BoolP("force", "F", false, "Hapus profil tanpa konfirmasi")
 }
+
+// ProfileClone - Flag untuk clone profil yang ada
+func ProfileClone(cmd *cobra.Command) {
+	// Ambil default dari defaultVal
+	defaultOptions := defaultVal.DefaultProfileCloneOptions()
+
+	// Tambahkan flag spesifik untuk clone profil
+	cmd.Flags().StringP("source", "s", "", "Nama atau path file profil sumber yang akan di-clone (kosongkan untuk interactive selection)")
+	cmd.Flags().StringP("name", "n", defaultOptions.TargetName, "Nama untuk profil baru hasil clone")
+	cmd.Flags().StringP("host", "H", defaultOptions.TargetHost, "Override host untuk profil hasil clone (opsional)")
+	cmd.Flags().IntP("port", "P", defaultOptions.TargetPort, "Override port untuk profil hasil clone (opsional)")
+	cmd.Flags().StringP("profile-key", "k", "", "Kunci enkripsi untuk mendekripsi profil sumber (ENV: SFDB_SOURCE_PROFILE_KEY atau SFDB_TARGET_PROFILE_KEY)")
+	cmd.Flags().String("new-profile-key", "", "Kunci enkripsi untuk profil hasil clone (opsional; jika kosong, gunakan profile-key yang sama)")
+	cmd.Flags().StringP("output-dir", "o", defaultOptions.OutputDir, "Direktori output untuk menyimpan profil hasil clone (opsional)")
+}

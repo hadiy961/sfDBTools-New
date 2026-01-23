@@ -113,18 +113,39 @@ func NewStreamDecryptor(r io.Reader, passphrase string) (io.Reader, error) {
 // File Encryption/Decryption
 // ========================
 
-// EncryptFile encrypts a file using streaming encryption.
+// EncryptFile encrypts a file using auto-selected encryption method.
 //
-// Reads from inputPath, encrypts, and writes to outputPath.
-// Uses streaming to handle large files efficiently.
+// Automatically selects encryption method based on file size:
+//   - Files < 1MB: Simple format (compatible with profile files)
+//   - Files ≥ 1MB: Streaming format (efficient for large backups)
+//
+// Both formats use AES-256-GCM and are OpenSSL compatible.
+//
+// Example:
+//
+//	err := crypto.EncryptFile("profile.cnf", "profile.cnf.enc", []byte("key"))
+//	err := crypto.EncryptFile("backup.sql", "backup.sql.enc", []byte("key"))
 func EncryptFile(inputPath, outputPath string, passphrase []byte) error {
 	return file.Encrypt(inputPath, outputPath, passphrase)
 }
 
-// DecryptFile decrypts a file using streaming decryption.
+// DecryptFile decrypts a file using auto-detected decryption method.
 //
-// Reads encrypted file from inputPath, decrypts, and writes to outputPath.
-// Returns error if wrong key or corrupted data.
+// Automatically detects and handles both encryption formats:
+//   - Simple format (profile files, small files)
+//   - Streaming format (large backup files)
+//
+// This makes DecryptFile compatible with:
+//   - Profile files (.cnf.enc) created by profile module
+//   - Backup files encrypted with streaming encryption
+//   - Files encrypted with EncryptFile or EncryptData
+//
+// Returns error if decryption fails with both methods (wrong key or corrupted data).
+//
+// Example:
+//
+//	err := crypto.DecryptFile("profile.cnf.enc", "profile.cnf", []byte("key"))
+//	err := crypto.DecryptFile("backup.sql.enc", "backup.sql", []byte("key"))
 func DecryptFile(inputPath, outputPath string, passphrase []byte) error {
 	return file.Decrypt(inputPath, outputPath, passphrase)
 }

@@ -1,13 +1,20 @@
+// File : internal/app/script/info.go
+// Deskripsi : Bundle metadata inspection
+// Author : Hadiyatna Muflihun
+// Tanggal : 21 Januari 2026
+// Last Modified : 21 Januari 2026
+
 package script
 
 import (
 	"archive/tar"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
-	scriptmodel "sfdbtools/internal/app/script/model"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/envx"
@@ -15,22 +22,29 @@ import (
 	"strings"
 )
 
-type BundleInfo struct {
-	Version    int      `json:"version"`
-	Entrypoint string   `json:"entrypoint"`
-	CreatedAt  string   `json:"created_at"`
-	Mode       string   `json:"mode"`
-	RootDir    string   `json:"root_dir"`
-	Scripts    []string `json:"scripts"`
-	FileCount  int      `json:"file_count"`
-}
-
-func GetBundleInfo(opts scriptmodel.ScriptInfoOptions) (BundleInfo, error) {
+// GetBundleInfo reads and returns metadata from encrypted script bundle.
+//
+// Reads without extracting:
+//   - Manifest (version, entrypoint, created_at, mode)
+//   - File count and list of .sh scripts
+//
+// Does NOT require application password (read-only operation).
+// Context dapat digunakan untuk cancellation.
+func GetBundleInfo(ctx context.Context, opts InfoOptions) (BundleInfo, error) {
+	// Check context cancellation
+	if err := ctx.Err(); err != nil {
+		return BundleInfo{}, fmt.Errorf("operasi dibatalkan: %w", err)
+	}
 	bundlePath := strings.TrimSpace(opts.FilePath)
 	if bundlePath == "" {
 		return BundleInfo{}, fmt.Errorf("--file wajib diisi")
 	}
 	bundlePath = envx.ExpandPath(bundlePath)
+
+	// P2 #7: Validate bundle extension
+	if err := validateBundleExtension(bundlePath); err != nil {
+		return BundleInfo{}, err
+	}
 
 	key, _, err := crypto.ResolveKey(opts.EncryptionKey, consts.ENV_SCRIPT_KEY, true)
 	if err != nil {
@@ -41,7 +55,11 @@ func GetBundleInfo(opts scriptmodel.ScriptInfoOptions) (BundleInfo, error) {
 	if err != nil {
 		return BundleInfo{}, fmt.Errorf("gagal membuka .sftools: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			log.Printf("Warning: gagal menutup bundle file: %v", closeErr)
+		}
+	}()
 
 	decReader, err := crypto.NewStreamDecryptor(f, key)
 	if err != nil {

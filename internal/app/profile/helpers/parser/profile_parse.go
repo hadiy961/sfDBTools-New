@@ -2,7 +2,7 @@
 // Deskripsi : Utility untuk load dan parse profil terenkripsi
 // Author : Hadiyatna Muflihun
 // Tanggal : 5 Desember 2025
-// Last Modified : 14 Januari 2026
+// Last Modified : 21 Januari 2026
 package parser
 
 import (
@@ -36,6 +36,11 @@ func LoadAndParseProfile(absPath string, key string) (*domain.ProfileInfo, error
 			return nil, fmt.Errorf("kunci enkripsi tidak tersedia: %w", err)
 		}
 		info.EncryptionSource = src
+		info.EncryptionKey = strings.TrimSpace(k)
+	} else {
+		// Key berasal dari flag/state/env yang sudah dipass oleh caller.
+		info.EncryptionSource = "flag/state"
+		info.EncryptionKey = strings.TrimSpace(k)
 	}
 
 	plaintext, err := crypto.DecryptData(data, []byte(k))

@@ -1,20 +1,20 @@
 package parsing
 
 import (
-	scriptmodel "sfdbtools/internal/app/script/model"
+	"sfdbtools/internal/app/script"
 	resolver "sfdbtools/internal/cli/resolver"
 	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-func ParsingScriptEncryptOptions(cmd *cobra.Command) scriptmodel.ScriptEncryptOptions {
+func ParsingScriptEncryptOptions(cmd *cobra.Command) script.EncryptOptions {
 	key := resolver.GetStringFlagOrEnv(cmd, "key", "")
 	if strings.TrimSpace(key) == "" {
 		key = resolver.GetStringFlagOrEnv(cmd, "encryption-key", "")
 	}
 	deleteSource, _ := cmd.Flags().GetBool("delete-source")
-	return scriptmodel.ScriptEncryptOptions{
+	return script.EncryptOptions{
 		FilePath:      resolver.GetStringFlagOrEnv(cmd, "file", ""),
 		EncryptionKey: key,
 		Mode:          resolver.GetStringFlagOrEnv(cmd, "mode", ""),
@@ -23,35 +23,35 @@ func ParsingScriptEncryptOptions(cmd *cobra.Command) scriptmodel.ScriptEncryptOp
 	}
 }
 
-func ParsingScriptRunOptions(cmd *cobra.Command) scriptmodel.ScriptRunOptions {
+func ParsingScriptRunOptions(cmd *cobra.Command) script.RunOptions {
 	key := resolver.GetStringFlagOrEnv(cmd, "key", "")
 	if strings.TrimSpace(key) == "" {
 		key = resolver.GetStringFlagOrEnv(cmd, "encryption-key", "")
 	}
-	return scriptmodel.ScriptRunOptions{
+	return script.RunOptions{
 		FilePath:      resolver.GetStringFlagOrEnv(cmd, "file", ""),
 		EncryptionKey: key,
 	}
 }
 
-func ParsingScriptExtractOptions(cmd *cobra.Command) scriptmodel.ScriptExtractOptions {
+func ParsingScriptExtractOptions(cmd *cobra.Command) script.ExtractOptions {
 	key := resolver.GetStringFlagOrEnv(cmd, "key", "")
 	if strings.TrimSpace(key) == "" {
 		key = resolver.GetStringFlagOrEnv(cmd, "encryption-key", "")
 	}
-	return scriptmodel.ScriptExtractOptions{
+	return script.ExtractOptions{
 		FilePath:      resolver.GetStringFlagOrEnv(cmd, "file", ""),
 		EncryptionKey: key,
 		OutDir:        resolver.GetStringFlagOrEnv(cmd, "out-dir", ""),
 	}
 }
 
-func ParsingScriptInfoOptions(cmd *cobra.Command) scriptmodel.ScriptInfoOptions {
+func ParsingScriptInfoOptions(cmd *cobra.Command) script.InfoOptions {
 	key := resolver.GetStringFlagOrEnv(cmd, "key", "")
 	if strings.TrimSpace(key) == "" {
 		key = resolver.GetStringFlagOrEnv(cmd, "encryption-key", "")
 	}
-	return scriptmodel.ScriptInfoOptions{
+	return script.InfoOptions{
 		FilePath:      resolver.GetStringFlagOrEnv(cmd, "file", ""),
 		EncryptionKey: key,
 	}

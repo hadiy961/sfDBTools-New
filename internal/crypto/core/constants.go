@@ -23,3 +23,10 @@ const (
 	// StreamChunkSize adalah ukuran chunk untuk streaming encryption (64KB)
 	StreamChunkSize = 64 * 1024
 )
+
+// File security constants
+const (
+	// SecureFilePermission adalah permission default untuk crypto file output.
+	// 0600 = owner read/write only, no group/other access (secure by default)
+	SecureFilePermission = 0600
+)
