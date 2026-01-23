@@ -26,3 +26,20 @@ func DefaultProfileShowOptions() profilemodel.ProfileShowOptions {
 		RevealPassword: false,
 	}
 }
+
+func DefaultProfileCloneOptions() profilemodel.ProfileCloneOptions {
+	cfg, err := appconfig.LoadConfigFromEnv()
+	if err != nil {
+		fmt.Println("Error loading config:", err)
+		return profilemodel.ProfileCloneOptions{
+			OutputDir:   "",
+			Interactive: true,
+			TargetPort:  0, // 0 means keep from source
+		}
+	}
+	return profilemodel.ProfileCloneOptions{
+		OutputDir:   cfg.ConfigDir.DatabaseProfile,
+		Interactive: true,
+		TargetPort:  0, // 0 means keep from source
+	}
+}
