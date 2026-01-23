@@ -57,7 +57,7 @@ func (e *Executor) CloneProfile() error {
 			}
 
 			e.Log.Info(consts.ProfileLogValidationSuccess)
-			if !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) {
+			if !runtimecfg.IsQuiet() {
 				profiledisplay.DisplayProfileDetails(e.ConfigDir, e.State)
 			}
 		}
@@ -120,7 +120,7 @@ func (e *Executor) loadSourceProfile(cloneOpts *profilemodel.ProfileCloneOptions
 		srcCopy := *selected
 		cloneOpts.SourceInfo = &srcCopy
 
-		if !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) {
+		if !runtimecfg.IsQuiet() {
 			print.PrintSuccess(fmt.Sprintf("✓ Source profile dimuat: %s", srcCopy.Name))
 		}
 
@@ -148,7 +148,7 @@ func (e *Executor) loadSourceProfile(cloneOpts *profilemodel.ProfileCloneOptions
 
 	cloneOpts.SourceInfo = sourceInfo
 
-	if !(runtimecfg.IsQuiet() || runtimecfg.IsDaemon()) {
+	if !runtimecfg.IsQuiet() {
 		print.PrintSuccess(fmt.Sprintf("✓ Source profile dimuat: %s", sourceInfo.Name))
 	}
 
