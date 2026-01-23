@@ -38,10 +38,6 @@ func GetDefaultScanOptions(mode string) dbscanmodel.ScanOptions {
 
 	// Output Options
 	opts.DisplayResults = true
-	opts.Background = false
-	if opts.Background {
-		opts.DisplayResults = false
-	}
 	opts.ShowOptions = true
 
 	// Mode

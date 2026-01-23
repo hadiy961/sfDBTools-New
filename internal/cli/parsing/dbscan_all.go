@@ -22,7 +22,6 @@ func ParsingScanAllOptions(cmd *cobra.Command) (dbscanmodel.ScanOptions, error) 
 
 	// Options lain yang diminta
 	opts.ExcludeSystem = resolver.GetBoolFlagOrEnv(cmd, "exclude-system", "")
-	opts.Background = resolver.GetBoolFlagOrEnv(cmd, "background", "")
 	opts.ShowOptions = resolver.GetBoolFlagOrEnv(cmd, "show-options", "")
 
 	return opts, nil
