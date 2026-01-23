@@ -27,7 +27,7 @@ func (r *Runner) runCloneFlow() error {
 	// 3) jika Ubah data, multi-select fields, lalu kembali ke menu aksi
 	for {
 		prevOpts := r.State.Options
-		r.State.Options = &profilemodel.ProfileShowOptions{}
+		r.State.Options = &profilemodel.ProfileShowOptions{Interactive: true}
 		profiledisplay.DisplayProfileDetails(r.ConfigDir, r.State)
 		r.State.Options = prevOpts
 

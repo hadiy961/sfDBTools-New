@@ -4,7 +4,7 @@ package consts
 // Deskripsi : Konstanta yang digunakan oleh fitur profile (prompt, header, dan pesan umum)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 9 Januari 2026
+// Last Modified : 21 Januari 2026
 
 // =============================================================================
 // Header + Success message
@@ -274,11 +274,21 @@ const (
 	ProfileDisplayInvalidKeyOrCorrupt   = "Enkripsi key salah atau file rusak. Tidak dapat menampilkan password asli."
 	ProfileDisplayRevealedPasswordTitle = "Revealed Password"
 
-	ProfileDisplayTableHeaderNo     = "No"
-	ProfileDisplayTableHeaderField  = "Field"
-	ProfileDisplayTableHeaderValue  = "Value"
-	ProfileDisplayTableHeaderBefore = "Before"
-	ProfileDisplayTableHeaderAfter  = "After"
+	ProfileDisplayTableHeaderNo       = "No"
+	ProfileDisplayTableHeaderCategory = "Kategori"
+	ProfileDisplayTableHeaderField    = "Field"
+	ProfileDisplayTableHeaderValue    = "Value"
+	ProfileDisplayTableHeaderBefore   = "Before"
+	ProfileDisplayTableHeaderAfter    = "After"
+
+	ProfileDisplayCategoryProfileInfo = "Profile Info"
+	ProfileDisplayCategoryDBInfo      = "DB Info"
+	ProfileDisplayCategorySSHTunnel   = "SSH Tunnel"
+	ProfileDisplayCategoryTestResult  = "Test Result"
+	ProfileDisplayCategoryStatus      = "Status"
+
+	ProfileDisplayValueYes = "Yes"
+	ProfileDisplayValueNo  = "No"
 
 	ProfileDisplayFieldName         = "Nama"
 	ProfileDisplayFieldFilePath     = "File Path"
