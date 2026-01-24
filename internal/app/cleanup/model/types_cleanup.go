@@ -6,7 +6,6 @@ type CleanupOptions struct {
 	Days            int
 	CleanupSchedule string
 	Pattern         string
-	Background      bool
 	DryRun          bool
 }
 

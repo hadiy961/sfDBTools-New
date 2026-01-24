@@ -57,12 +57,7 @@ func (s *Service) ExecuteScan(config dbscanmodel.ScanEntryConfig) error {
 	s.ScanOptions.Mode = config.Mode
 	s.ScanOptions.LocalScan = (config.Mode == "all-local")
 
-	// Jika background mode, spawn sebagai daemon process atau jalankan background task
-	if s.ScanOptions.Background {
-		return s.handleBackgroundExecution(ctx, config)
-	}
-
-	// Setup connections (Foreground Mode)
+	// Setup connections
 	sourceClient, dbFiltered, cleanup, err := s.setupScanConnections(ctx, config.HeaderTitle, config.ShowOptions)
 	if err != nil {
 		return err
@@ -70,7 +65,7 @@ func (s *Service) ExecuteScan(config dbscanmodel.ScanEntryConfig) error {
 	defer cleanup()
 
 	// Lakukan scanning dengan UI output
-	result, detailsMap, err := s.executeScanWithClients(ctx, sourceClient, dbFiltered, false)
+	result, detailsMap, err := s.executeScanWithClients(ctx, sourceClient, dbFiltered)
 	if err != nil {
 		s.Log.Error(config.LogPrefix + " gagal: " + err.Error())
 		return err
@@ -92,26 +87,13 @@ func (s *Service) ExecuteScan(config dbscanmodel.ScanEntryConfig) error {
 	return nil
 }
 
-// handleBackgroundExecution menangani logika eksekusi background/daemon
-func (s *Service) handleBackgroundExecution(ctx context.Context, config dbscanmodel.ScanEntryConfig) error {
-	if s.ScanOptions.ProfileInfo.Path == "" {
-		return fmt.Errorf("background mode memerlukan file konfigurasi database")
-	}
-
-	// Execute scan directly
-	return s.ExecuteScan(config)
-}
-
 // executeScanWithClients melakukan scanning dengan koneksi yang sudah tersedia
 func (s *Service) executeScanWithClients(
 	ctx context.Context,
 	sourceClient *database.Client,
 	dbNames []string,
-	isBackground bool,
 ) (*dbscanmodel.ScanResult, map[string]dbscanmodel.DatabaseDetailInfo, error) {
-	if !isBackground {
-		print.PrintSubHeader("Memulai Proses Scanning Database")
-	}
+	print.PrintSubHeader("Memulai Proses Scanning Database")
 
 	// Ambil server info
 	serverHost := s.ScanOptions.ProfileInfo.DBInfo.Host
@@ -143,7 +125,6 @@ func (s *Service) executeScanWithClients(
 	opts := helpers.ScanExecutorOptions{
 		LocalScan:     s.ScanOptions.LocalScan,
 		DisplayResult: s.ScanOptions.DisplayResults,
-		IsBackground:  isBackground,
 		Logger:        s.Log,
 		LocalSizes:    localSizes,
 	}

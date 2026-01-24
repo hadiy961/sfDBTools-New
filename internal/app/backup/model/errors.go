@@ -33,12 +33,6 @@ var (
 	// ErrOperationCancelled menandakan operasi dibatalkan oleh user
 	ErrOperationCancelled = errors.New("operation cancelled")
 
-	// ErrNoSchedulerJobs menandakan tidak ada scheduler jobs yang aktif
-	ErrNoSchedulerJobs = errors.New("no scheduler jobs configured")
-
-	// ErrJobNameRequired menandakan job name wajib diisi
-	ErrJobNameRequired = errors.New("job name required")
-
 	// ErrRootRequired menandakan operasi membutuhkan root access
 	ErrRootRequired = errors.New("root access required")
 
@@ -71,7 +65,4 @@ var (
 
 	// ErrInvalidStateType menandakan invalid state type
 	ErrInvalidStateType = errors.New("invalid state type")
-
-	// ErrBackgroundModeRequiresQuiet menandakan mode background membutuhkan --quiet
-	ErrBackgroundModeRequiresQuiet = errors.New("background mode requires --quiet (non-interactive)")
 )

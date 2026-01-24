@@ -2,7 +2,7 @@
 // Deskripsi : Root command untuk aplikasi sfdbtools
 // Author : Hadiyatna Muflihun
 // Tanggal : 3 Oktober 2024
-// Last Modified : 5 Januari 2026
+// Last Modified : 23 Januari 2026
 package cmd
 
 import (
@@ -19,6 +19,7 @@ import (
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/shared/sanitize"
+	"sfdbtools/internal/ui/menu"
 	"sfdbtools/internal/ui/print"
 	"strings"
 
@@ -67,9 +68,19 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Silakan jalankan 'sfdbtools --help' untuk melihat perintah yang tersedia.")
-		print.PrintSeparator()
-		cmd.Help()
+		// Jika ada argumen/flags, skip menu interaktif
+		if len(args) > 0 || cmd.Flags().NFlag() > 0 {
+			fmt.Println("Silakan jalankan 'sfdbtools --help' untuk melihat perintah yang tersedia.")
+			print.PrintSeparator()
+			cmd.Help()
+			return
+		}
+
+		// Tampilkan menu interaktif
+		if err := menu.ShowInteractiveMenu(cmd); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
 	},
 }
 

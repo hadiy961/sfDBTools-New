@@ -48,7 +48,6 @@ type ScanOptions struct {
 
 	// Output Options
 	DisplayResults bool
-	Background     bool // Jalankan scanning di background
 
 	// Internal use only
 	Mode        string // "all" atau "selection" atau "single"

@@ -1,4 +1,4 @@
-<!-- Last updated: 2026-01-06 -->
+<!-- Last updated: 2026-01-23 -->
 
 # sfdbtools — Copilot coding instructions
 
@@ -6,7 +6,7 @@ sfdbtools adalah CLI Go untuk operasi MySQL/MariaDB (backup/restore/db-scan/clea
 
 ## Big picture (mulai baca dari sini)
 - Entrypoint: [main.go](../main.go) → bootstrap runtime flags → (opsional) auto-update → load config → `cmd.Execute(deps)`.
-- Root CLI (Cobra): [cmd/root.go](../cmd/root.go) menjalankan `PersistentPreRunE`, set runtime mode (`--quiet/-q`, `--daemon`), lalu log `argv` yang sudah dimasking (lihat [cmd/args_sanitize.go](../cmd/args_sanitize.go)).
+- Root CLI (Cobra): [cmd/root.go](../cmd/root.go) menjalankan `PersistentPreRunE`, set runtime mode (`--quiet/-q`), lalu log `argv` yang sudah dimasking (lihat [cmd/args_sanitize.go](../cmd/args_sanitize.go)).
 - Dependency injection: `*internal/cli/deps.Dependencies` dibuat di `main.go` lalu disimpan global via `cmd.Execute()`; command/service membaca lewat `internal/cli/deps`.
 
 ## Struktur folder & boundary

@@ -24,9 +24,6 @@ func ParsingCleanupOptions(cmd *cobra.Command) (cleanupmodel.CleanupOptions, err
 		opts.Pattern = v
 	}
 
-	// Background mode
-	opts.Background = resolver.GetBoolFlagOrEnv(cmd, "background", "")
-
 	// Dry-run mode
 	opts.DryRun = resolver.GetBoolFlagOrEnv(cmd, "dry-run", "")
 

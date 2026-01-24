@@ -22,7 +22,6 @@ import (
 type ScanExecutorOptions struct {
 	LocalScan     bool
 	DisplayResult bool
-	IsBackground  bool
 	Logger        applog.Logger
 	LocalSizes    map[string]int64
 }
@@ -37,11 +36,6 @@ func ExecuteScanWithSave(
 	opts ScanExecutorOptions,
 ) (*dbscanmodel.ScanResult, map[string]dbscanmodel.DatabaseDetailInfo, error) {
 	timer := timex.NewTimer()
-
-	if opts.IsBackground {
-		opts.Logger.Info("Memulai proses scanning database...")
-		opts.Logger.Infof("Total database yang akan di-scan: %d", len(dbNames))
-	}
 
 	if len(dbNames) == 0 {
 		return nil, nil, fmt.Errorf("tidak ada database untuk di-scan")

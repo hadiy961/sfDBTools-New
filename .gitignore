@@ -2,9 +2,7 @@ sfdbtools
 .env
 config/db_list_2.txt
 config/db_list.txt
-logs/dbscan/dbscan_background.pid
 *.log*
-logs/dbscan/dbscan_background.lock
 *.tmp*
 /backup/
 /logs/
