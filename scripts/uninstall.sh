@@ -4,14 +4,22 @@ set -euo pipefail
 # uninstall.sh - Uninstaller for sfdbtools.
 #
 # Usage:
+#   # Uninstall tanpa hapus config
 #   curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/uninstall.sh | sudo bash
-#   curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/uninstall.sh | sudo bash -s -- --purge
+#
+#   # Purge mode (non-interaktif via pipe, perlu SFDBTOOLS_YES=1)
+#   curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/uninstall.sh | SFDBTOOLS_YES=1 sudo -E bash -s -- --purge
+#
+#   # Purge mode (interaktif, download script dulu)
+#   curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/uninstall.sh -o uninstall.sh
+#   chmod +x uninstall.sh
+#   sudo ./uninstall.sh --purge
 #
 # Flags:
 #   --purge    Hapus juga config dan data user (HATI-HATI)
 # Env:
 #   SFDBTOOLS_PREFIX (default: /usr/local) lokasi install tar non-root
-#   SFDBTOOLS_YES=1  skip prompt (untuk --purge)
+#   SFDBTOOLS_YES=1  skip prompt (wajib untuk --purge via pipe)
 
 PREFIX="${SFDBTOOLS_PREFIX:-/usr/local}"
 PURGE=false
@@ -127,9 +135,21 @@ fi
 if [[ "${PURGE}" == "true" ]]; then
   if [[ "${SFDBTOOLS_YES:-}" != "1" ]]; then
     echo "⚠️  --purge akan menghapus konfigurasi di /etc dan home user." >&2
-    read -r -p "Lanjut purge? (y/N): " ans
-    if [[ "${ans}" != "y" && "${ans}" != "Y" ]]; then
-      echo "Dibatalkan." >&2
+    
+    # Cek apakah stdin tersedia (interaktif)
+    if [[ -t 0 ]]; then
+      # Interactive mode: prompt user
+      read -r -p "Lanjut purge? (y/N): " ans
+      if [[ "${ans}" != "y" && "${ans}" != "Y" ]]; then
+        echo "Dibatalkan." >&2
+        exit 1
+      fi
+    else
+      # Non-interactive mode (piped): butuh konfirmasi eksplisit via env var
+      echo "Error: mode non-interaktif terdeteksi (stdin tidak tersedia)." >&2
+      echo "Untuk konfirmasi purge, jalankan dengan:" >&2
+      echo "  curl ... | SFDBTOOLS_YES=1 sudo -E bash -s -- --purge" >&2
+      echo "atau download script dan jalankan secara lokal." >&2
       exit 1
     fi
   fi
