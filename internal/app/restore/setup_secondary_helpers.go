@@ -2,7 +2,7 @@
 // Deskripsi : Helper functions untuk setup restore secondary operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 14 Januari 2026
+// Last Modified : 26 Januari 2026
 package restore
 
 import (
@@ -51,7 +51,7 @@ func (s *Service) resolveSecondaryClientCode(opts *restoremodel.RestoreSecondary
 		return nil
 	}
 	if !allowInteractive {
-		return fmt.Errorf("client code wajib diisi (--client-code) pada mode non-interaktif (--force)")
+		return fmt.Errorf("client code wajib diisi (--client-code) pada mode non-interaktif (--skip-confirm/--quiet)")
 	}
 	cc, err := prompt.AskText("Masukkan client code: ", prompt.WithValidator(validateClientCodeInput))
 	if err != nil {

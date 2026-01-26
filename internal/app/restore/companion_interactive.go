@@ -2,7 +2,7 @@
 // Deskripsi : Helper interaktif untuk pemilihan companion (_dmart) file
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 26 Januari 2026
 
 package restore
 
@@ -10,13 +10,14 @@ import (
 	"fmt"
 	"path/filepath"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"strings"
 )
 
 func (s *Service) useOrSelectDetectedCompanionInteractive(detectedPath string) error {
-	if s.RestorePrimaryOpts.Force {
+	if s.RestorePrimaryOpts.Force || runtimecfg.IsQuiet() {
 		s.RestorePrimaryOpts.CompanionFile = detectedPath
 		return nil
 	}

@@ -2,7 +2,7 @@
 // Deskripsi : Setup session untuk restore custom
 // Author : Hadiyatna Muflihun
 // Tanggal : 24 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 26 Januari 2026
 package restore
 
 import (
@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sfdbtools/internal/shared/runtimecfg"
 	"strings"
 
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
@@ -29,8 +30,8 @@ func (s *Service) SetupRestoreCustomSession(ctx context.Context) error {
 	}
 
 	// custom tetap butuh input interaktif untuk paste dan pilih file.
-	// --force hanya bypass confirmation.
-	allowConfirm := !opts.Force
+	// --skip-confirm/--quiet hanya bypass confirmation.
+	allowConfirm := !(opts.Force || runtimecfg.IsQuiet())
 
 	// 1. Resolve target profile
 	if err := s.resolveTargetProfile(&opts.Profile, true); err != nil {

@@ -2,7 +2,7 @@
 // Deskripsi : Helper functions untuk menambahkan flags restore commands
 // Author : Hadiyatna Muflihun
 // Tanggal : 19 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 26 Januari 2026
 package flags
 
 import (
@@ -10,7 +10,7 @@ import (
 )
 
 // AddRestoreCommonFlags menambahkan flags yang umum digunakan di semua restore commands
-// Flags: --profile, --profile-key, --encryption-key, --ticket
+// Flags: --profile, --profile-key, --encryption-key, --ticket, --skip-confirm
 func AddRestoreCommonFlags(cmd *cobra.Command) {
 	// Profile flags (target database)
 	cmd.Flags().StringP("profile", "p", "", "Profile database target untuk restore (ENV: SFDB_TARGET_PROFILE)")
@@ -21,6 +21,9 @@ func AddRestoreCommonFlags(cmd *cobra.Command) {
 
 	// Ticket (wajib untuk audit)
 	cmd.Flags().StringP("ticket", "t", "", "Ticket number untuk restore request (wajib)")
+
+	// Non-interactive mode (pengganti --force)
+	cmd.Flags().Bool("skip-confirm", false, "Mode non-interaktif: bypass prompt/konfirmasi (cocok untuk automation)")
 }
 
 // AddRestoreFileFlags menambahkan flags untuk file input
@@ -93,12 +96,12 @@ func AddRestoreDryRunFlag(cmd *cobra.Command) {
 }
 
 // AddRestorePrimaryFlags menambahkan flags khusus untuk restore primary
-// Flags: --dmart-file, --dmart-include, --dmart-detect, --skip-confirm
+// Flags: --dmart-file, --dmart-include, --dmart-detect, --no-confirm-create
 func AddRestorePrimaryFlags(cmd *cobra.Command) {
 	cmd.Flags().StringP("dmart-file", "c", "", "Lokasi file backup dmart (_dmart) - optional, auto-detect jika kosong")
 	cmd.Flags().Bool("dmart-include", true, "Include restore companion database (_dmart)")
 	cmd.Flags().Bool("dmart-detect", true, "Auto-detect file companion database (_dmart)")
-	cmd.Flags().Bool("skip-confirm", false, "Skip konfirmasi jika database belum ada")
+	cmd.Flags().Bool("no-confirm-create", false, "Nonaktifkan konfirmasi saat database belum ada (langsung create jika perlu)")
 
 	// Backward compatibility (deprecated flags)
 	cmd.Flags().String("companion-file", "", "DEPRECATED: gunakan --dmart-file")
@@ -115,9 +118,8 @@ func AddRestorePrimaryFlags(cmd *cobra.Command) {
 }
 
 // AddRestoreAllFlags menambahkan flags khusus untuk restore all databases
-// Flags: --force, --continue-on-error, --exclude-db, --exclude-db-file, --skip-system-dbs
+// Flags: --continue-on-error, --exclude-db, --exclude-db-file, --skip-system-dbs
 func AddRestoreAllFlags(cmd *cobra.Command) {
-	cmd.Flags().Bool("force", false, "Force restore tanpa konfirmasi interaktif")
 	cmd.Flags().Bool("continue-on-error", false, "Lanjutkan restore meski ada error (default: stop on error)")
 	cmd.Flags().Bool("skip-system-dbs", true, "Skip system databases (mysql, sys, information_schema, performance_schema)")
 
@@ -127,11 +129,9 @@ func AddRestoreAllFlags(cmd *cobra.Command) {
 }
 
 // AddRestoreSelectionFlags menambahkan flags khusus untuk restore selection (CSV-based)
-// Flags: --csv, --force, --continue-on-error
+// Flags: --csv, --continue-on-error
 func AddRestoreSelectionFlags(cmd *cobra.Command) {
-	cmd.Flags().String("csv", "", "Path CSV: filename,db_name,enc_key,grants_file (kosong = pilih interaktif, wajib saat --force)")
-
-	cmd.Flags().Bool("force", false, "Bypass konfirmasi")
+	cmd.Flags().String("csv", "", "Path CSV: filename,db_name,enc_key,grants_file (kosong = pilih interaktif, wajib saat --skip-confirm)")
 	cmd.Flags().Bool("continue-on-error", false, "Lanjutkan meskipun terjadi error pada salah satu file")
 }
 
@@ -144,7 +144,6 @@ func AddRestoreSingleFlags(cmd *cobra.Command) {
 	AddRestoreCommonFlags(cmd)
 	AddRestoreFileFlags(cmd)
 	AddRestoreTargetFlags(cmd, false) // target-db optional (bisa auto-detect)
-	cmd.Flags().Bool("force", false, "Force restore tanpa konfirmasi interaktif")
 	cmd.Flags().Bool("continue-on-error", false, "Lanjutkan restore meski ada error (default: stop on error)")
 	AddRestoreGrantsFlags(cmd)
 	AddRestoreDryRunFlag(cmd)
@@ -155,7 +154,6 @@ func AddRestorePrimaryAllFlags(cmd *cobra.Command) {
 	AddRestoreCommonFlags(cmd)
 	AddRestoreFileFlags(cmd)
 	AddRestorePrimaryTargetFlags(cmd)
-	cmd.Flags().Bool("force", false, "Force restore tanpa konfirmasi interaktif")
 	cmd.Flags().Bool("continue-on-error", false, "Lanjutkan restore meski ada error (default: stop on error)")
 	AddRestorePrimaryFlags(cmd)
 	AddRestoreGrantsFlags(cmd)
@@ -169,7 +167,6 @@ func AddRestoreSecondaryAllFlags(cmd *cobra.Command) {
 	AddRestoreSecondarySourceFlags(cmd)
 	AddRestoreSecondaryTargetFlags(cmd)
 	AddRestoreDmartFlags(cmd)
-	cmd.Flags().Bool("force", false, "Force restore tanpa konfirmasi interaktif")
 	cmd.Flags().Bool("continue-on-error", false, "Lanjutkan restore meski ada error (default: stop on error)")
 	AddRestoreDryRunFlag(cmd)
 }
@@ -204,13 +201,12 @@ func AddRestoreSelectionAllFlags(cmd *cobra.Command) {
 
 // AddRestoreCustomFlags menambahkan flags untuk restore custom.
 // Flags yang digunakan mengikuti daftar permintaan:
-// --profile, --profile-key, --skip-backup, --drop-target, --force, --continue-on-error, --ticket, --dry-run, --encryption-key
+// --profile, --profile-key, --skip-backup, --drop-target, --continue-on-error, --ticket, --dry-run, --encryption-key
 func AddRestoreCustomFlags(cmd *cobra.Command) {
 	AddRestoreCommonFlags(cmd)
 	// Custom does not use --target-db, only safety toggles
 	cmd.Flags().Bool("drop-target", true, "Drop target database sebelum restore")
 	cmd.Flags().Bool("skip-backup", false, "Skip backup database target sebelum restore")
-	cmd.Flags().Bool("force", false, "Bypass konfirmasi")
 	cmd.Flags().Bool("continue-on-error", false, "Lanjutkan restore meski ada error (default: stop on error)")
 	AddRestoreDryRunFlag(cmd)
 }

@@ -2,7 +2,7 @@
 // Deskripsi : Helper ticket dan opsi interaktif keamanan restore
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 26 Januari 2026
 
 package restore
 
@@ -17,7 +17,7 @@ import (
 func (s *Service) resolveTicketNumber(ticket *string, allowInteractive bool) error {
 	if strings.TrimSpace(*ticket) == "" {
 		if !allowInteractive {
-			return fmt.Errorf("ticket number wajib diisi (--ticket) pada mode non-interaktif (--force)")
+			return fmt.Errorf("ticket number wajib diisi (--ticket) pada mode non-interaktif (--skip-confirm/--quiet)")
 		}
 		result, err := prompt.AskTicket(consts.FeatureRestore)
 		if err != nil {
@@ -31,7 +31,7 @@ func (s *Service) resolveTicketNumber(ticket *string, allowInteractive bool) err
 }
 
 // resolveInteractiveSafetyOptions memberikan opsi interaktif untuk backup pre-restore dan drop target.
-// Hanya aktif jika allowInteractive=true (tanpa --force).
+// Hanya aktif jika allowInteractive=true (tanpa --skip-confirm/--quiet).
 func (s *Service) resolveInteractiveSafetyOptions(dropTarget *bool, skipBackup *bool, allowInteractive bool) error {
 	if !allowInteractive {
 		return nil

@@ -117,6 +117,8 @@ func (e *AllExecutor) performStreamingRestore(ctx context.Context, opts *restore
 	logger := e.service.GetLogger()
 
 	profile := e.service.GetProfile()
+	// Catatan: "--force" di sini adalah argumen client mysql/mariadb (agar lanjut saat error SQL),
+	// BUKAN flag CLI sfdbtools.
 	baseExtraArgs := []string{"--force", "--reconnect", "--max_allowed_packet=1073741824"}
 
 	runOnce := func(withSkipSSL bool) (*restoreStats, time.Duration, error) {

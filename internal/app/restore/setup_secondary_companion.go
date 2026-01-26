@@ -2,7 +2,7 @@
 // Deskripsi : Helper untuk companion (_dmart) pada restore secondary
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 26 Januari 2026
 package restore
 
 import (
@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"strings"
@@ -73,11 +74,12 @@ func (s *Service) ensureValidCompanionPath(opts *restoremodel.RestoreSecondaryOp
 }
 
 func (s *Service) enforceForceWithoutDetect(opts *restoremodel.RestoreSecondaryOptions) error {
-	if !opts.Force || opts.AutoDetectDmart {
+	nonInteractive := opts.Force || runtimecfg.IsQuiet()
+	if !nonInteractive || opts.AutoDetectDmart {
 		return nil
 	}
 	if opts.StopOnError {
-		return fmt.Errorf("auto-detect dmart dimatikan (dmart-detect=false) dan mode non-interaktif (--force) aktif")
+		return fmt.Errorf("auto-detect dmart dimatikan (dmart-detect=false) dan mode non-interaktif (--skip-confirm/--quiet) aktif")
 	}
 	print.PrintWarning("⚠️  Skip restore companion database (_dmart) (non-interaktif, companion tidak ditentukan)")
 	opts.IncludeDmart = false

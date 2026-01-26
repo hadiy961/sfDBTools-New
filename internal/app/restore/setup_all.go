@@ -2,7 +2,7 @@
 // Deskripsi : Setup untuk restore all databases mode
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 26 Januari 2026
 package restore
 
 import (
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"path/filepath"
 	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/internal/ui/table"
@@ -19,7 +20,8 @@ import (
 // SetupRestoreAllSession melakukan setup untuk restore all databases session
 func (s *Service) SetupRestoreAllSession(ctx context.Context) error {
 	print.PrintAppHeader("Restore All Databases")
-	allowInteractive := !s.RestoreAllOpts.Force
+	nonInteractive := s.RestoreAllOpts.Force || runtimecfg.IsQuiet()
+	allowInteractive := !nonInteractive
 
 	if err := s.prepareRestoreAllPrereqs(ctx, allowInteractive); err != nil {
 		return err
@@ -27,7 +29,7 @@ func (s *Service) SetupRestoreAllSession(ctx context.Context) error {
 
 	s.warnRestoreAll()
 
-	if s.RestoreAllOpts.Force {
+	if s.RestoreAllOpts.Force || runtimecfg.IsQuiet() {
 		return nil
 	}
 
@@ -105,7 +107,7 @@ func (s *Service) promptSkipGrantsIfInteractive(allowInteractive bool) error {
 }
 
 func (s *Service) warnRestoreAll() {
-	if s.RestoreAllOpts.Force || s.RestoreAllOpts.DryRun {
+	if s.RestoreAllOpts.Force || runtimecfg.IsQuiet() || s.RestoreAllOpts.DryRun {
 		return
 	}
 

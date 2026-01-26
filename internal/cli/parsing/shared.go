@@ -81,6 +81,8 @@ func PopulateRestoreEncryptionKey(cmd *cobra.Command, key *string) error {
 }
 
 // PopulateRestoreSafetyFlags membaca flag safety umum untuk restore.
+// Catatan: parameter 'force' adalah field model yang dipakai untuk menandai mode non-interaktif.
+// Setelah refactor, mode non-interaktif dipicu oleh --skip-confirm (pengganti --force).
 func PopulateRestoreSafetyFlags(cmd *cobra.Command, dropTarget, skipBackup, dryRun, force *bool) {
 	if cmd.Flags().Changed("drop-target") {
 		*dropTarget = resolver.GetBoolFlagOrEnv(cmd, "drop-target", "")
@@ -91,8 +93,8 @@ func PopulateRestoreSafetyFlags(cmd *cobra.Command, dropTarget, skipBackup, dryR
 	if cmd.Flags().Changed("dry-run") {
 		*dryRun = resolver.GetBoolFlagOrEnv(cmd, "dry-run", "")
 	}
-	if cmd.Flags().Changed("force") {
-		*force = resolver.GetBoolFlagOrEnv(cmd, "force", "")
+	if cmd.Flags().Changed("skip-confirm") {
+		*force = resolver.GetBoolFlagOrEnv(cmd, "skip-confirm", "")
 	}
 }
 

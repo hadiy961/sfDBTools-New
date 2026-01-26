@@ -2,7 +2,7 @@
 // Deskripsi : Parsing functions untuk restore options
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 6 Januari 2026
+// Last Modified : 26 Januari 2026
 
 package parsing
 
@@ -85,7 +85,7 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (restoremodel.RestorePrima
 		return restoremodel.RestorePrimaryOptions{}, err
 	}
 
-	// Safety flags (force handled khusus di bawah)
+	// Safety flags
 	PopulateRestoreSafetyFlags(cmd, &opts.DropTarget, &opts.SkipBackup, &opts.DryRun, &opts.Force)
 	PopulateStopOnErrorFromContinueFlag(cmd, &opts.StopOnError)
 
@@ -127,11 +127,6 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (restoremodel.RestorePrima
 	// Grants
 	PopulateRestoreGrantsFlags(cmd, &opts.GrantsFile, &opts.SkipGrants)
 
-	// Force mode special: jika force, maka skip konfirmasi.
-	if opts.Force {
-		opts.ConfirmIfNotExists = false
-	}
-
 	// Include dmart
 	if cmd.Flags().Changed("dmart-include") {
 		opts.IncludeDmart = resolver.GetBoolFlagOrEnv(cmd, "dmart-include", "")
@@ -146,9 +141,9 @@ func ParsingRestorePrimaryOptions(cmd *cobra.Command) (restoremodel.RestorePrima
 		opts.AutoDetectDmart = resolver.GetBoolFlagOrEnv(cmd, "auto-detect-dmart", "")
 	}
 
-	// Confirm if not exists
-	if cmd.Flags().Changed("skip-confirm") {
-		opts.ConfirmIfNotExists = !resolver.GetBoolFlagOrEnv(cmd, "skip-confirm", "")
+	// Confirm if not exists (khusus create database)
+	if cmd.Flags().Changed("no-confirm-create") {
+		opts.ConfirmIfNotExists = !resolver.GetBoolFlagOrEnv(cmd, "no-confirm-create", "")
 	}
 
 	// Backup options untuk pre-restore backup

@@ -2,7 +2,7 @@
 // Deskripsi : Helper untuk penentuan instance pada restore secondary
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 14 Januari 2026
+// Last Modified : 26 Januari 2026
 package restore
 
 import (
@@ -22,7 +22,7 @@ func (s *Service) resolveSecondaryInstance(ctx context.Context, opts *restoremod
 	}
 
 	if !allowInteractive {
-		return fmt.Errorf("instance wajib diisi (--instance) pada mode non-interaktif (--force)")
+		return fmt.Errorf("instance wajib diisi (--instance) pada mode non-interaktif (--skip-confirm/--quiet)")
 	}
 
 	instances, err := s.fetchExistingSecondaryInstances(ctx, primaryDB)
