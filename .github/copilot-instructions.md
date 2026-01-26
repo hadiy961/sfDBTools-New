@@ -16,7 +16,7 @@ sfdbtools adalah CLI Go untuk operasi MySQL/MariaDB (backup/restore/db-scan/clea
 - `pkg/`: library reusable (compress/encrypt/consts/helper/runtimecfg/validation/dll).
 
 ## Konfigurasi (zero-config first run)
-- Loader: [internal/services/config/appconfig_loaders.go](../internal/services/config/appconfig_loaders.go) membaca `SFDB_APPS_CONFIG`; jika kosong pakai default `/etc/sfDBTools/config.yaml` (lihat [pkg/consts/consts_paths.go](../pkg/consts/consts_paths.go)).
+- Loader: [internal/services/config/appconfig_loaders.go](../internal/services/config/appconfig_loaders.go) membaca `SFDB_APPS_CONFIG`; jika kosong pakai default `/etc/sfDBTools/config.yaml`.
 - Jika config belum ada, tool akan auto-generate default; kalau tidak bisa menulis ke `/etc/...` (non-root), fallback ke `XDG_CONFIG_HOME/sfdbtools/config.yaml` atau `~/.config/sfdbtools/config.yaml` (lihat [internal/services/config/appconfig_defaults.go](../internal/services/config/appconfig_defaults.go)).
 
 ## Pola penting (jangan ubah arah)
@@ -26,7 +26,6 @@ sfdbtools adalah CLI Go untuk operasi MySQL/MariaDB (backup/restore/db-scan/clea
 
 ## Output bersih & logging aman
 - `completion`, `version`, `update` harus bisa jalan tanpa config dan tanpa noise (lihat [main.go](../main.go) dan [cmd/root.go](../cmd/root.go)).
-- Jika menambah flag/arg sensitif baru, pastikan term-nya ikut ter-mask di [cmd/args_sanitize.go](../cmd/args_sanitize.go) (pattern `password|token|secret|key` dll).
 
 ## Workflow developer (yang dipakai repo ini)
 - Unit test: `go test ./...`
@@ -34,7 +33,7 @@ sfdbtools adalah CLI Go untuk operasi MySQL/MariaDB (backup/restore/db-scan/clea
 - Installer/uninstaller ada di folder `scripts/` (lihat [README.md](../README.md), [scripts/install.sh](../scripts/install.sh), [scripts/uninstall.sh](../scripts/uninstall.sh)).
 
 ## Env var penting
-- Source of truth: [pkg/consts/consts_env.go](../pkg/consts/consts_env.go)
+- Source of truth: [shared/consts/consts_env.go]
 - Umum: `SFDB_APPS_CONFIG`, `SFDB_QUIET`, `SFDB_NO_AUTO_UPDATE`, `SFDB_BACKUP_ENCRYPTION_KEY`.
 
 ## Konvensi repo

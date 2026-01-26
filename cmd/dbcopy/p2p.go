@@ -7,6 +7,8 @@ package dbcopycmd
 
 import (
 	"sfdbtools/internal/app/dbcopy"
+	"sfdbtools/internal/app/dbcopy/helpers"
+	"sfdbtools/internal/app/dbcopy/modes"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/runner"
 
@@ -26,7 +28,37 @@ Override eksplisit:
   --source-db / --target-db`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
-			return dbcopy.ExecuteCopyP2P(cmd, appdeps.Deps)
+			if appdeps.Deps == nil || appdeps.Deps.Logger == nil || appdeps.Deps.Config == nil {
+				return runner.ErrDependencyNotAvailable
+			}
+
+			// Parse flags
+			opts, err := helpers.ParseP2PFlags(cmd)
+			if err != nil {
+				return err
+			}
+
+			// Validate options
+			if err := helpers.ValidateP2POptions(opts); err != nil {
+				return err
+			}
+
+			// Execute via mode executor
+			svc := dbcopy.NewService(appdeps.Deps.Logger, appdeps.Deps.Config)
+			exec := modes.NewP2PExecutor(appdeps.Deps.Logger, svc, opts)
+
+			ctx, cancel := svc.SetupContext()
+			defer cancel()
+
+			result, err := exec.Execute(ctx)
+			if err != nil {
+				return err
+			}
+
+			if result.Success {
+				appdeps.Deps.Logger.Infof("✓ %s", result.Message)
+			}
+			return nil
 		})
 	},
 }
