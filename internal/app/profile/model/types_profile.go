@@ -77,6 +77,30 @@ func (o *ProfileCloneOptions) Mode() string { return consts.ProfileModeClone }
 
 func (o *ProfileCloneOptions) IsInteractive() bool { return o != nil && o.Interactive }
 
+// ProfileImportOptions - Options for importing profiles (bulk) dari XLSX atau Google Spreadsheet.
+// Catatan: 1 row = 1 profile = 1 encryption key.
+type ProfileImportOptions struct {
+	Input           string // Path file XLSX lokal (mutually exclusive dengan GSheetURL)
+	Sheet           string // Nama sheet di XLSX (opsional; default sheet pertama)
+	GSheetURL       string // Google Spreadsheet URL (edit/share)
+	GID             int    // Sheet/tab gid untuk export CSV (Google)
+	OnConflict      string // fail|skip|overwrite|rename
+	SkipConfirm     bool   // Jika true: tidak ada prompt (wajib untuk automation)
+	SkipInvalidRows bool   // Jika true: row invalid di-skip (default false)
+	ContinueOnError bool   // Jika true: error saat conn-test/save tidak menghentikan proses
+	SkipConnTest    bool   // Jika true: skip connection test (default false)
+
+	// ConnTestDone ditetapkan saat runtime setelah tahap conn-test selesai,
+	// agar SaveProfile tidak melakukan conn-test dua kali.
+	ConnTestDone bool
+
+	Interactive bool
+}
+
+func (o *ProfileImportOptions) Mode() string { return consts.ProfileModeImport }
+
+func (o *ProfileImportOptions) IsInteractive() bool { return o != nil && o.Interactive }
+
 // ProfileEntryConfig menyimpan konfigurasi untuk entry point profile operations
 type ProfileEntryConfig struct {
 	HeaderTitle string // UI header title
@@ -170,6 +194,11 @@ func (s *ProfileState) DeleteOptions() (*ProfileDeleteOptions, bool) {
 
 func (s *ProfileState) CloneOptions() (*ProfileCloneOptions, bool) {
 	o, ok := s.Options.(*ProfileCloneOptions)
+	return o, ok
+}
+
+func (s *ProfileState) ImportOptions() (*ProfileImportOptions, bool) {
+	o, ok := s.Options.(*ProfileImportOptions)
 	return o, ok
 }
 

@@ -323,6 +323,41 @@ sfdbtools profile clone --quiet \
   --name "prod-db-replica" \
   --host "10.0.0.6" \
   --profile-key "my-secret-key"
+
+#### Import Profile (Bulk)
+
+Import banyak profile sekaligus dari XLSX lokal atau Google Spreadsheet.
+
+Kolom minimal (wajib):
+- `name`, `host`, `user`, `password`, `profile_key`
+
+Kolom opsional:
+- `port` (default 3306)
+- `ssh_enabled` (true/false)
+- `ssh_host`, `ssh_port` (default 22), `ssh_user`, `ssh_password`, `ssh_identity_file`, `ssh_local_port`
+
+Contoh import dari XLSX lokal:
+
+```bash
+sfdbtools profile import --input ./profiles.xlsx --sheet Profiles
+```
+
+Contoh import dari Google Spreadsheet (public via link):
+
+```bash
+sfdbtools profile import \
+  --gsheet "https://docs.google.com/spreadsheets/d/<id>/edit?usp=sharing" \
+  --gid 0
+```
+
+Contoh automation (tanpa prompt):
+
+```bash
+sfdbtools profile import --quiet --skip-confirm \
+  --input ./profiles.xlsx \
+  --on-conflict=rename \
+  --continue-on-error
+```
 ```
 
 ### 7) Crypto Utilities
@@ -405,7 +440,7 @@ sfdbtools db-backup single \
 - `sfdbtools db-backup`: backup database (subcommand: `all`, `filter`, `single`, `primary`, `secondary`)
 - `sfdbtools db-restore`: restore database (subcommand: `single`, `primary`, `secondary`, `all`, `selection`, `custom`)
 - `sfdbtools db-scan`: scan metadata database (subcommand: `all`, `all-local`, `filter`)
-- `sfdbtools profile`: create/show/edit/delete profile koneksi
+- `sfdbtools profile`: create/show/edit/delete/clone/import profile koneksi
 - `sfdbtools cleanup`: housekeeping file backup
 - `sfdbtools crypto`: encrypt/decrypt file/text + base64 utils
 - `sfdbtools script`: encrypt/extract/info/run bundle script

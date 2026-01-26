@@ -2,7 +2,7 @@
 // Deskripsi : Service methods for wizard/executor integration (P2 refactored)
 // Author : Hadiyatna Muflihun
 // Tanggal : 14 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 25 Januari 2026
 
 package profile
 
@@ -43,4 +43,11 @@ func (s *Service) CloneProfile() error {
 	ops := newExecutorOps(s.Config, s.Log, s.State)
 	e := executor.New(s.Log, s.Config, ops.configDir(), s.State, ops)
 	return e.CloneProfile()
+}
+
+// ImportProfiles melakukan import bulk profile dari XLSX lokal atau Google Spreadsheet.
+func (s *Service) ImportProfiles() error {
+	ops := newExecutorOps(s.Config, s.Log, s.State)
+	e := executor.New(s.Log, s.Config, ops.configDir(), s.State, ops)
+	return e.ImportProfiles()
 }

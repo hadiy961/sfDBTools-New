@@ -114,8 +114,7 @@ func GenerateBackupDirectory(baseDir string, structurePattern string, hostname s
 	return fullPath, nil
 }
 
-// Note: filenamePattern parameter diabaikan karena menggunakan fixed pattern.
-func GenerateFullBackupPath(baseDir string, structurePattern string, filenamePattern string, database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, excludeData bool) (string, error) {
+func GenerateFullBackupPath(baseDir string, structurePattern string, database string, mode string, hostname string, compressionType compress.CompressionType, encrypted bool, excludeData bool) (string, error) {
 	dir, err := GenerateBackupDirectory(baseDir, structurePattern, hostname)
 	if err != nil {
 		return "", err

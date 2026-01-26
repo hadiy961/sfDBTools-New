@@ -2,7 +2,7 @@
 // Deskripsi : Simpan profile ke file (terenkripsi)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 15 Januari 2026
+// Last Modified : 25 Januari 2026
 
 package executor
 
@@ -25,8 +25,15 @@ import (
 
 func (e *Executor) SaveProfile(mode string) error {
 	isInteractive := e.isInteractiveMode()
-	if !isInteractive {
-		e.Log.Info(consts.ProfileLogStartSave)
+
+	skipConnTest := false
+	if e.State != nil {
+		if importOpts, ok := e.State.ImportOptions(); ok && importOpts != nil {
+			// Import melakukan conn-test di tahap validasi (default ON) dan butuh opsi skip untuk automation.
+			if importOpts.SkipConnTest || importOpts.ConnTestDone {
+				skipConnTest = true
+			}
+		}
 	}
 
 	var baseDir string
@@ -43,32 +50,34 @@ func (e *Executor) SaveProfile(mode string) error {
 			return fmt.Errorf(consts.ProfileErrCreateConfigDirFailedFmt, err)
 		}
 	}
-	e.Log.Info("Menghubungkan ke database target, sebelum menyimpan profile...")
+	if !skipConnTest {
+		e.Log.Info("Menghubungkan ke database target, sebelum menyimpan profile...")
 
-	if c, err := profileconn.ConnectWithProfile(e.Config, e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
-		if !isInteractive {
-			return err
-		}
-		info := profileconn.DescribeConnectError(e.Config, err)
-		e.Log.Warn(info.Title)
-		if strings.TrimSpace(info.Detail) != "" {
-			e.Log.Warn("Detail (ringkas): " + info.Detail)
-		}
-		for _, h := range info.Hints {
-			e.Log.Info("Hint: " + h)
-		}
-		continueAnyway, askErr := prompt.Confirm(consts.ProfileSavePromptContinueDespiteDBFail, false)
-		if askErr != nil {
-			return validation.HandleInputError(askErr)
-		}
-		if !continueAnyway {
-			return validation.ErrConnectionFailedRetry
-		}
-		e.Log.Warn(consts.ProfileSaveWarnSavingWithInvalidConn)
-	} else {
-		c.Close()
-		if !isInteractive {
-			e.Log.Info(consts.ProfileLogDBConnectionValid)
+		if c, err := profileconn.ConnectWithProfile(e.Config, e.State.ProfileInfo, consts.DefaultInitialDatabase); err != nil {
+			if !isInteractive {
+				return err
+			}
+			info := profileconn.DescribeConnectError(e.Config, err)
+			e.Log.Warn(info.Title)
+			if strings.TrimSpace(info.Detail) != "" {
+				e.Log.Warn("Detail (ringkas): " + info.Detail)
+			}
+			for _, h := range info.Hints {
+				e.Log.Info("Hint: " + h)
+			}
+			continueAnyway, askErr := prompt.Confirm(consts.ProfileSavePromptContinueDespiteDBFail, false)
+			if askErr != nil {
+				return validation.HandleInputError(askErr)
+			}
+			if !continueAnyway {
+				return validation.ErrConnectionFailedRetry
+			}
+			e.Log.Warn(consts.ProfileSaveWarnSavingWithInvalidConn)
+		} else {
+			c.Close()
+			if !isInteractive {
+				e.Log.Info(consts.ProfileLogDBConnectionValid)
+			}
 		}
 	}
 
@@ -141,7 +150,6 @@ func (e *Executor) SaveProfile(mode string) error {
 		return fmt.Errorf(consts.ProfileErrWriteConfigFailedFmt, err)
 	}
 
-	e.Log.Info(fmt.Sprintf(consts.ProfileSuccessSavedSafelyFmt, newFileName))
 	e.Log.Info(consts.ProfileMsgConfigSavedAtPrefix + newFilePath)
 	return nil
 }
