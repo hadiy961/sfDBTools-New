@@ -120,6 +120,7 @@ func (e *Engine) ExecuteAndBuildBackup(
 		dbList,
 		cfg.DBName,
 		cfg.TotalDBFound,
+		e.Options.SkipTablesData,
 	)
 
 	if e.Options.DryRun {

@@ -2,7 +2,7 @@
 // Deskripsi : Options dan config structs untuk backup
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-26
 
 package types_backup
 
@@ -42,6 +42,7 @@ type BackupDBOptions struct {
 	ClientCode      string          // Client code untuk filter database (primary/secondary)
 	Instance        string          // Instance name untuk filter secondary database
 	Ticket          string          // Ticket number untuk request backup (wajib)
+	SkipTablesData  []string        // Daftar table yang akan di-skip data-nya (hanya backup struktur)
 }
 
 // BackupEntryConfig untuk konfigurasi backup entry point

@@ -2,7 +2,7 @@
 // Deskripsi : Mysqldump arguments builder dan password masking
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
-// Last Modified : 2026-01-05
+// Last Modified : 2026-01-26
 
 package execution
 
@@ -22,6 +22,7 @@ func BuildMysqldumpArgs(
 	dbFiltered []string,
 	singleDB string,
 	totalDBFound int,
+	skipTablesData []string,
 ) []string {
 	var args []string
 
@@ -47,6 +48,28 @@ func BuildMysqldumpArgs(
 	// Data filter
 	if filter.ExcludeData {
 		args = append(args, "--no-data")
+	}
+
+	// Skip specific tables data (hanya backup struktur untuk table tertentu)
+	// Untuk mode primary/secondary: tsflpageview, tsfltokensess, tcllusersession
+	if len(skipTablesData) > 0 {
+		// Tentukan database yang akan digunakan untuk --ignore-table-data
+		var targetDB string
+		if singleDB != "" {
+			targetDB = singleDB
+		} else if len(dbFiltered) == 1 {
+			targetDB = dbFiltered[0]
+		}
+
+		// Hanya tambahkan --ignore-table-data jika kita backup single database
+		// Untuk multi-database backup, skip fitur ini karena table name bisa konflik
+		if targetDB != "" {
+			for _, table := range skipTablesData {
+				if table != "" {
+					args = append(args, "--ignore-table-data="+targetDB+"."+table)
+				}
+			}
+		}
 	}
 
 	// CASE 1: Single database eksplisit
