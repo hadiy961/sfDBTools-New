@@ -2,7 +2,7 @@
 // Deskripsi : Setup untuk restore primary database mode
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 14 Januari 2026
+// Last Modified : 26 Januari 2026
 package restore
 
 import (
@@ -11,6 +11,7 @@ import (
 	"sfdbtools/internal/app/restore/helpers"
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/shared/naming"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 )
@@ -21,7 +22,8 @@ func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 	if s.RestorePrimaryOpts == nil {
 		return fmt.Errorf("opsi primary tidak tersedia")
 	}
-	allowInteractive := !s.RestorePrimaryOpts.Force
+	nonInteractive := s.RestorePrimaryOpts.Force || runtimecfg.IsQuiet()
+	allowInteractive := !nonInteractive
 
 	// Steps 1-4: File, encryption, profile, dan koneksi
 	if err := s.setupBasicRequirements(ctx, &basicSetupOptions{
@@ -35,6 +37,11 @@ func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 
 	// Step 5: Resolve dan validasi target database primary
 	if err := s.resolveAndValidatePrimaryDB(ctx); err != nil {
+		return err
+	}
+
+	// Step 5b: Safety - konfirmasi create database jika belum ada
+	if err := s.confirmCreatePrimaryIfNotExists(ctx, allowInteractive); err != nil {
 		return err
 	}
 
@@ -55,6 +62,41 @@ func (s *Service) SetupRestorePrimarySession(ctx context.Context) error {
 
 	// Step 10-12: Backup options, password, confirmation
 	return s.finalizePrimarySetup(allowInteractive)
+}
+
+func (s *Service) confirmCreatePrimaryIfNotExists(ctx context.Context, allowInteractive bool) error {
+	opts := s.RestorePrimaryOpts
+	if opts == nil {
+		return nil
+	}
+	// Jika fitur konfirmasi create dimatikan, skip.
+	if !opts.ConfirmIfNotExists {
+		return nil
+	}
+	if opts.TargetDB == "" {
+		return nil
+	}
+	exists, err := s.TargetClient.CheckDatabaseExists(ctx, opts.TargetDB)
+	if err != nil {
+		return fmt.Errorf("gagal mengecek database target: %w", err)
+	}
+	if exists {
+		return nil
+	}
+
+	// Non-interaktif: jangan prompt.
+	if !allowInteractive {
+		return fmt.Errorf("database target belum ada: %s; untuk melanjutkan pada mode non-interaktif, gunakan --no-confirm-create", opts.TargetDB)
+	}
+
+	ok, err := prompt.Confirm(fmt.Sprintf("Database %s belum ada. Buat database ini?", opts.TargetDB), true)
+	if err != nil {
+		return fmt.Errorf("gagal mendapatkan konfirmasi create database: %w", err)
+	}
+	if !ok {
+		return fmt.Errorf("restore dibatalkan oleh user (database belum ada)")
+	}
+	return nil
 }
 
 // finalizePrimarySetup menyelesaikan setup dengan backup options, password, dan confirmation
@@ -127,7 +169,8 @@ func (s *Service) resolveAndValidatePrimaryDB(ctx context.Context) error {
 	}
 
 	if err := helpers.ValidatePrimaryDatabaseName(s.RestorePrimaryOpts.TargetDB); err != nil {
-		if s.RestorePrimaryOpts.Force {
+		nonInteractive := s.RestorePrimaryOpts.Force || runtimecfg.IsQuiet()
+		if nonInteractive {
 			return err
 		}
 		return s.retryPrimaryDatabaseInput(err)
@@ -170,7 +213,7 @@ func (s *Service) retryPrimaryDatabaseInput(initialErr error) error {
 
 // displayPrimaryConfirmation menampilkan konfirmasi untuk restore primary
 func (s *Service) displayPrimaryConfirmation() error {
-	if s.RestorePrimaryOpts.Force {
+	if s.RestorePrimaryOpts.Force || runtimecfg.IsQuiet() {
 		return nil
 	}
 
@@ -195,8 +238,8 @@ func (s *Service) resolveTargetDatabasePrimary(_ context.Context) error {
 		return nil
 	}
 
-	if s.RestorePrimaryOpts.Force {
-		return fmt.Errorf("client-code wajib diisi (--client-code) pada mode non-interaktif (--force)")
+	if s.RestorePrimaryOpts.Force || runtimecfg.IsQuiet() {
+		return fmt.Errorf("client-code wajib diisi (--client-code) pada mode non-interaktif (--skip-confirm/--quiet)")
 	}
 
 	defaultClientCode := extractDefaultClientCodeFromFile(s.RestorePrimaryOpts.File)

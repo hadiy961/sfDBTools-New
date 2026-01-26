@@ -2,7 +2,7 @@
 // Deskripsi : Setup untuk restore single database mode
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 26 Januari 2026
 package restore
 
 import (
@@ -15,6 +15,7 @@ import (
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/app/restore/helpers"
 	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/internal/ui/table"
@@ -27,7 +28,8 @@ func (s *Service) SetupRestoreSession(ctx context.Context) error {
 		return fmt.Errorf("opsi single tidak tersedia")
 	}
 
-	allowInteractive := !s.RestoreOpts.Force
+	nonInteractive := s.RestoreOpts.Force || runtimecfg.IsQuiet()
+	allowInteractive := !nonInteractive
 
 	if err := s.prepareRestoreSinglePrereqs(ctx, allowInteractive); err != nil {
 		return err
@@ -35,7 +37,7 @@ func (s *Service) SetupRestoreSession(ctx context.Context) error {
 
 	s.warnRestoreSingle()
 
-	if s.RestoreOpts.Force {
+	if s.RestoreOpts.Force || runtimecfg.IsQuiet() {
 		return nil
 	}
 
@@ -107,7 +109,7 @@ func (s *Service) promptSkipGrantsSingle(allowInteractive bool) error {
 }
 
 func (s *Service) warnRestoreSingle() {
-	if s.RestoreOpts.Force || s.RestoreOpts.DryRun {
+	if s.RestoreOpts.Force || runtimecfg.IsQuiet() || s.RestoreOpts.DryRun {
 		return
 	}
 
@@ -178,8 +180,8 @@ func (s *Service) resolveTargetDatabaseSingle(ctx context.Context) error {
 		return nil
 	}
 
-	if s.RestoreOpts.Force {
-		return fmt.Errorf("target database wajib diisi (--target-db) pada mode non-interaktif (--force)")
+	if s.RestoreOpts.Force || runtimecfg.IsQuiet() {
+		return fmt.Errorf("target database wajib diisi (--target-db) pada mode non-interaktif (--skip-confirm/--quiet)")
 	}
 
 	// Get list of databases

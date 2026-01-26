@@ -2,7 +2,7 @@
 // Deskripsi : Setup untuk restore selection (CSV) mode
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 26 Januari 2026
 package restore
 
 import (
@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sfdbtools/internal/app/restore/display"
 	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 )
 
@@ -20,9 +21,10 @@ func (s *Service) SetupRestoreSelectionSession(ctx context.Context) error {
 	if s.RestoreSelOpts == nil {
 		return fmt.Errorf("opsi selection tidak tersedia")
 	}
-	allowInteractive := !s.RestoreSelOpts.Force
+	nonInteractive := s.RestoreSelOpts.Force || runtimecfg.IsQuiet()
+	allowInteractive := !nonInteractive
 
-	// 1. Resolve CSV path (interaktif jika kosong, kecuali --force)
+	// 1. Resolve CSV path (interaktif jika kosong, kecuali mode non-interaktif --skip-confirm/--quiet)
 	if err := s.resolveSelectionCSV(&s.RestoreSelOpts.CSV, allowInteractive); err != nil {
 		return err
 	}
@@ -70,7 +72,7 @@ func (s *Service) SetupRestoreSelectionSession(ctx context.Context) error {
 		confirmOpts["Backup Directory"] = s.RestoreSelOpts.BackupOptions.OutputDir
 	}
 
-	if !s.RestoreSelOpts.Force {
+	if !s.RestoreSelOpts.Force && !runtimecfg.IsQuiet() {
 		if err := display.DisplayConfirmation(confirmOpts); err != nil {
 			return err
 		}

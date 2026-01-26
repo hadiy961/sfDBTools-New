@@ -2,7 +2,7 @@
 // Deskripsi : Helper functions untuk companion database detection
 // Author : Hadiyatna Muflihun
 // Tanggal : 19 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 26 Januari 2026
 
 package restore
 
@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 	"strings"
 )
@@ -34,8 +35,9 @@ func (s *Service) DetectOrSelectCompanionFile() error {
 	// - StopOnError=true  => return error
 	// - StopOnError=false => skip companion restore (IncludeDmart=false) dan lanjut
 	opts := s.RestorePrimaryOpts
-	if opts.Force && !opts.AutoDetectDmart {
-		err := fmt.Errorf("auto-detect dmart dimatikan (dmart-detect=false) dan mode non-interaktif (--force) aktif; tentukan dmart via --dmart-file atau set --dmart-include=false")
+	nonInteractive := opts.Force || runtimecfg.IsQuiet()
+	if nonInteractive && !opts.AutoDetectDmart {
+		err := fmt.Errorf("auto-detect dmart dimatikan (dmart-detect=false) dan mode non-interaktif (--skip-confirm/--quiet) aktif; tentukan dmart via --dmart-file atau set --dmart-include=false")
 		return s.stopOrSkipCompanionNonInteractive(
 			err,
 			"Auto-detect companion dimatikan dan mode non-interaktif aktif; skip restore companion database",
@@ -57,8 +59,8 @@ func (s *Service) DetectOrSelectCompanionFile() error {
 
 	// Not found, ask user
 	print.PrintWarning("⚠️  Companion file tidak ditemukan secara otomatis")
-	if opts.Force {
-		err := fmt.Errorf("dmart file (_dmart) tidak ditemukan secara otomatis dan mode non-interaktif (--force) aktif; gunakan --dmart-file untuk set file dmart, atau set --dmart-include=false, atau gunakan --continue-on-error untuk skip dmart")
+	if nonInteractive {
+		err := fmt.Errorf("dmart file (_dmart) tidak ditemukan secara otomatis dan mode non-interaktif (--skip-confirm/--quiet) aktif; gunakan --dmart-file untuk set file dmart, atau set --dmart-include=false, atau gunakan --continue-on-error untuk skip dmart")
 		return s.stopOrSkipCompanionNonInteractive(
 			err,
 			"Companion file tidak ditemukan; skip restore companion database karena continue-on-error",
@@ -80,7 +82,8 @@ func (s *Service) useCompanionFileFromFlagOrDecide() (bool, error) {
 	if err != nil {
 		s.Log.Warnf("Companion file dari flag tidak ditemukan: %s", flagPath)
 		print.PrintWarning(fmt.Sprintf("⚠️  Companion file tidak ditemukan: %s", flagPath))
-		if opts.Force {
+		nonInteractive := opts.Force || runtimecfg.IsQuiet()
+		if nonInteractive {
 			return true, s.stopOrSkipCompanionNonInteractive(
 				fmt.Errorf("companion file (_dmart) tidak ditemukan: %s", flagPath),
 				"Companion file tidak ditemukan; skip restore companion database karena continue-on-error",
@@ -94,7 +97,8 @@ func (s *Service) useCompanionFileFromFlagOrDecide() (bool, error) {
 	if fi.IsDir() {
 		s.Log.Warnf("Companion file dari flag adalah direktori (tidak valid): %s", flagPath)
 		print.PrintWarning(fmt.Sprintf("⚠️  Companion file tidak valid (path adalah direktori): %s", flagPath))
-		if opts.Force {
+		nonInteractive := opts.Force || runtimecfg.IsQuiet()
+		if nonInteractive {
 			return true, s.stopOrSkipCompanionNonInteractive(
 				fmt.Errorf("companion file (_dmart) tidak valid (path adalah direktori): %s", flagPath),
 				"Companion file tidak valid; skip restore companion database karena continue-on-error",
@@ -109,7 +113,8 @@ func (s *Service) useCompanionFileFromFlagOrDecide() (bool, error) {
 	if !isValidBackupFileExtension(flagPath, validExtensions) {
 		s.Log.Warnf("Companion file dari flag tidak valid (ekstensi): %s", flagPath)
 		print.PrintWarning(fmt.Sprintf("⚠️  Companion file tidak valid (ekstensi tidak didukung): %s", flagPath))
-		if opts.Force {
+		nonInteractive := opts.Force || runtimecfg.IsQuiet()
+		if nonInteractive {
 			return true, s.stopOrSkipCompanionNonInteractive(
 				fmt.Errorf("companion file (_dmart) tidak valid (ekstensi tidak didukung): %s", flagPath),
 				"Companion file tidak valid; skip restore companion database karena continue-on-error",
@@ -136,7 +141,8 @@ func isValidBackupFileExtension(path string, validExtensions []string) bool {
 
 func (s *Service) stopOrSkipCompanionNonInteractive(err error, warnLog string, warnUI string) error {
 	opts := s.RestorePrimaryOpts
-	if !opts.Force {
+	nonInteractive := opts.Force || runtimecfg.IsQuiet()
+	if !nonInteractive {
 		return err
 	}
 	if opts.StopOnError {

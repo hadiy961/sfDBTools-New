@@ -2,7 +2,7 @@
 // Deskripsi : Validation functions untuk setup restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 14 Januari 2026
+// Last Modified : 26 Januari 2026
 package restore
 
 import (
@@ -40,7 +40,7 @@ func (s *Service) validateAndRetryEncryptionKey(filePath string, encryptionKey *
 	for {
 		if strings.TrimSpace(*encryptionKey) == "" {
 			if !allowInteractive {
-				return fmt.Errorf("file backup terenkripsi; encryption key wajib diisi (--enc-key atau env) pada mode non-interaktif (--force)")
+				return fmt.Errorf("file backup terenkripsi; encryption key wajib diisi (--enc-key atau env) pada mode non-interaktif (--skip-confirm/--quiet)")
 			}
 			key, err := prompt.PromptPassword("Masukkan encryption key untuk decrypt file backup")
 			if err != nil {

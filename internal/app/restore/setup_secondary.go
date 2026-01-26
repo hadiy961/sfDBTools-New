@@ -2,7 +2,7 @@
 // Deskripsi : Setup untuk restore secondary database mode (main setup flow only)
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 14 Januari 2026
+// Last Modified : 26 Januari 2026
 package restore
 
 import (
@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/shared/naming"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 	"strings"
 )
@@ -21,7 +22,8 @@ func (s *Service) SetupRestoreSecondarySession(ctx context.Context) error {
 	if s.RestoreSecondaryOpts == nil {
 		return fmt.Errorf("opsi secondary tidak tersedia")
 	}
-	allowInteractive := !s.RestoreSecondaryOpts.Force
+	nonInteractive := s.RestoreSecondaryOpts.Force || runtimecfg.IsQuiet()
+	allowInteractive := !nonInteractive
 
 	// Step 1-5: Resolve dari source, file (jika dari file), profile, connection, client code, encryption
 	if err := s.setupSecondaryBasics(ctx, allowInteractive); err != nil {
@@ -140,7 +142,7 @@ func (s *Service) finalizeSecondarySetup(_ context.Context, allowInteractive boo
 
 // displaySecondaryConfirmation menampilkan konfirmasi untuk restore secondary
 func (s *Service) displaySecondaryConfirmation() error {
-	if s.RestoreSecondaryOpts.Force {
+	if s.RestoreSecondaryOpts.Force || runtimecfg.IsQuiet() {
 		return nil
 	}
 
