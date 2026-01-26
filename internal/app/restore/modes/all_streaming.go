@@ -2,7 +2,7 @@
 // Deskripsi : Streaming restore execution untuk AllExecutor
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 26 Januari 2026
 package modes
 
 import (
@@ -17,6 +17,23 @@ import (
 	"strings"
 	"time"
 )
+
+func isSSLMismatchServerNotSupport(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "tls/ssl error") && strings.Contains(msg, "server does not support")
+}
+
+func hasSkipSSLArg(args []string) bool {
+	for _, a := range args {
+		if strings.TrimSpace(strings.ToLower(a)) == "--skip-ssl" {
+			return true
+		}
+	}
+	return false
+}
 
 // executeStreamingRestore melakukan restore dengan streaming processing
 func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *restoremodel.RestoreAllOptions) error {
@@ -98,65 +115,97 @@ func (e *AllExecutor) handlePreRestoreOperations(ctx context.Context, opts *rest
 // performStreamingRestore executes the actual streaming restore
 func (e *AllExecutor) performStreamingRestore(ctx context.Context, opts *restoremodel.RestoreAllOptions) error {
 	logger := e.service.GetLogger()
-	restoreStart := time.Now()
-	spin := progress.NewSpinnerWithElapsed("Memulai proses restore...")
-	spin.Start()
 
-	// Buat pipe reader untuk streaming processing
-	pipeReader, pipeWriter := io.Pipe()
-
-	// Channel untuk menerima stats dan progress updates
-	statsCh := make(chan *restoreStats, 1)
-	progressCh := make(chan string, 100)
-	errCh := make(chan error, 1)
-	progressDone := make(chan bool)
-
-	// Process file dalam goroutine terpisah
-	go func() {
-		defer pipeWriter.Close()
-		defer close(progressCh)
-		stats, err := e.processStreamWithFiltering(ctx, opts, pipeWriter, progressCh)
-		if err != nil {
-			pipeWriter.CloseWithError(err)
-			errCh <- err
-			return
-		}
-		statsCh <- stats
-		errCh <- nil
-	}()
-
-	// Goroutine untuk update spinner dari progress updates
-	go e.handleProgressUpdates(spin, progressCh, progressDone)
-
-	// Build mysql args
 	profile := e.service.GetProfile()
-	extraArgs := []string{"--force", "--reconnect", "--max_allowed_packet=1073741824"}
-	args := helpers.BuildMySQLArgs(profile, "", extraArgs...)
+	baseExtraArgs := []string{"--force", "--reconnect", "--max_allowed_packet=1073741824"}
 
-	// Execute mysql dengan streaming input
-	if err := helpers.ExecuteMySQLCommand(ctx, args, pipeReader); err != nil {
-		spin.Stop()
-		return fmt.Errorf("gagal restore: %w", err)
+	runOnce := func(withSkipSSL bool) (*restoreStats, time.Duration, error) {
+		restoreStart := time.Now()
+		spin := progress.NewSpinnerWithElapsed("Memulai proses restore...")
+		spin.Start()
+		defer spin.Stop()
+
+		// Buat pipe reader untuk streaming processing
+		pipeReader, pipeWriter := io.Pipe()
+
+		// Channel untuk menerima stats dan progress updates
+		statsCh := make(chan *restoreStats, 1)
+		progressCh := make(chan string, 100)
+		errCh := make(chan error, 1)
+		progressDone := make(chan bool)
+
+		// Process file dalam goroutine terpisah
+		go func() {
+			defer pipeWriter.Close()
+			defer close(progressCh)
+			stats, err := e.processStreamWithFiltering(ctx, opts, pipeWriter, progressCh)
+			if err != nil {
+				pipeWriter.CloseWithError(err)
+				errCh <- err
+				return
+			}
+			statsCh <- stats
+			errCh <- nil
+		}()
+
+		// Goroutine untuk update spinner dari progress updates
+		go e.handleProgressUpdates(spin, progressCh, progressDone)
+
+		extraArgs := append([]string{}, baseExtraArgs...)
+		if withSkipSSL {
+			extraArgs = append([]string{"--skip-ssl"}, extraArgs...)
+		}
+		args := helpers.BuildMySQLArgs(profile, "", extraArgs...)
+
+		err := helpers.ExecuteMySQLCommand(ctx, args, pipeReader)
+		if err != nil {
+			// Hentikan processing goroutine secepat mungkin.
+			_ = pipeReader.CloseWithError(err)
+			_ = <-errCh
+			<-progressDone
+			return nil, time.Since(restoreStart).Round(time.Millisecond), fmt.Errorf("gagal restore: %w", err)
+		}
+
+		// Check processing error
+		if perr := <-errCh; perr != nil {
+			<-progressDone
+			return nil, time.Since(restoreStart).Round(time.Millisecond), fmt.Errorf("error processing file: %w", perr)
+		}
+
+		// Tunggu progress updater selesai
+		<-progressDone
+
+		duration := time.Since(restoreStart).Round(time.Millisecond)
+		var stats *restoreStats
+		select {
+		case stats = <-statsCh:
+		default:
+			stats = nil
+		}
+		return stats, duration, nil
 	}
 
-	// Check processing error
-	if err := <-errCh; err != nil {
-		spin.Stop()
-		return fmt.Errorf("error processing file: %w", err)
+	stats, dur, err := runOnce(false)
+	if err != nil {
+		if isSSLMismatchServerNotSupport(err) {
+			logger.Warn("Restore gagal karena SSL mismatch; mencoba ulang dengan --skip-ssl")
+			stats2, dur2, err2 := runOnce(true)
+			if err2 == nil {
+				logger.Infof("Durasi restore: %s", dur2)
+				if stats2 != nil {
+					print.PrintSuccess(fmt.Sprintf("✓ Total database restored: %d", stats2.RestoredCount))
+				}
+				return nil
+			}
+			return err2
+		}
+		return err
 	}
 
-	// Tunggu progress updater selesai
-	<-progressDone
-
-	// Stop spinner dan print summary
-	spin.Stop()
-	restoreDuration := time.Since(restoreStart).Round(time.Millisecond)
-	logger.Infof("Durasi restore: %s", restoreDuration)
-
-	if stats := <-statsCh; stats != nil {
+	logger.Infof("Durasi restore: %s", dur)
+	if stats != nil {
 		print.PrintSuccess(fmt.Sprintf("✓ Total database restored: %d", stats.RestoredCount))
 	}
-
 	return nil
 }
 

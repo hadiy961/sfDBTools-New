@@ -2,7 +2,7 @@
 // Deskripsi : Fungsi untuk memuat konfigurasi dari file YAML dan variabel lingkungan
 // Author : Hadiyatna Muflihun
 // Tanggal : 3 Oktober 2024
-// Last Modified : 5 Januari 2026
+// Last Modified : 26 Januari 2026
 package appconfig
 
 import (
@@ -21,9 +21,15 @@ import (
 // Ini mengembalikan struct Config yang terisi, atau error jika gagal.
 func LoadConfigFromEnv() (*Config, error) {
 	// 1. Memuat variabel lingkungan dari file .env (best practice)
-	// Kita abaikan error jika file .env tidak ditemukan, ini wajar
-	// di lingkungan produksi di mana variabel env sudah diset.
-	_ = godotenv.Load()
+	// Prioritas:
+	//  - Local (CWD): .env
+	//  - System-wide fallback: /etc/sfDBTools/.env
+	// Catatan: kalau .env lokal ada, kita TIDAK load file /etc (supaya perilaku deterministik).
+	// Kita abaikan error jika file tidak ditemukan, ini wajar di produksi
+	// di mana variabel env sudah diset.
+	if err := godotenv.Load(); err != nil {
+		_ = godotenv.Load(consts.DefaultEnvPath)
+	}
 
 	// 2. Membaca path file konfigurasi dari variabel lingkungan
 	configPath := os.Getenv(consts.ENV_APPS_CONFIG)

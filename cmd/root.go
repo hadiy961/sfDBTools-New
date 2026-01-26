@@ -2,7 +2,7 @@
 // Deskripsi : Root command untuk aplikasi sfdbtools
 // Author : Hadiyatna Muflihun
 // Tanggal : 3 Oktober 2024
-// Last Modified : 23 Januari 2026
+// Last Modified : 26 Januari 2026
 package cmd
 
 import (
@@ -12,6 +12,7 @@ import (
 	backupcmd "sfdbtools/cmd/backup"
 	cleanupcmd "sfdbtools/cmd/cleanup"
 	cryptocmd "sfdbtools/cmd/crypto"
+	dbcopycmd "sfdbtools/cmd/dbcopy"
 	dbscancmd "sfdbtools/cmd/dbscan"
 	profilecmd "sfdbtools/cmd/profile"
 	restorecmd "sfdbtools/cmd/restore"
@@ -118,5 +119,6 @@ func init() {
 	rootCmd.AddCommand(cleanupcmd.CmdCleanupMain)
 	rootCmd.AddCommand(backupcmd.CmdBackupMain)
 	rootCmd.AddCommand(restorecmd.CmdRestore)
+	rootCmd.AddCommand(dbcopycmd.CmdDBCopyMain)
 	rootCmd.AddCommand(completionCmd)
 }
