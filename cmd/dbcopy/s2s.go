@@ -6,6 +6,7 @@
 package dbcopycmd
 
 import (
+	"fmt"
 	"sfdbtools/internal/app/dbcopy"
 	"sfdbtools/internal/app/dbcopy/helpers"
 	"sfdbtools/internal/app/dbcopy/modes"
@@ -29,7 +30,7 @@ Override eksplisit:
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
 			if appdeps.Deps == nil || appdeps.Deps.Logger == nil || appdeps.Deps.Config == nil {
-				return runner.ErrDependencyNotAvailable
+				return fmt.Errorf("dependencies tidak tersedia")
 			}
 
 			// Parse flags

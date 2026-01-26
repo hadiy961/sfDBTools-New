@@ -85,10 +85,16 @@ func (s *Service) ConnectDB(profile *domain.ProfileInfo) (*database.Client, erro
 // Database Discovery & Validation
 // ============================================================================
 
-func (s *Service) ResolvePrimaryDB(ctx context.Context, client *database.Client, clientCode string) (string, error) {
+func (s *Service) ResolvePrimaryDB(ctx context.Context, client interface{}, clientCode string) (string, error) {
+	// Type assert to *database.Client
+	dbClient, ok := client.(*database.Client)
+	if !ok {
+		return "", fmt.Errorf("client type assertion failed: expected *database.Client")
+	}
+
 	cc := strings.TrimSpace(clientCode)
 	ccLower := strings.ToLower(cc)
-	
+
 	// Jika sudah dalam format primary, langsung return
 	if strings.HasPrefix(ccLower, consts.PrimaryPrefixNBC) || strings.HasPrefix(ccLower, consts.PrimaryPrefixBiznet) {
 		return cc, nil
@@ -98,7 +104,7 @@ func (s *Service) ResolvePrimaryDB(ctx context.Context, client *database.Client,
 	nbc := naming.BuildPrimaryDBName(consts.PrimaryPrefixNBC, cc)
 	biz := naming.BuildPrimaryDBName(consts.PrimaryPrefixBiznet, cc)
 
-	nbcExists, err := client.CheckDatabaseExists(ctx, nbc)
+	nbcExists, err := dbClient.CheckDatabaseExists(ctx, nbc)
 	if err != nil {
 		return "", fmt.Errorf("gagal cek database primary (NBC): %w", err)
 	}
@@ -106,7 +112,7 @@ func (s *Service) ResolvePrimaryDB(ctx context.Context, client *database.Client,
 		return nbc, nil
 	}
 
-	bizExists, err := client.CheckDatabaseExists(ctx, biz)
+	bizExists, err := dbClient.CheckDatabaseExists(ctx, biz)
 	if err != nil {
 		return "", fmt.Errorf("gagal cek database primary (Biznet): %w", err)
 	}
@@ -128,7 +134,7 @@ func (s *Service) ValidateNotCopyToSelf(srcProfile, tgtProfile *domain.ProfileIn
 	if srcProfile == nil || tgtProfile == nil {
 		return nil
 	}
-	
+
 	srcDB := strings.TrimSpace(sourceDB)
 	tgtDB := strings.TrimSpace(targetDB)
 	if srcDB == "" || tgtDB == "" {
@@ -144,17 +150,17 @@ func (s *Service) ValidateNotCopyToSelf(srcProfile, tgtProfile *domain.ProfileIn
 	tgtUser := strings.TrimSpace(tgtProfile.DBInfo.User)
 
 	sameEndpoint := srcEff.Port == tgtEff.Port && srcHost == tgtHost && srcUser == tgtUser
-	
+
 	// P2P khusus: harus beda server
 	if strings.EqualFold(mode, "p2p") && sameEndpoint && !strings.EqualFold(srcDB, tgtDB) {
 		return fmt.Errorf("db-copy p2p ditolak: source dan target berada di server yang sama (host=%s port=%d user=%s). Untuk p2p, target harus beda server via --target-profile (atau gunakan p2s/s2s)", srcHost, srcEff.Port, srcUser)
 	}
-	
+
 	// Semua mode: tolak jika endpoint + database sama
 	if sameEndpoint && strings.EqualFold(srcDB, tgtDB) {
 		return fmt.Errorf("db-copy ditolak: source dan target menunjuk database yang sama (host=%s port=%d user=%s db=%s)", srcHost, srcEff.Port, srcUser, srcDB)
 	}
-	
+
 	return nil
 }
 
@@ -169,7 +175,7 @@ func (s *Service) EnsureWorkdir(base string) (workdir string, cleanup func(), er
 		}
 		return base, func() {}, nil
 	}
-	
+
 	wd, err := os.MkdirTemp("", "sfdbtools-db-copy-")
 	if err != nil {
 		return "", nil, err
@@ -206,7 +212,7 @@ func (s *Service) BackupSingleDB(ctx context.Context, profile *domain.ProfileInf
 	if hostname == "" {
 		hostname = profile.DBInfo.Host
 	}
-	
+
 	compressionType := compress.CompressionType("")
 	if opts.Compression.Enabled {
 		compressionType = compress.CompressionType(opts.Compression.Type)
@@ -219,7 +225,7 @@ func (s *Service) BackupSingleDB(ctx context.Context, profile *domain.ProfileInf
 	outputPath := filepath.Join(workdir, filename)
 
 	eng := execution.New(s.log, s.cfg, opts, s.errLog).WithDependencies(client, nil, nil, nil, nil)
-	
+
 	_, err = eng.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
 		DBName:       dbName,
 		OutputPath:   outputPath,
@@ -262,7 +268,7 @@ func (s *Service) RestoreSingle(ctx context.Context, profile *domain.ProfileInfo
 		Force:         nonInteractive,
 		StopOnError:   !continueOnError,
 	}
-	
+
 	svc := restore.NewRestoreService(s.log, s.cfg, opts)
 	if err := svc.SetupRestoreSession(ctx); err != nil {
 		return err
@@ -318,7 +324,7 @@ func (s *Service) RestoreSecondary(ctx context.Context, profile *domain.ProfileI
 		Force:           nonInteractive,
 		StopOnError:     !continueOnError,
 	}
-	
+
 	svc := restore.NewRestoreService(s.log, s.cfg, opts)
 	if err := svc.SetupRestoreSecondarySession(ctx); err != nil {
 		return err
