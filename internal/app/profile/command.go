@@ -2,7 +2,7 @@
 // Deskripsi : Command execution functions untuk cmd layer
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 15 Januari 2026
+// Last Modified : 25 Januari 2026
 package profile
 
 import (
@@ -54,6 +54,12 @@ var profileExecutionConfigs = map[string]profilemodel.ProfileEntryConfig{
 		Mode:        consts.ProfileModeClone,
 		SuccessMsg:  consts.ProfileSuccessCloned,
 		LogPrefix:   consts.ProfileLogPrefixClone,
+	},
+	consts.ProfileModeImport: {
+		HeaderTitle: consts.ProfileUIHeaderImport,
+		Mode:        consts.ProfileModeImport,
+		SuccessMsg:  consts.ProfileSuccessImported,
+		LogPrefix:   consts.ProfileLogPrefixImport,
 	},
 }
 
@@ -192,6 +198,18 @@ func (c *cloneProfileCommand) Execute() error {
 	})
 }
 
+type importProfileCommand struct {
+	cmd    *cobra.Command
+	deps   *appdeps.Dependencies
+	config profilemodel.ProfileEntryConfig
+}
+
+func (c *importProfileCommand) Execute() error {
+	return executeProfileCommon(c.cmd, c.deps, c.config, func() (interface{}, error) {
+		return profileparsing.ParsingImportProfile(c.cmd)
+	})
+}
+
 // NewProfileCommand membuat command executor untuk mode tertentu.
 func NewProfileCommand(mode string, cmd *cobra.Command, deps *appdeps.Dependencies, config profilemodel.ProfileEntryConfig) (ProfileCommand, error) {
 	switch mode {
@@ -205,6 +223,8 @@ func NewProfileCommand(mode string, cmd *cobra.Command, deps *appdeps.Dependenci
 		return &deleteProfileCommand{cmd: cmd, deps: deps, config: config}, nil
 	case consts.ProfileModeClone:
 		return &cloneProfileCommand{cmd: cmd, deps: deps, config: config}, nil
+	case consts.ProfileModeImport:
+		return &importProfileCommand{cmd: cmd, deps: deps, config: config}, nil
 	default:
 		return nil, profileerrors.ErrInvalidProfileMode
 	}

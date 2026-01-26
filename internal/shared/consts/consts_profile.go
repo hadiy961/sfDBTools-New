@@ -4,17 +4,18 @@ package consts
 // Deskripsi : Konstanta yang digunakan oleh fitur profile (prompt, header, dan pesan umum)
 // Author : Hadiyatna Muflihun
 // Tanggal : 4 Januari 2026
-// Last Modified : 21 Januari 2026
+// Last Modified : 25 Januari 2026
 
 // =============================================================================
 // Header + Success message
 // =============================================================================
 
 const (
-	ProfileSuccessCreated = "✓ Profile berhasil dibuat"
-	ProfileSuccessUpdated = "✓ Profile berhasil diupdate"
-	ProfileSuccessDeleted = "✓ Profile berhasil dihapus"
-	ProfileSuccessCloned  = "✓ Profile berhasil di-clone"
+	ProfileSuccessCreated  = "✓ Profile berhasil dibuat"
+	ProfileSuccessUpdated  = "✓ Profile berhasil diupdate"
+	ProfileSuccessDeleted  = "✓ Profile berhasil dihapus"
+	ProfileSuccessCloned   = "✓ Profile berhasil di-clone"
+	ProfileSuccessImported = "✓ Profile berhasil di-import"
 )
 
 // =============================================================================
@@ -31,6 +32,7 @@ const (
 	ProfileModeEdit   = "edit"
 	ProfileModeDelete = "delete"
 	ProfileModeClone  = "clone"
+	ProfileModeImport = "import"
 
 	// UI text / action labels
 	ProfileUIHeaderCreate         = "Pembuatan Profil Baru"
@@ -38,6 +40,7 @@ const (
 	ProfileUIHeaderShow           = "Detail Profil Database"
 	ProfileUIHeaderDelete         = "Penghapusan Profil Database"
 	ProfileUIHeaderClone          = "Clone Profil Database"
+	ProfileUIHeaderImport         = "Import Profil Database"
 	ProfilePromptAction           = "Aksi:"
 	ProfileActionEditData         = "Ubah data"
 	ProfileActionSaveClone        = "Simpan Clone"
@@ -219,6 +222,7 @@ const (
 	ProfileLogPrefixEdit   = "profile-edit"
 	ProfileLogPrefixDelete = "profile-delete"
 	ProfileLogPrefixClone  = "profile-clone"
+	ProfileLogPrefixImport = "profile-import"
 )
 
 // Label field untuk multi-select edit (wizard)

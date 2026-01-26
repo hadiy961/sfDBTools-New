@@ -2,7 +2,7 @@
 // Deskripsi : Service utama implementation untuk profile operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 16 Desember 2025
-// Last Modified : 15 Januari 2026
+// Last Modified : 25 Januari 2026
 package profile
 
 import (
@@ -69,6 +69,11 @@ func NewProfileService(cfg *appconfig.Config, logs applog.Logger, profile interf
 			// For clone, we'll initialize ProfileInfo after loading source
 			svc.State.ProfileInfo = &domain.ProfileInfo{}
 			svc.DBInfo = &svc.State.ProfileInfo.DBInfo
+		case *profilemodel.ProfileImportOptions:
+			svc.State.Options = v
+			// Import akan mengisi ProfileInfo per-row saat eksekusi.
+			svc.State.ProfileInfo = &domain.ProfileInfo{}
+			svc.DBInfo = &svc.State.ProfileInfo.DBInfo
 		default:
 			logs.Warn(consts.ProfileLogUnknownProfileTypeInService)
 			svc.State.Options = nil
@@ -102,6 +107,8 @@ func (s *Service) ExecuteProfileCommand(config profilemodel.ProfileEntryConfig) 
 		return s.PromptDeleteProfile()
 	case consts.ProfileModeClone:
 		return s.CloneProfile()
+	case consts.ProfileModeImport:
+		return s.ImportProfiles()
 	default:
 		return profileerrors.ErrInvalidProfileMode
 	}

@@ -1,5 +1,4 @@
-# Default configuration for sfDBTools (safe defaults, no secrets)
-# Copy to /etc/sfDBTools/config.yaml if you want system-wide config.
+# Default configuration for sfDBTools
 
 backup:
   compression:
@@ -14,10 +13,12 @@ backup:
     empty: false
   include:
     include_dmart: false
+    # uncomment and set databases to include specific DBs
     # databases: 
     #   - dbsf_biznet_dadfs
     #   - dbsf_biznet_jtrust
     #   - dbsf_biznet_mariadb
+    # or use a file to list databases
     # file : config/db_list.txt
   cleanup:
     # Cleanup retention untuk file backup lama.
@@ -31,11 +32,9 @@ backup:
     enabled: true
   output:
     # base_directory: /media/ArchiveDB
-    # Filename pattern menggunakan format fixed:
-    # {database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}
-    # Contoh: mydb_20251110_143025_dbserver1.sql.gz.enc
+    # Nama file backup saat ini menggunakan pattern FIXED internal:
+    # {database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}.sql[.<compression>][.enc]
     base_directory: /media/ArchiveDB
-    filename_pattern: "{database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}"
     file_permissions: "0600" # File permissions untuk backup files (default: 0600 untuk keamanan)
     metadata_permissions: "0600" # File permissions untuk metadata (default: 0600 untuk keamanan)
     structure:

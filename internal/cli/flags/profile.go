@@ -82,3 +82,18 @@ func ProfileClone(cmd *cobra.Command) {
 	cmd.Flags().String("new-profile-key", "", "Kunci enkripsi untuk profil hasil clone (opsional; jika kosong, gunakan profile-key yang sama)")
 	cmd.Flags().StringP("output-dir", "o", defaultOptions.OutputDir, "Direktori output untuk menyimpan profil hasil clone (opsional)")
 }
+
+// ProfileImport - Flag untuk import bulk profiles dari XLSX lokal atau Google Spreadsheet.
+func ProfileImport(cmd *cobra.Command) {
+	cmd.Flags().String("input", "", "Path file XLSX lokal untuk import (mutually exclusive dengan --gsheet)")
+	cmd.Flags().String("sheet", "Profiles", "Nama sheet di XLSX (default: Profiles; kosong = sheet pertama)")
+
+	cmd.Flags().String("gsheet", "", "Google Spreadsheet URL (format edit/share). Akan diambil via export CSV")
+	cmd.Flags().Int("gid", 0, "Google sheet tab gid untuk export CSV (default: 0)")
+
+	cmd.Flags().String("on-conflict", "fail", "Aksi saat file profile sudah ada: fail|skip|overwrite|rename (default: fail)")
+	cmd.Flags().Bool("skip-confirm", false, "Skip semua prompt/konfirmasi (wajib untuk automation)")
+	cmd.Flags().Bool("skip-invalid-rows", false, "Skip baris yang invalid (default: false, fail-fast)")
+	cmd.Flags().Bool("continue-on-error", false, "Lanjut proses meski ada error per-row saat conn-test/save")
+	cmd.Flags().Bool("skip-conn-test", false, "Skip tes koneksi database (default: false; conn-test ON)")
+}
