@@ -7,7 +7,6 @@
 package wizard
 
 import (
-
 	"sfdbtools/internal/app/profile/helpers/importer"
 	"sfdbtools/internal/app/profile/helpers/parser"
 	profilemodel "sfdbtools/internal/app/profile/model"
