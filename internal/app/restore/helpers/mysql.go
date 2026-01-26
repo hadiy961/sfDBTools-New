@@ -2,7 +2,7 @@
 // Deskripsi : Helper functions untuk MySQL restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 17 Desember 2025
-// Last Modified : 14 Januari 2026
+// Last Modified : 26 Januari 2026
 package helpers
 
 import (
@@ -22,6 +22,35 @@ import (
 	"sfdbtools/internal/ui/progress"
 	"strings"
 )
+
+func resolveMariaDBOrMySQLClient() (binPath string, binName string, err error) {
+	// Default: mariadb client (mysql CLI compatible)
+	if p, e := exec.LookPath("mariadb"); e == nil {
+		return p, "mariadb", nil
+	}
+	// Fallback: mysql client
+	if p, e := exec.LookPath("mysql"); e == nil {
+		return p, "mysql", nil
+	}
+	return "", "", fmt.Errorf("binary client database tidak ditemukan: butuh 'mariadb' atau 'mysql' di PATH")
+}
+
+func isSSLMismatchServerNotSupport(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "tls/ssl error") && strings.Contains(msg, "server does not support")
+}
+
+func hasSkipSSLArg(args []string) bool {
+	for _, a := range args {
+		if strings.TrimSpace(strings.ToLower(a)) == "--skip-ssl" {
+			return true
+		}
+	}
+	return false
+}
 
 // BuildMySQLArgs membuat argument list untuk mysql command
 func BuildMySQLArgs(profile *domain.ProfileInfo, database string, extraArgs ...string) []string {
@@ -46,7 +75,12 @@ func BuildMySQLArgs(profile *domain.ProfileInfo, database string, extraArgs ...s
 
 // ExecuteMySQLCommand menjalankan mysql command dengan stdin reader
 func ExecuteMySQLCommand(ctx context.Context, args []string, stdin io.Reader) error {
-	cmd := exec.CommandContext(ctx, "mysql", args...)
+	binPath, binName, err := resolveMariaDBOrMySQLClient()
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.CommandContext(ctx, binPath, args...)
 	cmd.Stdin = stdin
 
 	var stderr strings.Builder
@@ -56,9 +90,9 @@ func ExecuteMySQLCommand(ctx context.Context, args []string, stdin io.Reader) er
 	if err := cmd.Run(); err != nil {
 		stderrMsg := stderr.String()
 		if stderrMsg != "" {
-			return fmt.Errorf("mysql command error: %w (stderr: %s)", err, stderrMsg)
+			return fmt.Errorf("%s command error: %w (stderr: %s)", binName, err, stderrMsg)
 		}
-		return fmt.Errorf("mysql command error: %w", err)
+		return fmt.Errorf("%s command error: %w", binName, err)
 	}
 
 	return nil
@@ -70,18 +104,31 @@ func RestoreFromFile(ctx context.Context, filePath string, targetDB string, prof
 	spin.Start()
 	defer spin.Stop()
 
-	// Open, decrypt, decompress file
-	reader, closers, err := OpenAndPrepareReader(filePath, encryptionKey)
-	if err != nil {
-		return err
-	}
-	defer CloseReaders(closers)
-
 	// Build mysql args dengan force flag
 	args := BuildMySQLArgs(profile, targetDB, "-f")
 
+	// Helper closure supaya retry bisa reopen file (stdin streaming tidak bisa diulang).
+	execRestore := func(a []string) error {
+		reader, closers, err := OpenAndPrepareReader(filePath, encryptionKey)
+		if err != nil {
+			return err
+		}
+		defer CloseReaders(closers)
+		return ExecuteMySQLCommand(ctx, a, reader)
+	}
+
 	// Execute mysql restore
-	if err := ExecuteMySQLCommand(ctx, args, reader); err != nil {
+	if err := execRestore(args); err != nil {
+		// Fallback: beberapa environment punya default SSL=ON/REQUIRED di client config.
+		// Jika target server tidak support SSL, retry sekali dengan SSL dimatikan.
+		if isSSLMismatchServerNotSupport(err) && !hasSkipSSLArg(args) {
+			retryArgs := BuildMySQLArgs(profile, targetDB, "--skip-ssl", "-f")
+			if err2 := execRestore(retryArgs); err2 == nil {
+				return nil
+			} else {
+				return fmt.Errorf("gagal menjalankan mysql restore (retry --skip-ssl): %w", err2)
+			}
+		}
 		return fmt.Errorf("gagal menjalankan mysql restore: %w", err)
 	}
 
@@ -156,6 +203,14 @@ func RestoreUserGrants(ctx context.Context, grantsFile string, profile *domain.P
 
 	// Execute mysql restore
 	if err := ExecuteMySQLCommand(ctx, args, strings.NewReader(string(grantsSQL))); err != nil {
+		if isSSLMismatchServerNotSupport(err) && !hasSkipSSLArg(args) {
+			retryArgs := BuildMySQLArgs(profile, "", "--skip-ssl")
+			if err2 := ExecuteMySQLCommand(ctx, retryArgs, strings.NewReader(string(grantsSQL))); err2 == nil {
+				return nil
+			} else {
+				return fmt.Errorf("gagal restore user grants (retry --skip-ssl): %w", err2)
+			}
+		}
 		return fmt.Errorf("gagal restore user grants: %w", err)
 	}
 

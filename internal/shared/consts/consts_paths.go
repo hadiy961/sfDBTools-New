@@ -9,5 +9,6 @@ package consts
 // Default paths used across services.
 const (
 	DefaultAppConfigPath = "/etc/sfDBTools/config.yaml"
+	DefaultEnvPath       = "/etc/sfDBTools/.env"
 	DefaultLogDir        = "/var/log/sfdbtools"
 )
