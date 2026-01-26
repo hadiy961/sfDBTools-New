@@ -50,7 +50,13 @@ curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts
 Uninstall + hapus config user (HATI-HATI):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/uninstall.sh | sudo bash -s -- --purge
+# Via environment variable (non-interaktif)
+curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/uninstall.sh | SFDBTOOLS_YES=1 sudo -E bash -s -- --purge
+
+# Atau download script dulu untuk mode interaktif
+curl -fsSL https://raw.githubusercontent.com/hadiy961/sfdbtools-New/main/scripts/uninstall.sh -o uninstall.sh
+chmod +x uninstall.sh
+sudo ./uninstall.sh --purge
 ```
 
 ## Requirements (dependensi runtime)
