@@ -65,6 +65,13 @@ func DefaultBackupOptions(mode string) types_backup.BackupDBOptions {
 	// Include linked/companion databases (hanya untuk primary dan secondary, bukan single)
 	if mode == "primary" || mode == "secondary" {
 		opts.IncludeDmart = cfg.Backup.Include.IncludeDmart
+		// Set default skip tables untuk primary dan secondary
+		// Table-table ini umumnya berisi session/log data yang tidak perlu di-backup
+		opts.SkipTablesData = []string{
+			"tsflpageview",    // Session page view tracking
+			"tsfltokensess",   // Token session management
+			"tcllusersession", // User session data
+		}
 	} else {
 		// Untuk mode single, selalu false
 		opts.IncludeDmart = false
