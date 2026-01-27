@@ -6,7 +6,6 @@
 package helpers
 
 import (
-	"fmt"
 	"strings"
 
 	"sfdbtools/internal/app/dbcopy/model"
@@ -49,17 +48,6 @@ func ParseCommonFlags(cmd *cobra.Command) (*model.CommonCopyOptions, error) {
 	// Workdir
 	opts.Workdir = strings.TrimSpace(resolver.GetStringFlagOrEnv(cmd, "workdir", ""))
 
-	// Validasi profile
-	if opts.SourceProfile == "" {
-		return nil, fmt.Errorf("source-profile wajib diisi: gunakan --source-profile atau env %s", consts.ENV_SOURCE_PROFILE)
-	}
-	if opts.SourceProfileKey == "" {
-		return nil, fmt.Errorf("source-profile-key wajib diisi: gunakan --source-profile-key atau env %s", consts.ENV_SOURCE_PROFILE_KEY)
-	}
-	if opts.TargetProfile != "" && opts.TargetProfileKey == "" {
-		return nil, fmt.Errorf("target-profile-key wajib diisi jika --target-profile diisi: gunakan --target-profile-key atau env %s", consts.ENV_TARGET_PROFILE_KEY)
-	}
-
 	return opts, nil
 }
 
@@ -69,6 +57,9 @@ func ParseP2PFlags(cmd *cobra.Command) (*model.P2POptions, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// P2P: pre-backup target WAJIB (safety). Flag tidak diekspos untuk p2p.
+	common.PrebackupTarget = true
 
 	opts := &model.P2POptions{
 		CommonCopyOptions: *common,

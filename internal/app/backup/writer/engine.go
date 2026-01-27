@@ -1,7 +1,7 @@
 // File : internal/app/backup/writer/engine.go
 // Deskripsi : Core backup execution engine dengan streaming pipeline
 // Author : Hadiyatna Muflihun
-// Last Modified : 20 Januari 2026
+// Last Modified : 27 Januari 2026
 
 package writer
 
@@ -257,9 +257,10 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 
 	if runErr != nil {
 		stderrOutput := stderrBuf.String()
+		errLogPath := ""
 
 		if e.ErrorLog != nil {
-			_ = e.ErrorLog.LogWithOutput(map[string]interface{}{
+			errLogPath = e.ErrorLog.LogWithOutput(map[string]interface{}{
 				"type": "mysqldump_backup",
 				"file": outputPath,
 			}, stderrOutput, runErr)
@@ -272,6 +273,9 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 		}
 
 		if e.isFatalDumpError(runErr, stderrOutput, exitCode) {
+			if strings.TrimSpace(errLogPath) != "" {
+				e.Log.Warnf("Detail stderr lengkap tersimpan di: %s", errLogPath)
+			}
 			result := &types_backup.BackupWriteResult{
 				StderrOutput: stderrOutput,
 				FileSize:     0,

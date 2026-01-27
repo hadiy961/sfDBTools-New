@@ -68,6 +68,8 @@ func init() {
 	CmdCopyP2S.Flags().StringP("client-code", "C", "", "Client code (untuk membentuk nama primary/secondary)")
 	CmdCopyP2S.Flags().StringP("instance", "I", "", "Instance secondary target (suffix setelah _secondary_)")
 
+	CmdCopyP2S.Flags().Bool("prebackup-target", true, "Backup target sebelum overwrite (safety)")
+
 	CmdCopyP2S.Flags().String("source-db", "", "Override nama database source (primary)")
 	CmdCopyP2S.Flags().String("target-db", "", "Override nama database target (secondary)")
 }

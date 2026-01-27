@@ -40,7 +40,6 @@ func init() {
 	CmdDBCopyMain.PersistentFlags().BoolP("exclude-data", "x", false, "Mengecualikan data dari pencadangan (schema only)")
 
 	CmdDBCopyMain.PersistentFlags().Bool("include-dmart", true, "Ikut copy companion database (_dmart) jika ada")
-	CmdDBCopyMain.PersistentFlags().Bool("prebackup-target", true, "Backup target sebelum overwrite (safety)")
 	CmdDBCopyMain.PersistentFlags().String("workdir", "", "Direktori kerja untuk file dump sementara (default: temp dir)")
 
 	// Subcommands
