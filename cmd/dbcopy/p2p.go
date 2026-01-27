@@ -10,6 +10,7 @@ import (
 	"sfdbtools/internal/app/dbcopy"
 	"sfdbtools/internal/app/dbcopy/helpers"
 	"sfdbtools/internal/app/dbcopy/modes"
+	"sfdbtools/internal/app/dbcopy/wizard"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/runner"
 
@@ -23,10 +24,14 @@ var CmdCopyP2P = &cobra.Command{
 	Long: `Copy database primary ke database primary (umumnya beda server/profile).
 
 Rule-based:
-  --client-code dan (opsional) --target-client-code
+	--client-code
 
 Override eksplisit:
-  --source-db / --target-db`,
+	--source-db
+
+Catatan:
+	- Untuk p2p, target database selalu sama dengan source database.
+	- Untuk p2p, pre-backup target selalu dilakukan (safety).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
 			if appdeps.Deps == nil || appdeps.Deps.Logger == nil || appdeps.Deps.Config == nil {
@@ -39,17 +44,31 @@ Override eksplisit:
 				return err
 			}
 
+			svc := dbcopy.NewService(appdeps.Deps.Logger, appdeps.Deps.Config)
+			ctx, cancel := svc.SetupContext()
+			defer cancel()
+
+			nonInteractive := dbcopy.DetermineNonInteractiveMode(&opts.CommonCopyOptions)
+
+			// Wizard (hanya untuk interaktif)
+			if !nonInteractive {
+				configDir := ""
+				if appdeps.Deps.Config != nil {
+					configDir = appdeps.Deps.Config.ConfigDir.DatabaseProfile
+				}
+				opts, err = wizard.RunP2PWizard(ctx, configDir, svc, opts)
+				if err != nil {
+					return err
+				}
+			}
+
 			// Validate options
 			if err := helpers.ValidateP2POptions(opts); err != nil {
 				return err
 			}
 
 			// Execute via mode executor
-			svc := dbcopy.NewService(appdeps.Deps.Logger, appdeps.Deps.Config)
 			exec := modes.NewP2PExecutor(appdeps.Deps.Logger, svc, opts)
-
-			ctx, cancel := svc.SetupContext()
-			defer cancel()
 
 			result, err := exec.Execute(ctx)
 			if err != nil {
@@ -66,8 +85,5 @@ Override eksplisit:
 
 func init() {
 	CmdCopyP2P.Flags().StringP("client-code", "C", "", "Client code source (untuk membentuk nama primary source)")
-	CmdCopyP2P.Flags().String("target-client-code", "", "Client code target (default: sama dengan --client-code)")
-
 	CmdCopyP2P.Flags().String("source-db", "", "Override nama database source (primary)")
-	CmdCopyP2P.Flags().String("target-db", "", "Override nama database target (primary)")
 }

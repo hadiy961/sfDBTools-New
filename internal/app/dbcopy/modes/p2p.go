@@ -8,10 +8,13 @@ package modes
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"sfdbtools/internal/app/dbcopy/model"
 	applog "sfdbtools/internal/services/log"
-	"sfdbtools/internal/shared/naming"
+	"sfdbtools/internal/shared/runtimecfg"
+	"sfdbtools/internal/ui/print"
 )
 
 // P2PExecutor implements Executor interface untuk P2P copy
@@ -34,10 +37,25 @@ func NewP2PExecutor(log applog.Logger, svc CopyService, opts *model.P2POptions) 
 func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 	result := &model.CopyResult{}
 
+	// Informasi awal (membantu debugging di lapangan)
+	e.log.Infof("P2P: ticket=%s excludeData=%v includeDmart=%v continueOnError=%v workdir=%s",
+		strings.TrimSpace(e.opts.Ticket),
+		e.opts.ExcludeData,
+		e.opts.IncludeDmart,
+		e.opts.ContinueOnError,
+		strings.TrimSpace(e.opts.Workdir),
+	)
+
 	// Setup profiles
 	srcProfile, tgtProfile, err := e.svc.SetupProfiles(&e.opts.CommonCopyOptions, !DetermineNonInteractiveMode(&e.opts.CommonCopyOptions))
 	if err != nil {
 		return nil, err
+	}
+	if srcProfile != nil && tgtProfile != nil {
+		// P2P: target profile harus beda dari source profile.
+		if strings.EqualFold(strings.TrimSpace(srcProfile.Path), strings.TrimSpace(tgtProfile.Path)) {
+			return nil, fmt.Errorf("db-copy p2p ditolak: source-profile dan target-profile tidak boleh sama")
+		}
 	}
 
 	// Setup workdir
@@ -62,6 +80,10 @@ func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 
 	result.SourceDB = sourceDB
 	result.TargetDB = targetDB
+
+	e.log.Infof("P2P: source-profile=%s", filepath.Base(strings.TrimSpace(srcProfile.Path)))
+	e.log.Infof("P2P: target-profile=%s", filepath.Base(strings.TrimSpace(tgtProfile.Path)))
+	e.log.Infof("P2P: akan copy database: %s -> %s", sourceDB, targetDB)
 
 	// Validate tidak copy ke self
 	if err := e.svc.ValidateNotCopyToSelf(srcProfile, tgtProfile, sourceDB, targetDB, "p2p"); err != nil {
@@ -95,6 +117,7 @@ func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 	// Backup source database
 	srcDump, err := e.svc.BackupSingleDB(ctx, srcProfile, srcClient, sourceDB, e.opts.Ticket, workdir, e.opts.ExcludeData)
 	if err != nil {
+		maybePrintBackupFailureHint(err)
 		result.Error = err
 		return result, err
 	}
@@ -108,6 +131,7 @@ func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 				e.log.Warnf("Gagal backup companion (dmart), skip karena continue-on-error: %v", err)
 				dmartDump = ""
 			} else {
+				maybePrintBackupFailureHint(err)
 				result.Error = err
 				return result, err
 			}
@@ -126,9 +150,9 @@ func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 		e.opts.Ticket,
 		encKey,
 		e.opts.IncludeDmart,
-		true, // dropTarget
-		!e.opts.PrebackupTarget,
-		true, // skipGrants
+		true,  // dropTarget
+		false, // skipBackup (P2P wajib prebackup target)
+		true,  // skipGrants
 		e.opts.ContinueOnError,
 		DetermineNonInteractiveMode(&e.opts.CommonCopyOptions),
 	)
@@ -143,25 +167,34 @@ func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 	return result, nil
 }
 
+func maybePrintBackupFailureHint(err error) {
+	if err == nil {
+		return
+	}
+	msg := strings.ToLower(err.Error())
+	if strings.Contains(msg, "view '") || strings.Contains(msg, "(1356)") || strings.Contains(msg, "definer/invoker") {
+		print.PrintWarning("⚠️  Backup gagal karena ada VIEW bermasalah / privilege definernya tidak valid (error 1356).")
+		print.PrintWarning("    Solusi: perbaiki/recreate VIEW di source DB, atau tambahkan mysqldump args seperti --ignore-table=db.schema_view (opsional), atau gunakan --force (berisiko dump tidak lengkap).")
+		print.PrintWarning("    Catatan: exclude-data tidak menyelesaikan error VIEW karena mariadb-dump tetap perlu membaca metadata VIEW.")
+	}
+}
+
 func (e *P2PExecutor) resolveDatabaseNames(ctx context.Context, srcClient interface{}) (sourceDB, targetDB string, err error) {
-	// Explicit mode: gunakan langsung dari options
-	if e.opts.SourceDB != "" && e.opts.TargetDB != "" {
-		return e.opts.SourceDB, e.opts.TargetDB, nil
+	// Explicit mode: gunakan source-db; untuk P2P target selalu sama dengan source.
+	if strings.TrimSpace(e.opts.SourceDB) != "" {
+		return strings.TrimSpace(e.opts.SourceDB), strings.TrimSpace(e.opts.SourceDB), nil
 	}
 
-	// Rule-based mode: resolve primary source, build target dengan target-client-code
+	// Rule-based: resolve primary dari client-code; target selalu sama.
 	primary, err := e.svc.ResolvePrimaryDB(ctx, srcClient, e.opts.ClientCode)
 	if err != nil {
 		return "", "", err
 	}
 
-	prefix := naming.InferPrimaryPrefix(primary, "")
-	targetDB = naming.BuildPrimaryDBName(prefix, e.opts.TargetClientCode)
-
-	return primary, targetDB, nil
+	return primary, primary, nil
 }
 
 // DetermineNonInteractiveMode helper untuk menentukan mode non-interaktif
 func DetermineNonInteractiveMode(opts *model.CommonCopyOptions) bool {
-	return opts.SkipConfirm // quiet mode sudah di-handle di tempat lain
+	return runtimecfg.IsQuiet() || opts.SkipConfirm
 }

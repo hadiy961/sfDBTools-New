@@ -69,6 +69,8 @@ func init() {
 	CmdCopyS2S.Flags().String("source-instance", "", "Instance secondary sumber")
 	CmdCopyS2S.Flags().String("target-instance", "", "Instance secondary target")
 
+	CmdCopyS2S.Flags().Bool("prebackup-target", true, "Backup target sebelum overwrite (safety)")
+
 	CmdCopyS2S.Flags().String("source-db", "", "Override nama database source (secondary)")
 	CmdCopyS2S.Flags().String("target-db", "", "Override nama database target (secondary)")
 }

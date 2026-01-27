@@ -10,12 +10,23 @@ import (
 	"strings"
 
 	"sfdbtools/internal/app/dbcopy/model"
+	"sfdbtools/internal/shared/consts"
 )
 
 // ValidateCommonOptions memvalidasi options yang wajib ada untuk semua mode
 func ValidateCommonOptions(opts *model.CommonCopyOptions) error {
 	if opts == nil {
 		return fmt.Errorf("options tidak boleh nil")
+	}
+
+	if strings.TrimSpace(opts.SourceProfile) == "" {
+		return fmt.Errorf("source-profile wajib diisi: gunakan --source-profile atau env %s", consts.ENV_SOURCE_PROFILE)
+	}
+	if strings.TrimSpace(opts.SourceProfileKey) == "" {
+		return fmt.Errorf("source-profile-key wajib diisi: gunakan --source-profile-key atau env %s", consts.ENV_SOURCE_PROFILE_KEY)
+	}
+	if strings.TrimSpace(opts.TargetProfile) != "" && strings.TrimSpace(opts.TargetProfileKey) == "" {
+		return fmt.Errorf("target-profile-key wajib diisi jika --target-profile diisi: gunakan --target-profile-key atau env %s", consts.ENV_TARGET_PROFILE_KEY)
 	}
 
 	if opts.Ticket == "" {
@@ -31,21 +42,25 @@ func ValidateP2POptions(opts *model.P2POptions) error {
 		return err
 	}
 
-	// Explicit mode: source-db dan target-db harus ada keduanya
-	if opts.SourceDB != "" || opts.TargetDB != "" {
-		if opts.SourceDB == "" || opts.TargetDB == "" {
-			return fmt.Errorf("mode eksplisit butuh --source-db dan --target-db")
+	// P2P wajib punya target profile (tidak boleh default sama dengan source).
+	if strings.TrimSpace(opts.TargetProfile) == "" {
+		return fmt.Errorf("target-profile wajib diisi untuk db-copy p2p: gunakan --target-profile atau env SFDB_TARGET_PROFILE")
+	}
+
+	// Mode eksplisit: cukup --source-db, target-db HARUS sama dengan source-db.
+	if strings.TrimSpace(opts.SourceDB) != "" {
+		if strings.TrimSpace(opts.TargetDB) != "" && !strings.EqualFold(strings.TrimSpace(opts.TargetDB), strings.TrimSpace(opts.SourceDB)) {
+			return fmt.Errorf("untuk db-copy p2p, --target-db harus sama dengan --source-db (target akan selalu = source)")
 		}
 		return nil
 	}
 
-	// Rule-based mode: client-code wajib
-	if opts.ClientCode == "" {
-		return fmt.Errorf("client-code wajib diisi pada mode rule-based: gunakan --client-code")
+	// Rule-based: client-code wajib (target-client-code tidak digunakan di p2p).
+	if strings.TrimSpace(opts.ClientCode) == "" {
+		return fmt.Errorf("untuk db-copy p2p (non-interaktif), butuh --source-db atau --client-code")
 	}
-
-	if opts.TargetClientCode == "" {
-		opts.TargetClientCode = opts.ClientCode
+	if strings.TrimSpace(opts.TargetClientCode) != "" && !strings.EqualFold(strings.TrimSpace(opts.TargetClientCode), strings.TrimSpace(opts.ClientCode)) {
+		return fmt.Errorf("untuk db-copy p2p, --target-client-code tidak didukung (target database selalu sama dengan source)")
 	}
 
 	return nil

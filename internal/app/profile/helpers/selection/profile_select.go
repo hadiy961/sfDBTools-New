@@ -2,7 +2,7 @@
 // Deskripsi : Helper untuk pilih profile (interactive) + snapshot (untuk show/edit)
 // Author : Hadiyatna Muflihun
 // Tanggal : 14 Januari 2026
-// Last Modified : 14 Januari 2026
+// Last Modified : 26 Januari 2026
 
 package selection
 
@@ -63,6 +63,7 @@ func SelectExistingDBConfig(configDir, purpose string) (domain.ProfileInfo, erro
 	profileInfo.DBInfo = info.DBInfo
 	profileInfo.SSHTunnel = info.SSHTunnel
 	profileInfo.EncryptionSource = info.EncryptionSource
+	profileInfo.EncryptionKey = info.EncryptionKey
 
 	var fileSizeStr string
 	lastModTime := profileInfo.LastModified

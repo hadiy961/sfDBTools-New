@@ -20,8 +20,7 @@ var CmdRestoreSelection = &cobra.Command{
 	Short: "Restore banyak database dari CSV (file,db,enc,grants)",
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
-			_ = restore.ExecuteRestoreSelectionCommand(cmd, appdeps.Deps)
-			return nil
+			return restore.ExecuteRestoreSelectionCommand(cmd, appdeps.Deps)
 		})
 	},
 }

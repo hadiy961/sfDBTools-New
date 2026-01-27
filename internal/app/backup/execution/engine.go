@@ -2,12 +2,13 @@
 // Deskripsi : Main backup execution engine dengan orchestration logic
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 20 Januari 2026
+// Last Modified : 27 Januari 2026
 package execution
 
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"sfdbtools/internal/app/backup/gtid"
 	"sfdbtools/internal/app/backup/model"
@@ -170,7 +171,7 @@ func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args [
 		attempts++
 
 		// Attempt retries dengan berbagai strategy
-		newResult, newArgs, newErr := e.attemptRetries(outputPath, args, result, exec)
+		newResult, newArgs, newErr := e.attemptRetries(outputPath, args, result, err, exec)
 		if newErr == nil {
 			return newResult, newArgs, nil
 		}
@@ -198,15 +199,35 @@ func equalStringSlice(a []string, b []string) bool {
 	return true
 }
 
+func firstLineContaining(haystack string, needleLower string) string {
+	if haystack == "" || needleLower == "" {
+		return ""
+	}
+	for _, line := range strings.Split(haystack, "\n") {
+		l := strings.ToLower(strings.TrimSpace(line))
+		if l == "" {
+			continue
+		}
+		if strings.Contains(l, needleLower) {
+			return strings.TrimSpace(line)
+		}
+	}
+	return ""
+}
+
 // attemptRetries mencoba retry dengan berbagai strategy.
 func (e *Engine) attemptRetries(
 	outputPath string,
 	args []string,
 	result *types_backup.BackupWriteResult,
+	lastErr error,
 	exec func([]string) (*types_backup.BackupWriteResult, error),
 ) (*types_backup.BackupWriteResult, []string, error) {
 	if result == nil {
 		return result, args, fmt.Errorf("attemptRetries: result is nil (likely exec func panic): %w", model.ErrInvalidRetryState)
+	}
+	if lastErr == nil {
+		return result, args, fmt.Errorf("attemptRetries: lastErr is nil (invalid state): %w", model.ErrInvalidRetryState)
 	}
 
 	// Note: attemptRetries tidak punya akses ke ctx, tapi caller (executeWithRetry)
@@ -215,8 +236,17 @@ func (e *Engine) attemptRetries(
 
 	// Strategy 1: SSL mismatch - add --skip-ssl
 	if IsSSLMismatchRequiredButServerNoSupport(result.StderrOutput) {
-		if newResult, newArgs, ok := e.tryRetry(outputPath, args, exec, AddDisableSSLArgs, "Retry dengan --skip-ssl..."); ok {
-			return newResult, newArgs, nil
+		reason := firstLineContaining(result.StderrOutput, "tls/ssl error")
+		logMsg := "Retry dengan --skip-ssl..."
+		if strings.TrimSpace(reason) != "" {
+			logMsg = fmt.Sprintf("Retry dengan --skip-ssl (deteksi: %s)...", reason)
+		}
+		newResult, newArgs, matched, retryErr := e.tryRetry(outputPath, args, exec, AddDisableSSLArgs, logMsg)
+		if matched {
+			if retryErr == nil {
+				return newResult, newArgs, nil
+			}
+			return newResult, newArgs, fmt.Errorf("attemptRetries: retry dengan --skip-ssl gagal: %w", retryErr)
 		}
 	}
 
@@ -231,34 +261,32 @@ func (e *Engine) attemptRetries(
 		}
 	}
 
-	// No retry strategy matched, return original error
-	// Note: Ini bukan sentinel error karena ini adalah final fallback untuk retry mechanism
-	return result, args, fmt.Errorf("attemptRetries: dump failed, no retry strategy matched")
+	// No retry strategy matched: jangan timpa error yang lebih informatif.
+	// Contoh: strategi SSL sudah dicoba tapi gagal, error-nya harus tetap itu.
+	return result, args, lastErr
 }
 
 // tryRetry adalah helper untuk execute retry dengan args modifier function.
 // Returns: (result, args, success)
+
 func (e *Engine) tryRetry(
 	outputPath string,
 	args []string,
 	exec func([]string) (*types_backup.BackupWriteResult, error),
 	argsModifier func([]string) ([]string, bool),
 	logMessage string,
-) (*types_backup.BackupWriteResult, []string, bool) {
+
+) (*types_backup.BackupWriteResult, []string, bool, error) {
 	newArgs, modified := argsModifier(args)
 	if !modified {
-		return nil, args, false
+		return nil, args, false, nil
 	}
 
 	e.Log.Warn(logMessage)
 	cleanupFailedBackup(outputPath, e.Log)
 
 	result, err := exec(newArgs)
-	if err == nil {
-		return result, newArgs, true
-	}
-
-	return nil, args, false
+	return result, newArgs, true, err
 }
 
 // handleBackupError handles backup failure - error logging dan cleanup.

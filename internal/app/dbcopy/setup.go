@@ -77,7 +77,11 @@ func (s *Service) SetupProfiles(opts *model.CommonCopyOptions, allowInteractive 
 
 // SetupWorkdir memastikan working directory tersedia
 func (s *Service) SetupWorkdir(opts *model.CommonCopyOptions) (workdir string, cleanup func(), err error) {
-	return s.EnsureWorkdir(opts.Workdir)
+	base := strings.TrimSpace(opts.Workdir)
+	if base == "" && s.cfg != nil {
+		base = strings.TrimSpace(s.cfg.Backup.Output.BaseDirectory)
+	}
+	return s.EnsureWorkdir(base)
 }
 
 // SetupConnections membuat koneksi database ke source (target di-skip karena restore handle sendiri)
