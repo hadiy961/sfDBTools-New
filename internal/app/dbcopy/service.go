@@ -2,7 +2,7 @@
 // Deskripsi : Core service untuk db-copy operations (streaming backup → restore)
 // Author : Hadiyatna Muflihun
 // Tanggal : 26 Januari 2026
-// Last Modified : 26 Januari 2026
+// Last Modified : 27 Januari 2026
 package dbcopy
 
 import (
@@ -265,8 +265,10 @@ func (s *Service) RestoreSingle(ctx context.Context, profile *domain.ProfileInfo
 		EncryptionKey: encryptionKey,
 		SkipGrants:    skipGrants,
 		DryRun:        false,
-		Force:         nonInteractive,
-		StopOnError:   !continueOnError,
+		// db-copy adalah orchestrator: hindari prompt restore (backup/drop/grants, dll).
+		// Semua opsi penting sudah ditentukan di layer db-copy.
+		Force:       true,
+		StopOnError: !continueOnError,
 	}
 
 	svc := restore.NewRestoreService(s.log, s.cfg, opts)
@@ -292,9 +294,10 @@ func (s *Service) RestorePrimary(ctx context.Context, profile *domain.ProfileInf
 		ConfirmIfNotExists: false,
 		EncryptionKey:      encryptionKey,
 		DryRun:             false,
-		Force:              nonInteractive,
-		StopOnError:        !continueOnError,
-		SkipGrants:         skipGrants,
+		// db-copy adalah orchestrator: hindari prompt restore (backup/drop/grants, dll).
+		Force:       true,
+		StopOnError: !continueOnError,
+		SkipGrants:  skipGrants,
 	}
 
 	svc := restore.NewRestoreService(s.log, s.cfg, opts)
@@ -321,8 +324,9 @@ func (s *Service) RestoreSecondary(ctx context.Context, profile *domain.ProfileI
 		From:            "file",
 		EncryptionKey:   encryptionKey,
 		DryRun:          false,
-		Force:           nonInteractive,
-		StopOnError:     !continueOnError,
+		// db-copy adalah orchestrator: hindari prompt restore (backup/drop/grants, dll).
+		Force:       true,
+		StopOnError: !continueOnError,
 	}
 
 	svc := restore.NewRestoreService(s.log, s.cfg, opts)
