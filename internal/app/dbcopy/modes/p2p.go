@@ -11,10 +11,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"sfdbtools/internal/app/dbcopy/helpers"
 	"sfdbtools/internal/app/dbcopy/model"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/runtimecfg"
-	"sfdbtools/internal/ui/print"
 )
 
 // P2PExecutor implements Executor interface untuk P2P copy
@@ -86,7 +88,7 @@ func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 	e.log.Infof("P2P: akan copy database: %s -> %s", sourceDB, targetDB)
 
 	// Validate tidak copy ke self
-	if err := e.svc.ValidateNotCopyToSelf(srcProfile, tgtProfile, sourceDB, targetDB, "p2p"); err != nil {
+	if err := e.svc.ValidateNotCopyToSelf(srcProfile, tgtProfile, sourceDB, targetDB, string(model.ModeP2P)); err != nil {
 		return nil, err
 	}
 
@@ -114,15 +116,15 @@ func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 		return nil, fmt.Errorf("gagal resolve backup encryption key: %w", err)
 	}
 
-	// Backup source database
-	srcDump, err := e.svc.BackupSingleDB(ctx, srcProfile, srcClient, sourceDB, e.opts.Ticket, workdir, e.opts.ExcludeData)
+	// Backup source database (P2P backup primary database, gunakan ModePrimary untuk konsistensi logging)
+	srcDump, err := e.svc.BackupDB(ctx, srcProfile, srcClient, sourceDB, e.opts.Ticket, workdir, e.opts.ExcludeData, consts.ModePrimary)
 	if err != nil {
-		maybePrintBackupFailureHint(err)
+		helpers.MaybePrintBackupFailureHint(err)
 		result.Error = err
-		return result, err
+		return result, fmt.Errorf("gagal backup source database %s: %w", sourceDB, err)
 	}
 
-	// Backup companion if exists
+	// Backup companion if exists (companion tetap ModeSingle)
 	var dmartDump string
 	if hasCompanion {
 		dmartDump, err = e.svc.BackupSingleDB(ctx, srcProfile, srcClient, companionSource, e.opts.Ticket, workdir, e.opts.ExcludeData)
@@ -131,9 +133,9 @@ func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 				e.log.Warnf("Gagal backup companion (dmart), skip karena continue-on-error: %v", err)
 				dmartDump = ""
 			} else {
-				maybePrintBackupFailureHint(err)
+				helpers.MaybePrintBackupFailureHint(err)
 				result.Error = err
-				return result, err
+				return result, fmt.Errorf("gagal backup companion database %s: %w", companionSource, err)
 			}
 		} else {
 			result.CompanionCopied = true
@@ -159,7 +161,7 @@ func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 
 	if err != nil {
 		result.Error = err
-		return result, err
+		return result, fmt.Errorf("gagal restore ke target database %s: %w", targetDB, err)
 	}
 
 	result.Success = true
@@ -167,19 +169,7 @@ func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 	return result, nil
 }
 
-func maybePrintBackupFailureHint(err error) {
-	if err == nil {
-		return
-	}
-	msg := strings.ToLower(err.Error())
-	if strings.Contains(msg, "view '") || strings.Contains(msg, "(1356)") || strings.Contains(msg, "definer/invoker") {
-		print.PrintWarning("⚠️  Backup gagal karena ada VIEW bermasalah / privilege definernya tidak valid (error 1356).")
-		print.PrintWarning("    Solusi: perbaiki/recreate VIEW di source DB, atau tambahkan mysqldump args seperti --ignore-table=db.schema_view (opsional), atau gunakan --force (berisiko dump tidak lengkap).")
-		print.PrintWarning("    Catatan: exclude-data tidak menyelesaikan error VIEW karena mariadb-dump tetap perlu membaca metadata VIEW.")
-	}
-}
-
-func (e *P2PExecutor) resolveDatabaseNames(ctx context.Context, srcClient interface{}) (sourceDB, targetDB string, err error) {
+func (e *P2PExecutor) resolveDatabaseNames(ctx context.Context, srcClient *database.Client) (sourceDB, targetDB string, err error) {
 	// Explicit mode: gunakan source-db; untuk P2P target selalu sama dengan source.
 	if strings.TrimSpace(e.opts.SourceDB) != "" {
 		return strings.TrimSpace(e.opts.SourceDB), strings.TrimSpace(e.opts.SourceDB), nil

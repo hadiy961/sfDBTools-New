@@ -17,6 +17,7 @@ import (
 	profileconn "sfdbtools/internal/app/profile/connection"
 	appconfig "sfdbtools/internal/services/config"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/errorlog"
 	"sfdbtools/internal/shared/timex"
@@ -109,9 +110,26 @@ func (e *Engine) ExecuteAndBuildBackup(
 		return types_backup.DatabaseBackupInfo{}, fmt.Errorf("ExecuteAndBuildBackup: %w", model.ErrBackupOptionsNotAvailable)
 	}
 
+	// Log mulai backup setelah database version
+	if !cfg.IsMultiDB && cfg.DBName != "" {
+		modeDesc := "database"
+		if e.Options.Mode == consts.ModePrimary {
+			modeDesc = "database primary"
+		} else if e.Options.Mode == consts.ModeSecondary {
+			modeDesc = "database secondary"
+		}
+		// ModeSingle tetap "database" (untuk companion atau single DB tanpa konteks primary/secondary)
+		e.Log.Infof("Memulai backup %s: %s", modeDesc, cfg.DBName)
+	}
+
 	var dbList []string
 	if cfg.IsMultiDB {
 		dbList = cfg.DBList
+	}
+
+	sshTunnelEnabled := false
+	if e.Options != nil && e.Options.Profile.SSHTunnel.Enabled {
+		sshTunnelEnabled = true
 	}
 
 	mysqldumpArgs := BuildMysqldumpArgs(
@@ -122,6 +140,7 @@ func (e *Engine) ExecuteAndBuildBackup(
 		cfg.DBName,
 		cfg.TotalDBFound,
 		e.Options.SkipTablesData,
+		sshTunnelEnabled,
 	)
 
 	if e.Options.DryRun {
@@ -166,6 +185,20 @@ func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args [
 		if ctx.Err() != nil {
 			cleanupFailedBackup(outputPath, e.Log)
 			return result, args, err
+		}
+
+		// Log error pertama kali sebelum retry
+		if attempts == 0 {
+			// Log error utama
+			e.Log.Errorf("Backup gagal: %v", err)
+			
+			// Error log file sudah dibuat di writer layer untuk semua errors (fatal dan retry-able)
+			// Path error log file akan di-log oleh writer layer untuk fatal errors saja
+			// Untuk retry-able errors, kita tidak perlu log path di sini karena akan di-retry
+			// Detail error sudah ada di error message utama, tidak perlu log lagi
+			
+			// Cleanup failed backup file sebelum retry
+			cleanupFailedBackup(outputPath, e.Log)
 		}
 
 		attempts++
@@ -237,6 +270,7 @@ func (e *Engine) attemptRetries(
 	// Strategy 1: SSL mismatch - add --skip-ssl
 	if IsSSLMismatchRequiredButServerNoSupport(result.StderrOutput) {
 		reason := firstLineContaining(result.StderrOutput, "tls/ssl error")
+		// Error detail sudah ada di error message utama, tidak perlu log lagi untuk menghindari noise
 		logMsg := "Retry dengan --skip-ssl..."
 		if strings.TrimSpace(reason) != "" {
 			logMsg = fmt.Sprintf("Retry dengan --skip-ssl (deteksi: %s)...", reason)
@@ -254,10 +288,10 @@ func (e *Engine) attemptRetries(
 	if newArgs, removed, canRetry := RemoveUnsupportedMysqldumpOption(args, result.StderrOutput); canRetry {
 		e.Log.Warnf("Retry tanpa opsi: %s", removed)
 		cleanupFailedBackup(outputPath, e.Log)
-		if newResult, err := exec(newArgs); err == nil {
+		if newResult, retryErr := exec(newArgs); retryErr == nil {
 			return newResult, newArgs, nil
 		} else {
-			return newResult, newArgs, err
+			return newResult, newArgs, retryErr
 		}
 	}
 
@@ -282,8 +316,8 @@ func (e *Engine) tryRetry(
 		return nil, args, false, nil
 	}
 
+	// Log retry message (cleanup sudah dilakukan di executeWithRetry sebelum attemptRetries)
 	e.Log.Warn(logMessage)
-	cleanupFailedBackup(outputPath, e.Log)
 
 	result, err := exec(newArgs)
 	return result, newArgs, true, err

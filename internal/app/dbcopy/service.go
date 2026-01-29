@@ -15,6 +15,7 @@ import (
 	"sfdbtools/internal/app/backup/execution"
 	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/app/dbcopy/model"
 	profileconn "sfdbtools/internal/app/profile/connection"
 	"sfdbtools/internal/app/profile/helpers/loader"
 	"sfdbtools/internal/app/restore"
@@ -85,11 +86,9 @@ func (s *Service) ConnectDB(profile *domain.ProfileInfo) (*database.Client, erro
 // Database Discovery & Validation
 // ============================================================================
 
-func (s *Service) ResolvePrimaryDB(ctx context.Context, client interface{}, clientCode string) (string, error) {
-	// Type assert to *database.Client
-	dbClient, ok := client.(*database.Client)
-	if !ok {
-		return "", fmt.Errorf("client type assertion failed: expected *database.Client")
+func (s *Service) ResolvePrimaryDB(ctx context.Context, client *database.Client, clientCode string) (string, error) {
+	if client == nil {
+		return "", fmt.Errorf("client tidak boleh nil")
 	}
 
 	cc := strings.TrimSpace(clientCode)
@@ -104,7 +103,7 @@ func (s *Service) ResolvePrimaryDB(ctx context.Context, client interface{}, clie
 	nbc := naming.BuildPrimaryDBName(consts.PrimaryPrefixNBC, cc)
 	biz := naming.BuildPrimaryDBName(consts.PrimaryPrefixBiznet, cc)
 
-	nbcExists, err := dbClient.CheckDatabaseExists(ctx, nbc)
+	nbcExists, err := client.CheckDatabaseExists(ctx, nbc)
 	if err != nil {
 		return "", fmt.Errorf("gagal cek database primary (NBC): %w", err)
 	}
@@ -112,7 +111,7 @@ func (s *Service) ResolvePrimaryDB(ctx context.Context, client interface{}, clie
 		return nbc, nil
 	}
 
-	bizExists, err := dbClient.CheckDatabaseExists(ctx, biz)
+	bizExists, err := client.CheckDatabaseExists(ctx, biz)
 	if err != nil {
 		return "", fmt.Errorf("gagal cek database primary (Biznet): %w", err)
 	}
@@ -152,7 +151,7 @@ func (s *Service) ValidateNotCopyToSelf(srcProfile, tgtProfile *domain.ProfileIn
 	sameEndpoint := srcEff.Port == tgtEff.Port && srcHost == tgtHost && srcUser == tgtUser
 
 	// P2P khusus: harus beda server
-	if strings.EqualFold(mode, "p2p") && sameEndpoint && !strings.EqualFold(srcDB, tgtDB) {
+	if strings.EqualFold(mode, string(model.ModeP2P)) && sameEndpoint && !strings.EqualFold(srcDB, tgtDB) {
 		return fmt.Errorf("db-copy p2p ditolak: source dan target berada di server yang sama (host=%s port=%d user=%s). Untuk p2p, target harus beda server via --target-profile (atau gunakan p2s/s2s)", srcHost, srcEff.Port, srcUser)
 	}
 
@@ -171,16 +170,24 @@ func (s *Service) ValidateNotCopyToSelf(srcProfile, tgtProfile *domain.ProfileIn
 func (s *Service) EnsureWorkdir(base string) (workdir string, cleanup func(), err error) {
 	if strings.TrimSpace(base) != "" {
 		if err := os.MkdirAll(base, 0o755); err != nil {
-			return "", nil, err
+			return "", nil, fmt.Errorf("gagal membuat workdir %s: %w", base, err)
 		}
+		// Untuk custom workdir, tidak perlu cleanup (user yang manage)
 		return base, func() {}, nil
 	}
 
 	wd, err := os.MkdirTemp("", "sfdbtools-db-copy-")
 	if err != nil {
-		return "", nil, err
+		return "", nil, fmt.Errorf("gagal membuat temporary workdir: %w", err)
 	}
-	cleanup = func() { _ = os.RemoveAll(wd) }
+	// Cleanup function dengan logging jika gagal
+	cleanup = func() {
+		if err := os.RemoveAll(wd); err != nil {
+			if s.log != nil {
+				s.log.Warnf("Gagal menghapus temporary workdir %s: %v", wd, err)
+			}
+		}
+	}
 	return wd, cleanup, nil
 }
 
@@ -189,6 +196,12 @@ func (s *Service) EnsureWorkdir(base string) (workdir string, cleanup func(), er
 // ============================================================================
 
 func (s *Service) BackupSingleDB(ctx context.Context, profile *domain.ProfileInfo, client *database.Client, dbName, ticket, workdir string, excludeData bool) (string, error) {
+	return s.BackupDB(ctx, profile, client, dbName, ticket, workdir, excludeData, consts.ModeSingle)
+}
+
+// BackupDB melakukan backup database dengan mode yang ditentukan
+// Mode bisa berupa ModeSingle, ModePrimary, atau ModeSecondary untuk konsistensi logging
+func (s *Service) BackupDB(ctx context.Context, profile *domain.ProfileInfo, client *database.Client, dbName, ticket, workdir string, excludeData bool, mode string) (string, error) {
 	if s.cfg == nil {
 		return "", fmt.Errorf("config tidak tersedia")
 	}
@@ -196,7 +209,7 @@ func (s *Service) BackupSingleDB(ctx context.Context, profile *domain.ProfileInf
 	opts := &types_backup.BackupDBOptions{
 		Profile: *profile,
 		Ticket:  ticket,
-		Mode:    consts.ModeSingle,
+		Mode:    mode,
 		DBName:  dbName,
 	}
 
@@ -218,7 +231,7 @@ func (s *Service) BackupSingleDB(ctx context.Context, profile *domain.ProfileInf
 		compressionType = compress.CompressionType(opts.Compression.Type)
 	}
 
-	filename, err := backuppath.GenerateBackupFilename(dbName, consts.ModeSingle, hostname, compressionType, opts.Encryption.Enabled, false)
+	filename, err := backuppath.GenerateBackupFilename(dbName, mode, hostname, compressionType, opts.Encryption.Enabled, false)
 	if err != nil {
 		return "", err
 	}

@@ -12,6 +12,11 @@ const FixedBackupPattern = "{database}_{year}{month}{day}_{hour}{minute}{second}
 // BackupWriterBufferSize adalah ukuran buffer untuk buffered I/O saat menulis output backup.
 const BackupWriterBufferSize = 256 * 1024
 
+// BackupWriterBufferSizeSSHTunnel adalah ukuran buffer yang lebih besar untuk SSH tunnel
+// untuk mengurangi overhead network round-trips. Buffer lebih besar membantu karena
+// setiap write kecil melalui SSH tunnel memiliki overhead encryption yang signifikan.
+const BackupWriterBufferSizeSSHTunnel = 1024 * 1024 // 1MB
+
 // FilenameGenerateErrorPlaceholder digunakan saat preview filename gagal dibuat.
 const FilenameGenerateErrorPlaceholder = "error_generating_filename"
 

@@ -23,6 +23,7 @@ func BuildMysqldumpArgs(
 	singleDB string,
 	totalDBFound int,
 	skipTablesData []string,
+	sshTunnelEnabled bool,
 ) []string {
 	var args []string
 
@@ -41,8 +42,28 @@ func BuildMysqldumpArgs(
 	}
 
 	// Base mysqldump args dari config
+	// Untuk SSH tunnel, sesuaikan --net-buffer-length untuk mengurangi latency overhead
 	if baseDumpArgs != "" {
-		args = append(args, strings.Fields(baseDumpArgs)...)
+		baseArgs := strings.Fields(baseDumpArgs)
+		hasNetBufferLength := false
+		for i, arg := range baseArgs {
+			if strings.HasPrefix(arg, "--net-buffer-length=") {
+				hasNetBufferLength = true
+				// Jika SSH tunnel aktif, replace dengan nilai yang lebih kecil (1M-2M optimal untuk SSH tunnel)
+				if sshTunnelEnabled {
+					baseArgs[i] = "--net-buffer-length=2M"
+				}
+				break
+			}
+		}
+		// Jika tidak ada --net-buffer-length dan SSH tunnel aktif, tambahkan
+		if !hasNetBufferLength && sshTunnelEnabled {
+			baseArgs = append(baseArgs, "--net-buffer-length=2M")
+		}
+		args = append(args, baseArgs...)
+	} else if sshTunnelEnabled {
+		// Jika baseDumpArgs kosong tapi SSH tunnel aktif, tambahkan --net-buffer-length
+		args = append(args, "--net-buffer-length=2M")
 	}
 
 	// Data filter

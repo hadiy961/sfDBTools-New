@@ -75,7 +75,13 @@ func (e *Engine) createBufferedOutputFile(outputPath string, permissions string)
 	if err != nil {
 		return nil, nil, fmt.Errorf("gagal membuat file output: %w", err)
 	}
-	bufWriter := bufio.NewWriterSize(outputFile, consts.BackupWriterBufferSize)
+	
+	// Gunakan buffer yang lebih besar untuk SSH tunnel untuk mengurangi overhead network round-trips
+	bufferSize := consts.BackupWriterBufferSize
+	if e.Options != nil && e.Options.Profile.SSHTunnel.Enabled {
+		bufferSize = consts.BackupWriterBufferSizeSSHTunnel
+	}
+	bufWriter := bufio.NewWriterSize(outputFile, bufferSize)
 	return outputFile, bufWriter, nil
 }
 
@@ -184,6 +190,21 @@ func (e *Engine) isFatalDumpError(err error, stderrOutput string, exitCode int) 
 	return true
 }
 
+// isRetryableError menentukan apakah error bisa di-retry (seperti SSL mismatch)
+// Error yang bisa di-retry tidak perlu log path di writer layer karena akan di-handle di execution layer
+// Fungsi ini menggunakan pattern yang sama dengan execution.IsSSLMismatchRequiredButServerNoSupport
+// untuk konsistensi deteksi retry-able errors
+func (e *Engine) isRetryableError(stderrOutput string) bool {
+	if stderrOutput == "" {
+		return false
+	}
+	stderrLower := strings.ToLower(stderrOutput)
+	// SSL mismatch adalah retry-able error (pattern sama dengan execution.IsSSLMismatchRequiredButServerNoSupport)
+	return strings.Contains(stderrLower, "tls/ssl error") &&
+		strings.Contains(stderrLower, "ssl is required") &&
+		strings.Contains(stderrLower, "server does not support")
+}
+
 // parseFilePermissions mengkonversi string permissions (e.g., "0600") ke os.FileMode
 // Jika parsing gagal atau permissions kosong, return default 0600 (lebih restrictive)
 func parseFilePermissions(permStr string, logger applog.Logger) os.FileMode {
@@ -273,7 +294,11 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 		}
 
 		if e.isFatalDumpError(runErr, stderrOutput, exitCode) {
-			if strings.TrimSpace(errLogPath) != "" {
+			// Log path error log file hanya untuk fatal errors yang benar-benar fatal
+			// (bukan retry-able errors seperti SSL mismatch)
+			// Retry-able errors akan di-handle di execution layer dan tidak perlu log path di sini
+			isRetryableError := e.isRetryableError(stderrOutput)
+			if strings.TrimSpace(errLogPath) != "" && !isRetryableError {
 				e.Log.Warnf("Detail stderr lengkap tersimpan di: %s", errLogPath)
 			}
 			result := &types_backup.BackupWriteResult{

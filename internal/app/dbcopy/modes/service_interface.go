@@ -22,13 +22,14 @@ type CopyService interface {
 	SetupWorkdir(opts *model.CommonCopyOptions) (workdir string, cleanup func(), err error)
 
 	// Database Operations
-	ResolvePrimaryDB(ctx context.Context, client interface{}, clientCode string) (string, error)
+	ResolvePrimaryDB(ctx context.Context, client *database.Client, clientCode string) (string, error)
 	CheckCompanionDatabase(ctx context.Context, client *database.Client, primaryDB string, includeDmart bool) (companionName string, exists bool, err error)
 	ValidateNotCopyToSelf(srcProfile, tgtProfile *domain.ProfileInfo, sourceDB, targetDB string, mode string) error
 
 	// Backup Operations
 	ResolveBackupEncryptionKey() (string, error)
 	BackupSingleDB(ctx context.Context, profile *domain.ProfileInfo, client *database.Client, dbName, ticket, workdir string, excludeData bool) (string, error)
+	BackupDB(ctx context.Context, profile *domain.ProfileInfo, client *database.Client, dbName, ticket, workdir string, excludeData bool, mode string) (string, error)
 
 	// Restore Operations
 	RestorePrimary(ctx context.Context, profile *domain.ProfileInfo, file, companionFile, targetDB, ticket, encryptionKey string, includeDmart, dropTarget, skipBackup, skipGrants, continueOnError, nonInteractive bool) error
