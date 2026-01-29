@@ -9,8 +9,11 @@ import (
 	"context"
 	"fmt"
 
+	"sfdbtools/internal/app/dbcopy/helpers"
 	"sfdbtools/internal/app/dbcopy/model"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/naming"
 )
 
@@ -59,7 +62,7 @@ func (e *P2SExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 	result.SourceDB = sourceDB
 	result.TargetDB = targetDB
 
-	if err := e.svc.ValidateNotCopyToSelf(srcProfile, tgtProfile, sourceDB, targetDB, "p2s"); err != nil {
+	if err := e.svc.ValidateNotCopyToSelf(srcProfile, tgtProfile, sourceDB, targetDB, string(model.ModeP2S)); err != nil {
 		return nil, err
 	}
 
@@ -84,10 +87,12 @@ func (e *P2SExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 		return nil, fmt.Errorf("gagal resolve backup encryption key: %w", err)
 	}
 
-	srcDump, err := e.svc.BackupSingleDB(ctx, srcProfile, srcClient, sourceDB, e.opts.Ticket, workdir, e.opts.ExcludeData)
+	// Backup source database (P2S backup primary database, gunakan ModePrimary untuk konsistensi logging)
+	srcDump, err := e.svc.BackupDB(ctx, srcProfile, srcClient, sourceDB, e.opts.Ticket, workdir, e.opts.ExcludeData, consts.ModePrimary)
 	if err != nil {
+		helpers.MaybePrintBackupFailureHint(err)
 		result.Error = err
-		return result, err
+		return result, fmt.Errorf("gagal backup source database %s: %w", sourceDB, err)
 	}
 
 	var dmartDump string
@@ -98,8 +103,9 @@ func (e *P2SExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 				e.log.Warnf("Gagal backup companion (dmart), skip karena continue-on-error: %v", err)
 				dmartDump = ""
 			} else {
+				helpers.MaybePrintBackupFailureHint(err)
 				result.Error = err
-				return result, err
+				return result, fmt.Errorf("gagal backup companion database %s: %w", companionSource, err)
 			}
 		} else {
 			result.CompanionCopied = true
@@ -110,7 +116,7 @@ func (e *P2SExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 	if e.opts.SourceDB != "" && e.opts.TargetDB != "" {
 		if err := e.svc.RestoreSingle(ctx, tgtProfile, srcDump, targetDB, e.opts.Ticket, encKey, true, !e.opts.PrebackupTarget, true, e.opts.ContinueOnError, DetermineNonInteractiveMode(&e.opts.CommonCopyOptions)); err != nil {
 			result.Error = err
-			return result, err
+			return result, fmt.Errorf("gagal restore ke target database %s: %w", targetDB, err)
 		}
 
 		if dmartDump != "" {
@@ -120,7 +126,7 @@ func (e *P2SExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 					e.log.Warnf("Gagal restore companion (dmart), skip karena continue-on-error: %v", err)
 				} else {
 					result.Error = err
-					return result, err
+					return result, fmt.Errorf("gagal restore companion database %s: %w", companionTarget, err)
 				}
 			}
 		}
@@ -129,7 +135,7 @@ func (e *P2SExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 		err = e.svc.RestoreSecondary(ctx, tgtProfile, srcDump, dmartDump, e.opts.Ticket, e.opts.ClientCode, e.opts.Instance, encKey, e.opts.IncludeDmart, true, !e.opts.PrebackupTarget, e.opts.ContinueOnError, DetermineNonInteractiveMode(&e.opts.CommonCopyOptions))
 		if err != nil {
 			result.Error = err
-			return result, err
+			return result, fmt.Errorf("gagal restore ke target secondary database (client=%s instance=%s): %w", e.opts.ClientCode, e.opts.Instance, err)
 		}
 	}
 
@@ -138,7 +144,7 @@ func (e *P2SExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 	return result, nil
 }
 
-func (e *P2SExecutor) resolveDatabaseNames(ctx context.Context, srcClient interface{}) (sourceDB, targetDB string, err error) {
+func (e *P2SExecutor) resolveDatabaseNames(ctx context.Context, srcClient *database.Client) (sourceDB, targetDB string, err error) {
 	if e.opts.SourceDB != "" && e.opts.TargetDB != "" {
 		return e.opts.SourceDB, e.opts.TargetDB, nil
 	}
