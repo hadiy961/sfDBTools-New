@@ -1,4 +1,4 @@
-// File : cmd/crypto/env_test.go
+// File : cmd/crypto/env_test_cmd.go
 // Deskripsi : Command untuk test encode/decode ENV (roundtrip test)
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Januari 2026
@@ -121,9 +121,8 @@ var CmdEnvTest = &cobra.Command{
 			fmt.Printf("✓✓✓ TEST PASSED: Roundtrip berhasil!\n")
 			fmt.Printf("   Master key konsisten dan dapat digunakan untuk encode/decode.\n")
 			return nil
-		} else {
-			return fmt.Errorf("✗✗✗ TEST FAILED: Nilai tidak match!\n   Expected: %q\n   Got:      %q", plaintext, decoded)
 		}
+		return fmt.Errorf("✗✗✗ TEST FAILED: Nilai tidak match!\n   Expected: %q\n   Got:      %q", plaintext, decoded)
 	},
 }
 
@@ -131,3 +130,4 @@ func init() {
 	CmdCryptoMain.AddCommand(CmdEnvTest)
 	CmdEnvTest.Flags().StringP("text", "t", "", "Plaintext untuk test (default: 'test')")
 }
+

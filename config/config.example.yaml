@@ -5,7 +5,10 @@ backup:
     type: zstd # Tipe kompresi: gzip, zstd, xz, zlib, pgzip, none
     level: 5 # Compression level dari 1 (tercepat, kompresi paling rendah) hingga 9 (paling lambat, kompresi paling tinggi)
     enabled: true
-  mysqldump_args: -fQq --max-statement-time=0 --max-allowed-packet=1G --hex-blob --order-by-primary --single-transaction --routines=true --triggers=true --opt --net-buffer-length=16M
+  # Catatan kompatibilitas:
+  # Beberapa distro/versi `mysqldump` tidak mendukung flag seperti `--max-statement-time`.
+  # Jika butuh, silakan tambahkan sendiri sesuai dump tool yang terpasang.
+  mysqldump_args: -fQq --max-allowed-packet=1G --hex-blob --order-by-primary --single-transaction --routines=true --triggers=true --opt --net-buffer-length=16M
   exclude:
     user: false
     system_databases: true
