@@ -56,15 +56,16 @@ func (e *AllExecutor) executeStreamingRestore(ctx context.Context, opts *restore
 	}
 	sort.Strings(names)
 	logger.Infof("Hasil analisis: %d database akan diproses untuk restore", len(names))
-	if len(names) > 0 {
-		logger.Infof("Database ditemukan dari file dump (%d): %s", len(names), strings.Join(names, ", "))
-	}
+	// if len(names) > 0 {
+	// 	logger.Infof("Database ditemukan dari file dump (%d): %s", len(names), strings.Join(names, ", "))
+	// }
 
 	// 2) Pre-restore backup dan/atau drop target
 	if err := e.handlePreRestoreOperations(ctx, opts, names); err != nil {
 		return err
 	}
-
+	logger.Info("Proses pre-restore selesai...")
+	logger.Info("Proses restore dimulai...")
 	// 3) Mulai proses restore (pass-2)
 	return e.performStreamingRestore(ctx, opts)
 }

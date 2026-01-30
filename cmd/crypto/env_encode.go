@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 
+	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
@@ -35,6 +36,12 @@ var CmdEnvEncode = &cobra.Command{
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		print.PrintAppHeader("Env Encode Tools")
+
+		// Set MariaDB key file path dari config jika tersedia (untuk konsistensi dengan aplikasi utama)
+		// Ini penting agar encoding menggunakan master key yang sama dengan saat decoding di aplikasi utama
+		if appdeps.Deps != nil && appdeps.Deps.Config != nil {
+			crypto.SetMariaDBKeyFilePath(appdeps.Deps.Config.Mariadb.KeyMariaNBCFile)
+		}
 
 		// Validasi password aplikasi terlebih dahulu
 		if err := crypto.ValidateApplicationPassword(); err != nil {

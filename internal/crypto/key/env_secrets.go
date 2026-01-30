@@ -6,6 +6,7 @@
 package key
 
 import (
+	"bufio"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -17,7 +18,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -274,30 +274,37 @@ func readMariaDBKeyMaterial(filePath string) []byte {
 	}
 
 	if stat, statErr := os.Stat(filePath); statErr == nil && stat != nil {
-		b, err := os.ReadFile(filePath)
+		file, err := os.Open(filePath)
 		if err != nil {
 			log.Printf("WARNING: MariaDB key file %s exists but cannot be read (%v). Falling back to hardcoded seed only (weak security).\n", filePath, err)
 			return nil
 		}
-		return parseMariaDBKeyMaterial(b)
+		defer file.Close()
+		return parseMariaDBKeyMaterial(file)
 	}
 	// File doesn't exist (not an error, silent fallback)
 	return nil
 }
 
-func parseMariaDBKeyMaterial(b []byte) []byte {
-	lines := strings.Split(string(b), "\n")
-	type candidate struct {
-		id  int
-		key []byte
-	}
-	candidates := make([]candidate, 0, 4)
+// parseMariaDBKeyMaterial membaca file secara streaming dan mengembalikan key dengan ID tertinggi.
+// Optimized untuk file besar (10.000+ baris) dengan memory-efficient line-by-line reading.
+func parseMariaDBKeyMaterial(file io.Reader) []byte {
+	scanner := bufio.NewScanner(file)
+	// Set buffer size lebih besar untuk line panjang (default 64KB, cukup untuk kebanyakan kasus)
+	// Jika ada line > 64KB, akan otomatis grow
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024) // Max line size: 1MB
 
-	for _, line := range lines {
+	var maxID int = -1
+	var bestKey []byte
+
+	for scanner.Scan() {
+		line := scanner.Text()
 		ln := strings.TrimSpace(line)
 		if ln == "" {
 			continue
 		}
+
 		parts := strings.SplitN(ln, ";", 2)
 		if len(parts) != 2 {
 			continue
@@ -314,6 +321,10 @@ func parseMariaDBKeyMaterial(b []byte) []byte {
 		if id == 1 || id == 100 {
 			continue
 		}
+		// Early skip: jika ID lebih kecil dari current max, tidak perlu parsing lebih lanjut
+		if id <= maxID {
+			continue
+		}
 		if hexStr == "" {
 			continue
 		}
@@ -328,14 +339,17 @@ func parseMariaDBKeyMaterial(b []byte) []byte {
 			continue
 		}
 
-		candidates = append(candidates, candidate{id: id, key: keyBytes})
+		// Update best key jika ID lebih tinggi
+		if id > maxID {
+			maxID = id
+			bestKey = keyBytes
+		}
 	}
 
-	if len(candidates) == 0 {
+	if err := scanner.Err(); err != nil {
+		log.Printf("WARNING: Error reading MariaDB key file: %v. Falling back to hardcoded seed only.\n", err)
 		return nil
 	}
 
-	// Use key with highest ID
-	sort.Slice(candidates, func(i, j int) bool { return candidates[i].id < candidates[j].id })
-	return candidates[len(candidates)-1].key
+	return bestKey
 }
