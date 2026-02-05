@@ -59,7 +59,22 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreRes
 		}
 	}
 
-	// 3. Execute common restore flow for primary database
+	// 3. Restore user grants (file users) first if available
+	result.GrantsFile = opts.GrantsFile
+	result.GrantsRestored = performGrantsRestore(ctx, e.service, opts.GrantsFile, opts.SkipGrants)
+
+	// 4. Restore companion (dmart) first if requested
+	if opts.IncludeDmart && opts.CompanionFile != "" {
+		if err := e.restoreCompanionDatabase(ctx, opts, result); err != nil {
+			if opts.StopOnError {
+				result.Error = err
+				return result, err
+			}
+			logger.Warnf("Gagal restore companion: %v", err)
+		}
+	}
+
+	// 5. Execute common restore flow for primary database
 	flow := &commonRestoreFlow{
 		service:       e.service,
 		ctx:           ctx,
@@ -77,21 +92,6 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreRes
 		return result, err
 	}
 	result.BackupFile = backupFile
-
-	// 4. Handle companion database if requested
-	if opts.IncludeDmart && opts.CompanionFile != "" {
-		if err := e.restoreCompanionDatabase(ctx, opts, result); err != nil {
-			if opts.StopOnError {
-				result.Error = err
-				return result, err
-			}
-			logger.Warnf("Gagal restore companion: %v", err)
-		}
-	}
-
-	// 5. Restore user grants if available
-	result.GrantsFile = opts.GrantsFile
-	result.GrantsRestored = performGrantsRestore(ctx, e.service, opts.GrantsFile, false)
 
 	// 6. Post-restore operations
 	performPostRestoreOperations(ctx, e.service, opts.TargetDB)

@@ -40,6 +40,10 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 		return e.executeDryRun(ctx, opts, result, startTime)
 	}
 
+	// Restore user grants first (helps with DEFINER routines during restore)
+	result.GrantsFile = opts.GrantsFile
+	result.GrantsRestored = performGrantsRestore(ctx, e.service, opts.GrantsFile, opts.SkipGrants)
+
 	// Execute common restore flow (backup -> drop -> restore)
 	flow := &commonRestoreFlow{
 		service:       e.service,
@@ -58,10 +62,6 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 		return result, err
 	}
 	result.BackupFile = backupFile
-
-	// Restore user grants if available
-	result.GrantsFile = opts.GrantsFile
-	result.GrantsRestored = performGrantsRestore(ctx, e.service, opts.GrantsFile, false)
 
 	// Post-restore operations (temp DB + grants copy)
 	performPostRestoreOperations(ctx, e.service, opts.TargetDB)

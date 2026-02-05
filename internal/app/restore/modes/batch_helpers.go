@@ -66,6 +66,16 @@ func (r *singleDatabaseRestore) execute() error {
 	logger := r.service.GetLogger()
 	client := r.service.GetTargetClient()
 
+	// Restore grants first jika tersedia (membantu kasus DEFINER routine saat restore)
+	if r.grantsFile != "" {
+		if _, err := r.service.RestoreUserGrantsIfAvailable(r.ctx, r.grantsFile); err != nil {
+			if r.stopOnError {
+				return fmt.Errorf("restore grants gagal: %w", err)
+			}
+			logger.Warnf("restore grants gagal: %v (lanjut)", err)
+		}
+	}
+
 	// Cek keberadaan database
 	dbExists, err := client.CheckDatabaseExists(r.ctx, r.dbName)
 	if err != nil {
@@ -87,16 +97,6 @@ func (r *singleDatabaseRestore) execute() error {
 	// Buat dan restore
 	if err := r.service.CreateAndRestoreDatabase(r.ctx, r.dbName, r.sourceFile, r.encryptionKey); err != nil {
 		return fmt.Errorf("restore gagal: %w", err)
-	}
-
-	// Restore grants jika tersedia (non-fatal)
-	if r.grantsFile != "" {
-		if _, err := r.service.RestoreUserGrantsIfAvailable(r.ctx, r.grantsFile); err != nil {
-			if r.stopOnError {
-				return fmt.Errorf("restore grants gagal: %w", err)
-			}
-			logger.Warnf("restore grants gagal: %v (lanjut)", err)
-		}
 	}
 
 	// Operasi post-restore (pembuatan temp DB - non-fatal)

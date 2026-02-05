@@ -77,30 +77,7 @@ func (e *customExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 		logger.Infof("User %s (%s) siap + grants applied", u.user, u.tag)
 	}
 
-	// Step 5-6: Restore main database using common flow
-	mainFlow := &commonRestoreFlow{
-		service:       e.svc,
-		ctx:           ctx,
-		dbName:        opts.Database,
-		sourceFile:    opts.DatabaseFile,
-		encryptionKey: opts.EncryptionKey,
-		skipBackup:    opts.SkipBackup,
-		dropTarget:    opts.DropTarget,
-		stopOnError:   opts.StopOnError,
-		backupOpts:    opts.BackupOptions,
-	}
-
-	backupMain, err := mainFlow.execute()
-	if err != nil {
-		if opts.StopOnError {
-			return nil, err
-		}
-		logger.Warnf("restore main DB gagal (lanjut karena continue-on-error): %v", err)
-		result.Success = false
-	}
-	result.BackupFile = backupMain
-
-	// Restore DMART database using companion flow
+	// Restore DMART database first using companion flow
 	dmartFlow := &companionRestoreFlow{
 		service:       e.svc,
 		ctx:           ctx,
@@ -122,6 +99,29 @@ func (e *customExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 		result.Success = false
 	}
 	result.CompanionBackup = backupDmart
+
+	// Restore main database using common flow
+	mainFlow := &commonRestoreFlow{
+		service:       e.svc,
+		ctx:           ctx,
+		dbName:        opts.Database,
+		sourceFile:    opts.DatabaseFile,
+		encryptionKey: opts.EncryptionKey,
+		skipBackup:    opts.SkipBackup,
+		dropTarget:    opts.DropTarget,
+		stopOnError:   opts.StopOnError,
+		backupOpts:    opts.BackupOptions,
+	}
+
+	backupMain, err := mainFlow.execute()
+	if err != nil {
+		if opts.StopOnError {
+			return nil, err
+		}
+		logger.Warnf("restore main DB gagal (lanjut karena continue-on-error): %v", err)
+		result.Success = false
+	}
+	result.BackupFile = backupMain
 
 	// Post-restore operations using helpers
 	if result.Success {
