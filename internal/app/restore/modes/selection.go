@@ -34,6 +34,8 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*restoremodel.RestoreR
 
 	start := time.Now()
 	logger := e.svc.GetLogger()
+	// Reset counters untuk 1 run selection
+	e.svc.ResetSQLIssueCounters()
 
 	// Parse CSV entries
 	entries, err := e.readCSV(opts.CSV)
@@ -131,16 +133,19 @@ func (e *selectionExecutor) Execute(ctx context.Context) (*restoremodel.RestoreR
 
 	// Print summary
 	summary := tracker.getSummary()
-	if tracker.isAllSuccess() {
+	sqlErrs, sqlWarns := e.svc.GetSQLIssueCounters()
+	if tracker.isAllSuccess() && sqlErrs == 0 && sqlWarns == 0 {
 		print.PrintSuccess("Hasil: " + summary)
 	} else {
 		print.PrintWarning("Hasil: " + summary)
 	}
 
 	return &restoremodel.RestoreResult{
-		Success:    tracker.isAllSuccess(),
-		SourceFile: opts.CSV,
-		Duration:   time.Since(start).String(),
+		Success:     tracker.isAllSuccess(),
+		SourceFile:  opts.CSV,
+		SQLErrors:   sqlErrs,
+		SQLWarnings: sqlWarns,
+		Duration:    time.Since(start).String(),
 	}, nil
 }
 

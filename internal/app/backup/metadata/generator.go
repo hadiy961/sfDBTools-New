@@ -47,7 +47,8 @@ func GenerateBackupMetadata(cfg types_backup.MetadataConfig) *types_backup.Backu
 	if cfg.BackupType != consts.ModeSeparated {
 		meta.GTIDInfo = cfg.GTIDInfo
 		meta.ReplicationUser = cfg.ReplicationUser
-		meta.ReplicationPassword = cfg.ReplicationPassword
+		// SECURITY: jangan simpan password ke metadata.
+		meta.ReplicationPassword = ""
 		meta.SourceHost = cfg.SourceHost
 		meta.SourcePort = cfg.SourcePort
 	}

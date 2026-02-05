@@ -43,13 +43,8 @@ func (e *AllExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResult,
 		return e.executeDryRun(ctx, opts, result)
 	}
 
-	// Execute actual restore dengan streaming
-	if err := e.executeStreamingRestore(ctx, opts); err != nil {
-		result.Error = err
-		return result, err
-	}
-
-	// Restore user grants if available (optional)
+	// Restore user grants terlebih dahulu (optional) agar user/definer sudah ada
+	// sebelum proses restore database dimulai.
 	if !opts.SkipGrants {
 		result.GrantsFile = opts.GrantsFile
 		grantsRestored, err := e.service.RestoreUserGrantsIfAvailable(ctx, opts.GrantsFile)
@@ -61,9 +56,20 @@ func (e *AllExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResult,
 		}
 	}
 
+	// Execute actual restore dengan streaming
+	if err := e.executeStreamingRestore(ctx, opts); err != nil {
+		result.Error = err
+		return result, err
+	}
+
 	result.Success = true
 	result.Duration = time.Since(startTime).Round(time.Second).String()
-	logger.Info("Restore all databases berhasil")
+	applySQLIssueCounters(e.service, result)
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		logger.Warnf("Restore all databases selesai dengan issue SQL (errors=%d, warnings=%d). Lihat log untuk detail.", result.SQLErrors, result.SQLWarnings)
+	} else {
+		logger.Info("Restore all databases berhasil")
+	}
 
 	return result, nil
 }

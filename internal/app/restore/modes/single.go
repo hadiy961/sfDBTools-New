@@ -67,7 +67,12 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 	performPostRestoreOperations(ctx, e.service, opts.TargetDB)
 
 	finalizeResult(result, startTime, true)
-	logger.Info("Restore database berhasil")
+	applySQLIssueCounters(e.service, result)
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		logger.Warnf("Restore database selesai dengan issue SQL (errors=%d, warnings=%d). Lihat log untuk detail.", result.SQLErrors, result.SQLWarnings)
+	} else {
+		logger.Info("Restore database berhasil")
+	}
 
 	return result, nil
 }

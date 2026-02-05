@@ -37,8 +37,19 @@ func ShowRestoreSingleResult(result *restoremodel.RestoreResult) {
 		fmt.Printf("  %-20s: %s (%s)\n", "User Grants", filepath.Base(result.GrantsFile), grantsStatus)
 	}
 
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		fmt.Printf("  %-20s: %d\n", "SQL Errors", result.SQLErrors)
+		fmt.Printf("  %-20s: %d\n", "SQL Warnings", result.SQLWarnings)
+	}
+
 	fmt.Printf("  %-20s: %s\n", "Duration", result.Duration)
-	fmt.Printf("  %-20s: %s\n", "Status", "Berhasil")
+	status := "Berhasil"
+	if !result.Success {
+		status = "Gagal"
+	} else if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		status = "Berhasil (dengan peringatan)"
+	}
+	fmt.Printf("  %-20s: %s\n", "Status", status)
 	fmt.Println()
 }
 
@@ -80,8 +91,19 @@ func ShowRestorePrimaryResult(result *restoremodel.RestoreResult) {
 		fmt.Printf("  %-20s: %s (%s)\n", "User Grants", filepath.Base(result.GrantsFile), grantsStatus)
 	}
 
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		fmt.Printf("  %-20s: %d\n", "SQL Errors", result.SQLErrors)
+		fmt.Printf("  %-20s: %d\n", "SQL Warnings", result.SQLWarnings)
+	}
+
 	fmt.Printf("  %-20s: %s\n", "Duration", result.Duration)
-	fmt.Printf("  %-20s: %s\n", "Status", "Berhasil")
+	status := "Berhasil"
+	if !result.Success {
+		status = "Gagal"
+	} else if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		status = "Berhasil (dengan peringatan)"
+	}
+	fmt.Printf("  %-20s: %s\n", "Status", status)
 	fmt.Println()
 }
 
@@ -110,8 +132,19 @@ func ShowRestoreSecondaryResult(result *restoremodel.RestoreResult) {
 		fmt.Printf("  %-20s: %s\n", "Companion Dropped", "Ya")
 	}
 
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		fmt.Printf("  %-20s: %d\n", "SQL Errors", result.SQLErrors)
+		fmt.Printf("  %-20s: %d\n", "SQL Warnings", result.SQLWarnings)
+	}
+
 	fmt.Printf("  %-20s: %s\n", "Duration", result.Duration)
-	fmt.Printf("  %-20s: %s\n", "Status", "Berhasil")
+	status := "Berhasil"
+	if !result.Success {
+		status = "Gagal"
+	} else if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		status = "Berhasil (dengan peringatan)"
+	}
+	fmt.Printf("  %-20s: %s\n", "Status", status)
 	fmt.Println()
 }
 
@@ -129,8 +162,17 @@ func ShowRestoreAllResult(result *restoremodel.RestoreResult) {
 
 	fmt.Printf("  %-20s: %s\n", "Duration", result.Duration)
 
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		fmt.Printf("  %-20s: %d\n", "SQL Errors", result.SQLErrors)
+		fmt.Printf("  %-20s: %d\n", "SQL Warnings", result.SQLWarnings)
+	}
+
 	if result.Success {
-		fmt.Printf("  %-20s: %s\n", "Status", "Berhasil")
+		status := "Berhasil"
+		if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+			status = "Berhasil (dengan peringatan)"
+		}
+		fmt.Printf("  %-20s: %s\n", "Status", status)
 	} else {
 		fmt.Printf("  %-20s: %s\n", "Status", "Gagal")
 	}
@@ -166,10 +208,17 @@ func ShowRestoreCustomResult(result *restoremodel.RestoreResult) {
 		fmt.Printf("  %-20s: %s\n", "DMART Dropped", "Ya")
 	}
 
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		fmt.Printf("  %-20s: %d\n", "SQL Errors", result.SQLErrors)
+		fmt.Printf("  %-20s: %d\n", "SQL Warnings", result.SQLWarnings)
+	}
+
 	fmt.Printf("  %-20s: %s\n", "Duration", result.Duration)
 	status := "Berhasil"
 	if !result.Success {
 		status = "Gagal"
+	} else if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		status = "Berhasil (dengan peringatan)"
 	}
 	fmt.Printf("  %-20s: %s\n", "Status", status)
 	fmt.Println()

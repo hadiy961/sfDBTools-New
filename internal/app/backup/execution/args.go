@@ -1,5 +1,5 @@
 // File : internal/app/backup/execution/args.go
-// Deskripsi : Mysqldump arguments builder dan password masking
+// Deskripsi : Dump tool arguments builder (mariadb-dump/mysqldump) dan password masking
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
 // Last Modified : 2026-01-26
@@ -13,7 +13,7 @@ import (
 	"sfdbtools/internal/domain"
 )
 
-// BuildMysqldumpArgs membuat argumen mysqldump dari konfigurasi backup.
+// BuildMysqldumpArgs membuat argumen dump tool (mariadb-dump/mysqldump) dari konfigurasi backup.
 // Function ini pure logic tanpa wrapper - langsung menggunakan types yang sudah ada.
 func BuildMysqldumpArgs(
 	baseDumpArgs string,

@@ -8,6 +8,7 @@ package execution
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -46,14 +47,23 @@ func (e *Engine) ExecuteBackupLoop(
 	if cs, ok := e.State.(cleanupState); ok && cs != nil {
 		cs.EnableCleanup(e.Log)
 
-		cleanupCtx, cancelCleanup := context.WithCancel(ctx)
-		defer cancelCleanup()
-
+		// IMPORTANT:
+		// Jangan gunakan context.WithCancel(ctx) + defer cancel() untuk menghentikan goroutine,
+		// karena itu akan memicu Err()==context.Canceled saat function normal selesai.
+		// Akibatnya log "Backup cancelled..." muncul walaupun backup berhasil.
+		stopCleanup := make(chan struct{})
+		defer close(stopCleanup)
 		go func() {
-			<-cleanupCtx.Done()
-			if cleanupCtx.Err() == context.Canceled {
-				e.Log.Warn("⚠️  Backup cancelled, cleaning up partial files...")
-				cs.Cleanup()
+			select {
+			case <-ctx.Done():
+				// Hanya cleanup saat upstream context memang dibatalkan (CTRL+C / SIGTERM / timeout)
+				if errors.Is(ctx.Err(), context.Canceled) {
+					e.Log.Warn("⚠️  Backup cancelled, cleaning up partial files...")
+					cs.Cleanup()
+				}
+			case <-stopCleanup:
+				// Backup loop selesai normal, hentikan goroutine tanpa menjalankan cleanup
+				return
 			}
 		}()
 	}

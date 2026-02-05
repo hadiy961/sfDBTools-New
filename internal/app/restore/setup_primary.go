@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"sfdbtools/internal/app/restore/helpers"
 	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/naming"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
@@ -137,12 +138,19 @@ func (s *Service) setupBasicRequirements(ctx context.Context, opts *basicSetupOp
 }
 
 // setupPostDatabaseOptions melakukan setup setelah database terdeteksi
-func (s *Service) setupPostDatabaseOptions(_ context.Context, opts *postDatabaseSetupOptions) error {
+func (s *Service) setupPostDatabaseOptions(ctx context.Context, opts *postDatabaseSetupOptions) error {
 	if err := s.resolveTicketNumber(opts.ticket, opts.interactive); err != nil {
 		return fmt.Errorf("gagal resolve ticket number: %w", err)
 	}
 
-	if err := s.resolveInteractiveSafetyOptions(opts.dropTarget, opts.skipBackup, opts.interactive); err != nil {
+	targets := []string{}
+	if s.RestorePrimaryOpts != nil && s.RestorePrimaryOpts.TargetDB != "" {
+		targets = append(targets, s.RestorePrimaryOpts.TargetDB)
+		if s.RestorePrimaryOpts.IncludeDmart {
+			targets = append(targets, s.RestorePrimaryOpts.TargetDB+consts.SuffixDmart)
+		}
+	}
+	if err := s.resolveInteractiveSafetyOptionsForTargets(ctx, targets, opts.dropTarget, opts.skipBackup, opts.interactive); err != nil {
 		return err
 	}
 

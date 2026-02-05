@@ -16,6 +16,34 @@ import (
 	"sfdbtools/internal/shared/timex"
 )
 
+// maskDumpArgsForLog menghindari kebocoran kredensial saat menampilkan dump args ke log.
+// Saat ini yang di-mask: --password=... dan form dua-arg "--password" "..."
+func maskDumpArgsForLog(args []string) []string {
+	if len(args) == 0 {
+		return args
+	}
+	out := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		al := strings.ToLower(strings.TrimSpace(a))
+		if strings.HasPrefix(al, "--password=") {
+			out = append(out, "--password=***")
+			continue
+		}
+		if al == "--password" {
+			out = append(out, "--password")
+			// mask next token value if present
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+				out = append(out, "***")
+				i++
+			}
+			continue
+		}
+		out = append(out, a)
+	}
+	return out
+}
+
 // buildDryRunInfo membuat DatabaseBackupInfo untuk dry-run mode.
 func (e *Engine) buildDryRunInfo(
 	cfg types_backup.BackupExecutionConfig,
@@ -29,7 +57,7 @@ func (e *Engine) buildDryRunInfo(
 		e.Log.Infof("[DRY-RUN] Akan backup database: %s", cfg.DBName)
 	}
 	e.Log.Info("[DRY-RUN] Output file: " + cfg.OutputPath)
-	e.Log.Debug("[DRY-RUN] Dump command (auto): mariadb-dump (fallback mysqldump) " + strings.Join(args, " "))
+	e.Log.Debug("[DRY-RUN] Dump tool (auto): mariadb-dump (fallback mysqldump) " + strings.Join(maskDumpArgsForLog(args), " "))
 
 	return types_backup.DatabaseBackupInfo{
 		DatabaseName:  formatBackupDisplayName(cfg),
@@ -115,7 +143,8 @@ func (e *Engine) generateBackupMetadata(
 		EndTime:             endTime,
 		Logger:              e.Log,
 		ReplicationUser:     e.Config.Backup.Replication.ReplicationUser,
-		ReplicationPassword: e.Config.Backup.Replication.ReplicationPassword,
+		// SECURITY: Jangan pernah menyimpan password replikasi ke metadata/manifest.
+		ReplicationPassword: "",
 		SourceHost:          e.Options.Profile.DBInfo.Host,
 		SourcePort:          e.Options.Profile.DBInfo.Port,
 		UserGrantsFile:      userGrantsPath,

@@ -20,7 +20,6 @@ import (
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/compress"
 	"sfdbtools/internal/shared/consts"
-	"sfdbtools/internal/shared/errorlog"
 	"sfdbtools/internal/shared/execx"
 	"sfdbtools/internal/ui/progress"
 )
@@ -43,12 +42,11 @@ func summarizeStderr(stderr string, maxLines int, maxChars int) string {
 
 type Engine struct {
 	Log      applog.Logger
-	ErrorLog *errorlog.ErrorLogger
 	Options  *types_backup.BackupDBOptions
 }
 
-func New(log applog.Logger, errLog *errorlog.ErrorLogger, opts *types_backup.BackupDBOptions) *Engine {
-	return &Engine{Log: log, ErrorLog: errLog, Options: opts}
+func New(log applog.Logger, opts *types_backup.BackupDBOptions) *Engine {
+	return &Engine{Log: log, Options: opts}
 }
 
 func (e *Engine) resolveEncryptionKeyIfNeeded() (string, error) {
@@ -116,7 +114,7 @@ func (e *Engine) createWriterPipeline(baseWriter io.Writer, compressionRequired 
 	return writer, closers, nil
 }
 
-// isFatalDumpError menentukan apakah error dari mysqldump/mariadb-dump adalah fatal atau non-fatal.
+// isFatalDumpError menentukan apakah error dari dump tool (mariadb-dump/mysqldump) adalah fatal atau non-fatal.
 // Strategi:
 // 1. Primary: gunakan exit code sebagai indikator utama
 //   - Exit 0: Success (tidak error)
@@ -125,7 +123,7 @@ func (e *Engine) createWriterPipeline(baseWriter io.Writer, compressionRequired 
 //
 // 2. Secondary: pattern matching untuk edge cases (hanya untuk exit code 1)
 // 3. Log stderr yang tidak ter-classify untuk future improvement
-func (e *Engine) isFatalDumpError(err error, stderrOutput string, exitCode int) bool {
+func (e *Engine) isFatalDumpError(toolName string, err error, stderrOutput string, exitCode int) bool {
 	if err == nil {
 		return false
 	}
@@ -136,14 +134,14 @@ func (e *Engine) isFatalDumpError(err error, stderrOutput string, exitCode int) 
 	}
 
 	if exitCode >= 2 {
-		e.Log.Debugf("mysqldump exit code %d (>=2), treating as fatal", exitCode)
+		e.Log.Debugf("%s exit code %d (>=2), treating as fatal", strings.TrimSpace(toolName), exitCode)
 		return true
 	}
 
 	// Exit code 1: ambiguous case, perlu secondary check
 	if stderrOutput == "" {
 		// No stderr tapi exit 1 = suspicious, treat as fatal
-		e.Log.Debug("dump error with exit 1 and empty stderr, treating as fatal")
+		e.Log.Debugf("%s exit 1 and empty stderr, treating as fatal", strings.TrimSpace(toolName))
 		return true
 	}
 
@@ -160,7 +158,7 @@ func (e *Engine) isFatalDumpError(err error, stderrOutput string, exitCode int) 
 	}
 	for _, p := range nonFatalPatterns {
 		if strings.Contains(stderrLower, p) {
-			e.Log.Debugf("mysqldump exit 1 matched non-fatal pattern: %s", p)
+			e.Log.Debugf("%s exit 1 matched non-fatal pattern: %s", strings.TrimSpace(toolName), p)
 			return false
 		}
 	}
@@ -177,7 +175,7 @@ func (e *Engine) isFatalDumpError(err error, stderrOutput string, exitCode int) 
 	}
 	for _, p := range fatalPatterns {
 		if strings.Contains(stderrLower, p) {
-			e.Log.Debugf("mysqldump exit 1 matched fatal pattern: %s", p)
+			e.Log.Debugf("%s exit 1 matched fatal pattern: %s", strings.TrimSpace(toolName), p)
 			return true
 		}
 	}
@@ -185,7 +183,7 @@ func (e *Engine) isFatalDumpError(err error, stderrOutput string, exitCode int) 
 	// Unclassified exit code 1 dengan stderr yang tidak dikenali
 	// Default ke fatal untuk safety, tapi log untuk future improvement
 	excerpt := summarizeStderr(stderrOutput, 5, 500)
-	e.Log.Warnf("Unclassified mysqldump exit 1 stderr (treating as fatal for safety): %s", excerpt)
+	e.Log.Warnf("Unclassified %s exit 1 stderr (treating as fatal for safety): %s", strings.TrimSpace(toolName), excerpt)
 
 	return true
 }
@@ -245,24 +243,66 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 	if err != nil {
 		return nil, err
 	}
-	defer outputFile.Close()
-	defer func() {
-		if flushErr := bufWriter.Flush(); flushErr != nil {
-			e.Log.Errorf("Error flushing buffer: %v", flushErr)
-		}
-	}()
 
 	writer, closers, err := e.createWriterPipeline(bufWriter, compressionRequired, compressionType, encryptionKey)
 	if err != nil {
+		_ = outputFile.Close()
 		return nil, err
 	}
+
+	// Pastikan semua resource ditutup walaupun terjadi early return.
+	// Untuk success-path, kita akan finalize secara eksplisit dan propagate error-nya.
+	success := false
 	defer func() {
+		if success {
+			return
+		}
 		for i := len(closers) - 1; i >= 0; i-- {
-			if err := closers[i].Close(); err != nil {
-				e.Log.Errorf("Error closing writer: %v", err)
+			if closers[i] == nil {
+				continue
+			}
+			if cerr := closers[i].Close(); cerr != nil {
+				e.Log.Errorf("Error closing writer: %v", cerr)
+			}
+		}
+		if bufWriter != nil {
+			if flushErr := bufWriter.Flush(); flushErr != nil {
+				e.Log.Errorf("Error flushing buffer: %v", flushErr)
+			}
+		}
+		if outputFile != nil {
+			if cerr := outputFile.Close(); cerr != nil {
+				e.Log.Errorf("Error closing output file: %v", cerr)
 			}
 		}
 	}()
+
+	finalizeOutput := func() error {
+		var firstErr error
+
+		// Tutup layer paling luar dulu (compression), lalu encryption, dst.
+		// Ini memastikan semua internal buffer terdorong ke bufWriter.
+		for i := len(closers) - 1; i >= 0; i-- {
+			if closers[i] == nil {
+				continue
+			}
+			if cerr := closers[i].Close(); cerr != nil && firstErr == nil {
+				firstErr = fmt.Errorf("gagal menutup writer pipeline: %w", cerr)
+			}
+		}
+		if flushErr := bufWriter.Flush(); flushErr != nil && firstErr == nil {
+			firstErr = fmt.Errorf("gagal flush buffer output: %w", flushErr)
+		}
+		if cerr := outputFile.Close(); cerr != nil && firstErr == nil {
+			firstErr = fmt.Errorf("gagal menutup file output: %w", cerr)
+		}
+
+		// Hindari double-close di deferred cleanup.
+		closers = nil
+		bufWriter = nil
+		outputFile = nil
+		return firstErr
+	}
 
 	cmd := exec.CommandContext(ctx, dumpBin.Path, mysqldumpArgs...)
 
@@ -274,18 +314,20 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 
 	runErr := cmd.Run()
 
-	monitor.Finish(runErr == nil)
+	// Jika context sudah dibatalkan/timeout, jangan salah klasifikasi sebagai fatal dump error.
+	// CommandContext biasanya mengembalikan error dari exec, tapi yang user butuhkan adalah
+	// status "cancelled" yang konsisten dari semua layer.
+	if ctx.Err() != nil {
+		monitor.Finish(false)
+		stderrOutput := stderrBuf.String()
+		return &types_backup.BackupWriteResult{
+			StderrOutput: stderrOutput,
+			FileSize:     0,
+		}, fmt.Errorf("backup cancelled: %w", ctx.Err())
+	}
 
 	if runErr != nil {
 		stderrOutput := stderrBuf.String()
-		errLogPath := ""
-
-		if e.ErrorLog != nil {
-			errLogPath = e.ErrorLog.LogWithOutput(map[string]interface{}{
-				"type": "mysqldump_backup",
-				"file": outputPath,
-			}, stderrOutput, runErr)
-		}
 
 		// Extract exit code dari error
 		exitCode := 1 // default exit code untuk generic error
@@ -293,14 +335,8 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 			exitCode = exitErr.ExitCode()
 		}
 
-		if e.isFatalDumpError(runErr, stderrOutput, exitCode) {
-			// Log path error log file hanya untuk fatal errors yang benar-benar fatal
-			// (bukan retry-able errors seperti SSL mismatch)
-			// Retry-able errors akan di-handle di execution layer dan tidak perlu log path di sini
-			isRetryableError := e.isRetryableError(stderrOutput)
-			if strings.TrimSpace(errLogPath) != "" && !isRetryableError {
-				e.Log.Warnf("Detail stderr lengkap tersimpan di: %s", errLogPath)
-			}
+		if e.isFatalDumpError(dumpBin.Name, runErr, stderrOutput, exitCode) {
+			monitor.Finish(false)
 			result := &types_backup.BackupWriteResult{
 				StderrOutput: stderrOutput,
 				FileSize:     0,
@@ -311,17 +347,34 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 			}
 			return result, fmt.Errorf("%s gagal: %w", dumpBin.Name, runErr)
 		}
+		// Non-fatal error -> dianggap warning. Dump output tetap bisa valid.
+		monitor.Finish(true)
 		excerpt := summarizeStderr(stderrOutput, 12, 1200)
 		if excerpt != "" {
 			e.Log.Warnf("%s exit with non-fatal error, treated as warning. stderr (excerpt):\n%s", dumpBin.Name, excerpt)
 		} else {
 			e.Log.Warnf("%s exit with non-fatal error, treated as warning", dumpBin.Name)
 		}
+	} else {
+		monitor.Finish(true)
 	}
+
+	// Pastikan output ter-flush sempurna (kompresi/enkripsi/buffer/file) sebelum dianggap sukses.
+	if finErr := finalizeOutput(); finErr != nil {
+		return &types_backup.BackupWriteResult{
+			StderrOutput: stderrBuf.String(),
+			FileSize:     0,
+		}, finErr
+	}
+	success = true
 
 	fileInfo, statErr := os.Stat(outputPath)
 	var fileSize int64
-	if statErr == nil {
+	if statErr != nil {
+		// Backup bisa sukses tapi fileInfo gagal didapat (mis. permission/FS glitch).
+		// Jangan fail keseluruhan; cukup log warning dan lanjutkan dengan size=0.
+		e.Log.Warnf("Gagal mendapatkan file size untuk %s: %v", outputPath, statErr)
+	} else {
 		fileSize = fileInfo.Size()
 	}
 

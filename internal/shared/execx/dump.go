@@ -27,5 +27,5 @@ func ResolveMariaDBDumpOrMysqldump() (ResolvedBinary, error) {
 	if p, err := exec.LookPath("mysqldump"); err == nil {
 		return ResolvedBinary{Name: "mysqldump", Path: p}, nil
 	}
-	return ResolvedBinary{}, fmt.Errorf("binary dump tidak ditemukan: butuh 'mariadb-dump' atau 'mysqldump' di PATH")
+	return ResolvedBinary{}, fmt.Errorf("binary dump tidak ditemukan di PATH: coba 'mariadb-dump' lalu fallback 'mysqldump'")
 }

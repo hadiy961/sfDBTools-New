@@ -31,7 +31,7 @@ type FailedDatabaseInfo struct {
 
 // BackupWriteResult menyimpan hasil dari operasi backup write
 type BackupWriteResult struct {
-	StderrOutput string // Output stderr dari mysqldump
+	StderrOutput string // Output stderr dari dump tool (mariadb-dump/mysqldump)
 	BytesWritten int64  // Total bytes written
 	FileSize     int64  // File size after write (sama dengan BytesWritten untuk consistency)
 }
@@ -125,7 +125,6 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 	// Grup untuk informasi replikasi
 	type replicationInfo struct {
 		User     string `json:"user,omitempty"`
-		Password string `json:"password,omitempty"`
 		GTIDInfo string `json:"gtid_info,omitempty"`
 	}
 
@@ -194,7 +193,6 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 		},
 		Replication: replicationInfo{
 			User:     b.ReplicationUser,
-			Password: b.ReplicationPassword,
 			GTIDInfo: b.GTIDInfo,
 		},
 		Version: versionInfo{
@@ -328,7 +326,8 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		b.MariaDBVersion = grouped.Version.MariaDBVersion
 		b.GTIDInfo = grouped.Replication.GTIDInfo
 		b.ReplicationUser = grouped.Replication.User
-		b.ReplicationPassword = grouped.Replication.Password
+		// SECURITY: jangan simpan password dari metadata (walau ada di file lama).
+		b.ReplicationPassword = ""
 		b.UserGrantsFile = grouped.Additional.UserGrants
 		b.Ticket = grouped.Ticket
 		b.GeneratedBy = grouped.Generator.GeneratedBy
@@ -413,7 +412,8 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 	b.GeneratedBy = mj.GeneratedBy
 	b.GeneratedAt = mj.GeneratedAt
 	b.ReplicationUser = mj.ReplicationUser
-	b.ReplicationPassword = mj.ReplicationPassword
+	// SECURITY: jangan simpan password dari metadata (walau ada di file lama).
+	b.ReplicationPassword = ""
 	b.SourceHost = mj.SourceHost
 	b.SourcePort = mj.SourcePort
 	b.Ticket = mj.Ticket

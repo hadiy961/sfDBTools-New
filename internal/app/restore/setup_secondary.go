@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"path/filepath"
 	restoremodel "sfdbtools/internal/app/restore/model"
+	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/naming"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
@@ -114,14 +115,21 @@ func (s *Service) setupSecondaryDatabase(ctx context.Context, allowInteractive b
 }
 
 // finalizeSecondarySetup menyelesaikan setup secondary dengan ticket, safety options, dan confirmation
-func (s *Service) finalizeSecondarySetup(_ context.Context, allowInteractive bool) error {
+func (s *Service) finalizeSecondarySetup(ctx context.Context, allowInteractive bool) error {
 	opts := s.RestoreSecondaryOpts
 
 	if err := s.resolveTicketNumber(&opts.Ticket, allowInteractive); err != nil {
 		return fmt.Errorf("gagal resolve ticket number: %w", err)
 	}
 
-	if err := s.resolveInteractiveSafetyOptions(&opts.DropTarget, &opts.SkipBackup, allowInteractive); err != nil {
+	targets := []string{opts.TargetDB}
+	if opts.IncludeDmart {
+		// Companion DB hanya relevan jika companion source tersedia (file) atau akan di-backup dari primary.
+		if opts.From == "primary" || strings.TrimSpace(opts.CompanionFile) != "" {
+			targets = append(targets, opts.TargetDB+consts.SuffixDmart)
+		}
+	}
+	if err := s.resolveInteractiveSafetyOptionsForTargets(ctx, targets, &opts.DropTarget, &opts.SkipBackup, allowInteractive); err != nil {
 		return err
 	}
 

@@ -42,7 +42,7 @@ func (w *databaseMonitorWriter) Write(p []byte) (n int, err error) {
 	return w.target.Write(p)
 }
 
-// parseDBMarker parses database name dari mysqldump output dengan robust error handling.
+// parseDBMarker parses database name dari dump output dengan robust error handling.
 // Support MySQL escaped backticks (e.g., `my“db` = my`db).
 func (w *databaseMonitorWriter) parseDBMarker(data []byte) (string, error) {
 	idx := bytes.Index(data, dbMarker)

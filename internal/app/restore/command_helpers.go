@@ -7,6 +7,7 @@ package restore
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	appdeps "sfdbtools/internal/cli/deps"
@@ -133,7 +134,15 @@ func executeRestoreCommand(
 
 	show(result)
 
-	print.PrintSuccess(successMsg)
-	logger.Info(successMsg)
+	// Jika restore dijalankan dengan mysql/mariadb --force, proses bisa selesai tanpa error exit code,
+	// tapi tetap ada SQL error/warning. Tampilkan sebagai peringatan agar tidak misleading.
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		msg := fmt.Sprintf("%s (selesai dengan %d SQL error / %d SQL warning; cek logs untuk detail)", successMsg, result.SQLErrors, result.SQLWarnings)
+		print.PrintWarning(msg)
+		logger.Warn(msg)
+	} else {
+		print.PrintSuccess(successMsg)
+		logger.Info(successMsg)
+	}
 	return nil
 }

@@ -144,6 +144,11 @@ func (e *SecondaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreR
 	performPostRestoreOperations(ctx, e.svc, opts.TargetDB)
 
 	finalizeResult(result, startTime, true)
-	logger.Info("Restore secondary database berhasil")
+	applySQLIssueCounters(e.svc, result)
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		logger.Warnf("Restore secondary database selesai dengan issue SQL (errors=%d, warnings=%d). Lihat log untuk detail.", result.SQLErrors, result.SQLWarnings)
+	} else {
+		logger.Info("Restore secondary database berhasil")
+	}
 	return result, nil
 }

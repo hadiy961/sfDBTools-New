@@ -137,3 +137,12 @@ func finalizeResult(result *restoremodel.RestoreResult, startTime time.Time, suc
 	result.Success = success
 	result.Duration = time.Since(startTime).Round(time.Second).String()
 }
+
+func applySQLIssueCounters(service RestoreService, result *restoremodel.RestoreResult) {
+	if service == nil || result == nil {
+		return
+	}
+	sqlErrs, sqlWarns := service.GetSQLIssueCounters()
+	result.SQLErrors = sqlErrs
+	result.SQLWarnings = sqlWarns
+}

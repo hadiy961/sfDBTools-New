@@ -103,7 +103,12 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreRes
 	}
 
 	finalizeResult(result, startTime, true)
-	logger.Info("Restore primary database berhasil")
+	applySQLIssueCounters(e.service, result)
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		logger.Warnf("Restore primary database selesai dengan issue SQL (errors=%d, warnings=%d). Lihat log untuk detail.", result.SQLErrors, result.SQLWarnings)
+	} else {
+		logger.Info("Restore primary database berhasil")
+	}
 
 	return result, nil
 }

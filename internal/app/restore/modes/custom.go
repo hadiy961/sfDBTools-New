@@ -31,6 +31,7 @@ func (e *customExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 	start := time.Now()
 	logger := e.svc.GetLogger()
 	client := e.svc.GetTargetClient()
+	e.svc.ResetSQLIssueCounters()
 
 	result := &restoremodel.RestoreResult{
 		Success:       true,
@@ -128,7 +129,12 @@ func (e *customExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 		copyGrantsBetweenDatabases(ctx, e.svc, opts.Database, opts.DatabaseDmart)
 	}
 
-	print.PrintSuccess("Restore custom selesai")
+	applySQLIssueCounters(e.svc, result)
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		print.PrintWarning(fmt.Sprintf("Restore custom selesai dengan issue SQL (errors=%d, warnings=%d). Cek log untuk detail.", result.SQLErrors, result.SQLWarnings))
+	} else {
+		print.PrintSuccess("Restore custom selesai")
+	}
 	result.Duration = time.Since(start).String()
 	return result, nil
 }

@@ -1,5 +1,5 @@
 // File : internal/backup/execution/retry.go
-// Deskripsi : Error detection dan retry strategies untuk mysqldump failures
+// Deskripsi : Error detection dan retry strategies untuk dump tool failures (mariadb-dump/mysqldump)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-30
 // Last Modified : 20 Januari 2026
@@ -12,7 +12,7 @@ import "strings"
 // jika pola error yang sama terus terdeteksi.
 //
 // Catatan:
-// Di lapangan, perbedaan versi/flavor mysqldump (MySQL vs MariaDB, distro berbeda)
+// Di lapangan, perbedaan versi/flavor dump tool (MySQL vs MariaDB, distro berbeda)
 // sering membuat beberapa flag tidak dikenali. Karena mekanisme retry hanya berjalan
 // saat args berubah (ada opsi yang dihapus/ditambahkan), menaikkan limit ini tetap aman.
 const maxRetries = 5
@@ -33,7 +33,7 @@ func IsSSLMismatchRequiredButServerNoSupport(stderrOutput string) bool {
 		strings.Contains(l, "server does not support")
 }
 
-// AddDisableSSLArgs menambahkan opsi untuk disable SSL/TLS pada mysqldump.
+// AddDisableSSLArgs menambahkan opsi untuk disable SSL/TLS pada dump tool.
 // Menggunakan '--skip-ssl' untuk kompatibilitas MariaDB/MySQL client.
 //
 // Returns: (newArgs, added)

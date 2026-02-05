@@ -55,7 +55,11 @@ func (s *Service) CreateAndRestoreDatabase(ctx context.Context, dbName string, f
 	}
 
 	// Restore from file
-	if err := helpers.RestoreFromFile(ctx, filePath, dbName, s.Profile, encryptionKey); err != nil {
+	sum, err := helpers.RestoreFromFile(ctx, filePath, dbName, s.Profile, encryptionKey, s.Log)
+	if sum != nil {
+		s.AddSQLIssueCounters(sum.SQLErrors, sum.SQLWarnings)
+	}
+	if err != nil {
 		return fmt.Errorf("gagal restore database: %w", err)
 	}
 
@@ -68,7 +72,11 @@ func (s *Service) RestoreUserGrantsIfAvailable(ctx context.Context, grantsFile s
 		return false, nil
 	}
 
-	if err := helpers.RestoreUserGrants(ctx, grantsFile, s.Profile); err != nil {
+	sum, err := helpers.RestoreUserGrants(ctx, grantsFile, s.Profile, s.Log)
+	if sum != nil {
+		s.AddSQLIssueCounters(sum.SQLErrors, sum.SQLWarnings)
+	}
+	if err != nil {
 		return false, err
 	}
 

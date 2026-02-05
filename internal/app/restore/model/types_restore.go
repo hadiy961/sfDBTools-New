@@ -171,6 +171,10 @@ type RestoreResult struct {
 	DroppedCompanion bool   // Apakah companion database di-drop sebelum restore
 	GrantsFile       string // File user grants yang di-restore (jika ada)
 	GrantsRestored   bool   // Apakah user grants berhasil di-restore
-	Error            error
-	Duration         string
+	// SQL issues adalah jumlah warning/error yang terdeteksi dari output client mysql/mariadb
+	// selama proses restore. Restore bisa tetap "berhasil" jika client dijalankan dengan --force.
+	SQLErrors   int
+	SQLWarnings int
+	Error       error
+	Duration    string
 }

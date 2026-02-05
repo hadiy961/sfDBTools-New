@@ -17,10 +17,12 @@ import (
 	profileconn "sfdbtools/internal/app/profile/connection"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/domain"
+	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/compress"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/progress"
 	"strings"
+	"sync"
 )
 
 func resolveMariaDBOrMySQLClient() (binPath string, binName string, err error) {
@@ -73,33 +75,136 @@ func BuildMySQLArgs(profile *domain.ProfileInfo, database string, extraArgs ...s
 	return args
 }
 
-// ExecuteMySQLCommand menjalankan mysql command dengan stdin reader
-func ExecuteMySQLCommand(ctx context.Context, args []string, stdin io.Reader) error {
+// MySQLExecSummary adalah ringkasan issue yang terdeteksi dari output client mysql/mariadb.
+// Catatan: client biasanya menulis ERROR/WARNING ke stderr, tapi sebagian environment
+// bisa menulis ke stdout juga (mis. konfigurasi tertentu).
+type MySQLExecSummary struct {
+	BinName      string
+	SQLErrors    int
+	SQLWarnings  int
+	OtherOutputs int
+}
+
+func classifyMySQLClientLine(line string) (isErr bool, isWarn bool) {
+	t := strings.TrimSpace(line)
+	if t == "" {
+		return false, false
+	}
+	l := strings.ToLower(t)
+	// MariaDB/MySQL client common patterns:
+	// - "ERROR 1418 (HY000) at line ...: ..."
+	// - "Warning: Using a password on the command line interface can be insecure."
+	if strings.HasPrefix(l, "error") || strings.Contains(l, " error ") {
+		return true, false
+	}
+	if strings.HasPrefix(l, "warning") || strings.Contains(l, " warning") {
+		return false, true
+	}
+	return false, false
+}
+
+// ExecuteMySQLCommand menjalankan mysql/mariadb client dengan stdin reader, sambil
+// mendeteksi dan mencatat error/warning dari outputnya ke logger.
+//
+// Penting:
+//   - Jangan pernah log args secara penuh karena mengandung password.
+//   - Saat client dijalankan dengan --force/-f, SQL error dapat terjadi namun command tetap exit 0.
+//     Fungsi ini tetap akan mencatat error/warning tersebut ke logs.
+func ExecuteMySQLCommand(ctx context.Context, args []string, stdin io.Reader, logger applog.Logger) (*MySQLExecSummary, error) {
 	binPath, binName, err := resolveMariaDBOrMySQLClient()
 	if err != nil {
-		return err
+		return nil, err
+	}
+	if logger == nil {
+		logger = applog.NullLogger()
 	}
 
 	cmd := exec.CommandContext(ctx, binPath, args...)
 	cmd.Stdin = stdin
-
-	var stderr strings.Builder
-	cmd.Stderr = &stderr
-	cmd.Stdout = io.Discard
-
-	if err := cmd.Run(); err != nil {
-		stderrMsg := stderr.String()
-		if stderrMsg != "" {
-			return fmt.Errorf("%s command error: %w (stderr: %s)", binName, err, stderrMsg)
-		}
-		return fmt.Errorf("%s command error: %w", binName, err)
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("%s command error: %w", binName, err)
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, fmt.Errorf("%s command error: %w", binName, err)
 	}
 
-	return nil
+	const maxLoggedPerType = 50
+	summary := &MySQLExecSummary{BinName: binName}
+	var mu sync.Mutex
+	errSuppressedLogged := false
+	warnSuppressedLogged := false
+
+	scanAndLog := func(streamName string, r io.Reader) {
+		sc := bufio.NewScanner(r)
+		// bump buffer for atypical long lines
+		sc.Buffer(make([]byte, 1024), 1024*1024)
+		for sc.Scan() {
+			line := sc.Text()
+			isErr, isWarn := classifyMySQLClientLine(line)
+			if !isErr && !isWarn {
+				mu.Lock()
+				summary.OtherOutputs++
+				mu.Unlock()
+				continue
+			}
+
+			mu.Lock()
+			if isErr {
+				summary.SQLErrors++
+				shouldLog := summary.SQLErrors <= maxLoggedPerType
+				justSuppressed := summary.SQLErrors == maxLoggedPerType+1 && !errSuppressedLogged
+				if justSuppressed {
+					errSuppressedLogged = true
+				}
+				mu.Unlock()
+				if shouldLog {
+					logger.Errorf("[%s] %s", streamName, line)
+				} else if justSuppressed {
+					logger.Errorf("[%s] Terlalu banyak SQL error; log selanjutnya disembunyikan (>%d).", streamName, maxLoggedPerType)
+				}
+				continue
+			}
+
+			// warning
+			summary.SQLWarnings++
+			shouldLog := summary.SQLWarnings <= maxLoggedPerType
+			justSuppressed := summary.SQLWarnings == maxLoggedPerType+1 && !warnSuppressedLogged
+			if justSuppressed {
+				warnSuppressedLogged = true
+			}
+			mu.Unlock()
+			if shouldLog {
+				logger.Warnf("[%s] %s", streamName, line)
+			} else if justSuppressed {
+				logger.Warnf("[%s] Terlalu banyak SQL warning; log selanjutnya disembunyikan (>%d).", streamName, maxLoggedPerType)
+			}
+		}
+		// Ignore scanner error: biasanya karena token terlalu panjang; kita tetap lanjut (best-effort logging).
+	}
+
+	if err := cmd.Start(); err != nil {
+		return nil, fmt.Errorf("%s command error: %w", binName, err)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() { defer wg.Done(); scanAndLog("stdout", stdoutPipe) }()
+	go func() { defer wg.Done(); scanAndLog("stderr", stderrPipe) }()
+
+	runErr := cmd.Wait()
+	wg.Wait()
+
+	if runErr != nil {
+		return summary, fmt.Errorf("%s command error: %w", binName, runErr)
+	}
+
+	return summary, nil
 }
 
 // RestoreFromFile melakukan restore database dari file backup
-func RestoreFromFile(ctx context.Context, filePath string, targetDB string, profile *domain.ProfileInfo, encryptionKey string) error {
+func RestoreFromFile(ctx context.Context, filePath string, targetDB string, profile *domain.ProfileInfo, encryptionKey string, logger applog.Logger) (*MySQLExecSummary, error) {
 	spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Restore database %s dari %s", targetDB, filepath.Base(filePath)))
 	spin.Start()
 	defer spin.Stop()
@@ -108,31 +213,33 @@ func RestoreFromFile(ctx context.Context, filePath string, targetDB string, prof
 	args := BuildMySQLArgs(profile, targetDB, "-f")
 
 	// Helper closure supaya retry bisa reopen file (stdin streaming tidak bisa diulang).
-	execRestore := func(a []string) error {
+	execRestore := func(a []string) (*MySQLExecSummary, error) {
 		reader, closers, err := OpenAndPrepareReader(filePath, encryptionKey)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		defer CloseReaders(closers)
-		return ExecuteMySQLCommand(ctx, a, reader)
+		return ExecuteMySQLCommand(ctx, a, reader, logger)
 	}
 
 	// Execute mysql restore
-	if err := execRestore(args); err != nil {
+	sum, err := execRestore(args)
+	if err != nil {
 		// Fallback: beberapa environment punya default SSL=ON/REQUIRED di client config.
 		// Jika target server tidak support SSL, retry sekali dengan SSL dimatikan.
 		if isSSLMismatchServerNotSupport(err) && !hasSkipSSLArg(args) {
 			retryArgs := BuildMySQLArgs(profile, targetDB, "--skip-ssl", "-f")
-			if err2 := execRestore(retryArgs); err2 == nil {
-				return nil
+			sum2, err2 := execRestore(retryArgs)
+			if err2 == nil {
+				return sum2, nil
 			} else {
-				return fmt.Errorf("gagal menjalankan mysql restore (retry --skip-ssl): %w", err2)
+				return sum2, fmt.Errorf("gagal menjalankan mysql restore (retry --skip-ssl): %w", err2)
 			}
 		}
-		return fmt.Errorf("gagal menjalankan mysql restore: %w", err)
+		return sum, fmt.Errorf("gagal menjalankan mysql restore: %w", err)
 	}
 
-	return nil
+	return sum, nil
 }
 
 // OpenAndPrepareReader membuka file dan menyiapkan reader dengan decrypt/decompress
@@ -184,9 +291,9 @@ func CloseReaders(closers []io.Closer) {
 }
 
 // RestoreUserGrants melakukan restore user grants dari file
-func RestoreUserGrants(ctx context.Context, grantsFile string, profile *domain.ProfileInfo) error {
+func RestoreUserGrants(ctx context.Context, grantsFile string, profile *domain.ProfileInfo, logger applog.Logger) (*MySQLExecSummary, error) {
 	if grantsFile == "" {
-		return nil
+		return &MySQLExecSummary{BinName: ""}, nil
 	}
 
 	spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Restore user grants dari %s", filepath.Base(grantsFile)))
@@ -195,24 +302,26 @@ func RestoreUserGrants(ctx context.Context, grantsFile string, profile *domain.P
 
 	grantsSQL, err := os.ReadFile(grantsFile)
 	if err != nil {
-		return fmt.Errorf("gagal membaca file grants: %w", err)
+		return nil, fmt.Errorf("gagal membaca file grants: %w", err)
 	}
 
 	// Build mysql args tanpa database target
 	args := BuildMySQLArgs(profile, "")
 
 	// Execute mysql restore
-	if err := ExecuteMySQLCommand(ctx, args, strings.NewReader(string(grantsSQL))); err != nil {
+	sum, err := ExecuteMySQLCommand(ctx, args, strings.NewReader(string(grantsSQL)), logger)
+	if err != nil {
 		if isSSLMismatchServerNotSupport(err) && !hasSkipSSLArg(args) {
 			retryArgs := BuildMySQLArgs(profile, "", "--skip-ssl")
-			if err2 := ExecuteMySQLCommand(ctx, retryArgs, strings.NewReader(string(grantsSQL))); err2 == nil {
-				return nil
+			sum2, err2 := ExecuteMySQLCommand(ctx, retryArgs, strings.NewReader(string(grantsSQL)), logger)
+			if err2 == nil {
+				return sum2, nil
 			} else {
-				return fmt.Errorf("gagal restore user grants (retry --skip-ssl): %w", err2)
+				return sum2, fmt.Errorf("gagal restore user grants (retry --skip-ssl): %w", err2)
 			}
 		}
-		return fmt.Errorf("gagal restore user grants: %w", err)
+		return sum, fmt.Errorf("gagal restore user grants: %w", err)
 	}
 
-	return nil
+	return sum, nil
 }
