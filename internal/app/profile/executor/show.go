@@ -19,6 +19,44 @@ import (
 	"sfdbtools/internal/ui/table"
 )
 
+// ShowProfile menampilkan profile details dengan optional connection test dan password reveal.
+//
+// Modes:
+//  1. Interactive mode dengan --file: Load specific profile dan display
+//  2. Interactive mode tanpa --file: List all profiles dan prompt selection
+//  3. Non-interactive mode: Require --file flag (error jika tidak ada)
+//
+// Display Information:
+//   - Profile Info: Name, Path, Last Modified
+//   - Database Info: Host, Port, User, Password (masked)
+//   - SSH Tunnel: Enabled, Host, Port, User, Authentication method
+//   - Connection Test: DNS, TCP, SSH, Auth, DB Version (interactive only)
+//   - Health Status: HEALTHY/UNHEALTHY/SKIPPED
+//
+// Connection Test:
+//   - Interactive mode: Always test connection (live health check)
+//   - Non-interactive mode: Skip test (hanya tampilkan config)
+//   - Test steps: DNS resolution → TCP connection → SSH tunnel → Authentication
+//   - Display latency dan error hints jika test gagal
+//
+// Password Reveal:
+//   - Flag --reveal-password: Prompt confirmation lalu show plain password
+//   - Security: Require user confirmation dengan re-enter profile key
+//   - Only available in interactive mode
+//
+// List All Profiles:
+//   - Scan ConfigDir untuk .cnf.enc files
+//   - Display table dengan Name, Path, Last Modified
+//   - Allow selection untuk show details
+//
+// Returns:
+//   - nil: Display successful
+//   - error: Profile not found, load failed, display error
+//
+// Special Errors:
+//   - validation.ErrUserCancelled: User cancelled selection
+//   - profileerrors.ErrNoProfilesFound: ConfigDir kosong (no profiles)
+//   - profileerrors.ErrProfileNotFound: Specific profile tidak ditemukan
 func (e *Executor) ShowProfile() error {
 	isInteractive := e.isInteractiveMode()
 

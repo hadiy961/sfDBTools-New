@@ -23,6 +23,55 @@ import (
 	"sfdbtools/internal/ui/prompt"
 )
 
+// SaveProfile menyimpan profile ke disk dalam format encrypted.
+//
+// Flow:
+//  1. Determine save directory (ConfigDir atau existing file dir untuk edit)
+//  2. Test connection ke database (skip untuk import atau jika sudah tested)
+//  3. Format profile ke INI content
+//  4. Resolve encryption key (flag/env/prompt)
+//  5. Encrypt INI content dengan AES-256-GCM
+//  6. Write encrypted content ke file (.cnf.enc)
+//  7. Handle rename (untuk edit mode dengan name change)
+//
+// Parameters:
+//   - mode: Save mode ("create", "edit", "clone", "import")
+//
+// Behavior berdasarkan mode:
+//   - create: Create new file di ConfigDir
+//   - edit: Overwrite existing atau create new + delete old (jika rename)
+//   - clone: Create new file dengan name baru
+//   - import: Batch save, skip connection test (sudah di tahap validasi)
+//
+// Connection Test:
+//   - Default: test connection sebelum save (safety check)
+//   - Skip untuk: import (jika SkipConnTest=true atau ConnTestDone=true)
+//   - Interactive: prompt user untuk continue jika test gagal
+//   - Non-interactive: return error jika test gagal
+//
+// Encryption:
+//   - Key resolution: flag → env var → interactive prompt
+//   - Edit mode dengan env key: verify key dengan re-prompt (security)
+//   - Algorithm: AES-256-GCM (authenticated encryption)
+//
+// File Naming:
+//   - Format: <name>.cnf.enc
+//   - Name di-sanitize (trim spaces, remove extension suffix)
+//   - Validation: name uniqueness check (via Executor.Ops)
+//
+// Rename Handling (Edit mode):
+//   - Write new file dengan nama baru
+//   - Delete old file
+//   - Log warning jika delete old file gagal (file sudah tersimpan)
+//
+// Returns:
+//   - nil: Save berhasil
+//   - error: Save gagal (connection test failed, encryption failed, write failed, dll)
+//
+// Special Errors:
+//   - validation.ErrConnectionFailedRetry: User chose not to continue despite connection failure
+//   - validation.ErrUserCancelled: User cancelled key prompt
+//   - profileerrors.ErrProfileExists: Name conflict (handled by caller)
 func (e *Executor) SaveProfile(mode string) error {
 	isInteractive := e.isInteractiveMode()
 

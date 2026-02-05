@@ -14,6 +14,46 @@ import (
 	"sfdbtools/internal/shared/validation"
 )
 
+// CreateProfile membuat profile database baru dengan validation dan connection test.
+//
+// Flow:
+//  1. Interactive mode: Run wizard untuk collect input dari user
+//  2. Non-interactive mode: Validate input dari flags
+//  3. Check name uniqueness (via Ops.CheckConfigurationNameUnique)
+//  4. Display profile summary (untuk review)
+//  5. Save profile (dengan connection test)
+//  6. Retry mechanism jika connection test atau save gagal
+//
+// Interactive Mode:
+//   - Wizard menampilkan prompts untuk DB info dan SSH tunnel
+//   - User dapat review dan confirm sebelum save
+//   - Validation errors ditangani dengan retry option
+//   - Connection test failure dapat di-override dengan confirmation
+//
+// Non-Interactive Mode:
+//   - Semua input harus disediakan via flags
+//   - Validation errors langsung return error (no retry)
+//   - Connection test failure langsung return error (no override)
+//   - Quiet mode: minimal output (cocok untuk automation)
+//
+// Validation:
+//   - Profile name: format, uniqueness
+//   - Database info: host, port, user, password
+//   - SSH tunnel: host, port, auth (password atau identity file)
+//
+// Retry Behavior:
+//   - Validation error: prompt retry dari awal (wizard restart)
+//   - Connection test error: prompt retry save only (skip wizard)
+//   - Name conflict: prompt retry dengan name change
+//
+// Returns:
+//   - nil: Profile created successfully
+//   - error: Creation failed (validation, save, connection test, dll)
+//
+// Special Errors:
+//   - validation.ErrUserCancelled: User cancelled wizard
+//   - validation.ErrConnectionFailedRetry: User chose not to save after connection failure
+//   - profileerrors.ErrProfileExists: Name conflict (handled by uniqueness check)
 func (e *Executor) CreateProfile() error {
 	isInteractive := e.isInteractiveMode()
 	if !isInteractive {

@@ -4,7 +4,7 @@
 // Tanggal : 25 Januari 2026
 // Last Modified : 25 Januari 2026
 
-package types
+package model
 
 import (
 	"fmt"

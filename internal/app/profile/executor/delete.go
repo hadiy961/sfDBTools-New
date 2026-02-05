@@ -27,6 +27,17 @@ func filterProfileConfigFiles(files []string) []string {
 	return filtered
 }
 
+// collectValidPathsFromFlags resolves dan validates profile paths dari flags.
+//
+// Fungsi ini:
+//  1. Resolve setiap profile path (relative/absolute/name)
+//  2. Check file existence
+//  3. Build display names untuk confirmation
+//
+// Returns:
+//   - validPaths: Absolute paths ke profile files
+//   - displayNames: User-friendly names untuk display (name + path)
+//   - err: Error jika ada path yang invalid atau file tidak ditemukan
 func (e *Executor) collectValidPathsFromFlags(profiles []string) (validPaths []string, displayNames []string, err error) {
 	validPaths = make([]string, 0, len(profiles))
 	displayNames = make([]string, 0, len(profiles))

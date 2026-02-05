@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +19,10 @@ import (
 	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
+	"sfdbtools/internal/shared/runtimecfg"
+	"sfdbtools/internal/ui/progress"
+
+	"github.com/mattn/go-isatty"
 )
 
 type StepStatus string
@@ -77,7 +82,7 @@ type ConnectionTestReport struct {
 // Catatan:
 // - Untuk SSH tunnel: DNS/TCP test diarahkan ke SSH host.
 // - Untuk direct: DNS/TCP test diarahkan ke DB host.
-// - Fungsi ini tidak menampilkan spinner; cocok untuk dipanggil dari UI summary/table.
+// - Spinner hanya tampil di mode TTY (interaktif) dan tidak quiet; aman untuk pipeline.
 func TestConnection(cfg interface{}, profile *domain.ProfileInfo, initialDB string) *ConnectionTestReport {
 	report := &ConnectionTestReport{}
 	start := time.Now()
@@ -85,6 +90,19 @@ func TestConnection(cfg interface{}, profile *domain.ProfileInfo, initialDB stri
 		report.TotalLatency = time.Since(start)
 		report.Healthy = report.Err == nil
 	}()
+
+	// Non-interaktif (bukan TTY) diperlakukan sama seperti quiet untuk mencegah output spinner merusak pipeline.
+	quiet := runtimecfg.IsQuiet() || !isatty.IsTerminal(os.Stdin.Fd()) || !isatty.IsTerminal(os.Stdout.Fd())
+	var spin *progress.Spinner
+	if !quiet {
+		modeText := "melalui koneksi langsung"
+		if profile != nil && profile.SSHTunnel.Enabled {
+			modeText = "melalui SSH Tunnel"
+		}
+		spin = progress.NewSpinnerWithElapsed(fmt.Sprintf("Menguji koneksi ke %s %s", profileNameOrHost(profile), modeText))
+		spin.Start()
+		defer spin.Stop()
+	}
 
 	if profile == nil {
 		report.Err = fmt.Errorf("profile nil")
@@ -96,6 +114,9 @@ func TestConnection(cfg interface{}, profile *domain.ProfileInfo, initialDB stri
 	}
 
 	// Preflight tetap dijalankan agar error invalid input tampil lebih cepat.
+	if spin != nil {
+		spin.Update("Validasi konfigurasi (preflight)")
+	}
 	if err := ValidateConnectPreflight(profile); err != nil {
 		report.Err = err
 		report.DNSResolution = StepResult{Status: StepStatusFailed, Detail: "preflight", Err: err}
@@ -128,6 +149,9 @@ func TestConnection(cfg interface{}, profile *domain.ProfileInfo, initialDB stri
 	}
 
 	// Step 1: DNS resolution
+	if spin != nil {
+		spin.Update("Menguji DNS resolution")
+	}
 	report.DNSResolution = testDNS(timeout, dnsHost)
 	if report.DNSResolution.Status == StepStatusFailed {
 		report.Err = report.DNSResolution.Err
@@ -138,6 +162,9 @@ func TestConnection(cfg interface{}, profile *domain.ProfileInfo, initialDB stri
 	}
 
 	// Step 2: TCP connection
+	if spin != nil {
+		spin.Update("Menguji TCP connection")
+	}
 	report.TCPConnection = testTCP(timeout, tcpHost, tcpPort)
 	if report.TCPConnection.Status == StepStatusFailed {
 		report.Err = report.TCPConnection.Err
@@ -149,6 +176,9 @@ func TestConnection(cfg interface{}, profile *domain.ProfileInfo, initialDB stri
 	// Step 3: SSH tunnel (optional)
 	var tunnel *process.SSHTunnel
 	if profile.SSHTunnel.Enabled {
+		if spin != nil {
+			spin.Update("Membuat SSH tunnel")
+		}
 		tunnelStart := time.Now()
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
@@ -181,6 +211,9 @@ func TestConnection(cfg interface{}, profile *domain.ProfileInfo, initialDB stri
 	}
 
 	// Step 4: DB authentication (connect + ping)
+	if spin != nil {
+		spin.Update("Autentikasi database")
+	}
 	authStart := time.Now()
 	info := EffectiveDBInfo(profile)
 	dbCfg := database.Config{
@@ -213,6 +246,9 @@ func TestConnection(cfg interface{}, profile *domain.ProfileInfo, initialDB stri
 	report.Authentication = StepResult{Status: StepStatusSuccess, Duration: time.Since(authStart)}
 
 	// Step 5: DB version
+	if spin != nil {
+		spin.Update("Mengambil versi database")
+	}
 	verCtx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	ver, verr := client.GetVersion(verCtx)
@@ -227,6 +263,21 @@ func TestConnection(cfg interface{}, profile *domain.ProfileInfo, initialDB stri
 	report.DBVersion = ver
 
 	return report
+}
+
+func profileNameOrHost(profile *domain.ProfileInfo) string {
+	if profile == nil {
+		return "database"
+	}
+	name := strings.TrimSpace(profile.Name)
+	if name != "" {
+		return name
+	}
+	host := strings.TrimSpace(profile.DBInfo.Host)
+	if host != "" {
+		return host
+	}
+	return "database"
 }
 
 func testDNS(timeout time.Duration, host string) StepResult {

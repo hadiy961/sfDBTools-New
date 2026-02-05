@@ -10,3 +10,12 @@ config/db_list.txt
 /docs/improvement
 /docs/refactor
 /docs/example
+
+# Development notes (internal)
+*.local.md
+*.notes.md
+.notes/
+.dev/
+TODO.local.md
+NOTES.local.md
+/docs/INTERNAL_NOTES_GUIDE.md

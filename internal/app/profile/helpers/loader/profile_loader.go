@@ -12,7 +12,18 @@ import (
 	"sfdbtools/internal/shared/envx"
 )
 
-// ProfileLoadOptions berisi opsi untuk loading profile.
+// ProfileLoadOptions berisi opsi untuk loading profile dengan berbagai fallback mechanisms.
+//
+// Fields:
+//   - ConfigDir: Directory tempat profile disimpan (opsional, default current dir)
+//   - ProfilePath: Path ke profile file (absolute/relative/name saja)
+//   - ProfileKey: Encryption key untuk decrypt profile
+//   - EnvProfilePath: Nama env var untuk fallback profile path
+//   - EnvProfileKey: Nama env var untuk fallback encryption key
+//   - RequireProfile: Jika true, error jika profile tidak ditemukan
+//   - ProfilePurpose: Purpose string untuk error message (e.g., "source", "target")
+//   - AllowInteractive: Allow interactive selection jika path kosong
+//   - InteractivePrompt: Custom prompt text untuk interactive selection
 type ProfileLoadOptions struct {
 	ConfigDir         string
 	ProfilePath       string
@@ -25,7 +36,34 @@ type ProfileLoadOptions struct {
 	InteractivePrompt string
 }
 
-// ResolveAndLoadProfile me-resolve dan load profile dengan fallback ke environment variables.
+// ResolveAndLoadProfile me-resolve path dan load profile dengan fallback ke environment variables.
+//
+// Resolution chain untuk profile path:
+//  1. Gunakan opts.ProfilePath jika tersedia
+//  2. Fallback ke environment variable (opts.EnvProfilePath)
+//  3. Interactive selection (jika opts.AllowInteractive=true)
+//  4. Error jika RequireProfile=true
+//
+// Resolution chain untuk encryption key:
+//  1. Gunakan opts.ProfileKey jika tersedia
+//  2. Fallback ke environment variable (opts.EnvProfileKey)
+//  3. Interactive prompt (ditangani di parser layer)
+//
+// Returns:
+//   - *domain.ProfileInfo: Loaded profile dengan Path dan Name sudah di-set
+//   - error: Error jika profile tidak ditemukan atau gagal parse/decrypt
+//
+// Example:
+//
+//	profile, err := loader.ResolveAndLoadProfile(loader.ProfileLoadOptions{
+//		ConfigDir:        "/etc/sfdbtools/profiles",
+//		ProfilePath:      "prod-db",
+//		ProfileKey:       "secret-key",
+//		EnvProfilePath:   "SFDB_PROFILE",
+//		EnvProfileKey:    "SFDB_PROFILE_KEY",
+//		RequireProfile:   true,
+//		AllowInteractive: true,
+//	})
 func ResolveAndLoadProfile(opts ProfileLoadOptions) (*domain.ProfileInfo, error) {
 	profilePath := opts.ProfilePath
 	profileKey := opts.ProfileKey
@@ -92,6 +130,23 @@ func ResolveAndLoadProfile(opts ProfileLoadOptions) (*domain.ProfileInfo, error)
 }
 
 // LoadSourceProfile loads source profile untuk backup/dbscan operations dengan interactive mode.
+//
+// Fungsi ini adalah convenience wrapper untuk ResolveAndLoadProfile dengan:
+//   - RequireProfile=true (wajib ada profile)
+//   - ProfilePurpose="source" (untuk error message)
+//   - Interactive prompt yang sesuai context
+//
+// Parameters:
+//   - configDir: Directory tempat profile disimpan
+//   - profilePath: Path/name profile (bisa kosong jika allowInteractive=true)
+//   - profileKey: Encryption key (bisa kosong, akan di-prompt)
+//   - allowInteractive: Allow interactive selection jika profilePath kosong
+//
+// Returns:
+//   - *domain.ProfileInfo: Loaded source profile
+//   - error: Error jika profile tidak ditemukan atau gagal load
+//
+// Use case: db-backup, db-scan, db-restore dengan source profile.
 func LoadSourceProfile(configDir, profilePath, profileKey string, allowInteractive bool) (*domain.ProfileInfo, error) {
 	return ResolveAndLoadProfile(ProfileLoadOptions{
 		ConfigDir:         configDir,
@@ -106,10 +161,35 @@ func LoadSourceProfile(configDir, profilePath, profileKey string, allowInteracti
 	})
 }
 
-// SelectExistingDBConfigWithSnapshot memilih profile secara interaktif lalu mengembalikan:
-// - info (hasil load+parse profile)
-// - originalName (nama profile yang dipilih)
-// - snapshot (salinan info untuk baseline/original display)
+// SelectExistingDBConfigWithSnapshot memilih profile secara interaktif dan membuat snapshot untuk baseline comparison.
+//
+// Fungsi ini digunakan untuk operasi edit/delete yang membutuhkan:
+//  1. Profile selection via interactive picker
+//  2. Original snapshot untuk detecting changes
+//  3. Original name untuk rename detection
+//
+// Parameters:
+//   - configDir: Directory tempat profile disimpan
+//   - promptText: Custom prompt text untuk selection UI
+//
+// Returns:
+//   - info: Profile yang loaded (working copy untuk edit)
+//   - originalName: Nama profile original (untuk detect rename)
+//   - snapshot: Deep copy dari profile (baseline untuk diff)
+//   - err: Error jika selection cancelled atau load gagal
+//
+// Example:
+//
+//	profile, origName, snapshot, err := loader.SelectExistingDBConfigWithSnapshot(
+//		configDir,
+//		"Pilih profile yang ingin diedit:",
+//	)
+//	// profile dapat di-edit, snapshot tetap immutable untuk comparison
+//	if hasChanges(profile, snapshot) {
+//		// ... save changes
+//	}
+//
+// Use case: profile edit, profile delete dengan confirmation.
 func SelectExistingDBConfigWithSnapshot(configDir string, promptText string) (info *domain.ProfileInfo, originalName string, snapshot *domain.ProfileInfo, err error) {
 	loaded, err := ResolveAndLoadProfile(ProfileLoadOptions{
 		ConfigDir:         configDir,
