@@ -12,12 +12,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/app/restore/display"
 	restoremodel "sfdbtools/internal/app/restore/model"
-	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
+	"strings"
 )
 
 func (s *Service) collectSelectionTargetDBs(csvPath string) ([]string, error) {
