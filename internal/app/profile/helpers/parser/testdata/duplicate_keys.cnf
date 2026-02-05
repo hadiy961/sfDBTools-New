@@ -1,0 +1,7 @@
+[client]
+host = localhost
+port = 3306
+user = user1
+user = user2
+password = pass1
+password = pass2

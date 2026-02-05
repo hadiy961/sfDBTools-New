@@ -1,0 +1,12 @@
+[client]
+host = testdb2.example.com
+port = 3307
+user = testuser2
+password = testpass2
+
+[ssh]
+enabled = true
+host = ssh.example.com
+port = 22
+user = sshuser
+ssh_password = sshpass
