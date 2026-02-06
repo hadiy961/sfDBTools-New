@@ -163,7 +163,7 @@ func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args [
 		return nil, args, fmt.Errorf("backup cancelled: %w", ctx.Err())
 	}
 
-	writeEngine := writer.New(e.Log, e.ErrorLog, e.Options)
+	writeEngine := writer.New(e.Log, e.Options)
 
 	permissions := e.Config.Backup.Output.FilePermissions
 	exec := func(a []string) (*types_backup.BackupWriteResult, error) {
@@ -291,7 +291,7 @@ func (e *Engine) attemptRetries(
 		if newResult, retryErr := exec(newArgs); retryErr == nil {
 			return newResult, newArgs, nil
 		} else {
-			return newResult, newArgs, retryErr
+			return newResult, newArgs, fmt.Errorf("attemptRetries: retry tanpa opsi %s gagal: %w", removed, retryErr)
 		}
 	}
 
@@ -343,7 +343,12 @@ func (e *Engine) handleBackupError(
 		if !cfg.IsMultiDB {
 			logMeta["database"] = cfg.DBName
 		}
-		e.ErrorLog.LogWithOutput(logMeta, stderrDetail, err)
+		path := e.ErrorLog.LogWithOutput(logMeta, stderrDetail, err)
+		// Jangan spam untuk multi-DB; error summary akan ditangani oleh layer command.
+		// Untuk single DB, ini sangat membantu troubleshooting.
+		if !cfg.IsMultiDB && strings.TrimSpace(path) != "" {
+			e.Log.Warnf("Detail error tersimpan di: %s", path)
+		}
 	}
 
 	// Cleanup failed backup file

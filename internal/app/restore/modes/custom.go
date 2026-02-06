@@ -31,6 +31,7 @@ func (e *customExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 	start := time.Now()
 	logger := e.svc.GetLogger()
 	client := e.svc.GetTargetClient()
+	e.svc.ResetSQLIssueCounters()
 
 	result := &restoremodel.RestoreResult{
 		Success:       true,
@@ -76,30 +77,7 @@ func (e *customExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 		logger.Infof("User %s (%s) siap + grants applied", u.user, u.tag)
 	}
 
-	// Step 5-6: Restore main database using common flow
-	mainFlow := &commonRestoreFlow{
-		service:       e.svc,
-		ctx:           ctx,
-		dbName:        opts.Database,
-		sourceFile:    opts.DatabaseFile,
-		encryptionKey: opts.EncryptionKey,
-		skipBackup:    opts.SkipBackup,
-		dropTarget:    opts.DropTarget,
-		stopOnError:   opts.StopOnError,
-		backupOpts:    opts.BackupOptions,
-	}
-
-	backupMain, err := mainFlow.execute()
-	if err != nil {
-		if opts.StopOnError {
-			return nil, err
-		}
-		logger.Warnf("restore main DB gagal (lanjut karena continue-on-error): %v", err)
-		result.Success = false
-	}
-	result.BackupFile = backupMain
-
-	// Restore DMART database using companion flow
+	// Restore DMART database first using companion flow
 	dmartFlow := &companionRestoreFlow{
 		service:       e.svc,
 		ctx:           ctx,
@@ -122,13 +100,41 @@ func (e *customExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 	}
 	result.CompanionBackup = backupDmart
 
+	// Restore main database using common flow
+	mainFlow := &commonRestoreFlow{
+		service:       e.svc,
+		ctx:           ctx,
+		dbName:        opts.Database,
+		sourceFile:    opts.DatabaseFile,
+		encryptionKey: opts.EncryptionKey,
+		skipBackup:    opts.SkipBackup,
+		dropTarget:    opts.DropTarget,
+		stopOnError:   opts.StopOnError,
+		backupOpts:    opts.BackupOptions,
+	}
+
+	backupMain, err := mainFlow.execute()
+	if err != nil {
+		if opts.StopOnError {
+			return nil, err
+		}
+		logger.Warnf("restore main DB gagal (lanjut karena continue-on-error): %v", err)
+		result.Success = false
+	}
+	result.BackupFile = backupMain
+
 	// Post-restore operations using helpers
 	if result.Success {
 		performPostRestoreOperations(ctx, e.svc, opts.Database)
 		copyGrantsBetweenDatabases(ctx, e.svc, opts.Database, opts.DatabaseDmart)
 	}
 
-	print.PrintSuccess("Restore custom selesai")
+	applySQLIssueCounters(e.svc, result)
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		print.PrintWarning(fmt.Sprintf("Restore custom selesai dengan issue SQL (errors=%d, warnings=%d). Cek log untuk detail.", result.SQLErrors, result.SQLWarnings))
+	} else {
+		print.PrintSuccess("Restore custom selesai")
+	}
 	result.Duration = time.Since(start).String()
 	return result, nil
 }

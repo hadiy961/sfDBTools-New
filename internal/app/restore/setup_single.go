@@ -77,7 +77,13 @@ func (s *Service) prepareRestoreSinglePrereqs(ctx context.Context, allowInteract
 		s.Log.Info("Skip restore user grants (skip-grants=true)")
 	}
 
-	if err := s.resolveInteractiveSafetyOptions(&s.RestoreOpts.DropTarget, &s.RestoreOpts.SkipBackup, allowInteractive); err != nil {
+	if err := s.resolveInteractiveSafetyOptionsForTargets(
+		ctx,
+		[]string{s.RestoreOpts.TargetDB},
+		&s.RestoreOpts.DropTarget,
+		&s.RestoreOpts.SkipBackup,
+		allowInteractive,
+	); err != nil {
 		return err
 	}
 

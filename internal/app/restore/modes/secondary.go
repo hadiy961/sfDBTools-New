@@ -85,27 +85,7 @@ func (e *SecondaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreR
 		return result, nil
 	}
 
-	// Execute common restore flow for secondary database
-	flow := &commonRestoreFlow{
-		service:       e.svc,
-		ctx:           ctx,
-		dbName:        opts.TargetDB,
-		sourceFile:    sourceFile,
-		encryptionKey: opts.EncryptionKey,
-		skipBackup:    opts.SkipBackup,
-		dropTarget:    opts.DropTarget,
-		stopOnError:   opts.StopOnError,
-		backupOpts:    opts.BackupOptions,
-	}
-
-	backupFile, err := flow.execute()
-	if err != nil {
-		result.Error = err
-		return result, err
-	}
-	result.BackupFile = backupFile
-
-	// Restore companion database if available
+	// Restore companion (dmart) first if available
 	if opts.IncludeDmart && strings.TrimSpace(companionSourceFile) != "" {
 		companionFlow := &companionRestoreFlow{
 			service:       e.svc,
@@ -129,6 +109,26 @@ func (e *SecondaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreR
 		}
 	}
 
+	// Execute common restore flow for secondary database
+	flow := &commonRestoreFlow{
+		service:       e.svc,
+		ctx:           ctx,
+		dbName:        opts.TargetDB,
+		sourceFile:    sourceFile,
+		encryptionKey: opts.EncryptionKey,
+		skipBackup:    opts.SkipBackup,
+		dropTarget:    opts.DropTarget,
+		stopOnError:   opts.StopOnError,
+		backupOpts:    opts.BackupOptions,
+	}
+
+	backupFile, err := flow.execute()
+	if err != nil {
+		result.Error = err
+		return result, err
+	}
+	result.BackupFile = backupFile
+
 	// Post-restore: copy grants from primary if applicable
 	if opts.From == "primary" {
 		copyGrantsBetweenDatabases(ctx, e.svc, opts.PrimaryDB, opts.TargetDB)
@@ -144,6 +144,11 @@ func (e *SecondaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreR
 	performPostRestoreOperations(ctx, e.svc, opts.TargetDB)
 
 	finalizeResult(result, startTime, true)
-	logger.Info("Restore secondary database berhasil")
+	applySQLIssueCounters(e.svc, result)
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		logger.Warnf("Restore secondary database selesai dengan issue SQL (errors=%d, warnings=%d). Lihat log untuk detail.", result.SQLErrors, result.SQLWarnings)
+	} else {
+		logger.Info("Restore secondary database berhasil")
+	}
 	return result, nil
 }

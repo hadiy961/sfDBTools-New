@@ -31,6 +31,11 @@ type RestoreService interface {
 	SetRestoreInProgress(dbName string)
 	ClearRestoreInProgress()
 
+	// SQL issue counters (from mysql/mariadb client output)
+	ResetSQLIssueCounters()
+	AddSQLIssueCounters(sqlErrors, sqlWarnings int)
+	GetSQLIssueCounters() (sqlErrors, sqlWarnings int)
+
 	// Options Accessors
 	GetSingleOptions() *restoremodel.RestoreSingleOptions
 	GetPrimaryOptions() *restoremodel.RestorePrimaryOptions

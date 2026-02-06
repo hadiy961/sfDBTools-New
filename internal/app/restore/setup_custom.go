@@ -48,20 +48,7 @@ func (s *Service) SetupRestoreCustomSession(ctx context.Context) error {
 		return fmt.Errorf("gagal resolve ticket number: %w", err)
 	}
 
-	// 4. Interaktif: pilih backup pre-restore & drop target
-	if err := s.resolveInteractiveSafetyOptions(&opts.DropTarget, &opts.SkipBackup, true); err != nil {
-		return err
-	}
-
-	// 5. Setup backup options if not skipped
-	if !opts.SkipBackup {
-		if opts.BackupOptions == nil {
-			opts.BackupOptions = &restoremodel.RestoreBackupOptions{}
-		}
-		s.setupBackupOptions(opts.BackupOptions, s.Profile.EncryptionKey, true)
-	}
-
-	// 6. Prompt paste account detail
+	// 4. Prompt paste account detail (dibutuhkan untuk mengetahui nama DB target)
 	print.PrintSubHeader("Paste Account Detail")
 	fmt.Println("Paste account detail dari SFCola, lalu Enter dan tekan Ctrl+D")
 
@@ -87,6 +74,25 @@ func (s *Service) SetupRestoreCustomSession(ctx context.Context) error {
 
 	s.Log.Infof("Custom target db: %s, dmart: %s", opts.Database, opts.DatabaseDmart)
 	s.Log.Infof("Custom users: admin=%s fin=%s user=%s", opts.UserAdmin, opts.UserFin, opts.UserUser)
+
+	// 5. Interaktif: pilih backup pre-restore & drop target (di-skip jika semua DB target belum ada)
+	if err := s.resolveInteractiveSafetyOptionsForTargets(
+		ctx,
+		[]string{opts.Database, opts.DatabaseDmart},
+		&opts.DropTarget,
+		&opts.SkipBackup,
+		true,
+	); err != nil {
+		return err
+	}
+
+	// 6. Setup backup options if not skipped
+	if !opts.SkipBackup {
+		if opts.BackupOptions == nil {
+			opts.BackupOptions = &restoremodel.RestoreBackupOptions{}
+		}
+		s.setupBackupOptions(opts.BackupOptions, s.Profile.EncryptionKey, true)
+	}
 
 	// 7. Pilih file backup database
 	defaultDir := s.Config.Backup.Output.BaseDirectory

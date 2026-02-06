@@ -59,7 +59,22 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreRes
 		}
 	}
 
-	// 3. Execute common restore flow for primary database
+	// 3. Restore user grants (file users) first if available
+	result.GrantsFile = opts.GrantsFile
+	result.GrantsRestored = performGrantsRestore(ctx, e.service, opts.GrantsFile, opts.SkipGrants)
+
+	// 4. Restore companion (dmart) first if requested
+	if opts.IncludeDmart && opts.CompanionFile != "" {
+		if err := e.restoreCompanionDatabase(ctx, opts, result); err != nil {
+			if opts.StopOnError {
+				result.Error = err
+				return result, err
+			}
+			logger.Warnf("Gagal restore companion: %v", err)
+		}
+	}
+
+	// 5. Execute common restore flow for primary database
 	flow := &commonRestoreFlow{
 		service:       e.service,
 		ctx:           ctx,
@@ -78,21 +93,6 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreRes
 	}
 	result.BackupFile = backupFile
 
-	// 4. Handle companion database if requested
-	if opts.IncludeDmart && opts.CompanionFile != "" {
-		if err := e.restoreCompanionDatabase(ctx, opts, result); err != nil {
-			if opts.StopOnError {
-				result.Error = err
-				return result, err
-			}
-			logger.Warnf("Gagal restore companion: %v", err)
-		}
-	}
-
-	// 5. Restore user grants if available
-	result.GrantsFile = opts.GrantsFile
-	result.GrantsRestored = performGrantsRestore(ctx, e.service, opts.GrantsFile, false)
-
 	// 6. Post-restore operations
 	performPostRestoreOperations(ctx, e.service, opts.TargetDB)
 
@@ -103,7 +103,12 @@ func (e *PrimaryExecutor) Execute(ctx context.Context) (*restoremodel.RestoreRes
 	}
 
 	finalizeResult(result, startTime, true)
-	logger.Info("Restore primary database berhasil")
+	applySQLIssueCounters(e.service, result)
+	if result.SQLErrors > 0 || result.SQLWarnings > 0 {
+		logger.Warnf("Restore primary database selesai dengan issue SQL (errors=%d, warnings=%d). Lihat log untuk detail.", result.SQLErrors, result.SQLWarnings)
+	} else {
+		logger.Info("Restore primary database berhasil")
+	}
 
 	return result, nil
 }

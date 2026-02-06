@@ -36,6 +36,10 @@ type Service struct {
 	// Restore-specific state
 	restoreInProgress bool
 	currentTargetDB   string
+
+	// SQL issues detected from mysql/mariadb client output during restore
+	sqlErrors   int
+	sqlWarnings int
 }
 
 // NewRestoreService membuat instance baru Service dengan generic options
@@ -87,6 +91,9 @@ func (s *Service) SetRestoreInProgress(dbName string) {
 	s.WithLock(func() {
 		s.currentTargetDB = dbName
 		s.restoreInProgress = true
+		// Reset SQL issue counters for a fresh run.
+		s.sqlErrors = 0
+		s.sqlWarnings = 0
 	})
 }
 
@@ -96,6 +103,34 @@ func (s *Service) ClearRestoreInProgress() {
 		s.currentTargetDB = ""
 		s.restoreInProgress = false
 	})
+}
+
+// ResetSQLIssueCounters menghapus counter error/warning SQL.
+func (s *Service) ResetSQLIssueCounters() {
+	s.WithLock(func() {
+		s.sqlErrors = 0
+		s.sqlWarnings = 0
+	})
+}
+
+// AddSQLIssueCounters menambah counter error/warning SQL.
+func (s *Service) AddSQLIssueCounters(sqlErrors, sqlWarnings int) {
+	if sqlErrors == 0 && sqlWarnings == 0 {
+		return
+	}
+	s.WithLock(func() {
+		s.sqlErrors += sqlErrors
+		s.sqlWarnings += sqlWarnings
+	})
+}
+
+// GetSQLIssueCounters mengembalikan counter error/warning SQL.
+func (s *Service) GetSQLIssueCounters() (sqlErrors, sqlWarnings int) {
+	s.WithLock(func() {
+		sqlErrors = s.sqlErrors
+		sqlWarnings = s.sqlWarnings
+	})
+	return sqlErrors, sqlWarnings
 }
 
 // HandleShutdown menangani graceful shutdown saat CTRL+C atau interrupt

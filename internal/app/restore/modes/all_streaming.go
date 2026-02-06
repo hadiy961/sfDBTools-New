@@ -160,7 +160,10 @@ func (e *AllExecutor) performStreamingRestore(ctx context.Context, opts *restore
 		}
 		args := helpers.BuildMySQLArgs(profile, "", extraArgs...)
 
-		err := helpers.ExecuteMySQLCommand(ctx, args, pipeReader)
+		sum, err := helpers.ExecuteMySQLCommand(ctx, args, pipeReader, logger)
+		if sum != nil {
+			e.service.AddSQLIssueCounters(sum.SQLErrors, sum.SQLWarnings)
+		}
 		if err != nil {
 			// Hentikan processing goroutine secepat mungkin.
 			_ = pipeReader.CloseWithError(err)

@@ -18,7 +18,7 @@ type DatabaseBackupInfo struct {
 	OriginalDBSizeHuman string `json:"original_db_size_human"` // Ukuran database asli (human-readable)
 	Duration            string `json:"duration"`
 	Status              string `json:"status"`                   // "success", "success_with_warnings", "failed"
-	Warnings            string `json:"warnings,omitempty"`       // Warning/error messages dari mysqldump
+	Warnings            string `json:"warnings,omitempty"`       // Warning/error messages dari dump tool (mariadb-dump/mysqldump)
 	ErrorLogFile        string `json:"error_log_file,omitempty"` // Path ke file log error
 
 	// Additional metadata (optional)

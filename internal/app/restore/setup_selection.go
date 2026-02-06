@@ -6,14 +6,90 @@
 package restore
 
 import (
+	"bufio"
 	"context"
+	"encoding/csv"
 	"fmt"
+	"os"
 	"path/filepath"
+	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/app/restore/display"
 	restoremodel "sfdbtools/internal/app/restore/model"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
+	"strings"
 )
+
+func (s *Service) collectSelectionTargetDBs(csvPath string) ([]string, error) {
+	csvPath = strings.TrimSpace(csvPath)
+	if csvPath == "" {
+		return nil, fmt.Errorf("path CSV wajib diisi (--csv)")
+	}
+
+	csvDir := filepath.Dir(csvPath)
+	f, err := os.Open(csvPath)
+	if err != nil {
+		return nil, fmt.Errorf("gagal membuka CSV: %w", err)
+	}
+	defer f.Close()
+
+	r := csv.NewReader(bufio.NewReader(f))
+	r.TrimLeadingSpace = true
+	r.FieldsPerRecord = -1
+
+	records, err := r.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("gagal membaca CSV: %w", err)
+	}
+	if len(records) == 0 {
+		return []string{}, nil
+	}
+
+	startIdx := 0
+	if len(records[0]) >= 1 && strings.EqualFold(strings.Trim(strings.TrimSpace(records[0][0]), " '"), "filename") {
+		startIdx = 1
+	}
+
+	unique := map[string]struct{}{}
+
+	get := func(rec []string, idx int) string {
+		if idx < len(rec) {
+			return strings.Trim(strings.TrimSpace(rec[idx]), " '")
+		}
+		return ""
+	}
+
+	for i := startIdx; i < len(records); i++ {
+		rec := records[i]
+		if len(rec) == 0 {
+			continue
+		}
+
+		file := get(rec, 0)
+		if file == "" {
+			continue
+		}
+		if !filepath.IsAbs(file) {
+			file = filepath.Join(csvDir, file)
+		}
+
+		dbName := strings.TrimSpace(get(rec, 1))
+		if dbName == "" {
+			dbName = backupfile.ExtractDatabaseNameFromFile(file)
+		}
+		dbName = strings.TrimSpace(dbName)
+		if dbName == "" {
+			continue
+		}
+		unique[dbName] = struct{}{}
+	}
+
+	out := make([]string, 0, len(unique))
+	for db := range unique {
+		out = append(out, db)
+	}
+	return out, nil
+}
 
 // SetupRestoreSelectionSession melakukan setup untuk restore selection (CSV)
 func (s *Service) SetupRestoreSelectionSession(ctx context.Context) error {
@@ -45,7 +121,11 @@ func (s *Service) SetupRestoreSelectionSession(ctx context.Context) error {
 	}
 
 	// 5. Interaktif: pilih backup pre-restore & drop target
-	if err := s.resolveInteractiveSafetyOptions(&s.RestoreSelOpts.DropTarget, &s.RestoreSelOpts.SkipBackup, allowInteractive); err != nil {
+	targets, err := s.collectSelectionTargetDBs(s.RestoreSelOpts.CSV)
+	if err != nil {
+		return err
+	}
+	if err := s.resolveInteractiveSafetyOptionsForTargets(ctx, targets, &s.RestoreSelOpts.DropTarget, &s.RestoreSelOpts.SkipBackup, allowInteractive); err != nil {
 		return err
 	}
 
