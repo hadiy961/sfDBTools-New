@@ -14,6 +14,7 @@ import (
 	cryptocmd "sfdbtools/cmd/crypto"
 	dbcopycmd "sfdbtools/cmd/dbcopy"
 	dbscancmd "sfdbtools/cmd/dbscan"
+	dbusercmd "sfdbtools/cmd/dbuser"
 	profilecmd "sfdbtools/cmd/profile"
 	restorecmd "sfdbtools/cmd/restore"
 	scriptcmd "sfdbtools/cmd/script"
@@ -120,5 +121,6 @@ func init() {
 	rootCmd.AddCommand(backupcmd.CmdBackupMain)
 	rootCmd.AddCommand(restorecmd.CmdRestore)
 	rootCmd.AddCommand(dbcopycmd.CmdDBCopyMain)
+	rootCmd.AddCommand(dbusercmd.CmdDBUserMain)
 	rootCmd.AddCommand(completionCmd)
 }

@@ -37,7 +37,7 @@ backup:
     # base_directory: /media/ArchiveDB
     # Nama file backup saat ini menggunakan pattern FIXED internal:
     # {database}_{year}{month}{day}_{hour}{minute}{second}_{hostname}.sql[.<compression>][.enc]
-    base_directory: /media/ArchiveDB
+    base_directory: /data/sfdbtools/backup
     file_permissions: "0600" # File permissions untuk backup files (default: 0600 untuk keamanan)
     metadata_permissions: "0600" # File permissions untuk metadata (default: 0600 untuk keamanan)
     structure:
@@ -122,3 +122,13 @@ script:
   # Jika diisi, output file .sftools dari `sfDBTools script encrypt` akan disimpan ke folder ini.
   # Jika kosong, default: satu folder dengan file entrypoint.
   bundle_output_dir: "/etc/sfDBTools/scripts"
+
+# Daftar user yang dianggap "system users" untuk fitur `db-user export --exclude-system-users`.
+# Format entry:
+# - "user" (match untuk semua host)
+# - "user@host" (match spesifik host)
+system_users:
+  users:
+    - mysql.sys
+    - mysql.session
+    - mysql.infoschema

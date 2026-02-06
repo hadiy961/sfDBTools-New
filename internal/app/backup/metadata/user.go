@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
+	"sfdbtools/internal/app/usersgrants"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/timex"
@@ -35,15 +36,18 @@ func ExportAndSaveUserGrants(ctx context.Context, client *database.Client, logge
 	var userGrantsSQL string
 	var err error
 
+	// Legacy behavior: export grants only (tanpa CREATE USER), tanpa exclude system users.
 	if len(databases) == 0 {
-		// Export semua user grants (mode all)
 		logger.Debug("Mengambil semua user grants dari database...")
-		userGrantsSQL, err = ExportAllUserGrants(ctx, client)
 	} else {
-		// Export hanya user dengan grants ke database tertentu (mode filter, primary, secondary)
 		logger.Debugf("Mengambil user grants untuk database: %v", databases)
-		userGrantsSQL, err = ExportUserGrantsForDatabases(ctx, client, databases)
 	}
+	userGrantsSQL, _, err = usersgrants.ExportSQL(ctx, client, usersgrants.ExportOptions{
+		Databases:          databases,
+		ExcludeSystemUsers: false,
+		IncludeCreateUser:  false,
+		FlushPrivileges:    true,
+	})
 
 	if err != nil {
 		// Filtered mode: if no users match, treat as non-fatal and simply skip user grants.
