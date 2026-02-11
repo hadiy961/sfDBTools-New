@@ -2,7 +2,7 @@
 // Deskripsi : Executor untuk restore single database
 // Author : Hadiyatna Muflihun
 // Tanggal : 17 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 11 Februari 2026
 package modes
 
 import (
@@ -63,8 +63,7 @@ func (e *SingleExecutor) Execute(ctx context.Context) (*restoremodel.RestoreResu
 	}
 	result.BackupFile = backupFile
 
-	// Post-restore operations (temp DB + grants copy)
-	performPostRestoreOperations(ctx, e.service, opts.TargetDB)
+	// Catatan: Mode single tidak membuat database temp.
 
 	finalizeResult(result, startTime, true)
 	applySQLIssueCounters(e.service, result)
