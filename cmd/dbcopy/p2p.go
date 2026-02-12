@@ -2,7 +2,7 @@
 // Deskripsi : Subcommand db-copy p2p (primary -> primary)
 // Author : Hadiyatna Muflihun
 // Tanggal : 26 Januari 2026
-// Last Modified : 26 Januari 2026
+// Last Modified : 12 Februari 2026
 package dbcopycmd
 
 import (
@@ -28,9 +28,11 @@ Rule-based:
 
 Override eksplisit:
 	--source-db
+	--target-db
 
 Catatan:
-	- Untuk p2p, target database selalu sama dengan source database.
+	- Default: target database = source database.
+	- Jika target berada di server yang sama, target database harus berbeda dari source.
 	- Untuk p2p, pre-backup target selalu dilakukan (safety).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
@@ -86,4 +88,5 @@ Catatan:
 func init() {
 	CmdCopyP2P.Flags().StringP("client-code", "C", "", "Client code source (untuk membentuk nama primary source)")
 	CmdCopyP2P.Flags().String("source-db", "", "Override nama database source (primary)")
+	CmdCopyP2P.Flags().String("target-db", "", "Override nama database target (primary). Wajib beda jika target server sama")
 }
