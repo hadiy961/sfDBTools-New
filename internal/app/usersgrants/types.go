@@ -19,6 +19,7 @@ type ExportOptions struct {
 	SystemUsers        []string // spec format: "user" atau "user@host"
 
 	IncludeCreateUser bool // best-effort: SHOW CREATE USER jika bisa, fallback minimal jika tidak
+	IncludeGrants     bool // include GRANT statements; jika false, hanya export CREATE USER (jika IncludeCreateUser true)
 	FlushPrivileges   bool // default true disarankan
 }
 

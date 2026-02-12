@@ -2,7 +2,7 @@
 // Deskripsi : Fungsi untuk export dan menyimpan user grants
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 20 Januari 2026
+// Last Modified : 12 Februari 2026
 package metadata
 
 import (
@@ -46,6 +46,7 @@ func ExportAndSaveUserGrants(ctx context.Context, client *database.Client, logge
 		Databases:          databases,
 		ExcludeSystemUsers: false,
 		IncludeCreateUser:  false,
+		IncludeGrants:      true,
 		FlushPrivileges:    true,
 	})
 

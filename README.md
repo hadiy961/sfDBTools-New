@@ -176,6 +176,61 @@ sfdbtools db-backup single \
   --ticket "FULL-BACKUP-001"
 ```
 
+### Export / Apply User & Grants (db-user)
+
+Gunakan `db-user` jika butuh export/apply user/grants secara terpisah.
+
+Grants-only (lebih aman untuk sharing; tanpa CREATE USER):
+
+```bash
+sfdbtools db-user export \
+  --profile ./configs/prod-db.cnf.enc \
+  --profile-key "my-secret-key" \
+  --include-create-user=false \
+  --out ./grants.sql
+```
+
+Users-only (hanya CREATE USER; tanpa GRANT):
+
+```bash
+sfdbtools db-user export \
+  --profile ./configs/prod-db.cnf.enc \
+  --profile-key "my-secret-key" \
+  --include-grants=false \
+  --out ./users.sql
+```
+
+Split output jadi 2 file (users + grants):
+
+```bash
+sfdbtools db-user export \
+  --profile ./configs/prod-db.cnf.enc \
+  --profile-key "my-secret-key" \
+  --split-out \
+  --out ./user_grants.sql
+
+# hasil:
+# - ./user_grants.users.sql
+# - ./user_grants.grants.sql
+```
+
+Apply beberapa file (diproses sesuai urutan input):
+
+```bash
+sfdbtools db-user apply \
+  --profile ./configs/target-db.cnf.enc \
+  --profile-key "my-secret-key" \
+  --file ./user_grants.users.sql \
+  --file ./user_grants.grants.sql
+
+# Jika apply grants-only dan user belum ada di target, default-nya fail-fast.
+# Untuk bypass (best-effort), tambahkan: --skip-user-check
+```
+
+Catatan keamanan:
+- Jika `--include-create-user=true`, output bisa mengandung informasi autentikasi (mis. `IDENTIFIED`/hash) tergantung versi MySQL/MariaDB.
+- Untuk kebutuhan "grant tanpa password", gunakan mode grants-only.
+
 ### 3) Restore Database
 
 #### Restore Single Database

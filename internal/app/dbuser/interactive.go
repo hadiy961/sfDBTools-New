@@ -166,7 +166,7 @@ func completeExportOptionsInteractive(ctx context.Context, deps *appdeps.Depende
 	}
 
 	// Pengaturan lanjutan (opsional)
-	changeAdvanced, err := prompt.Confirm("Ubah pengaturan lanjutan? (exclude system users / include create user)", false)
+	changeAdvanced, err := prompt.Confirm("Ubah pengaturan lanjutan? (exclude system users / include create user / include grants)", false)
 	if err != nil {
 		return validation.HandleInputError(err)
 	}
@@ -182,6 +182,23 @@ func completeExportOptionsInteractive(ctx context.Context, deps *appdeps.Depende
 			return validation.HandleInputError(cerr)
 		}
 		opts.IncludeCreateUser = incCreate
+
+		incGrants, gerr := prompt.Confirm("Include GRANT statements?", opts.IncludeGrants)
+		if gerr != nil {
+			return validation.HandleInputError(gerr)
+		}
+		opts.IncludeGrants = incGrants
+
+		// Split output hanya relevan jika CREATE USER dan GRANT keduanya di-include.
+		if opts.IncludeCreateUser && opts.IncludeGrants {
+			split, serr := prompt.Confirm("Split output jadi 2 file terpisah? (*.users.sql dan *.grants.sql)", opts.SplitOut)
+			if serr != nil {
+				return validation.HandleInputError(serr)
+			}
+			opts.SplitOut = split
+		} else {
+			opts.SplitOut = false
+		}
 	}
 
 	return nil
@@ -192,24 +209,38 @@ func completeApplyOptionsInteractive(deps *appdeps.Dependencies, opts *ApplyOpti
 		return fmt.Errorf("opts nil")
 	}
 
-	// Pilih file jika belum ada
-	if strings.TrimSpace(opts.File) == "" {
+	// Pilih file jika belum ada (support multi-file)
+	if len(opts.Files) == 0 {
 		startDir := "."
 		if deps != nil && deps.Config != nil && strings.TrimSpace(deps.Config.Backup.Output.BaseDirectory) != "" {
 			startDir = deps.Config.Backup.Output.BaseDirectory
 		}
-		selected, err := prompt.SelectFile(startDir, "Pilih file SQL user+grants", []string{".sql"})
-		if err != nil {
-			return validation.HandleInputError(err)
-		}
-		if strings.TrimSpace(selected) == "" {
-			manual, terr := prompt.AskText("Masukkan path file SQL")
-			if terr != nil {
-				return validation.HandleInputError(terr)
+
+		for {
+			selected, err := prompt.SelectFile(startDir, "Pilih file SQL users/grants", []string{".sql"})
+			if err != nil {
+				return validation.HandleInputError(err)
 			}
-			selected = manual
+			if strings.TrimSpace(selected) == "" {
+				manual, terr := prompt.AskText("Masukkan path file SQL")
+				if terr != nil {
+					return validation.HandleInputError(terr)
+				}
+				selected = manual
+			}
+			selected = strings.TrimSpace(selected)
+			if selected != "" {
+				opts.Files = append(opts.Files, selected)
+			}
+
+			addMore, aerr := prompt.Confirm("Tambah file SQL lain?", false)
+			if aerr != nil {
+				return validation.HandleInputError(aerr)
+			}
+			if !addMore {
+				break
+			}
 		}
-		opts.File = strings.TrimSpace(selected)
 	}
 
 	// Konfirmasi force
@@ -218,6 +249,13 @@ func completeApplyOptionsInteractive(deps *appdeps.Dependencies, opts *ApplyOpti
 		return validation.HandleInputError(err)
 	}
 	opts.Force = force
+
+	// Precheck grants-only: default fail-fast jika user belum ada.
+	skip, err := prompt.Confirm("Skip precheck user existence untuk grants-only?", opts.SkipUserCheck)
+	if err != nil {
+		return validation.HandleInputError(err)
+	}
+	opts.SkipUserCheck = skip
 
 	return nil
 }

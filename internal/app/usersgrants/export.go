@@ -123,6 +123,9 @@ func ExportSQL(ctx context.Context, client *database.Client, opts ExportOptions)
 	if client == nil {
 		return "", ExportStats{}, fmt.Errorf("client nil")
 	}
+	if !opts.IncludeCreateUser && !opts.IncludeGrants {
+		return "", ExportStats{}, fmt.Errorf("tidak ada yang diexport: include-create-user dan include-grants keduanya false")
+	}
 
 	accounts, err := ResolveUserAccounts(ctx, client, opts)
 	if err != nil {
@@ -150,6 +153,33 @@ func ExportSQL(ctx context.Context, client *database.Client, opts ExportOptions)
 			continue
 		}
 
+		// Ambil grants jika dibutuhkan:
+		// - untuk export grants
+		// - untuk menentukan relevansi saat filter database diaktifkan
+		var usage string
+		var relevant []string
+		needsGrants := opts.IncludeGrants || len(opts.Databases) > 0
+		if needsGrants {
+			grants, gerr := getUserGrants(ctx, client, acc.User, acc.Host)
+			if gerr != nil {
+				stats.Warnings++
+				b.WriteString(fmt.Sprintf("\n-- Warning: Failed to get grants for '%s'@'%s': %v\n", acc.User, acc.Host, gerr))
+				// Jika sedang mode filtered (Databases diisi), kita tidak bisa menentukan relevansi; skip user ini.
+				if len(opts.Databases) > 0 {
+					stats.TotalUsersSkipped++
+				}
+				continue
+			}
+			usage, relevant = hasRelevantGrant(grants, opts.Databases)
+			if len(opts.Databases) > 0 && len(relevant) == 0 {
+				stats.TotalUsersSkipped++
+				continue
+			}
+		}
+
+		// Pada titik ini user dianggap relevan (atau tidak ada filter).
+		stats.TotalUsersWritten++
+
 		if opts.IncludeCreateUser {
 			if stmt, ok, warn := tryGetCreateUser(ctx, client, acc.User, acc.Host); ok {
 				b.WriteString(fmt.Sprintf("\n-- Create user '%s'@'%s'\n", acc.User, acc.Host))
@@ -162,30 +192,18 @@ func ExportSQL(ctx context.Context, client *database.Client, opts ExportOptions)
 			}
 		}
 
-		grants, gerr := getUserGrants(ctx, client, acc.User, acc.Host)
-		if gerr != nil {
-			stats.Warnings++
-			b.WriteString(fmt.Sprintf("\n-- Warning: Failed to get grants for '%s'@'%s': %v\n", acc.User, acc.Host, gerr))
-			continue
-		}
-
-		usage, relevant := hasRelevantGrant(grants, opts.Databases)
-		if len(opts.Databases) > 0 && len(relevant) == 0 {
-			stats.TotalUsersSkipped++
-			continue
-		}
-
-		stats.TotalUsersWritten++
-		b.WriteString(fmt.Sprintf("\n-- Grants for '%s'@'%s'\n", acc.User, acc.Host))
-		if usage != "" {
-			b.WriteString(usage)
-			b.WriteString("\n")
-			stats.TotalGrantLines++
-		}
-		for _, g := range relevant {
-			b.WriteString(g)
-			b.WriteString("\n")
-			stats.TotalGrantLines++
+		if opts.IncludeGrants {
+			b.WriteString(fmt.Sprintf("\n-- Grants for '%s'@'%s'\n", acc.User, acc.Host))
+			if usage != "" {
+				b.WriteString(usage)
+				b.WriteString("\n")
+				stats.TotalGrantLines++
+			}
+			for _, g := range relevant {
+				b.WriteString(g)
+				b.WriteString("\n")
+				stats.TotalGrantLines++
+			}
 		}
 	}
 

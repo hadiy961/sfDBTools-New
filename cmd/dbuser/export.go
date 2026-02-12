@@ -11,7 +11,7 @@ import (
 var CmdDBUserExport = &cobra.Command{
 	Use:     "export",
 	Aliases: []string{"backup", "dump"},
-	Short:   "Export user accounts dan grants ke file SQL",
+	Short:   "Export user accounts dan/atau grants ke file SQL",
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
 			return dbuser.ExecuteExport(cmd, appdeps.Deps)

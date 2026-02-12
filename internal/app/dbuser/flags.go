@@ -24,6 +24,8 @@ func AddExportFlags(cmd *cobra.Command) {
 	// Behavior
 	flags.Bool("exclude-system-users", true, "Skip system users (mysql.sys, mysql.session, dll)")
 	flags.Bool("include-create-user", true, "Best-effort include CREATE USER agar bisa restore di server kosong")
+	flags.Bool("include-grants", true, "Include GRANT statements (matikan untuk export user saja)")
+	flags.Bool("split-out", false, "Jika include-create-user dan include-grants aktif, split output jadi 2 file: *.users.sql dan *.grants.sql")
 
 	// Output
 	flags.StringP("out", "o", "", "Output file path untuk hasil export (.sql)")
@@ -41,6 +43,7 @@ func AddApplyFlags(cmd *cobra.Command) {
 	flags.StringP("profile", "p", "", "Path ke file profil database target terenkripsi (ENV: SFDB_TARGET_PROFILE)")
 	flags.StringP("profile-key", "k", "", "Encryption key untuk decrypt file profil database target (ENV: SFDB_TARGET_PROFILE_KEY)")
 
-	flags.StringP("file", "f", "", "Path file SQL user+grants yang akan di-apply")
+	flags.StringArrayP("file", "f", nil, "Path file SQL yang akan di-apply (repeatable; urutan diproses sesuai input)")
 	flags.Bool("force", true, "Jalankan mysql client dengan -f (best-effort, lanjut meski ada SQL error)")
+	flags.Bool("skip-user-check", false, "Skip precheck user existence untuk file grants-only (default: fail-fast jika user target belum ada)")
 }

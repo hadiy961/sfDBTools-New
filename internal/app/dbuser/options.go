@@ -15,10 +15,13 @@ type ExportOptions struct {
 
 	ExcludeSystemUsers bool
 	IncludeCreateUser  bool
+	IncludeGrants      bool
+	SplitOut           bool
 }
 
 type ApplyOptions struct {
-	Profile domain.ProfileInfo
-	File    string
-	Force   bool
+	Profile       domain.ProfileInfo
+	Files         []string
+	Force         bool
+	SkipUserCheck bool
 }

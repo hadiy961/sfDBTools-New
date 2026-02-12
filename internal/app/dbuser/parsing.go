@@ -29,6 +29,7 @@ func ParseExportOptions(cmd *cobra.Command) (ExportOptions, error) {
 	opts := ExportOptions{
 		ExcludeSystemUsers: true,
 		IncludeCreateUser:  true,
+		IncludeGrants:      true,
 		OutPerm:            "0600",
 	}
 
@@ -46,6 +47,8 @@ func ParseExportOptions(cmd *cobra.Command) (ExportOptions, error) {
 
 	opts.ExcludeSystemUsers = resolver.GetBoolFlagOrEnv(cmd, "exclude-system-users", "")
 	opts.IncludeCreateUser = resolver.GetBoolFlagOrEnv(cmd, "include-create-user", "")
+	opts.IncludeGrants = resolver.GetBoolFlagOrEnv(cmd, "include-grants", "")
+	opts.SplitOut = resolver.GetBoolFlagOrEnv(cmd, "split-out", "")
 
 	users := resolver.GetStringArrayFlagOrEnv(cmd, "user", "")
 	parsedUsers, err := parseUserSpecs(users)
@@ -73,9 +76,15 @@ func ParseApplyOptions(cmd *cobra.Command) (ApplyOptions, error) {
 	if err := parsing.PopulateTargetProfileFlags(cmd, &opts.Profile); err != nil {
 		return ApplyOptions{}, err
 	}
-	if v := resolver.GetStringFlagOrEnv(cmd, "file", ""); v != "" {
-		opts.File = strings.TrimSpace(v)
+	files := resolver.GetStringArrayFlagOrEnv(cmd, "file", "")
+	for _, f := range files {
+		f = strings.TrimSpace(f)
+		if f == "" {
+			continue
+		}
+		opts.Files = append(opts.Files, f)
 	}
 	opts.Force = resolver.GetBoolFlagOrEnv(cmd, "force", "")
+	opts.SkipUserCheck = resolver.GetBoolFlagOrEnv(cmd, "skip-user-check", "")
 	return opts, nil
 }

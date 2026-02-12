@@ -2,9 +2,11 @@ package dbuser
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sfdbtools/internal/app/mysqlcli"
 	profileconn "sfdbtools/internal/app/profile/connection"
 	"sfdbtools/internal/app/usersgrants"
@@ -53,6 +55,83 @@ func parseFileMode(permStr string) (os.FileMode, error) {
 		return 0, err
 	}
 	return os.FileMode(v), nil
+}
+
+func splitOutPaths(outPath string) (usersPath string, grantsPath string) {
+	p := strings.TrimSpace(outPath)
+	if p == "" {
+		return "", ""
+	}
+	base := p
+	if strings.EqualFold(filepath.Ext(base), ".sql") {
+		base = strings.TrimSuffix(base, filepath.Ext(base))
+	}
+	return base + ".users.sql", base + ".grants.sql"
+}
+
+func looksLikeGrantsOnlySQL(sqlText string) bool {
+	up := strings.ToUpper(sqlText)
+	if strings.Contains(up, "CREATE USER") {
+		return false
+	}
+	return strings.Contains(up, "GRANT ")
+}
+
+func extractGrantAccounts(sqlText string) []usersgrants.UserAccount {
+	// Best-effort: parse pola umum dari SHOW GRANTS:
+	//   GRANT ... TO 'user'@'host';
+	// Catatan: kita sengaja tidak menangani semua variasi syntax (role/proxy/dll).
+	re := regexp.MustCompile(`(?i)\bTO\s+'([^']+)'\s*@\s*'([^']+)'`)
+	ms := re.FindAllStringSubmatch(sqlText, -1)
+	if len(ms) == 0 {
+		return nil
+	}
+	out := make([]usersgrants.UserAccount, 0, len(ms))
+	seen := make(map[string]struct{}, len(ms))
+	for _, m := range ms {
+		if len(m) < 3 {
+			continue
+		}
+		u := strings.TrimSpace(m[1])
+		h := strings.TrimSpace(m[2])
+		if u == "" || h == "" {
+			continue
+		}
+		key := u + "@" + h
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, usersgrants.UserAccount{User: u, Host: h})
+	}
+	return out
+}
+
+func missingAccounts(ctx context.Context, client *database.Client, accounts []usersgrants.UserAccount) ([]usersgrants.UserAccount, error) {
+	if client == nil {
+		return nil, fmt.Errorf("client nil")
+	}
+	if len(accounts) == 0 {
+		return nil, nil
+	}
+
+	// Best-effort query; butuh privilege SELECT ke mysql.user.
+	const q = `SELECT 1 FROM mysql.user WHERE user = ? AND host = ? LIMIT 1`
+	missing := make([]usersgrants.UserAccount, 0)
+	for _, a := range accounts {
+		var one int
+		err := client.DB().QueryRowContext(ctx, q, a.User, a.Host).Scan(&one)
+		if err == nil {
+			continue
+		}
+		// Jika no rows, account belum ada.
+		if err == sql.ErrNoRows {
+			missing = append(missing, a)
+			continue
+		}
+		return nil, err
+	}
+	return missing, nil
 }
 
 func resolveDatabaseFilters(ctx context.Context, client *database.Client, opts ExportOptions) ([]string, error) {
@@ -116,6 +195,9 @@ func ExecuteExport(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 	if err != nil {
 		return err
 	}
+	if !parsed.IncludeCreateUser && !parsed.IncludeGrants {
+		return fmt.Errorf("tidak ada yang diexport: --include-create-user dan --include-grants keduanya false")
+	}
 
 	ctx := context.Background()
 
@@ -152,18 +234,6 @@ func ExecuteExport(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 		sysUsers = append(sysUsers, deps.Config.SystemUsers.Users...)
 	}
 
-	sqlText, stats, err := usersgrants.ExportSQL(ctx, client, usersgrants.ExportOptions{
-		Users:              parseAccounts(parsed.Users),
-		Databases:          dbFilters,
-		ExcludeSystemUsers: parsed.ExcludeSystemUsers,
-		SystemUsers:        sysUsers,
-		IncludeCreateUser:  parsed.IncludeCreateUser,
-		FlushPrivileges:    true,
-	})
-	if err != nil {
-		return err
-	}
-
 	outPath := strings.TrimSpace(parsed.OutPath)
 	if outPath == "" {
 		baseDir := deps.Config.Backup.Output.BaseDirectory
@@ -186,14 +256,82 @@ func ExecuteExport(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 	if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
 		return fmt.Errorf("gagal membuat direktori output: %w", err)
 	}
-	if err := os.WriteFile(outPath, []byte(sqlText), mode); err != nil {
-		return fmt.Errorf("gagal menulis output file: %w", err)
+
+	writeOut := func(path string, content string) error {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			return fmt.Errorf("gagal membuat direktori output: %w", err)
+		}
+		if err := os.WriteFile(path, []byte(content), mode); err != nil {
+			return fmt.Errorf("gagal menulis output file: %w", err)
+		}
+		return nil
+	}
+
+	// Split output (users + grants) jika diminta dan keduanya aktif.
+	if parsed.SplitOut && parsed.IncludeCreateUser && parsed.IncludeGrants {
+		usersPath, grantsPath := splitOutPaths(outPath)
+		usersSQL, usersStats, err := usersgrants.ExportSQL(ctx, client, usersgrants.ExportOptions{
+			Users:              parseAccounts(parsed.Users),
+			Databases:          dbFilters,
+			ExcludeSystemUsers: parsed.ExcludeSystemUsers,
+			SystemUsers:        sysUsers,
+			IncludeCreateUser:  true,
+			IncludeGrants:      false,
+			FlushPrivileges:    false,
+		})
+		if err != nil {
+			return err
+		}
+		grantsSQL, grantsStats, err := usersgrants.ExportSQL(ctx, client, usersgrants.ExportOptions{
+			Users:              parseAccounts(parsed.Users),
+			Databases:          dbFilters,
+			ExcludeSystemUsers: parsed.ExcludeSystemUsers,
+			SystemUsers:        sysUsers,
+			IncludeCreateUser:  false,
+			IncludeGrants:      true,
+			FlushPrivileges:    true,
+		})
+		if err != nil {
+			return err
+		}
+		if err := writeOut(usersPath, usersSQL); err != nil {
+			return err
+		}
+		if err := writeOut(grantsPath, grantsSQL); err != nil {
+			return err
+		}
+
+		if !runtimecfg.IsQuiet() {
+			print.PrintSuccess(fmt.Sprintf("Export users selesai: %s", usersPath))
+			print.PrintSuccess(fmt.Sprintf("Export grants selesai: %s", grantsPath))
+		}
+		log.Infof("Export users selesai: file=%s total_users=%d written=%d skipped=%d grant_lines=%d warnings=%d",
+			usersPath, usersStats.TotalUsersInput, usersStats.TotalUsersWritten, usersStats.TotalUsersSkipped, usersStats.TotalGrantLines, usersStats.Warnings)
+		log.Infof("Export grants selesai: file=%s total_users=%d written=%d skipped=%d grant_lines=%d warnings=%d",
+			grantsPath, grantsStats.TotalUsersInput, grantsStats.TotalUsersWritten, grantsStats.TotalUsersSkipped, grantsStats.TotalGrantLines, grantsStats.Warnings)
+		return nil
+	}
+
+	sqlText, stats, err := usersgrants.ExportSQL(ctx, client, usersgrants.ExportOptions{
+		Users:              parseAccounts(parsed.Users),
+		Databases:          dbFilters,
+		ExcludeSystemUsers: parsed.ExcludeSystemUsers,
+		SystemUsers:        sysUsers,
+		IncludeCreateUser:  parsed.IncludeCreateUser,
+		IncludeGrants:      parsed.IncludeGrants,
+		FlushPrivileges:    parsed.IncludeGrants,
+	})
+	if err != nil {
+		return err
+	}
+	if err := writeOut(outPath, sqlText); err != nil {
+		return err
 	}
 
 	if !runtimecfg.IsQuiet() {
-		print.PrintSuccess(fmt.Sprintf("Export user+grants selesai: %s", outPath))
+		print.PrintSuccess(fmt.Sprintf("Export selesai: %s", outPath))
 	}
-	log.Infof("Export user+grants selesai: file=%s total_users=%d written=%d skipped=%d grant_lines=%d warnings=%d",
+	log.Infof("Export selesai: file=%s total_users=%d written=%d skipped=%d grant_lines=%d warnings=%d",
 		outPath, stats.TotalUsersInput, stats.TotalUsersWritten, stats.TotalUsersSkipped, stats.TotalGrantLines, stats.Warnings)
 	return nil
 }
@@ -221,15 +359,9 @@ func ExecuteApply(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 			return err
 		}
 	}
-	if strings.TrimSpace(parsed.File) == "" {
+	if len(parsed.Files) == 0 {
 		return fmt.Errorf("--file wajib diisi")
 	}
-
-	sqlBytes, err := os.ReadFile(parsed.File)
-	if err != nil {
-		return fmt.Errorf("gagal membaca file: %w", err)
-	}
-	sqlText := string(sqlBytes)
 
 	extra := make([]string, 0, 1)
 	if parsed.Force {
@@ -237,26 +369,85 @@ func ExecuteApply(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 	}
 
 	ctx := context.Background()
-	args := mysqlcli.BuildArgs(&parsed.Profile, "", extra...)
-	sum, err := mysqlcli.Execute(ctx, args, strings.NewReader(sqlText), log)
-	if err != nil && mysqlcli.IsSSLMismatchServerNotSupport(err) && !mysqlcli.HasSkipSSLArg(args) {
-		retryArgs := mysqlcli.BuildArgs(&parsed.Profile, "", append([]string{"--skip-ssl"}, extra...)...)
-		sum2, err2 := mysqlcli.Execute(ctx, retryArgs, strings.NewReader(sqlText), log)
-		sum = sum2
-		if err2 != nil {
-			return fmt.Errorf("gagal apply user+grants (retry --skip-ssl): %w", err2)
-		}
-		err = nil
-	}
-	if sum != nil {
-		log.Infof("Apply user+grants summary: sql_errors=%d sql_warnings=%d other_outputs=%d", sum.SQLErrors, sum.SQLWarnings, sum.OtherOutputs)
-	}
-	if err != nil {
-		return fmt.Errorf("gagal apply user+grants: %w", err)
-	}
 
+	// Optional precheck untuk grants-only files: fail-fast jika user target belum ada.
+	// Catatan: ini best-effort dan butuh privilege baca mysql.user.
+	var precheckClient *database.Client
+	getPrecheckClient := func() (*database.Client, error) {
+		if precheckClient != nil {
+			return precheckClient, nil
+		}
+		c, err := profileconn.ConnectWithProfile(nil, &parsed.Profile, consts.DefaultInitialDatabase)
+		if err != nil {
+			return nil, err
+		}
+		precheckClient = c
+		return precheckClient, nil
+	}
+	defer func() {
+		if precheckClient != nil {
+			precheckClient.Close()
+		}
+	}()
+
+	for _, f := range parsed.Files {
+		f = strings.TrimSpace(f)
+		if f == "" {
+			continue
+		}
+		sqlBytes, err := os.ReadFile(f)
+		if err != nil {
+			return fmt.Errorf("gagal membaca file: %w", err)
+		}
+		sqlText := string(sqlBytes)
+		if looksLikeGrantsOnlySQL(sqlText) {
+			if !runtimecfg.IsQuiet() {
+				print.PrintWarning("⚠️  File terlihat berisi GRANT tanpa CREATE USER.")
+			}
+			if !parsed.SkipUserCheck {
+				accs := extractGrantAccounts(sqlText)
+				if len(accs) > 0 {
+					c, cerr := getPrecheckClient()
+					if cerr != nil {
+						// Jika tidak bisa connect untuk precheck, fallback ke behavior lama (warning + lanjut).
+						log.Warnf("Precheck user grants dilewati (gagal connect): %v", cerr)
+					} else {
+						miss, merr := missingAccounts(ctx, c, accs)
+						if merr != nil {
+							log.Warnf("Precheck user grants dilewati (gagal cek mysql.user): %v", merr)
+						} else if len(miss) > 0 {
+							// Fail-fast: user target belum ada.
+							specs := make([]string, 0, len(miss))
+							for _, m := range miss {
+								specs = append(specs, fmt.Sprintf("%s@%s", m.User, m.Host))
+							}
+							return fmt.Errorf("apply dibatalkan: file grants-only membutuhkan user target yang belum ada: %s (apply users dulu atau pakai --skip-user-check)", strings.Join(specs, ", "))
+						}
+					}
+				}
+			}
+		}
+
+		args := mysqlcli.BuildArgs(&parsed.Profile, "", extra...)
+		sum, err := mysqlcli.Execute(ctx, args, strings.NewReader(sqlText), log)
+		if err != nil && mysqlcli.IsSSLMismatchServerNotSupport(err) && !mysqlcli.HasSkipSSLArg(args) {
+			retryArgs := mysqlcli.BuildArgs(&parsed.Profile, "", append([]string{"--skip-ssl"}, extra...)...)
+			sum2, err2 := mysqlcli.Execute(ctx, retryArgs, strings.NewReader(sqlText), log)
+			sum = sum2
+			if err2 != nil {
+				return fmt.Errorf("gagal apply file %s (retry --skip-ssl): %w", f, err2)
+			}
+			err = nil
+		}
+		if sum != nil {
+			log.Infof("Apply file summary: file=%s sql_errors=%d sql_warnings=%d other_outputs=%d", f, sum.SQLErrors, sum.SQLWarnings, sum.OtherOutputs)
+		}
+		if err != nil {
+			return fmt.Errorf("gagal apply file %s: %w", f, err)
+		}
+	}
 	if !runtimecfg.IsQuiet() {
-		print.PrintSuccess("Apply user+grants selesai")
+		print.PrintSuccess("Apply SQL selesai")
 	}
 	return nil
 }
