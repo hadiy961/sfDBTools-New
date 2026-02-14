@@ -2,7 +2,7 @@
 // Deskripsi : P2P (Primary to Primary) executor
 // Author : Hadiyatna Muflihun
 // Tanggal : 26 Januari 2026
-// Last Modified : 26 Januari 2026
+// Last Modified : 12 Februari 2026
 package modes
 
 import (
@@ -52,12 +52,6 @@ func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 	srcProfile, tgtProfile, err := e.svc.SetupProfiles(&e.opts.CommonCopyOptions, !DetermineNonInteractiveMode(&e.opts.CommonCopyOptions))
 	if err != nil {
 		return nil, err
-	}
-	if srcProfile != nil && tgtProfile != nil {
-		// P2P: target profile harus beda dari source profile.
-		if strings.EqualFold(strings.TrimSpace(srcProfile.Path), strings.TrimSpace(tgtProfile.Path)) {
-			return nil, fmt.Errorf("db-copy p2p ditolak: source-profile dan target-profile tidak boleh sama")
-		}
 	}
 
 	// Setup workdir
@@ -170,15 +164,25 @@ func (e *P2PExecutor) Execute(ctx context.Context) (*model.CopyResult, error) {
 }
 
 func (e *P2PExecutor) resolveDatabaseNames(ctx context.Context, srcClient *database.Client) (sourceDB, targetDB string, err error) {
-	// Explicit mode: gunakan source-db; untuk P2P target selalu sama dengan source.
+	// Explicit mode
 	if strings.TrimSpace(e.opts.SourceDB) != "" {
-		return strings.TrimSpace(e.opts.SourceDB), strings.TrimSpace(e.opts.SourceDB), nil
+		src := strings.TrimSpace(e.opts.SourceDB)
+		tgt := strings.TrimSpace(e.opts.TargetDB)
+		if tgt == "" {
+			tgt = src
+		}
+		return src, tgt, nil
 	}
 
-	// Rule-based: resolve primary dari client-code; target selalu sama.
+	// Rule-based: resolve primary dari client-code; target default = source, bisa override via --target-db.
 	primary, err := e.svc.ResolvePrimaryDB(ctx, srcClient, e.opts.ClientCode)
 	if err != nil {
 		return "", "", err
+	}
+
+	primary = strings.TrimSpace(primary)
+	if strings.TrimSpace(e.opts.TargetDB) != "" {
+		return primary, strings.TrimSpace(e.opts.TargetDB), nil
 	}
 
 	return primary, primary, nil

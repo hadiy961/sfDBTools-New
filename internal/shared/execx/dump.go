@@ -27,5 +27,5 @@ func ResolveMariaDBDumpOrMysqldump() (ResolvedBinary, error) {
 	if p, err := exec.LookPath("mysqldump"); err == nil {
 		return ResolvedBinary{Name: "mysqldump", Path: p}, nil
 	}
-	return ResolvedBinary{}, fmt.Errorf("binary dump tidak ditemukan di PATH: coba 'mariadb-dump' lalu fallback 'mysqldump'")
+	return ResolvedBinary{}, fmt.Errorf("CRITICAL ERROR: binary dump (mariadb-dump/mysqldump) tidak ditemukan di PATH system.\nRuntime requirement tidak terpenuhi. Proses backup dibatalkan.\nSilakan install mariadb-client atau mysql-client sebelum melanjutkan.")
 }

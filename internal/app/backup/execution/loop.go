@@ -145,7 +145,10 @@ func (e *Engine) executeSingleBackupInLoop(
 	// Export user grants untuk separated/single modes
 	if e.UserGrants != nil {
 		if config.Mode == consts.ModeSeparated || config.Mode == consts.ModeSingle {
-			path := e.UserGrants.ExportUserGrantsIfNeeded(ctx, outputPath, []string{dbName})
+			path, ugErr := e.UserGrants.ExportUserGrantsIfNeeded(ctx, outputPath, []string{dbName})
+			if ugErr != nil {
+				result.Errors = append(result.Errors, fmt.Sprintf("export user grants gagal: %s", ugErr.Error()))
+			}
 			if e.Config.Backup.Output.SaveBackupInfo {
 				permissions := e.Config.Backup.Output.MetadataPermissions
 				e.UserGrants.UpdateMetadataUserGrantsPath(outputPath, path, permissions)

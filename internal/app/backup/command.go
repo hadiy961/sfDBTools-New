@@ -17,6 +17,7 @@ import (
 	"sfdbtools/internal/cli/parsing"
 	resolver "sfdbtools/internal/cli/resolver"
 	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/execx"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
@@ -48,6 +49,12 @@ func ExecuteBackup(cmd *cobra.Command, deps *appdeps.Dependencies, mode string) 
 
 // ExecuteBackupCommand adalah unified entry point untuk semua jenis backup
 func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecutionState, config types_backup.BackupEntryConfig) error {
+	// Check requirements sebelum memulai sesi
+	// 1. Binary check: mariadb-dump / mysqldump
+	if _, err := execx.ResolveMariaDBDumpOrMysqldump(); err != nil {
+		return err
+	}
+
 	// Setup session (koneksi database source)
 	// RESOURCE OWNERSHIP: PrepareBackupSession transfer ownership ke caller.
 	// Jika PrepareBackupSession return error, client sudah di-close otomatis (tidak perlu cleanup).
@@ -122,20 +129,50 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 	svc.SetCancelFunc(cancel)
 
 	// Setup signal handler untuk CTRL+C (SIGINT) dan SIGTERM
-	sigChan := make(chan os.Signal, 1)
+	// Buffer 2 agar tidak drop signal jika user menekan cepat dua kali.
+	sigChan := make(chan os.Signal, 2)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigChan)
+
+	// Channel untuk menghentikan goroutine signal handler saat command selesai.
+	finished := make(chan struct{})
+	defer close(finished)
 
 	// Goroutine untuk menangani signal
 	go func() {
-		sig := <-sigChan
+		var sig os.Signal
+		select {
+		case sig = <-sigChan:
+		case <-finished:
+			return
+		}
 		if !runtimecfg.IsQuiet() {
 			print.Println()
 		}
+
+		// Jika tidak ada backup aktif (mis. user sedang di prompt "Tekan Enter..."),
+		// jangan tampilkan pesan "menghentikan backup" yang misleading.
+		if execState == nil {
+			logger.Warnf("Menerima signal %v, keluar.", sig)
+			os.Exit(0)
+			return
+		}
+		_, inProgress := execState.GetCurrentBackupFile()
+		if !inProgress {
+			logger.Warnf("Menerima signal %v, tidak ada proses backup aktif. Keluar.", sig)
+			os.Exit(0)
+			return
+		}
+
 		logger.Warnf("Menerima signal %v, menghentikan backup... (Tekan sekali lagi untuk force exit)", sig)
 		svc.HandleShutdown(execState)
 		cancel()
 
-		<-sigChan
+		select {
+		case <-sigChan:
+		case <-finished:
+			return
+		}
 		if !runtimecfg.IsQuiet() {
 			print.Println()
 		}
@@ -170,7 +207,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 			logger.Warn("Proses backup dibatalkan.")
 			return nil
 		}
-		logger.Error("backup gagal (" + config.Mode + "): " + err.Error())
+		// Log error is handled by the runner
 		return err
 	}
 

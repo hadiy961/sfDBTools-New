@@ -44,6 +44,9 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 
 	// CaptureGTID & ExcludeUser berasal dari config file (defaultval), tidak di-override via flag.
 
+	// Policy flags
+	opts.RequireGrants = resolver.GetBoolFlagOrEnv(cmd, "require-grants", "")
+
 	// Dry Run
 	opts.DryRun = resolver.GetBoolFlagOrEnv(cmd, "dry-run", "")
 

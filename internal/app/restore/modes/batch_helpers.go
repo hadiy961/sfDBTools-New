@@ -2,7 +2,7 @@
 // Deskripsi : Helper functions untuk batch restore operations
 // Author : Hadiyatna Muflihun
 // Tanggal : 30 Desember 2025
-// Last Modified : 5 Januari 2026
+// Last Modified : 11 Februari 2026
 package modes
 
 import (
@@ -98,9 +98,6 @@ func (r *singleDatabaseRestore) execute() error {
 	if err := r.service.CreateAndRestoreDatabase(r.ctx, r.dbName, r.sourceFile, r.encryptionKey); err != nil {
 		return fmt.Errorf("restore gagal: %w", err)
 	}
-
-	// Operasi post-restore (pembuatan temp DB - non-fatal)
-	performPostRestoreOperations(r.ctx, r.service, r.dbName)
 
 	return nil
 }

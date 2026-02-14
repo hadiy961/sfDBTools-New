@@ -2,7 +2,7 @@
 // Deskripsi : Core service untuk db-copy operations (streaming backup → restore)
 // Author : Hadiyatna Muflihun
 // Tanggal : 26 Januari 2026
-// Last Modified : 27 Januari 2026
+// Last Modified : 12 Februari 2026
 package dbcopy
 
 import (
@@ -15,7 +15,6 @@ import (
 	"sfdbtools/internal/app/backup/execution"
 	backuppath "sfdbtools/internal/app/backup/helpers/path"
 	"sfdbtools/internal/app/backup/model/types_backup"
-	"sfdbtools/internal/app/dbcopy/model"
 	profileconn "sfdbtools/internal/app/profile/connection"
 	"sfdbtools/internal/app/profile/helpers/loader"
 	"sfdbtools/internal/app/restore"
@@ -149,11 +148,6 @@ func (s *Service) ValidateNotCopyToSelf(srcProfile, tgtProfile *domain.ProfileIn
 	tgtUser := strings.TrimSpace(tgtProfile.DBInfo.User)
 
 	sameEndpoint := srcEff.Port == tgtEff.Port && srcHost == tgtHost && srcUser == tgtUser
-
-	// P2P khusus: harus beda server
-	if strings.EqualFold(mode, string(model.ModeP2P)) && sameEndpoint && !strings.EqualFold(srcDB, tgtDB) {
-		return fmt.Errorf("db-copy p2p ditolak: source dan target berada di server yang sama (host=%s port=%d user=%s). Untuk p2p, target harus beda server via --target-profile (atau gunakan p2s/s2s)", srcHost, srcEff.Port, srcUser)
-	}
 
 	// Semua mode: tolak jika endpoint + database sama
 	if sameEndpoint && strings.EqualFold(srcDB, tgtDB) {

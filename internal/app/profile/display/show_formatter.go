@@ -2,7 +2,7 @@
 // Deskripsi : Formatter untuk tampilan show profile
 // Author : Hadiyatna Muflihun
 // Tanggal : 14 Januari 2026
-// Last Modified : 21 Januari 2026
+// Last Modified : 11 Februari 2026
 
 package display
 
@@ -26,18 +26,23 @@ func (d *Displayer) printShowDetails() {
 
 	showOpts, _ := d.State.ShowOptions()
 	isInteractive := showOpts != nil && showOpts.Interactive
-	testSkipped := !isInteractive
+	skipConnTest := showOpts != nil && showOpts.SkipConnTest
+	testSkipped := !isInteractive || skipConnTest
 
-	// Jalankan test koneksi (hanya untuk mode interaktif), tapi tetap tampilkan barisnya.
+	// Jalankan test koneksi (hanya untuk mode interaktif dan tidak di-skip), tapi tetap tampilkan barisnya.
 	var report *profileconn.ConnectionTestReport
-	if isInteractive {
+	if isInteractive && !skipConnTest {
 		report = profileconn.TestConnection(nil, orig, consts.DefaultInitialDatabase)
 	} else {
+		detail := "non-interaktif"
+		if isInteractive && skipConnTest {
+			detail = "dilewati"
+		}
 		report = &profileconn.ConnectionTestReport{
-			DNSResolution:  profileconn.StepResult{Status: profileconn.StepStatusSkipped, Detail: "non-interaktif"},
-			TCPConnection:  profileconn.StepResult{Status: profileconn.StepStatusSkipped, Detail: "non-interaktif"},
-			SSHTunnel:      profileconn.StepResult{Status: profileconn.StepStatusSkipped, Detail: "non-interaktif"},
-			Authentication: profileconn.StepResult{Status: profileconn.StepStatusSkipped, Detail: "non-interaktif"},
+			DNSResolution:  profileconn.StepResult{Status: profileconn.StepStatusSkipped, Detail: detail},
+			TCPConnection:  profileconn.StepResult{Status: profileconn.StepStatusSkipped, Detail: detail},
+			SSHTunnel:      profileconn.StepResult{Status: profileconn.StepStatusSkipped, Detail: detail},
+			Authentication: profileconn.StepResult{Status: profileconn.StepStatusSkipped, Detail: detail},
 			DBVersion:      "-",
 			Healthy:        false,
 		}

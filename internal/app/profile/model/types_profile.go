@@ -41,6 +41,7 @@ func (o *ProfileEditOptions) IsInteractive() bool { return o != nil && o.Interac
 type ProfileShowOptions struct {
 	domain.ProfileInfo
 	RevealPassword bool
+	SkipConnTest   bool
 	Interactive    bool
 }
 

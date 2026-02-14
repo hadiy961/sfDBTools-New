@@ -2,7 +2,7 @@
 // Deskripsi : Wizard interaktif untuk db-copy p2p (primary -> primary)
 // Author : Hadiyatna Muflihun
 // Tanggal : 26 Januari 2026
-// Last Modified : 27 Januari 2026
+// Last Modified : 12 Februari 2026
 
 package wizard
 
@@ -110,16 +110,26 @@ func RunP2PWizard(ctx context.Context, configDir string, svc *dbcopy.Service, op
 		opts.SourceProfileKey = strings.TrimSpace(k)
 	}
 
-	// 1) Target profile wajib (tidak boleh default sama dengan source).
+	// 1) Target profile opsional.
+	// Jika kosong, default = sama dengan source (server sama). Ini berguna untuk copy db dalam 1 server
+	// dengan nama database tujuan berbeda.
 	if strings.TrimSpace(opts.TargetProfile) == "" {
-		p, err := selectAndLoadProfileInteractive(configDir, "Pilih file konfigurasi database target")
+		useDifferent, err := prompt.Confirm("Gunakan target profile berbeda dari source?", false)
 		if err != nil {
 			return nil, err
 		}
-		opts.TargetProfile = strings.TrimSpace(p.Path)
-		// Simpan key agar executor tidak prompt ulang.
-		if strings.TrimSpace(opts.TargetProfileKey) == "" {
-			opts.TargetProfileKey = strings.TrimSpace(p.EncryptionKey)
+		if useDifferent {
+			p, err := selectAndLoadProfileInteractive(configDir, "Pilih file konfigurasi database target")
+			if err != nil {
+				return nil, err
+			}
+			opts.TargetProfile = strings.TrimSpace(p.Path)
+			if strings.TrimSpace(opts.TargetProfileKey) == "" {
+				opts.TargetProfileKey = strings.TrimSpace(p.EncryptionKey)
+			}
+		} else {
+			opts.TargetProfile = strings.TrimSpace(opts.SourceProfile)
+			opts.TargetProfileKey = strings.TrimSpace(opts.SourceProfileKey)
 		}
 	} else if strings.TrimSpace(opts.TargetProfileKey) == "" {
 		// Target key dibutuhkan jika target profile diisi via flag/env tapi key belum tersedia.
@@ -133,9 +143,7 @@ func RunP2PWizard(ctx context.Context, configDir string, svc *dbcopy.Service, op
 	// Normalisasi untuk perbandingan sederhana (tidak memaksa abs path).
 	srcClean := filepath.Clean(strings.TrimSpace(opts.SourceProfile))
 	tgtClean := filepath.Clean(strings.TrimSpace(opts.TargetProfile))
-	if srcClean != "" && tgtClean != "" && strings.EqualFold(srcClean, tgtClean) {
-		return nil, fmt.Errorf("db-copy p2p ditolak: source-profile dan target-profile tidak boleh sama")
-	}
+	sameProfileFile := srcClean != "" && tgtClean != "" && strings.EqualFold(srcClean, tgtClean)
 
 	// 2) Pilih database source (primary).
 	// Jika user sudah provide source-db, gunakan itu.
@@ -190,11 +198,28 @@ func RunP2PWizard(ctx context.Context, configDir string, svc *dbcopy.Service, op
 		}
 	}
 
-	// P2P: target DB selalu sama dengan source DB.
-	if strings.TrimSpace(opts.TargetDB) != "" && !strings.EqualFold(strings.TrimSpace(opts.TargetDB), strings.TrimSpace(opts.SourceDB)) {
-		return nil, fmt.Errorf("untuk db-copy p2p, --target-db harus sama dengan --source-db (target akan selalu = source)")
+	// Target database (opsional). Default = sama dengan source.
+	// Jika target profile sama, target DB wajib beda agar tidak menimpa DB yang sedang di-copy.
+	if strings.TrimSpace(opts.TargetDB) == "" {
+		label := "Target DB (opsional, kosong = sama dengan source)"
+		if sameProfileFile {
+			label = "Target DB (wajib, harus beda dari source karena target profile = source)"
+		}
+		v, err := prompt.AskText(label)
+		if err != nil {
+			return nil, err
+		}
+		opts.TargetDB = strings.TrimSpace(v)
 	}
-	opts.TargetDB = strings.TrimSpace(opts.SourceDB)
+	if strings.TrimSpace(opts.TargetDB) == "" {
+		if sameProfileFile {
+			return nil, fmt.Errorf("target-db wajib diisi jika target profile sama dengan source")
+		}
+		opts.TargetDB = strings.TrimSpace(opts.SourceDB)
+	}
+	if sameProfileFile && strings.EqualFold(strings.TrimSpace(opts.TargetDB), strings.TrimSpace(opts.SourceDB)) {
+		return nil, fmt.Errorf("target-db tidak boleh sama dengan source-db jika target profile sama dengan source")
+	}
 
 	// Ringkasan rencana eksekusi + konfirmasi (hanya interaktif).
 	if !opts.SkipConfirm {
@@ -208,7 +233,8 @@ func RunP2PWizard(ctx context.Context, configDir string, svc *dbcopy.Service, op
 			{"Ticket", strings.TrimSpace(opts.Ticket)},
 			{"Source profile", filepath.Base(strings.TrimSpace(opts.SourceProfile))},
 			{"Target profile", filepath.Base(strings.TrimSpace(opts.TargetProfile))},
-			{"Database", strings.TrimSpace(opts.SourceDB)},
+			{"Source DB", strings.TrimSpace(opts.SourceDB)},
+			{"Target DB", strings.TrimSpace(opts.TargetDB)},
 			{"Exclude data", fmt.Sprintf("%v", opts.ExcludeData)},
 			{"Include _dmart", fmt.Sprintf("%v", opts.IncludeDmart)},
 			{"Continue on error", fmt.Sprintf("%v", opts.ContinueOnError)},
