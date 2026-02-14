@@ -36,6 +36,7 @@ type BackupDBOptions struct {
 	Entry           BackupEntryConfig
 	CaptureGTID     bool            // Tangkap informasi GTID saat backup (hanya untuk combined)
 	ExcludeUser     bool            // Exclude user grants dari export (default: false = export user)
+	ExcludeGrant    bool            // Exclude grant statements (default: false = export grant)
 	RequireGrants   bool            // Jika true, backup FAIL bila tidak ada user grants relevan (saat export user grants aktif dan ada filter DB)
 	DBName          string          // Nama database untuk backup single/primary/secondary
 	IncludeDmart    bool            // Sertakan database <db>_dmart jika tersedia (hanya primary/secondary)

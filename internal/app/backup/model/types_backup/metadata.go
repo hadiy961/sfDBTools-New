@@ -35,7 +35,8 @@ type MetadataConfig struct {
 	SourceHost          string
 	SourcePort          int
 	// Additional files
-	UserGrantsFile string
+	UserGrantsFile     string
+	UserDefinitionFile string
 	// Version information
 	MysqldumpVersion string
 	MariaDBVersion   string

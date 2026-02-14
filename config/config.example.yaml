@@ -11,6 +11,7 @@ backup:
   mysqldump_args: -fQq --max-allowed-packet=1G --hex-blob --order-by-primary --single-transaction --routines=true --triggers=true --opt --net-buffer-length=16M
   exclude:
     user: false
+    grant: false
     system_databases: true
     data: false
     empty: false
@@ -132,3 +133,9 @@ system_users:
     - mysql.sys
     - mysql.session
     - mysql.infoschema
+
+db_user:
+  export:
+    include_create_user: true
+    include_grants: true
+    split_output: false

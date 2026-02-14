@@ -46,6 +46,8 @@ func DefaultBackupOptions(mode string) types_backup.BackupDBOptions {
 	}
 	// Exclude User - ambil dari config backup.exclude.user
 	opts.ExcludeUser = cfg.Backup.Exclude.User
+	// Exclude Grant - ambil dari config backup.exclude.grant
+	opts.ExcludeGrant = cfg.Backup.Exclude.Grant
 	// Dry Run
 	opts.DryRun = false
 	// Mode

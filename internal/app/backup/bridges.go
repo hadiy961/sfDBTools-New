@@ -84,7 +84,7 @@ func (s *Service) ExecuteBackupLoop(ctx context.Context, state modes.BackupState
 // Grants bridges
 // =============================================================================
 
-func (s *Service) ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) (string, error) {
+func (s *Service) ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string, excludeGrant bool) (string, string, error) {
 	perm := ""
 	if s.Config != nil {
 		perm = s.Config.Backup.Output.MetadataPermissions
@@ -106,11 +106,12 @@ func (s *Service) ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupF
 		s.BackupDBOptions.RequireGrants,
 		perm,
 		sysUsers,
+		excludeGrant,
 	)
 }
 
-func (s *Service) UpdateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string, permissions string) {
-	grants.UpdateMetadataUserGrantsPath(s.Log, backupFilePath, userGrantsPath, permissions)
+func (s *Service) UpdateMetadataUserGrantsPath(backupFilePath string, userDefPath string, userGrantsPath string, permissions string) {
+	grants.UpdateMetadataUserGrantsPath(s.Log, backupFilePath, userDefPath, userGrantsPath, permissions)
 }
 
 // =============================================================================

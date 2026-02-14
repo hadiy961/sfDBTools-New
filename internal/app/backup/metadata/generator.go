@@ -36,7 +36,8 @@ func GenerateBackupMetadata(cfg types_backup.MetadataConfig) *types_backup.Backu
 		GeneratedAt:       time.Now(),
 		Ticket:            cfg.Ticket,
 		// Additional files
-		UserGrantsFile: cfg.UserGrantsFile,
+		UserGrantsFile:     cfg.UserGrantsFile,
+		UserDefinitionFile: cfg.UserDefinitionFile,
 		// Version information
 		MysqldumpVersion: cfg.MysqldumpVersion,
 		MariaDBVersion:   cfg.MariaDBVersion,

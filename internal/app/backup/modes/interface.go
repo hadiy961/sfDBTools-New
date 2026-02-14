@@ -54,8 +54,8 @@ type BackupPathProvider interface {
 // BackupMetadata menangani metadata operations (GTID, user grants)
 type BackupMetadata interface {
 	CaptureAndSaveGTID(ctx context.Context, state BackupStateAccessor, backupFilePath string) error
-	ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) (string, error)
-	UpdateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string, permissions string)
+	ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string, excludeGrant bool) (string, string, error)
+	UpdateMetadataUserGrantsPath(backupFilePath string, userDefPath string, userGrantsPath string, permissions string)
 }
 
 // BackupResultConverter mengkonversi loop result ke backup result

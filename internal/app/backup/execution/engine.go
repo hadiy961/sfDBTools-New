@@ -32,8 +32,8 @@ type StateTracker interface {
 
 // UserGrantsHooks interface untuk user grants export operations.
 type UserGrantsHooks interface {
-	ExportUserGrantsIfNeeded(ctx context.Context, outputPath string, dbNames []string) (string, error)
-	UpdateMetadataUserGrantsPath(outputPath string, userGrantsPath string, permissions string)
+	ExportUserGrantsIfNeeded(ctx context.Context, outputPath string, dbNames []string, excludeGrant bool) (string, string, error)
+	UpdateMetadataUserGrantsPath(outputPath string, userDefPath string, userGrantsPath string, permissions string)
 }
 
 // Engine adalah core backup execution engine.

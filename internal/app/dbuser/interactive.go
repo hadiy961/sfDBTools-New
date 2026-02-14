@@ -12,6 +12,7 @@ import (
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/shared/validation"
+	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
 	"strings"
 
@@ -91,6 +92,16 @@ func completeExportOptionsInteractive(ctx context.Context, deps *appdeps.Depende
 		return fmt.Errorf("opts nil")
 	}
 
+	// Default values from config
+	defaultCreateUser := true
+	defaultGrants := true
+	defaultSplit := false
+	if deps != nil && deps.Config != nil {
+		defaultCreateUser = deps.Config.DBUser.Export.IncludeCreateUser
+		defaultGrants = deps.Config.DBUser.Export.IncludeGrants
+		defaultSplit = deps.Config.DBUser.Export.SplitOutput
+	}
+
 	// Jika user belum menentukan scope apapun, prompt.
 	noScope := len(opts.Users) == 0 && len(opts.Databases) == 0 && strings.TrimSpace(opts.DBFile) == "" && strings.TrimSpace(opts.ClientCode) == ""
 	if noScope {
@@ -166,7 +177,7 @@ func completeExportOptionsInteractive(ctx context.Context, deps *appdeps.Depende
 	}
 
 	// Pengaturan lanjutan (opsional)
-	changeAdvanced, err := prompt.Confirm("Ubah pengaturan lanjutan? (exclude system users / include create user / include grants)", false)
+	changeAdvanced, err := prompt.Confirm("Ubah pengaturan lanjutan? (exclude system users / include create user / include grants / split output)", false)
 	if err != nil {
 		return validation.HandleInputError(err)
 	}
@@ -177,13 +188,13 @@ func completeExportOptionsInteractive(ctx context.Context, deps *appdeps.Depende
 		}
 		opts.ExcludeSystemUsers = excl
 
-		incCreate, cerr := prompt.Confirm("Include CREATE USER (best-effort)?", opts.IncludeCreateUser)
+		incCreate, cerr := prompt.Confirm("Include CREATE USER (best-effort)?", defaultCreateUser)
 		if cerr != nil {
 			return validation.HandleInputError(cerr)
 		}
 		opts.IncludeCreateUser = incCreate
 
-		incGrants, gerr := prompt.Confirm("Include GRANT statements?", opts.IncludeGrants)
+		incGrants, gerr := prompt.Confirm("Include GRANT statements?", defaultGrants)
 		if gerr != nil {
 			return validation.HandleInputError(gerr)
 		}
@@ -191,11 +202,20 @@ func completeExportOptionsInteractive(ctx context.Context, deps *appdeps.Depende
 
 		// Split output hanya relevan jika CREATE USER dan GRANT keduanya di-include.
 		if opts.IncludeCreateUser && opts.IncludeGrants {
-			split, serr := prompt.Confirm("Split output jadi 2 file terpisah? (*.users.sql dan *.grants.sql)", opts.SplitOut)
+			split, serr := prompt.Confirm("Split output jadi 2 file terpisah? (*.users.sql dan *.grants.sql)", defaultSplit)
 			if serr != nil {
 				return validation.HandleInputError(serr)
 			}
 			opts.SplitOut = split
+		} else {
+			opts.SplitOut = false
+		}
+	} else {
+		// Respect defaults if not changed interactively
+		opts.IncludeCreateUser = defaultCreateUser
+		opts.IncludeGrants = defaultGrants
+		if opts.IncludeCreateUser && opts.IncludeGrants {
+			opts.SplitOut = defaultSplit
 		} else {
 			opts.SplitOut = false
 		}
@@ -258,4 +278,46 @@ func completeApplyOptionsInteractive(deps *appdeps.Dependencies, opts *ApplyOpti
 	opts.SkipUserCheck = skip
 
 	return nil
+}
+
+func showExportPreview(opts *ExportOptions, dbList []string) (bool, error) {
+	print.PrintInfo("=== Export Preview ===")
+
+	fmt.Printf("Source Profile : %s (%s)\n", opts.Profile.Name, opts.Profile.DBInfo.Host)
+
+	outPath := opts.OutPath
+	if opts.SplitOut && opts.IncludeCreateUser && opts.IncludeGrants {
+		dir := filepath.Dir(outPath)
+		base := filepath.Base(outPath)
+		ext := filepath.Ext(base)
+		n := strings.TrimSuffix(base, ext)
+		fmt.Printf("Output Path    : %s (SPLIT OUTPUT)\n", dir)
+		fmt.Printf("               - %s.users.sql\n", n+".users.sql")
+		fmt.Printf("               - %s.grants.sql\n", n+".grants.sql")
+	} else {
+		fmt.Printf("Output Path    : %s\n", outPath)
+	}
+
+	scope := "All Users & Grants"
+	if len(opts.Users) > 0 {
+		scope = fmt.Sprintf("Specific Users (%d accounts)", len(opts.Users))
+	} else if len(opts.Databases) > 0 || strings.TrimSpace(opts.DBFile) != "" || strings.TrimSpace(opts.ClientCode) != "" { 
+		scope = fmt.Sprintf("Filtered by Database (%d DBs resolved)", len(dbList))
+	}
+	fmt.Printf("Scope          : %s\n", scope)
+
+	optsList := []string{}
+	if opts.IncludeCreateUser {
+		optsList = append(optsList, "Create User")
+	}
+	if opts.IncludeGrants {
+		optsList = append(optsList, "Grants")
+	}
+	if opts.ExcludeSystemUsers {
+		optsList = append(optsList, "Exclude System Users")
+	}
+	fmt.Printf("Options        : %s\n", strings.Join(optsList, ", "))
+
+	fmt.Println("----------------------")
+	return prompt.Confirm("Lanjutkan proses export?", true)
 }

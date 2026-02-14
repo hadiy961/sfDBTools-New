@@ -191,7 +191,7 @@ func ExecuteExport(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 	}
 	log := deps.Logger
 
-	parsed, err := ParseExportOptions(cmd)
+	parsed, err := ParseExportOptions(cmd, deps.Config)
 	if err != nil {
 		return err
 	}
@@ -242,6 +242,18 @@ func ExecuteExport(cmd *cobra.Command, deps *appdeps.Dependencies) error {
 		}
 		ts := time.Now().Format("20060102_150405")
 		outPath = filepath.Join(baseDir, fmt.Sprintf("user_grants_%s.sql", ts))
+	}
+	parsed.OutPath = outPath
+
+	if interactiveAllowed() {
+		confirmed, pErr := showExportPreview(&parsed, dbFilters)
+		if pErr != nil {
+			return validation.HandleInputError(pErr)
+		}
+		if !confirmed {
+			log.Warn("Proses dibatalkan oleh pengguna.")
+			return nil
+		}
 	}
 
 	perm := deps.Config.Backup.Output.MetadataPermissions

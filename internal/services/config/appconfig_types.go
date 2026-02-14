@@ -17,6 +17,17 @@ type Config struct {
 	Profile     ProfileConfig     `yaml:"profile"`
 	SystemUsers SystemUsersConfig `yaml:"system_users"`
 	Script      ScriptConfig      `yaml:"script"`
+	DBUser      DBUserConfig      `yaml:"db_user"`
+}
+
+type DBUserConfig struct {
+	Export ExportConfig `yaml:"export"`
+}
+
+type ExportConfig struct {
+	IncludeCreateUser bool `yaml:"include_create_user"`
+	IncludeGrants     bool `yaml:"include_grants"`
+	SplitOutput       bool `yaml:"split_output"`
 }
 
 // Struct untuk bagian 'profile'
@@ -68,6 +79,7 @@ type CompressionConfig struct {
 type ExcludeConfig struct {
 	Databases       []string `yaml:"databases"`
 	User            bool     `yaml:"user"`
+	Grant           bool     `yaml:"grant"`
 	SystemDatabases bool     `yaml:"system_databases"`
 	Data            bool     `yaml:"data"`
 	Empty           bool     `yaml:"empty"`

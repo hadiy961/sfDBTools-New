@@ -10,10 +10,26 @@ import (
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 )
 
-// GenerateUserFilePath menghasilkan path file untuk user grants berdasarkan backup file path
-// Contoh: /backup/db_20250101.sql.gz -> /backup/db_20250101_users.sql
-func GenerateUserFilePath(backupFilePath string) string {
+// GenerateUserGrantsFilePath menghasilkan path file untuk user grants berdasarkan backup file path
+// Contoh: /backup/db_20250101.sql.gz -> /backup/db_20250101_grants.sql
+func GenerateUserGrantsFilePath(backupFilePath string) string {
 	dir := filepath.Dir(backupFilePath)
 	base := filepath.Base(backupFilePath)
 	return filepath.Join(dir, backupfile.GenerateGrantsFilename(base))
+}
+
+// GenerateUserDefinitionFilePath menghasilkan path file untuk user definitions (CREATE USER)
+// Contoh: /backup/db_20250101.sql.gz -> /backup/db_20250101_users.sql
+func GenerateUserDefinitionFilePath(backupFilePath string) string {
+	dir := filepath.Dir(backupFilePath)
+	base := filepath.Base(backupFilePath)
+	// Helper file utils mungkin belum support ini, kita hardcode suffix consistency dulu
+	// Pattern: <original>_users.sql
+	name := backupfile.GenerateGrantsFilename(base) // ini outputnya _grants.sql atau _users.sql tergantung implementasi lama
+	// Karena kita mau paksa _users.sql, kita replace manual
+	if len(name) > 11 && name[len(name)-11:] == "_grants.sql" {
+		name = name[:len(name)-11] + "_users.sql"
+	}
+	// Fallback logic lama generate suffix _users.sql (cek backupfile helper)
+	return filepath.Join(dir, name)
 }

@@ -58,6 +58,7 @@ type BackupMetadata struct {
 	GTIDInfo          string                 `json:"gtid_info,omitempty"`          // GTID information
 	GTIDFile          string                 `json:"gtid_file,omitempty"`          // Path ke file GTID
 	UserGrantsFile    string                 `json:"user_grants_file,omitempty"`   // Path ke file user grants
+	UserDefinitionFile string                 `json:"user_definition_file,omitempty"` // Path ke file user definitions
 	BackupStatus      string                 `json:"backup_status"`                // "success", "partial", "failed"
 	Warnings          []string               `json:"warnings,omitempty"`           // Warning messages
 	GeneratedBy       string                 `json:"generated_by"`                 // Tool name dan version
@@ -136,7 +137,8 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 
 	// Grup untuk file tambahan
 	type additionalFiles struct {
-		UserGrants string `json:"user_grants,omitempty"`
+		UserGrants     string `json:"user_grants,omitempty"`
+		UserDefinition string `json:"user_definition,omitempty"`
 	}
 
 	// Grup untuk informasi generator
@@ -200,7 +202,8 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 			MariaDBVersion:   b.MariaDBVersion,
 		},
 		Additional: additionalFiles{
-			UserGrants: b.UserGrantsFile,
+			UserGrants:     b.UserGrantsFile,
+			UserDefinition: b.UserDefinitionFile,
 		},
 		Ticket: b.Ticket,
 		Generator: generatorInfo{
@@ -257,7 +260,8 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		MariaDBVersion   string `json:"mariadb,omitempty"`
 	}
 	type additionalFiles struct {
-		UserGrants string `json:"user_grants,omitempty"`
+		UserGrants     string `json:"user_grants,omitempty"`
+		UserDefinition string `json:"user_definition,omitempty"`
 	}
 	type generatorInfo struct {
 		GeneratedBy string    `json:"generated_by"`
@@ -329,6 +333,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		// SECURITY: jangan simpan password dari metadata (walau ada di file lama).
 		b.ReplicationPassword = ""
 		b.UserGrantsFile = grouped.Additional.UserGrants
+		b.UserDefinitionFile = grouped.Additional.UserDefinition
 		b.Ticket = grouped.Ticket
 		b.GeneratedBy = grouped.Generator.GeneratedBy
 		b.GeneratedAt = grouped.Generator.GeneratedAt

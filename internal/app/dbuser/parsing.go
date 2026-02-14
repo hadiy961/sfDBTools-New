@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	appconfig "sfdbtools/internal/services/config"
 )
 
 func parseUserSpecs(specs []string) ([]string, error) {
@@ -25,7 +26,7 @@ func parseUserSpecs(specs []string) ([]string, error) {
 	return out, nil
 }
 
-func ParseExportOptions(cmd *cobra.Command) (ExportOptions, error) {
+func ParseExportOptions(cmd *cobra.Command, cfg *appconfig.Config) (ExportOptions, error) {
 	opts := ExportOptions{
 		ExcludeSystemUsers: true,
 		IncludeCreateUser:  true,
@@ -46,9 +47,30 @@ func ParseExportOptions(cmd *cobra.Command) (ExportOptions, error) {
 	}
 
 	opts.ExcludeSystemUsers = resolver.GetBoolFlagOrEnv(cmd, "exclude-system-users", "")
-	opts.IncludeCreateUser = resolver.GetBoolFlagOrEnv(cmd, "include-create-user", "")
-	opts.IncludeGrants = resolver.GetBoolFlagOrEnv(cmd, "include-grants", "")
-	opts.SplitOut = resolver.GetBoolFlagOrEnv(cmd, "split-out", "")
+	
+	// Resolve logic: Flag/Env > Config > Default
+	// Helper resolver.GetBoolFlagOrEnv mengambil Flag jika set, jika tidak Env, jika tidak Default value dari Flag definiton.
+	// Masalahnya Default dari Flag definition biasanya false/true fix.
+	// Jika kita ingin config sebagai fallback, kita harus cek apakah flag changed.
+	// Tapi cobra flag default value itu tricky.
+	
+	// Simplifikasi: Kita baca config dulu sebagai base values.
+	if cfg != nil {
+		opts.IncludeCreateUser = cfg.DBUser.Export.IncludeCreateUser
+		opts.IncludeGrants = cfg.DBUser.Export.IncludeGrants
+		opts.SplitOut = cfg.DBUser.Export.SplitOutput
+	}
+
+	// Lalu override dng flag jika explicitly set oleh user.
+	if cmd.Flags().Changed("include-create-user") {
+		opts.IncludeCreateUser, _ = cmd.Flags().GetBool("include-create-user")
+	}
+	if cmd.Flags().Changed("include-grants") {
+		opts.IncludeGrants, _ = cmd.Flags().GetBool("include-grants")
+	}
+	if cmd.Flags().Changed("split-out") {
+		opts.SplitOut, _ = cmd.Flags().GetBool("split-out")
+	}
 
 	users := resolver.GetStringArrayFlagOrEnv(cmd, "user", "")
 	parsedUsers, err := parseUserSpecs(users)

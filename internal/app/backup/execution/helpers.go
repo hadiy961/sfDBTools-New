@@ -75,7 +75,7 @@ func determineUserGrantsPath(excludeUser bool, outputPath string) string {
 	if excludeUser {
 		return ""
 	}
-	return metadata.GenerateUserFilePath(outputPath)
+	return metadata.GenerateUserGrantsFilePath(outputPath)
 }
 
 // getExcludedDatabases mengembalikan list excluded databases untuk backup type tertentu.

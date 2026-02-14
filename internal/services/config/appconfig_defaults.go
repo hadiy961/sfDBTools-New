@@ -36,6 +36,7 @@ func defaultConfigForPath(configPath string) *Config {
 
 	cfg.Backup.Exclude.SystemDatabases = true
 	cfg.Backup.Exclude.User = false
+	cfg.Backup.Exclude.Grant = false
 	cfg.Backup.Exclude.Data = false
 	cfg.Backup.Exclude.Empty = false
 
@@ -59,6 +60,10 @@ func defaultConfigForPath(configPath string) *Config {
 
 	cfg.ConfigDir.DatabaseProfile = filepath.Join(baseDir, "config", "db_profile")
 	cfg.Script.BundleOutputDir = filepath.Join(baseDir, "scripts")
+
+	cfg.DBUser.Export.IncludeCreateUser = true
+	cfg.DBUser.Export.IncludeGrants = true
+	cfg.DBUser.Export.SplitOutput = false
 
 	return cfg
 }
