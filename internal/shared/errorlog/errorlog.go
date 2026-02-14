@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	applog "sfdbtools/internal/services/log"
@@ -36,6 +37,10 @@ func NewErrorLogger(logger applog.Logger, logDir, feature string) *ErrorLogger {
 // log adalah helper internal untuk mencatat error ke file log.
 func (el *ErrorLogger) log(details map[string]interface{}, output string, err error) string {
 	if err == nil {
+		return ""
+	}
+	// Handle typed nil (prevent "Error: <nil>" log entries)
+	if reflect.ValueOf(err).Kind() == reflect.Ptr && reflect.ValueOf(err).IsNil() {
 		return ""
 	}
 

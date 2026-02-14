@@ -214,7 +214,8 @@ func ExportSQL(ctx context.Context, client *database.Client, opts ExportOptions)
 	// Compatibility behavior: jika mode filtered (Databases diisi) tapi tidak ada grant yang relevan,
 	// kembalikan error agar caller bisa decide skip (non-fatal).
 	if len(opts.Databases) > 0 && stats.TotalUsersWritten == 0 {
-		return "", stats, fmt.Errorf("tidak ada user dengan grants")
+		// Bungkus sebagai sentinel error agar caller tidak perlu string-match.
+		return "", stats, fmt.Errorf("%w", ErrNoUserWithGrants)
 	}
 
 	return b.String(), stats, nil

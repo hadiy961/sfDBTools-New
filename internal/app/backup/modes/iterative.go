@@ -80,7 +80,10 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 	//   - update metadata untuk SEMUA file backup
 	//   - jika list adalah 1 primary + companion: generate combined metadata + agregasi display
 	if len(loopResult.BackupInfos) > 0 && (e.mode == consts.ModePrimary || e.mode == consts.ModeSecondary) {
-		actualUserGrantsPath := e.service.ExportUserGrantsIfNeeded(ctx, loopResult.BackupInfos[0].OutputFile, dbList)
+		actualUserGrantsPath, ugErr := e.service.ExportUserGrantsIfNeeded(ctx, loopResult.BackupInfos[0].OutputFile, dbList)
+		if ugErr != nil {
+			res.Errors = append(res.Errors, fmt.Sprintf("export user grants gagal: %s", ugErr.Error()))
+		}
 		permissions := e.service.GetConfig().Backup.Output.MetadataPermissions
 		for _, info := range loopResult.BackupInfos {
 			e.service.UpdateMetadataUserGrantsPath(info.OutputFile, actualUserGrantsPath, permissions)

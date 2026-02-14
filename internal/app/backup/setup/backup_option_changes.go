@@ -2,7 +2,7 @@
 // Deskripsi : Kumpulan handler interaktif untuk opsi backup (ticket, toggle, filter, selection, profile)
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-31
-// Last Modified : 2026-01-14
+// Last Modified : 2026-02-12
 
 package setup
 
@@ -66,6 +66,19 @@ func (s *Setup) changeBackupExportUserGrantsInteractive() error {
 		return fmt.Errorf("gagal mengubah opsi export user grants: %w", err)
 	}
 	s.Options.ExcludeUser = !val
+	// Jika export user grants dimatikan, policy require-grants tidak relevan.
+	if s.Options.ExcludeUser {
+		s.Options.RequireGrants = false
+	}
+	return nil
+}
+
+func (s *Setup) changeBackupRequireGrantsInteractive() error {
+	val, err := prompt.Confirm("Require user grants (fail jika tidak ada grants relevan)?", s.Options.RequireGrants)
+	if err != nil {
+		return fmt.Errorf("gagal mengubah opsi require-grants: %w", err)
+	}
+	s.Options.RequireGrants = val
 	return nil
 }
 

@@ -180,7 +180,10 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 
 	// Export user grants untuk combined (single-file) agar konsisten dengan backup filter --mode single-file
 	if mode == consts.ModeCombined {
-		actualUserGrantsPath := backupSvc.ExportUserGrantsIfNeeded(ctx, outputPath, dbList)
+		actualUserGrantsPath, ugErr := backupSvc.ExportUserGrantsIfNeeded(ctx, outputPath, dbList)
+		if ugErr != nil {
+			s.Log.Warnf("Gagal export user grants (best-effort): %v", ugErr)
+		}
 		permissions := s.Config.Backup.Output.MetadataPermissions
 		backupSvc.UpdateMetadataUserGrantsPath(outputPath, actualUserGrantsPath, permissions)
 	}

@@ -22,6 +22,7 @@ func (s *Setup) editItemsBackupProfileTicket(ctx context.Context, clientPtr **da
 type backupToggleMenuOptions struct {
 	CaptureGTID      bool
 	ExportUserGrants bool
+	RequireGrants    bool
 	ExcludeSystem    bool
 	ExcludeEmpty     bool
 	ExcludeData      bool
@@ -34,6 +35,9 @@ func (s *Setup) editItemsBackupToggles(opts backupToggleMenuOptions) []editMenuI
 	}
 	if opts.ExportUserGrants {
 		items = append(items, editMenuItem{Label: "Export user grants", Action: func() error { return s.changeBackupExportUserGrantsInteractive() }})
+	}
+	if opts.RequireGrants && !s.Options.ExcludeUser {
+		items = append(items, editMenuItem{Label: "Require user grants", Action: func() error { return s.changeBackupRequireGrantsInteractive() }})
 	}
 	if opts.ExcludeSystem {
 		items = append(items, editMenuItem{Label: "Exclude system databases", Action: func() error { return s.changeBackupExcludeSystemInteractive() }})

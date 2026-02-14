@@ -25,6 +25,7 @@ func (s *Setup) editBackupOptionsInteractive(ctx context.Context, client **datab
 		items = append(items, s.editItemsBackupToggles(backupToggleMenuOptions{
 			CaptureGTID:      true,
 			ExportUserGrants: true,
+			RequireGrants:    true,
 			ExcludeSystem:    true,
 			ExcludeEmpty:     true,
 			ExcludeData:      true,
@@ -34,6 +35,7 @@ func (s *Setup) editBackupOptionsInteractive(ctx context.Context, client **datab
 		items = append(items, editMenuItem{Label: "Database selection", Action: func() error { return s.changeBackupDatabaseSelectionResetInteractive(false) }})
 		items = append(items, s.editItemsBackupToggles(backupToggleMenuOptions{
 			ExportUserGrants: true,
+			RequireGrants:    true,
 			ExcludeData:      true,
 		})...)
 		items = append(items, s.editItemsBackupOutputSecurity(customOutputDir, true)...)
@@ -45,6 +47,7 @@ func (s *Setup) editBackupOptionsInteractive(ctx context.Context, client **datab
 		)
 		items = append(items, s.editItemsBackupToggles(backupToggleMenuOptions{
 			ExportUserGrants: true,
+			RequireGrants:    true,
 			ExcludeData:      true,
 		})...)
 		items = append(items, s.editItemsBackupOutputSecurity(customOutputDir, true)...)
@@ -57,6 +60,7 @@ func (s *Setup) editBackupOptionsInteractive(ctx context.Context, client **datab
 		)
 		items = append(items, s.editItemsBackupToggles(backupToggleMenuOptions{
 			ExportUserGrants: true,
+			RequireGrants:    true,
 			ExcludeData:      true,
 		})...)
 		items = append(items, s.editItemsBackupOutputSecurity(customOutputDir, true)...)
@@ -65,6 +69,7 @@ func (s *Setup) editBackupOptionsInteractive(ctx context.Context, client **datab
 		items = append(items, s.editItemsBackupToggles(backupToggleMenuOptions{
 			CaptureGTID:      true,
 			ExportUserGrants: true,
+			RequireGrants:    true,
 			ExcludeSystem:    true,
 			ExcludeEmpty:     true,
 			ExcludeData:      true,
@@ -74,6 +79,7 @@ func (s *Setup) editBackupOptionsInteractive(ctx context.Context, client **datab
 		items = append(items, includeSelectionItems...)
 		items = append(items, s.editItemsBackupToggles(backupToggleMenuOptions{
 			ExportUserGrants: true,
+			RequireGrants:    true,
 			ExcludeSystem:    true,
 			ExcludeEmpty:     true,
 			ExcludeData:      true,

@@ -30,6 +30,9 @@ func addBackupCommonFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions
 	cmd.Flags().BoolVarP(&opts.Filter.ExcludeSystem, "exclude-system", "S", opts.Filter.ExcludeSystem, "Mengecualikan sistem database")
 	cmd.Flags().BoolVarP(&opts.Filter.ExcludeEmpty, "exclude-empty", "E", opts.Filter.ExcludeEmpty, "Mengecualikan database kosong")
 
+	// Policy: jika export user grants aktif dan grants tidak ditemukan untuk DB yang difilter, jadikan error.
+	cmd.Flags().BoolVar(&opts.RequireGrants, "require-grants", opts.RequireGrants, "Fail jika tidak ada user grants yang relevan untuk database terpilih (hanya saat export user grants aktif)")
+
 	// Compression flags
 	cmd.Flags().BoolP("skip-compress", "C", !opts.Compression.Enabled, "Melewati proses kompresi pada file backup (default: dari config)")
 	cmd.Flags().StringVarP(&opts.Compression.Type, "compress", "c", opts.Compression.Type, "Menentukan jenis kompresi (gzip, zstd, xz, zlib, pgzip, none)")

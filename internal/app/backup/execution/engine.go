@@ -32,7 +32,7 @@ type StateTracker interface {
 
 // UserGrantsHooks interface untuk user grants export operations.
 type UserGrantsHooks interface {
-	ExportUserGrantsIfNeeded(ctx context.Context, outputPath string, dbNames []string) string
+	ExportUserGrantsIfNeeded(ctx context.Context, outputPath string, dbNames []string) (string, error)
 	UpdateMetadataUserGrantsPath(outputPath string, userGrantsPath string, permissions string)
 }
 
@@ -191,12 +191,12 @@ func (e *Engine) executeWithRetry(ctx context.Context, outputPath string, args [
 		if attempts == 0 {
 			// Log error utama
 			e.Log.Errorf("Backup gagal: %v", err)
-			
+
 			// Error log file sudah dibuat di writer layer untuk semua errors (fatal dan retry-able)
 			// Path error log file akan di-log oleh writer layer untuk fatal errors saja
 			// Untuk retry-able errors, kita tidak perlu log path di sini karena akan di-retry
 			// Detail error sudah ada di error message utama, tidak perlu log lagi
-			
+
 			// Cleanup failed backup file sebelum retry
 			cleanupFailedBackup(outputPath, e.Log)
 		}

@@ -104,7 +104,10 @@ func (e *CombinedExecutor) Execute(ctx context.Context, dbFiltered []string) typ
 	}
 	// Command all: nil (export semua user)
 
-	actualUserGrantsPath := e.service.ExportUserGrantsIfNeeded(ctx, fullOutputPath, databasesToFilter)
+	actualUserGrantsPath, ugErr := e.service.ExportUserGrantsIfNeeded(ctx, fullOutputPath, databasesToFilter)
+	if ugErr != nil {
+		res.Errors = append(res.Errors, fmt.Sprintf("export user grants gagal: %s", ugErr.Error()))
+	}
 	// Update metadata dengan actual path (atau "none" jika gagal)
 	permissions := e.service.GetConfig().Backup.Output.MetadataPermissions
 	e.service.UpdateMetadataUserGrantsPath(fullOutputPath, actualUserGrantsPath, permissions)

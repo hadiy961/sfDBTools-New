@@ -43,6 +43,9 @@ func (d *OptionsDisplayer) buildModeSpecificSection() [][]string {
 		}
 
 		data = append(data, []string{"Export User Grants", d.getExportUserStatus()})
+		if !d.options.ExcludeUser {
+			data = append(data, []string{"Require User Grants", fmt.Sprintf("%v", d.options.RequireGrants)})
+		}
 		return data
 	}
 
@@ -67,6 +70,9 @@ func (d *OptionsDisplayer) buildModeSpecificSection() [][]string {
 	}
 
 	data = append(data, []string{"Export User Grants", d.getExportUserStatus()})
+	if !d.options.ExcludeUser {
+		data = append(data, []string{"Require User Grants", fmt.Sprintf("%v", d.options.RequireGrants)})
+	}
 	return data
 }
 

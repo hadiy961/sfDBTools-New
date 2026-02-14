@@ -2,7 +2,7 @@
 // Deskripsi : Bridge methods untuk menghubungkan service backup dengan sub-modul
 // Author : Hadiyatna Muflihun
 // Tanggal : 2025-12-05
-// Last Modified : 2026-01-05
+// Last Modified : 2026-02-12
 
 package backup
 
@@ -84,8 +84,29 @@ func (s *Service) ExecuteBackupLoop(ctx context.Context, state modes.BackupState
 // Grants bridges
 // =============================================================================
 
-func (s *Service) ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) string {
-	return grants.ExportUserGrantsIfNeeded(ctx, s.Client, s.Log, referenceBackupFile, s.BackupDBOptions.ExcludeUser, s.BackupDBOptions.DryRun, databases)
+func (s *Service) ExportUserGrantsIfNeeded(ctx context.Context, referenceBackupFile string, databases []string) (string, error) {
+	perm := ""
+	if s.Config != nil {
+		perm = s.Config.Backup.Output.MetadataPermissions
+	}
+
+	var sysUsers []string
+	if s.Config != nil {
+		sysUsers = s.Config.SystemUsers.Users
+	}
+
+	return grants.ExportUserGrantsIfNeeded(
+		ctx,
+		s.Client,
+		s.Log,
+		referenceBackupFile,
+		s.BackupDBOptions.ExcludeUser,
+		s.BackupDBOptions.DryRun,
+		databases,
+		s.BackupDBOptions.RequireGrants,
+		perm,
+		sysUsers,
+	)
 }
 
 func (s *Service) UpdateMetadataUserGrantsPath(backupFilePath string, userGrantsPath string, permissions string) {

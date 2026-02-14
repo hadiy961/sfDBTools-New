@@ -17,6 +17,7 @@ import (
 	"sfdbtools/internal/cli/parsing"
 	resolver "sfdbtools/internal/cli/resolver"
 	"sfdbtools/internal/shared/consts"
+	"sfdbtools/internal/shared/execx"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/shared/validation"
 	"sfdbtools/internal/ui/print"
@@ -48,6 +49,12 @@ func ExecuteBackup(cmd *cobra.Command, deps *appdeps.Dependencies, mode string) 
 
 // ExecuteBackupCommand adalah unified entry point untuk semua jenis backup
 func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecutionState, config types_backup.BackupEntryConfig) error {
+	// Check requirements sebelum memulai sesi
+	// 1. Binary check: mariadb-dump / mysqldump
+	if _, err := execx.ResolveMariaDBDumpOrMysqldump(); err != nil {
+		return err
+	}
+
 	// Setup session (koneksi database source)
 	// RESOURCE OWNERSHIP: PrepareBackupSession transfer ownership ke caller.
 	// Jika PrepareBackupSession return error, client sudah di-close otomatis (tidak perlu cleanup).
@@ -200,7 +207,7 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 			logger.Warn("Proses backup dibatalkan.")
 			return nil
 		}
-		logger.Error("backup gagal (" + config.Mode + "): " + err.Error())
+		// Log error is handled by the runner
 		return err
 	}
 

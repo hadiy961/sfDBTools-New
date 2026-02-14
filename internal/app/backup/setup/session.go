@@ -79,6 +79,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 	}
 
 	customOutputDir := s.Options.OutputDir
+	requireGrantsAsked := false
 
 	interactiveEditEnabled := isInteractiveMode(s.Options.Mode)
 
@@ -124,6 +125,21 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 		if len(dbFiltered) == 0 {
 			// success tetap false, defer akan cleanup client
 			return nil, nil, fmt.Errorf("PrepareSession: %w (path generation menghasilkan daftar kosong)", model.ErrNoDatabaseFound)
+		}
+
+		// Policy prompt (interactive): jika user memilih subset DB dan export grants aktif,
+		// tanyakan apakah no-match harus dianggap error.
+		if !nonInteractive && !requireGrantsAsked && !s.Options.ExcludeUser {
+			hasExplicitInclude := len(s.Options.Filter.IncludeDatabases) > 0 || strings.TrimSpace(s.Options.Filter.IncludeFile) != "" || s.Options.Filter.IsFilterCommand
+			isExplicitSelectionMode := s.Options.Mode == consts.ModeSingle || s.Options.Mode == consts.ModePrimary || s.Options.Mode == consts.ModeSecondary
+			if (hasExplicitInclude || isExplicitSelectionMode) && !s.Options.RequireGrants {
+				val, perr := prompt.Confirm("Jika tidak ada user grants yang relevan untuk database terpilih, jadikan error (gagal backup)?", false)
+				if perr != nil {
+					return nil, nil, perr
+				}
+				s.Options.RequireGrants = val
+				requireGrantsAsked = true
+			}
 		}
 
 		// Log daftar database yang akan di-backup untuk mode ALL (penting untuk mode background).
