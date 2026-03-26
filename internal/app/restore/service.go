@@ -14,6 +14,7 @@ import (
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/errorlog"
+	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/shared/servicehelper"
 )
 
@@ -151,6 +152,56 @@ func (s *Service) HandleShutdown() {
 	s.Log.Info("Restore service shutdown completed")
 }
 
+// IsInteractive mengecek apakah sesi berjalan dalam mode interaktif.
+// Membaca dari runtimecfg dan opsi Force/Quiet jika di-set.
+func (s *Service) IsInteractive() bool {
+	if runtimecfg.IsQuiet() {
+		return false
+	}
+	if s.RestoreOpts != nil && s.RestoreOpts.Force {
+		return false
+	}
+	if s.RestorePrimaryOpts != nil && s.RestorePrimaryOpts.Force {
+		return false
+	}
+	if s.RestoreSecondaryOpts != nil && s.RestoreSecondaryOpts.Force {
+		return false
+	}
+	if s.RestoreAllOpts != nil && s.RestoreAllOpts.Force {
+		return false
+	}
+	if s.RestoreSelOpts != nil && s.RestoreSelOpts.Force {
+		return false
+	}
+	if s.RestoreCustomOpts != nil && s.RestoreCustomOpts.Force {
+		return false
+	}
+	return true
+}
+
+// GetCurrentMode mengembalikan mode operasi restore saat ini (contoh: "primary", "single", "all")
+func (s *Service) GetCurrentMode() string {
+	if s.RestorePrimaryOpts != nil {
+		return "primary"
+	}
+	if s.RestoreSecondaryOpts != nil {
+		return "secondary"
+	}
+	if s.RestoreOpts != nil {
+		return "single"
+	}
+	if s.RestoreAllOpts != nil {
+		return "all"
+	}
+	if s.RestoreSelOpts != nil {
+		return "selection"
+	}
+	if s.RestoreCustomOpts != nil {
+		return "custom"
+	}
+	return "unknown"
+}
+
 // Close cleanup resources
 func (s *Service) Close() error {
 	if s.TargetClient != nil {
@@ -165,6 +216,10 @@ func (s *Service) Close() error {
 
 func (s *Service) GetLogger() applog.Logger {
 	return s.Log
+}
+
+func (s *Service) GetErrorLogger() *errorlog.ErrorLogger {
+	return s.ErrorLog
 }
 
 func (s *Service) GetTargetClient() *database.Client {

@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
+
 	"sfdbtools/internal/app/backup/display"
 	"sfdbtools/internal/app/backup/model"
 	profileconn "sfdbtools/internal/app/profile/connection"
@@ -195,10 +197,32 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 			}
 			// validasi minimal: jika encryption aktif, backup key wajib tersedia
 			if s.Options.Encryption.Enabled && s.Options.Encryption.Key == "" {
-				print.PrintError("Encryption diaktifkan tapi backup key belum tersedia.")
-				print.PrintError("Isi via flag --backup-key, ENV SFDB_BACKUP_ENCRYPTION_KEY, atau pilih 'Ubah opsi' untuk input interaktif.")
-				prompt.WaitForEnter("Tekan Enter untuk kembali ke opsi...")
-				continue
+				print.PrintWarning("Opsi enkripsi sistem aktif, namun backup-key belum dimasukkan.")
+				actionEnc, _, errEnc := prompt.SelectOne(
+					"Apa yang ingin Anda lakukan?",
+					[]string{"Matikan Enkripsi (Lanjutkan tanpa kunci)", "Masukkan Backup Key Sekarang", "Batalkan Operasi"},
+					-1,
+				)
+				if errEnc != nil {
+					return nil, nil, errEnc
+				}
+				
+				switch actionEnc {
+				case "Matikan Enkripsi (Lanjutkan tanpa kunci)":
+					s.Options.Encryption.Enabled = false
+					// Loop kembali agar tampilan UI diperbarui (status Key berubah jadi Disable)
+					continue
+				case "Masukkan Backup Key Sekarang":
+					newKey, errKey := prompt.AskPassword("Masukkan Backup Encryption Key", survey.Required)
+					if errKey != nil {
+						return nil, nil, errKey
+					}
+					s.Options.Encryption.Key = newKey
+					// Loop kembali agar tampilan UI diperbarui dengan kunci baru yang diregister
+					continue
+				case "Batalkan Operasi":
+					return nil, nil, validation.ErrUserCancelled
+				}
 			}
 			success = true
 			return client, dbFiltered, nil

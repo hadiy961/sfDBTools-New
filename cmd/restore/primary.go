@@ -44,8 +44,7 @@ Fitur:
 	sfdbtools db-restore primary --file "dbsf_nbc_client.sql" --client-code "tes123_tes" --grants-file "users.sql" --ticket "TICKET-123"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
-			_ = restore.ExecuteRestorePrimaryCommand(cmd, appdeps.Deps)
-			return nil
+			return restore.ExecuteRestorePrimaryCommand(cmd, appdeps.Deps)
 		})
 	},
 }

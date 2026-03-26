@@ -42,8 +42,7 @@ Jika nama database target tidak ditentukan, sistem akan mencoba menebak dari nam
   sfdbtools db-restore single --file "backup.sql" --skip-backup --ticket "TICKET-123"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
-			_ = restore.ExecuteRestoreSingleCommand(cmd, appdeps.Deps)
-			return nil
+			return restore.ExecuteRestoreSingleCommand(cmd, appdeps.Deps)
 		})
 	},
 }

@@ -124,6 +124,7 @@ func (e *AllExecutor) performStreamingRestore(ctx context.Context, opts *restore
 
 	runOnce := func(withSkipSSL bool) (*restoreStats, time.Duration, error) {
 		restoreStart := time.Now()
+		logger.Info("Memulai proses restore streaming...")
 		spin := progress.NewSpinnerWithElapsed("Memulai proses restore...")
 		spin.Start()
 		defer spin.Stop()
@@ -163,6 +164,15 @@ func (e *AllExecutor) performStreamingRestore(ctx context.Context, opts *restore
 		sum, err := helpers.ExecuteMySQLCommand(ctx, args, pipeReader, logger)
 		if sum != nil {
 			e.service.AddSQLIssueCounters(sum.SQLErrors, sum.SQLWarnings)
+			if len(sum.ErrLines) > 0 {
+				logPath := e.service.GetErrorLogger().LogWithOutput(map[string]interface{}{
+					"action": "restore_streaming_all",
+				}, strings.Join(sum.ErrLines, "\n"), fmt.Errorf("terdeteksi %d SQL error selama restore", sum.SQLErrors))
+				
+				if logPath != "" {
+					logger.Warnf("Terdeteksi %d SQL error (dan %d peringatan) selama restore streaming. Detail log tersimpan di: %s", sum.SQLErrors, sum.SQLWarnings, logPath)
+				}
+			}
 		}
 		if err != nil {
 			// Hentikan processing goroutine secepat mungkin.

@@ -74,6 +74,7 @@ type ExecSummary struct {
 	SQLErrors    int
 	SQLWarnings  int
 	OtherOutputs int
+	ErrLines     []string
 }
 
 func classifyMySQLClientLine(line string) (isErr bool, isWarn bool) {
@@ -149,11 +150,16 @@ func Execute(ctx context.Context, args []string, stdin io.Reader, logger applog.
 				if justSuppressed {
 					errSuppressedLogged = true
 				}
+				if shouldLog {
+					summary.ErrLines = append(summary.ErrLines, fmt.Sprintf("[%s] %s", streamName, line))
+				} else if justSuppressed {
+					summary.ErrLines = append(summary.ErrLines, fmt.Sprintf("[%s] Terlalu banyak SQL error; log selanjutnya disembunyikan (>%d).", streamName, maxLoggedPerType))
+				}
 				mu.Unlock()
 				if shouldLog {
-					logger.Errorf("[%s] %s", streamName, line)
+					logger.Debugf("[%s] %s", streamName, line)
 				} else if justSuppressed {
-					logger.Errorf("[%s] Terlalu banyak SQL error; log selanjutnya disembunyikan (>%d).", streamName, maxLoggedPerType)
+					logger.Debugf("[%s] Terlalu banyak SQL error; log selanjutnya disembunyikan (>%d).", streamName, maxLoggedPerType)
 				}
 				continue
 			}
@@ -167,9 +173,9 @@ func Execute(ctx context.Context, args []string, stdin io.Reader, logger applog.
 			}
 			mu.Unlock()
 			if shouldLog {
-				logger.Warnf("[%s] %s", streamName, line)
+				logger.Debugf("[%s] %s", streamName, line)
 			} else if justSuppressed {
-				logger.Warnf("[%s] Terlalu banyak SQL warning; log selanjutnya disembunyikan (>%d).", streamName, maxLoggedPerType)
+				logger.Debugf("[%s] Terlalu banyak SQL warning; log selanjutnya disembunyikan (>%d).", streamName, maxLoggedPerType)
 			}
 		}
 		// Ignore scanner error: biasanya karena token terlalu panjang; kita tetap lanjut (best-effort logging).

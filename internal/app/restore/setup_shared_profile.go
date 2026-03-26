@@ -9,6 +9,8 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
+
 	profileconn "sfdbtools/internal/app/profile/connection"
 	"sfdbtools/internal/app/profile/helpers/loader"
 	"sfdbtools/internal/domain"
@@ -28,7 +30,7 @@ func (s *Service) resolveTargetProfile(profileInfo *domain.ProfileInfo, allowInt
 		InteractivePrompt: "Pilih target profile untuk restore:",
 	})
 	if err != nil {
-		return fmt.Errorf("gagal load profile: %w", err)
+		return err
 	}
 
 	*profileInfo = *loadedProfile
@@ -46,6 +48,13 @@ func (s *Service) connectToTargetDatabase(ctx context.Context) error {
 
 	client, err := profileconn.ConnectWithProfile(nil, s.Profile, consts.DefaultInitialDatabase)
 	if err != nil {
+		info := profileconn.DescribeConnectError(nil, err)
+		if strings.TrimSpace(info.Detail) != "" {
+			s.Log.Warn("Detail (ringkas): " + info.Detail)
+		}
+		for _, h := range info.Hints {
+			s.Log.Warn("Hint: " + h)
+		}
 		return fmt.Errorf("koneksi database target gagal: %w", err)
 	}
 

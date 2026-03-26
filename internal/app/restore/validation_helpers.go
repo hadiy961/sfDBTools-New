@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
@@ -19,10 +20,23 @@ import (
 func (s *Service) validateApplicationPassword() error {
 	s.Log.Info("Meminta password aplikasi untuk validasi restore primary")
 
-	// Prompt password
-	password, err := prompt.PromptPassword("Masukkan password aplikasi untuk melanjutkan restore primary:")
-	if err != nil {
-		return fmt.Errorf("gagal membaca password: %w", err)
+	var password string
+	var err error
+
+	if !s.IsInteractive() {
+		// Non-interactive mode: attempt to read from ENV, expecting encrypted format if used.
+		// Use crypto.ResolveKey which will automatically decrypt SFDBTOOLS:... formatted strings
+		resolvedKey, _, resolveErr := crypto.ResolveKey("", consts.ENV_APPS_PASSWORD, true)
+		if resolveErr != nil || strings.TrimSpace(resolvedKey) == "" {
+			return fmt.Errorf("mode non-interaktif memerlukan environment variable %s untuk konfirmasi", consts.ENV_APPS_PASSWORD)
+		}
+		password = resolvedKey
+	} else {
+		// Interactive mode: Prompt password
+		password, err = prompt.PromptPassword("Masukkan password aplikasi untuk melanjutkan restore primary:")
+		if err != nil {
+			return fmt.Errorf("gagal membaca password: %w", err)
+		}
 	}
 
 	// Validasi password dengan ENV_PASSWORD_APP dari consts

@@ -43,8 +43,7 @@ PERINGATAN: Operasi ini bersifat DESTRUKTIF massal. Pastikan Anda memiliki backu
   sfdbtools db-restore all --file "full_backup.sql" --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
-			_ = restore.ExecuteRestoreAllCommand(cmd, appdeps.Deps)
-			return nil
+			return restore.ExecuteRestoreAllCommand(cmd, appdeps.Deps)
 		})
 	},
 }

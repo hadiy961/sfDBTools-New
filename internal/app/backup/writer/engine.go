@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -235,7 +236,8 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 		return nil, err
 	}
 
-	spin := progress.NewSpinnerWithElapsed("Memproses backup database")
+	e.Log.Infof("Memproses backup database (%s)...", filepath.Base(outputPath))
+	spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Memproses backup database (%s)", filepath.Base(outputPath)))
 	spin.Start()
 	defer spin.Stop()
 

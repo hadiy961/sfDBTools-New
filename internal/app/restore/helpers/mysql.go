@@ -53,6 +53,7 @@ type MySQLExecSummary struct {
 	SQLErrors    int
 	SQLWarnings  int
 	OtherOutputs int
+	ErrLines     []string
 }
 
 // ExecuteMySQLCommand menjalankan mysql/mariadb client dengan stdin reader, sambil
@@ -72,11 +73,13 @@ func ExecuteMySQLCommand(ctx context.Context, args []string, stdin io.Reader, lo
 		SQLErrors:    sum.SQLErrors,
 		SQLWarnings:  sum.SQLWarnings,
 		OtherOutputs: sum.OtherOutputs,
+		ErrLines:     sum.ErrLines,
 	}, err
 }
 
 // RestoreFromFile melakukan restore database dari file backup
 func RestoreFromFile(ctx context.Context, filePath string, targetDB string, profile *domain.ProfileInfo, encryptionKey string, logger applog.Logger) (*MySQLExecSummary, error) {
+	logger.Infof("Restore database %s dari %s...", targetDB, filepath.Base(filePath))
 	spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Restore database %s dari %s", targetDB, filepath.Base(filePath)))
 	spin.Start()
 	defer spin.Stop()
@@ -168,6 +171,7 @@ func RestoreUserGrants(ctx context.Context, grantsFile string, profile *domain.P
 		return &MySQLExecSummary{BinName: ""}, nil
 	}
 
+	logger.Infof("Restore user grants dari %s...", filepath.Base(grantsFile))
 	spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Restore user grants dari %s", filepath.Base(grantsFile)))
 	spin.Start()
 	defer spin.Stop()

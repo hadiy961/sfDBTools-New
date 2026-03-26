@@ -20,8 +20,7 @@ var CmdRestoreCustom = &cobra.Command{
 	Short: "Restore custom (paste account detail → provision DB+users → restore DB & DMART)",
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
-			_ = restore.ExecuteRestoreCustomCommand(cmd, appdeps.Deps)
-			return nil
+			return restore.ExecuteRestoreCustomCommand(cmd, appdeps.Deps)
 		})
 	},
 }

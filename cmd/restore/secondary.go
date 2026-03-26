@@ -34,8 +34,7 @@ Target secondary dibentuk dari client-code dan instance:
 	sfdbtools db-restore secondary --from primary --client-code "adaro" --instance "training" --ticket "TICKET-123"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runner.Run(cmd, func() error {
-			_ = restore.ExecuteRestoreSecondaryCommand(cmd, appdeps.Deps)
-			return nil
+			return restore.ExecuteRestoreSecondaryCommand(cmd, appdeps.Deps)
 		})
 	},
 }

@@ -70,6 +70,9 @@ func (s *Service) backupDatabaseGeneric(ctx context.Context, mode string, dbName
 		outputDir = s.Config.Backup.Output.BaseDirectory
 	}
 
+	// Buat subdirektori opsional untuk memisahkan file pre-restore
+	outputDir = filepath.Join(outputDir, "pre_restore")
+
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return "", fmt.Errorf("gagal membuat direktori output: %w", err)
 	}

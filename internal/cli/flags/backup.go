@@ -37,9 +37,6 @@ func addBackupCommonFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions
 	cmd.Flags().BoolP("skip-compress", "C", !opts.Compression.Enabled, "Melewati proses kompresi pada file backup (default: dari config)")
 	cmd.Flags().StringVarP(&opts.Compression.Type, "compress", "c", opts.Compression.Type, "Menentukan jenis kompresi (gzip, zstd, xz, zlib, pgzip, none)")
 	cmd.Flags().IntVarP(&opts.Compression.Level, "compress-level", "l", opts.Compression.Level, "Menentukan level kompresi (1-9) (default: dari config)")
-
-	// Encryption skip flag
-	cmd.Flags().Bool("skip-encrypt", !opts.Encryption.Enabled, "Melewati proses enkripsi pada file backup (default: dari config)")
 }
 
 func addBackupIncludeFilterFlags(cmd *cobra.Command, opts *types_backup.BackupDBOptions) {

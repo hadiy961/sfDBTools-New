@@ -11,6 +11,7 @@ import (
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/database"
+	"sfdbtools/internal/shared/errorlog"
 )
 
 // RestoreExecutor interface untuk semua mode restore
@@ -22,6 +23,7 @@ type RestoreExecutor interface {
 type RestoreService interface {
 	// Logging
 	GetLogger() applog.Logger
+	GetErrorLogger() *errorlog.ErrorLogger
 
 	// Context & Clients
 	GetTargetClient() *database.Client

@@ -109,16 +109,6 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 		}
 	}
 
-	// Encryption skip flag
-	skipEncrypt := resolver.GetBoolFlagOrEnv(cmd, "skip-encrypt", "")
-	if skipEncrypt {
-		opts.Encryption.Enabled = false
-		opts.Encryption.Key = ""
-	} else if cmd.Flags().Changed("skip-encrypt") {
-		// Jika user eksplisit set --skip-encrypt=false, anggap enkripsi ingin dipakai.
-		opts.Encryption.Enabled = true
-	}
-
 	// Mode-specific options
 	switch mode {
 	case consts.ModeSingle:
@@ -163,7 +153,7 @@ func ParsingBackupOptions(cmd *cobra.Command, mode string) (types_backup.BackupD
 			return types_backup.BackupDBOptions{}, fmt.Errorf("profile-key wajib diisi pada mode non-interaktif (--quiet): gunakan --profile-key atau env %s", consts.ENV_SOURCE_PROFILE_KEY)
 		}
 		if opts.Encryption.Enabled && strings.TrimSpace(opts.Encryption.Key) == "" {
-			return types_backup.BackupDBOptions{}, fmt.Errorf("backup-key wajib diisi saat enkripsi aktif pada mode non-interaktif (--quiet): gunakan --backup-key atau env %s (atau set --skip-encrypt)", consts.ENV_BACKUP_ENCRYPTION_KEY)
+			return types_backup.BackupDBOptions{}, fmt.Errorf("backup-key wajib diisi saat enkripsi aktif pada mode non-interaktif (--quiet): gunakan --backup-key atau env %s", consts.ENV_BACKUP_ENCRYPTION_KEY)
 		}
 
 		// Mode-specific non-interactive requirements
