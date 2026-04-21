@@ -129,7 +129,7 @@ func ResolveAndLoadProfile(opts ProfileLoadOptions) (*domain.ProfileInfo, error)
 	return profile, nil
 }
 
-// LoadSourceProfile loads source profile untuk backup/dbscan operations dengan interactive mode.
+// LoadSourceProfile loads source profile untuk backup/restore operations dengan interactive mode.
 //
 // Fungsi ini adalah convenience wrapper untuk ResolveAndLoadProfile dengan:
 //   - RequireProfile=true (wajib ada profile)
@@ -146,7 +146,7 @@ func ResolveAndLoadProfile(opts ProfileLoadOptions) (*domain.ProfileInfo, error)
 //   - *domain.ProfileInfo: Loaded source profile
 //   - error: Error jika profile tidak ditemukan atau gagal load
 //
-// Use case: db-backup, db-scan, db-restore dengan source profile.
+// Use case: db-backup, db-restore dengan source profile.
 func LoadSourceProfile(configDir, profilePath, profileKey string, allowInteractive bool) (*domain.ProfileInfo, error) {
 	return ResolveAndLoadProfile(ProfileLoadOptions{
 		ConfigDir:         configDir,
@@ -184,7 +184,7 @@ func LoadSourceProfile(configDir, profilePath, profileKey string, allowInteracti
 //		configDir,
 //		"Pilih profile yang ingin diedit:",
 //	)
-//	// profile dapat di-edit, snapshot tetap immutable untuk comparison
+//	// profile dapat di-edit, snapshot tetap immutable for comparison
 //	if hasChanges(profile, snapshot) {
 //		// ... save changes
 //	}

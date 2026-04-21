@@ -2,7 +2,7 @@
 
 # sfdbtools — Copilot coding instructions
 
-sfdbtools adalah CLI Go untuk operasi MySQL/MariaDB (backup/restore/db-scan/cleanup/crypto/profile). Fokus utama: **streaming pipeline** (hemat RAM), **safety**, dan **otomasi**.
+sfdbtools adalah CLI Go untuk operasi MySQL/MariaDB (backup/restore/cleanup/crypto/profile). Fokus utama: **streaming pipeline** (hemat RAM), **safety**, dan **otomasi**.
 
 ## Big picture (mulai baca dari sini)
 - Entrypoint: [main.go](../main.go) → bootstrap runtime flags → (opsional) auto-update → load config → `cmd.Execute(deps)`.
@@ -11,7 +11,7 @@ sfdbtools adalah CLI Go untuk operasi MySQL/MariaDB (backup/restore/db-scan/clea
 
 ## Struktur folder & boundary
 - `cmd/`: definisi command + parsing flags (tipis). Contoh: [cmd/backup/main.go](../cmd/backup/main.go), [cmd/restore/main.go](../cmd/restore/main.go).
-- `internal/app/`: orkestrasi workflow per fitur (backup/restore/profile/dbscan/cleanup/script).
+- `internal/app/`: orkestrasi workflow per fitur (backup/restore/profile/cleanup/script).
 - `internal/services/`: implementasi service (config/logger/crypto/dll).
 - `pkg/`: library reusable (compress/encrypt/consts/helper/runtimecfg/validation/dll).
 
