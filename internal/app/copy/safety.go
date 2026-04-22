@@ -78,6 +78,8 @@ func (s *Service) executeDiskCopy(ctx context.Context, profile *domain.ProfileIn
 		DBName:  sourceDB,
 		Ticket:  ticket,
 	}
+	opts.Compression.Enabled = true
+	opts.Compression.Type = consts.CompressionTypeGzip
 	opts.Filter.ExcludeData = schemaOnly
 
 	filename, err := backuppath.GenerateBackupFilename(sourceDB, consts.ModeSingle, profile.DBInfo.Host, compress.CompressionType(consts.CompressionTypeGzip), false, false)
@@ -131,6 +133,8 @@ func (s *Service) runSafetyTableBackup(ctx context.Context, profile *domain.Prof
 		DBName:  dbName,
 		Ticket:  ticket,
 	}
+	opts.Compression.Enabled = true
+	opts.Compression.Type = consts.CompressionTypeGzip
 
 	hostname := profile.DBInfo.Host
 	filename, _ := backuppath.GenerateBackupFilename(dbName+"_"+tableName, consts.ModeSingle, hostname, compress.CompressionType(consts.CompressionTypeGzip), false, false)
