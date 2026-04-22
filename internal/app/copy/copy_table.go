@@ -12,7 +12,7 @@ import (
 )
 
 // CopyTable melakukan penyalinan tabel spesifik.
-func (s *Service) CopyTable(ctx context.Context, profile *domain.ProfileInfo, sourceDB, sourceTable, targetDB, targetTable string, schemaOnly, force, backupFirst, nonInteractive bool) (string, string, error) {
+func (s *Service) CopyTable(ctx context.Context, profile *domain.ProfileInfo, sourceDB, sourceTable, targetDB, targetTable string, schemaOnly, force, backupFirst, includeGrants, nonInteractive bool) (string, string, error) {
 	client, err := profileconn.ConnectWithProfile(s.cfg, profile, "")
 	if err != nil {
 		return "", "", fmt.Errorf("gagal koneksi ke database: %w", err)
@@ -106,6 +106,13 @@ func (s *Service) CopyTable(ctx context.Context, profile *domain.ProfileInfo, so
 		insertSQL := fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s` ", targetDB, targetTable, sourceDB, sourceTable)
 		if _, err := client.ExecContextWithRetry(ctx, insertSQL); err != nil {
 			return "", "", fmt.Errorf("gagal menyalin data tabel: %w", err)
+		}
+	}
+
+	// Copy Grants (if enabled)
+	if includeGrants {
+		if err := s.CopyGrants(ctx, profile, sourceDB, targetDB); err != nil {
+			s.log.Warnf("Gagal menyalin hak akses user: %v", err)
 		}
 	}
 

@@ -13,7 +13,7 @@ import (
 )
 
 // CopyDatabase melakukan penyalinan satu database utuh.
-func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo, sourceDB, targetDB string, schemaOnly, useDisk, force, backupFirst, nonInteractive bool) (string, error) {
+func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo, sourceDB, targetDB string, schemaOnly, useDisk, force, backupFirst, includeGrants, nonInteractive bool) (string, error) {
 	client, err := profileconn.ConnectWithProfile(s.cfg, profile, "")
 	if err != nil {
 		return "", fmt.Errorf("gagal koneksi ke database: %w", err)
@@ -97,14 +97,6 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 		}
 	}
 
-	// Determine method
-	if !useDisk && !nonInteractive {
-		choice, _, err := prompt.SelectOne("Pilih metode penyalinan:", []string{"Direct Stream (Cepat, RAM-based)", "Disk-based (Aman, Dump file)"}, 0)
-		if err == nil && choice == "Disk-based (Aman, Dump file)" {
-			useDisk = true
-		}
-	}
-
 	methodName := "Piping"
 	if useDisk {
 		methodName = "Disk-based"
@@ -129,6 +121,13 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 			BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs,
 		}); err != nil {
 			return "", err
+		}
+	}
+
+	// 6. Copy Grants (if enabled)
+	if includeGrants {
+		if err := s.CopyGrants(ctx, profile, sourceDB, targetDB); err != nil {
+			s.log.Warnf("Gagal menyalin hak akses user: %v", err)
 		}
 	}
 

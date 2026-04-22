@@ -20,6 +20,7 @@ var (
 	copyDBUseDisk        bool
 	copyDBForce          bool
 	copyDBBackupFirst    bool
+	copyDBIncludeGrants  bool
 	copyDBNonInteractive bool
 )
 
@@ -81,7 +82,20 @@ var CmdCopyDB = &cobra.Command{
 				}
 			}
 
-			// 4. Loop Execution
+			// 4. Handle Copy Method (Piping vs Disk)
+			if !copyDBUseDisk && !copyDBNonInteractive {
+				choice, _, err := prompt.SelectOne("Pilih metode penyalinan:", []string{"Direct Stream (Cepat, RAM-based)", "Disk-based (Aman, Dump file)"}, 0)
+				if err == nil && choice == "Disk-based (Aman, Dump file)" {
+					copyDBUseDisk = true
+				}
+			}
+
+			// 5. Handle Copy Grants
+			if !copyDBIncludeGrants && !copyDBNonInteractive {
+				copyDBIncludeGrants, _ = prompt.Confirm("Salin hak akses (grants) user dari database sumber?", true)
+			}
+
+			// 6. Loop Execution
 			successCount := 0
 			var results [][]string
 			
@@ -100,7 +114,7 @@ var CmdCopyDB = &cobra.Command{
 				}
 
 				fmt.Printf("[%d/%d] Kloning %s -> %s ...\n", i+1, len(sourceDBs), db, currTarget)
-				finalTarget, err := svc.CopyDatabase(ctx, profile, db, currTarget, copyDBSchemaOnly, copyDBUseDisk, copyDBForce, copyDBBackupFirst, copyDBNonInteractive)
+				finalTarget, err := svc.CopyDatabase(ctx, profile, db, currTarget, copyDBSchemaOnly, copyDBUseDisk, copyDBForce, copyDBBackupFirst, copyDBIncludeGrants, copyDBNonInteractive)
 				
 				status := "Sukses"
 				note := "-"
@@ -116,7 +130,7 @@ var CmdCopyDB = &cobra.Command{
 				results = append(results, []string{db, currTarget, status, note})
 			}
 
-			// 5. Final Summary
+			// 7. Final Summary
 			fmt.Printf("\n--- Ringkasan Copy Database ---\n")
 			for _, res := range results {
 				icon := "✓"
@@ -138,5 +152,6 @@ func init() {
 	CmdCopyDB.Flags().BoolVar(&copyDBUseDisk, "use-disk", false, "Gunakan media disk (dump & restore) alih-alih streaming RAM")
 	CmdCopyDB.Flags().BoolVar(&copyDBForce, "force", false, "Timpa database target jika sudah ada (tanpa backup)")
 	CmdCopyDB.Flags().BoolVar(&copyDBBackupFirst, "backup-first", false, "Backup database target terlebih dahulu sebelum menimpa")
+	CmdCopyDB.Flags().BoolVar(&copyDBIncludeGrants, "include-grants", false, "Salin hak akses user (grants) dari database sumber")
 	CmdCopyDB.Flags().BoolVar(&copyDBNonInteractive, "non-interactive", false, "Jalankan tanpa prompt interaktif")
 }
