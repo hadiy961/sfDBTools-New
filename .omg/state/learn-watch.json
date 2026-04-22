@@ -1,6 +1,6 @@
 {
-  "last_session_id": "36d3d55c-dd6f-47ae-8ab7-4cc9a8b0903d",
-  "last_event_key": "36d3d55c-dd6f-47ae-8ab7-4cc9a8b0903d:transcript:ead6222449dd66b1d3163a6a3158de30192634cbeafa1c2f83e165ee52b9cc35",
+  "last_session_id": "5ea30197-3847-496e-85cf-857924193301",
+  "last_event_key": "5ea30197-3847-496e-85cf-857924193301:transcript:53d44a960c6581e0966a9e762ee3ad17d823a70aa81ae7bf3c7f8d701affbac6",
   "last_prompted_session_id": "",
   "last_reason": "short-session",
   "last_prompted_at": "",
@@ -8,5 +8,5 @@
   "last_actionable_message_count": 0,
   "deep_interview_lock_active": false,
   "deep_interview_lock_source": "/home/dbado/sfDBTools/.omg/state/deep-interview.json",
-  "updated_at": "2026-04-21T07:23:34.002Z"
+  "updated_at": "2026-04-22T07:11:20.371Z"
 }

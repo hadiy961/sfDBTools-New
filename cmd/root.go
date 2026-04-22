@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	backupcmd "sfdbtools/cmd/backup"
 	cleanupcmd "sfdbtools/cmd/cleanup"
+	copycmd "sfdbtools/cmd/copy"
 	cryptocmd "sfdbtools/cmd/crypto"
-	dbcopycmd "sfdbtools/cmd/dbcopy"
 	dbusercmd "sfdbtools/cmd/dbuser"
 	profilecmd "sfdbtools/cmd/profile"
 	restorecmd "sfdbtools/cmd/restore"
@@ -118,7 +118,7 @@ func init() {
 	rootCmd.AddCommand(cleanupcmd.CmdCleanupMain)
 	rootCmd.AddCommand(backupcmd.CmdBackupMain)
 	rootCmd.AddCommand(restorecmd.CmdRestore)
-	rootCmd.AddCommand(dbcopycmd.CmdDBCopyMain)
+	rootCmd.AddCommand(copycmd.CmdCopyMain)
 	rootCmd.AddCommand(dbusercmd.CmdDBUserMain)
 	rootCmd.AddCommand(completionCmd)
 }
