@@ -3,9 +3,9 @@ package copycmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"sfdbtools/internal/app/copy"
-	"sfdbtools/internal/cli/deps"
+	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/cli/runner"
 	"sfdbtools/internal/ui/prompt"
 	"strings"
 
@@ -27,22 +27,22 @@ var CmdCopyTable = &cobra.Command{
 	Use:   "table [source_db.table...] [target_db]",
 	Short: "Salin tabel spesifik",
 	Run: func(cmd *cobra.Command, args []string) {
-		var sourceDB string
-		var sourceTables []string
-		targetArg := ""
+		runner.RunContext(cmd, func(ctx context.Context) error {
+			var sourceDB string
+			var sourceTables []string
+			targetArg := ""
 
-		if len(args) > 1 {
-			// Multi arg: last one is target (if no dot) or another source
-			// Simplification for CLI: use explicit arg handling
-			for _, arg := range args[:len(args)-1] {
-				parts := strings.Split(arg, ".")
-				if len(parts) == 2 {
-					sourceDB = parts[0]
-					sourceTables = append(sourceTables, parts[1])
+			if len(args) > 1 {
+				// Multi arg: last one is target (if no dot) or another source
+				for _, arg := range args[:len(args)-1] {
+					parts := strings.Split(arg, ".")
+					if len(parts) == 2 {
+						sourceDB = parts[0]
+						sourceTables = append(sourceTables, parts[1])
+					}
 				}
-			}
 			targetArg = args[len(args)-1]
-		} else if len(args) == 1 {
+			} else if len(args) == 1 {
 			parts := strings.Split(args[0], ".")
 			if len(parts) == 2 {
 				sourceDB = parts[0]
@@ -50,112 +50,114 @@ var CmdCopyTable = &cobra.Command{
 			}
 		}
 
-		svc := copy.NewService(deps.Deps.Logger, deps.Deps.Config)
+		svc := copy.NewService(appdeps.Deps.Logger, appdeps.Deps.Config)
 		svc.SetTicket(copyTableTicket)
 		
 		// 1. Load Profile
 		profile, err := svc.LoadProfile(copyTableProfile, copyTableProfileKey, !copyTableNonInteractive)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\\n", err)
-			os.Exit(1)
-		}
-
-		ctx := context.Background()
-
-		// 2. Handle missing source arg (Interactive)
-		if len(sourceTables) == 0 {
-			if copyTableNonInteractive {
-				fmt.Fprintf(os.Stderr, "Error: source 'db.table' wajib diisi pada mode non-interaktif\\n")
-				os.Exit(1)
-			}
-			sourceDB, sourceTables, err = svc.SelectTablesInteractive(ctx, profile)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %v\\n", err)
-				os.Exit(1)
+				return err
 			}
-		}
 
-		if len(sourceTables) == 0 {
-			fmt.Println("Tidak ada tabel yang dipilih.")
-			return
-		}
-
-		// 3. Handle Target Database
-		targetDB := sourceDB
-		if targetArg != "" && !strings.Contains(targetArg, ".") {
-			targetDB = targetArg
-		} else if !copyTableNonInteractive {
-			targetDB, err = svc.SelectTargetDatabaseInteractive(ctx, profile, sourceDB)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-				os.Exit(1)
-			}
-		}
-
-		// 4. Handle Target Table Name/Suffix
-		var tableSuffix string
-		var specificTargetTable string
-
-		if len(sourceTables) == 1 {
-			if !copyTableNonInteractive {
-				specificTargetTable, _ = prompt.AskText("Masukkan nama tabel tujuan:", prompt.WithDefault(sourceTables[0]))
-			} else {
-				specificTargetTable = sourceTables[0]
-			}
-		} else {
-			if !copyTableNonInteractive {
-				defaultSuffix := ""
-				if targetDB == sourceDB {
-					defaultSuffix = "_copy"
+			// 2. Handle missing source arg (Interactive)
+			if len(sourceTables) == 0 {
+				if copyTableNonInteractive {
+					return fmt.Errorf("source 'db.table' wajib diisi pada mode non-interaktif")
 				}
-				tableSuffix, _ = prompt.AskText("Banyak tabel dipilih. Masukkan akhiran (suffix) untuk nama tabel target:", prompt.WithDefault(defaultSuffix))
-			}
-		}
-
-		// 5. Loop Execution
-		successCount := 0
-		var results [][]string
-		
-		fmt.Println() // Space before start
-		for i, table := range sourceTables {
-			currTargetTable := table + tableSuffix
-			if specificTargetTable != "" {
-				currTargetTable = specificTargetTable
+				sourceDB, sourceTables, err = svc.SelectTablesInteractive(ctx, profile)
+				if err != nil {
+					return err
+				}
 			}
 
-			fmt.Printf("[%d/%d] Kloning %s.%s -> %s.%s ...\n", i+1, len(sourceTables), sourceDB, table, targetDB, currTargetTable)
-			
-			_, _, err = svc.CopyTable(ctx, profile, sourceDB, table, targetDB, currTargetTable, copyTableSchemaOnly, copyTableForce, copyTableBackupFirst, copyTableNonInteractive)
-			
-			status := "Sukses"
-			note := "-"
-			if err != nil {
-				status = "Gagal"
-				note = err.Error()
-				fmt.Printf("  ❌ Error: %v\n\n", err)
+			if len(sourceTables) == 0 {
+				fmt.Println("Tidak ada tabel yang dipilih.")
+				return nil
+			}
+
+			// 3. Handle Target Database
+		targetDB := sourceDB
+			if targetArg != "" && !strings.Contains(targetArg, ".") {
+				targetDB = targetArg
+			} else if !copyTableNonInteractive {
+				targetDB, err = svc.SelectTargetDatabaseInteractive(ctx, profile, sourceDB)
+				if err != nil {
+					return err
+				}
+			}
+
+			// 4. Handle Target Table Name/Suffix
+			var tableSuffix string
+			var specificTargetTable string
+
+			if len(sourceTables) == 1 {
+				if !copyTableNonInteractive {
+					specificTargetTable, _ = prompt.AskText("Masukkan nama tabel tujuan:", prompt.WithDefault(sourceTables[0]))
+				} else {
+					specificTargetTable = sourceTables[0]
+				}
 			} else {
-				successCount++
-				fmt.Printf("  ✅ Berhasil\n\n")
+				if !copyTableNonInteractive {
+					defaultSuffix := ""
+					if targetDB == sourceDB {
+						defaultSuffix = "_copy"
+					}
+					tableSuffix, _ = prompt.AskText("Banyak tabel dipilih. Masukkan akhiran (suffix) untuk nama tabel target:", prompt.WithDefault(defaultSuffix))
+				}
+			}
+
+			// 5. Loop Execution
+		successCount := 0
+			var results [][]string
+			
+			fmt.Println() // Space before start
+			for i, table := range sourceTables {
+				// Check for graceful shutdown
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+				}
+
+				currTargetTable := table + tableSuffix
+				if specificTargetTable != "" {
+					currTargetTable = specificTargetTable
+				}
+
+				fmt.Printf("[%d/%d] Kloning %s.%s -> %s.%s ...\n", i+1, len(sourceTables), sourceDB, table, targetDB, currTargetTable)
+				
+				_, _, err = svc.CopyTable(ctx, profile, sourceDB, table, targetDB, currTargetTable, copyTableSchemaOnly, copyTableForce, copyTableBackupFirst, copyTableNonInteractive)
+				
+				status := "Sukses"
+				note := "-"
+				if err != nil {
+					status = "Gagal"
+					note = err.Error()
+					fmt.Printf("  ❌ Error: %v\n\n", err)
+				} else {
+					successCount++
+					fmt.Printf("  ✅ Berhasil\n\n")
+				}
+				
+				results = append(results, []string{
+					fmt.Sprintf("%s.%s", sourceDB, table),
+					fmt.Sprintf("%s.%s", targetDB, currTargetTable),
+					status,
+					note,
+				})
+			}
+
+			// 6. Final Summary Table
+			fmt.Printf("\n--- Ringkasan Copy Tabel ---\n")
+			for _, res := range results {
+				icon := "✓"
+				if res[2] == "Gagal" { icon = "✗" }
+				fmt.Printf("%s %-30s -> %-30s [%s]\n", icon, res[0], res[1], res[2])
 			}
 			
-			results = append(results, []string{
-				fmt.Sprintf("%s.%s", sourceDB, table),
-				fmt.Sprintf("%s.%s", targetDB, currTargetTable),
-				status,
-				note,
-			})
-		}
-
-		// 6. Final Summary Table
-		fmt.Printf("\n--- Ringkasan Copy Tabel ---\n")
-		// (Optional: use ui/table if available, but let's do a simple clean one first)
-		for _, res := range results {
-			icon := "✓"
-			if res[2] == "Gagal" { icon = "✗" }
-			fmt.Printf("%s %-30s -> %-30s [%s]\n", icon, res[0], res[1], res[2])
-		}
-		
-		fmt.Printf("\nSelesai: %d/%d tabel berhasil disalin.\n", successCount, len(sourceTables))
+			fmt.Printf("\nSelesai: %d/%d tabel berhasil disalin.\n", successCount, len(sourceTables))
+			return nil
+		})
 	},
 }
 

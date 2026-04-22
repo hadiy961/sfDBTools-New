@@ -1,6 +1,7 @@
 package execution
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/execx"
+	"sfdbtools/internal/ui/progress"
 )
 
 // PipingOptions berisi konfigurasi untuk proses streaming copy.
@@ -31,7 +33,6 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 	}
 
 	// 2. Build mysqldump arguments
-	// Kita gunakan helper yang sudah ada di internal/app/backup/execution
 	filter := domain.FilterOptions{
 		ExcludeData: opts.SchemaOnly,
 	}
@@ -47,20 +48,18 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 		false,         // sshTunnelEnabled
 	)
 
-	// Jika copy table, tambahkan nama tabel di akhir (setelah database name yang sudah ada di dumpArgs)
 	if opts.TableName != "" {
 		dumpArgs = append(dumpArgs, opts.TableName)
 	}
 
 	// 3. Build mysql client arguments
-	// Kita gunakan helper yang sudah ada di internal/app/mysqlcli
 	mysqlArgs := mysqlcli.BuildArgs(opts.Profile, opts.TargetDB)
 
 	// 4. Setup Commands
+	// Kita gunakan CommandContext agar OS process otomatis di-kill jika context dibatalkan.
 	dumpCmd := exec.CommandContext(ctx, dumpBin.Path, dumpArgs...)
 
-	// Resolve mysql binary
-	mysqlBin, _, err := mysqlcli.ResolveMariaDBOrMySQLClient() // This was an internal function in mysqlcli, I might need to export it or use ExecuteWithSSLFallback
+	mysqlBin, _, err := mysqlcli.ResolveMariaDBOrMySQLClient()
 	if err != nil {
 		return err
 	}
@@ -77,24 +76,62 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 
 	// Start commands
 	if err := dumpCmd.Start(); err != nil {
+		_ = pw.Close()
 		return fmt.Errorf("gagal memulai %s: %w", dumpBin.Name, err)
 	}
+
 	if err := mysqlCmd.Start(); err != nil {
+		_ = pw.Close()
+		_ = pr.Close()
+		_ = dumpCmd.Process.Kill()
 		return fmt.Errorf("gagal memulai mysql client: %w", err)
 	}
 
-	// Log stderr in background
+	// Tampilkan spinner untuk feedback visual saat streaming berjalan
+	spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Streaming %s -> %s", opts.SourceDB, opts.TargetDB))
+	spin.Start()
+	defer spin.Stop()
+
+	// Log stderr in background untuk audit/debugging jika terjadi kegagalan
 	go func() {
 		sl := io.MultiReader(dumpStderr, mysqlStderr)
-		_, _ = io.Copy(io.Discard, sl) // Kita bisa improve ini untuk log ke logger jika perlu
+		scanner := bufio.NewScanner(sl)
+		for scanner.Scan() {
+			log.Debugf("[SQL CLI] %s", scanner.Text())
+		}
 	}()
 
 	// Wait for commands
-	errDump := dumpCmd.Wait()
-	pw.Close() // Close pipe so mysql knows stdin is finished
+	// Error handling diperkuat: jika salah satu gagal, kill yang lain.
+	errDumpChan := make(chan error, 1)
+	go func() {
+		errDumpChan <- dumpCmd.Wait()
+		_ = pw.Close() // Pastikan pipe ditutup agar mysqlCmd.Stdin mendapat EOF
+	}()
 
-	errMysql := mysqlCmd.Wait()
-	pr.Close()
+	errMysqlChan := make(chan error, 1)
+	go func() {
+		errMysqlChan <- mysqlCmd.Wait()
+		_ = pr.Close()
+	}()
+
+	var errDump, errMysql error
+	for i := 0; i < 2; i++ {
+		select {
+		case errDump = <-errDumpChan:
+			if errDump != nil {
+				_ = mysqlCmd.Process.Kill()
+			}
+		case errMysql = <-errMysqlChan:
+			if errMysql != nil {
+				_ = dumpCmd.Process.Kill()
+			}
+		case <-ctx.Done():
+			_ = dumpCmd.Process.Kill()
+			_ = mysqlCmd.Process.Kill()
+			return ctx.Err()
+		}
+	}
 
 	if errDump != nil {
 		return fmt.Errorf("error pada %s: %w", dumpBin.Name, errDump)
