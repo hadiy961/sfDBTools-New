@@ -6,6 +6,8 @@ import (
 	"os"
 	"sfdbtools/internal/app/copy"
 	"sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/ui/prompt"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -22,51 +24,84 @@ var (
 
 // CmdCopyDB menyalin database utuh
 var CmdCopyDB = &cobra.Command{
-	Use:   "db [source_db] [target_db]",
+	Use:   "db [source_db...] [target_db]",
 	Short: "Salin database utuh",
 	Run: func(cmd *cobra.Command, args []string) {
-		sourceDB := ""
-		if len(args) > 0 {
-			sourceDB = args[0]
-		}
+		var sourceDBs []string
 		targetDB := ""
+
 		if len(args) > 1 {
-			targetDB = args[1]
+			// Jika > 1 arg, maka arg terakhir dianggap target, sisanya source
+			sourceDBs = args[:len(args)-1]
+			targetDB = args[len(args)-1]
+		} else if len(args) == 1 {
+			sourceDBs = []string{args[0]}
 		}
 
 		svc := copy.NewService(deps.Deps.Logger, deps.Deps.Config)
 		
-		// 1. Load Profile (Interactive picker if empty)
+		// 1. Load Profile
 		profile, err := svc.LoadProfile(copyDBProfile, copyDBProfileKey, !copyDBNonInteractive)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error: %v\\n", err)
 			os.Exit(1)
 		}
 
 		ctx := context.Background()
 
-		// 2. Handle missing source database in interactive mode
-		if sourceDB == "" {
+		// 2. Handle missing source databases (Interactive)
+		if len(sourceDBs) == 0 {
 			if copyDBNonInteractive {
-				fmt.Fprintf(os.Stderr, "Error: source database wajib diisi pada mode non-interaktif\n")
+				fmt.Fprintf(os.Stderr, "Error: source database wajib diisi pada mode non-interaktif\\n")
 				os.Exit(1)
 			}
-			
-			// Ambil list database untuk picker
-			sourceDB, err = svc.SelectDatabaseInteractive(ctx, profile)
+			sourceDBs, err = svc.SelectDatabasesInteractive(ctx, profile)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error: %v\\n", err)
 				os.Exit(1)
 			}
 		}
 
-		targetDB, err = svc.CopyDatabase(ctx, profile, sourceDB, targetDB, copyDBSchemaOnly, copyDBUseDisk, copyDBForce, copyDBBackupFirst, copyDBNonInteractive)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+		if len(sourceDBs) == 0 {
+			fmt.Println("Tidak ada database yang dipilih.")
+			return
 		}
 
-		fmt.Printf("\n✓ Database '%s' berhasil disalin ke '%s'\n", sourceDB, targetDB)
+		// 3. Handle Target Name/Suffix
+		var suffix string
+		if len(sourceDBs) == 1 {
+			if targetDB == "" && !copyDBNonInteractive {
+				targetDB, _ = prompt.AskText("Masukkan nama database target:", prompt.WithDefault(fmt.Sprintf("%s_copy_%s", sourceDBs[0], time.Now().Format("20060102"))))
+			}
+		} else {
+			// Multi-selection: ask for suffix instead of target name
+			if !copyDBNonInteractive {
+				suffix, _ = prompt.AskText("Banyak database dipilih. Masukkan akhiran (suffix) untuk nama target:", prompt.WithDefault(fmt.Sprintf("_copy_%s", time.Now().Format("20060102"))))
+			} else if targetDB != "" {
+				// In non-interactive, if targetDB is provided for multi-select, treat it as suffix
+				suffix = targetDB
+			}
+		}
+
+		// 4. Loop Execution
+		successCount := 0
+		for _, db := range sourceDBs {
+			currTarget := targetDB
+			if len(sourceDBs) > 1 {
+				currTarget = db + suffix
+			}
+
+			fmt.Printf("\\n[Processing %d/%d]: %s -> %s\\n", successCount+1, len(sourceDBs), db, currTarget)
+			finalTarget, err := svc.CopyDatabase(ctx, profile, db, currTarget, copyDBSchemaOnly, copyDBUseDisk, copyDBForce, copyDBBackupFirst, copyDBNonInteractive)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error copy %s: %v\\n", db, err)
+				continue
+			}
+			successCount++
+			fmt.Printf("✓ Berhasil: %s\\n", finalTarget)
+		}
+
+		fmt.Printf("\\nSelesai: %d/%d database berhasil disalin.\\n", successCount, len(sourceDBs))
 	},
 }
 

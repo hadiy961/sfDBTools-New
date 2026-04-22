@@ -35,7 +35,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 	filter := domain.FilterOptions{
 		ExcludeData: opts.SchemaOnly,
 	}
-	
+
 	dumpArgs := execution.BuildMysqldumpArgs(
 		opts.BaseDumpArgs,
 		opts.Profile.DBInfo,
@@ -46,7 +46,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 		nil,           // skipTablesData
 		false,         // sshTunnelEnabled
 	)
-	
+
 	// Jika copy table, tambahkan nama tabel di akhir (setelah database name yang sudah ada di dumpArgs)
 	if opts.TableName != "" {
 		dumpArgs = append(dumpArgs, opts.TableName)
@@ -58,7 +58,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 
 	// 4. Setup Commands
 	dumpCmd := exec.CommandContext(ctx, dumpBin.Path, dumpArgs...)
-	
+
 	// Resolve mysql binary
 	mysqlBin, _, err := mysqlcli.ResolveMariaDBOrMySQLClient() // This was an internal function in mysqlcli, I might need to export it or use ExecuteWithSSLFallback
 	if err != nil {
@@ -92,7 +92,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 	// Wait for commands
 	errDump := dumpCmd.Wait()
 	pw.Close() // Close pipe so mysql knows stdin is finished
-	
+
 	errMysql := mysqlCmd.Wait()
 	pr.Close()
 
