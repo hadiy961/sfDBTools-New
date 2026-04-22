@@ -74,11 +74,16 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	if len(baseTables) > 0 {
 		s.log.Infof("Menyalin data tabel menggunakan %d workers...", workers)
 
-		if _, err := client.ExecContextWithRetry(ctx, "SET FOREIGN_KEY_CHECKS=0; SET UNIQUE_CHECKS=0;"); err != nil {
+		// Matikan checks di target agar load data cepat dan tidak error FK
+		if _, err := client.ExecContextWithRetry(ctx, "SET FOREIGN_KEY_CHECKS=0"); err != nil {
+			return "", err
+		}
+		if _, err := client.ExecContextWithRetry(ctx, "SET UNIQUE_CHECKS=0"); err != nil {
 			return "", err
 		}
 		defer func() {
-			_, _ = client.ExecContextWithRetry(ctx, "SET FOREIGN_KEY_CHECKS=1; SET UNIQUE_CHECKS=1;")
+			_, _ = client.ExecContextWithRetry(ctx, "SET FOREIGN_KEY_CHECKS=1")
+			_, _ = client.ExecContextWithRetry(ctx, "SET UNIQUE_CHECKS=1")
 		}()
 
 		tableChan := make(chan string, len(baseTables))
