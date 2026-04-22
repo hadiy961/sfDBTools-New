@@ -15,6 +15,7 @@ import (
 var (
 	copyTableProfile        string
 	copyTableProfileKey     string
+	copyTableTicket         string
 	copyTableSchemaOnly     bool
 	copyTableForce          bool
 	copyTableBackupFirst    bool
@@ -50,6 +51,7 @@ var CmdCopyTable = &cobra.Command{
 		}
 
 		svc := copy.NewService(deps.Deps.Logger, deps.Deps.Config)
+		svc.SetTicket(copyTableTicket)
 		
 		// 1. Load Profile
 		profile, err := svc.LoadProfile(copyTableProfile, copyTableProfileKey, !copyTableNonInteractive)
@@ -160,6 +162,7 @@ var CmdCopyTable = &cobra.Command{
 func init() {
 	CmdCopyTable.Flags().StringVarP(&copyTableProfile, "profile", "p", "", "Nama atau path profil database")
 	CmdCopyTable.Flags().StringVar(&copyTableProfileKey, "profile-key", "", "Kunci enkripsi profil (jika dienkripsi)")
+	CmdCopyTable.Flags().StringVarP(&copyTableTicket, "ticket", "t", "", "Ticket number untuk audit")
 	CmdCopyTable.Flags().BoolVar(&copyTableSchemaOnly, "schema-only", false, "Hanya salin struktur (tanpa data)")
 	CmdCopyTable.Flags().BoolVar(&copyTableForce, "force", false, "Timpa tabel target jika sudah ada (tanpa backup)")
 	CmdCopyTable.Flags().BoolVar(&copyTableBackupFirst, "backup-first", false, "Backup tabel target terlebih dahulu sebelum menimpa")

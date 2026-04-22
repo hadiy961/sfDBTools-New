@@ -20,11 +20,16 @@ import (
 
 // runSafetyBackup melakukan backup cepat ke direktori default config sebelum ditimpa.
 func (s *Service) runSafetyBackup(ctx context.Context, profile *domain.ProfileInfo, client *database.Client, dbName string) error {
+	ticket := s.ticket
+	if ticket == "" {
+		ticket = "INTERNAL_SAFETY_BACKUP"
+	}
+
 	opts := &types_backup.BackupDBOptions{
 		Profile: *profile,
 		Mode:    consts.ModeSingle,
 		DBName:  dbName,
-		Ticket:  "SAFETY_AUTO_BACKUP",
+		Ticket:  ticket,
 	}
 
 	// Gunakan config default untuk kompresi agar cepat
@@ -61,11 +66,17 @@ func (s *Service) executeDiskCopy(ctx context.Context, profile *domain.ProfileIn
 	}
 	defer os.RemoveAll(workdir)
 
+	ticket := s.ticket
+	if ticket == "" {
+		ticket = "INTERNAL_DB_COPY"
+	}
+
 	// A. Backup
 	opts := &types_backup.BackupDBOptions{
 		Profile: *profile,
 		Mode:    consts.ModeSingle,
 		DBName:  sourceDB,
+		Ticket:  ticket,
 	}
 	opts.Filter.ExcludeData = schemaOnly
 
@@ -95,6 +106,7 @@ func (s *Service) executeDiskCopy(ctx context.Context, profile *domain.ProfileIn
 		StopOnError: true,
 		SkipBackup:  true, // Karena ini copy, kita asumsikan target bisa ditimpa
 		DropTarget:  true,
+		Ticket:      ticket,
 	}
 
 	restSvc := restore.NewRestoreService(s.log, s.cfg, restOpts)
@@ -108,11 +120,16 @@ func (s *Service) executeDiskCopy(ctx context.Context, profile *domain.ProfileIn
 }
 
 func (s *Service) runSafetyTableBackup(ctx context.Context, profile *domain.ProfileInfo, client *database.Client, dbName, tableName string) error {
+	ticket := s.ticket
+	if ticket == "" {
+		ticket = "INTERNAL_SAFETY_BACKUP_TABLE"
+	}
+
 	opts := &types_backup.BackupDBOptions{
 		Profile: *profile,
 		Mode:    consts.ModeSingle,
 		DBName:  dbName,
-		Ticket:  "SAFETY_AUTO_BACKUP_TABLE",
+		Ticket:  ticket,
 	}
 
 	hostname := profile.DBInfo.Host

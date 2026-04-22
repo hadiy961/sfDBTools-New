@@ -15,6 +15,7 @@ import (
 var (
 	copyDBProfile        string
 	copyDBProfileKey     string
+	copyDBTicket         string
 	copyDBSchemaOnly     bool
 	copyDBUseDisk        bool
 	copyDBForce          bool
@@ -39,6 +40,7 @@ var CmdCopyDB = &cobra.Command{
 		}
 
 		svc := copy.NewService(deps.Deps.Logger, deps.Deps.Config)
+		svc.SetTicket(copyDBTicket)
 		
 		// 1. Load Profile
 		profile, err := svc.LoadProfile(copyDBProfile, copyDBProfileKey, !copyDBNonInteractive)
@@ -126,6 +128,7 @@ var CmdCopyDB = &cobra.Command{
 func init() {
 	CmdCopyDB.Flags().StringVarP(&copyDBProfile, "profile", "p", "", "Nama atau path profil database")
 	CmdCopyDB.Flags().StringVar(&copyDBProfileKey, "profile-key", "", "Kunci enkripsi profil (jika dienkripsi)")
+	CmdCopyDB.Flags().StringVarP(&copyDBTicket, "ticket", "t", "", "Ticket number untuk audit")
 	CmdCopyDB.Flags().BoolVar(&copyDBSchemaOnly, "schema-only", false, "Hanya salin struktur (tanpa data)")
 	CmdCopyDB.Flags().BoolVar(&copyDBUseDisk, "use-disk", false, "Gunakan media disk (dump & restore) alih-alih streaming RAM")
 	CmdCopyDB.Flags().BoolVar(&copyDBForce, "force", false, "Timpa database target jika sudah ada (tanpa backup)")

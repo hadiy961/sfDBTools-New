@@ -14,6 +14,7 @@ type Service struct {
 	log    applog.Logger
 	cfg    *appconfig.Config
 	errLog *errorlog.ErrorLogger
+	ticket string
 }
 
 // NewService membuat instance baru dari Service.
@@ -27,6 +28,11 @@ func NewService(log applog.Logger, cfg *appconfig.Config) *Service {
 		cfg:    cfg,
 		errLog: errorlog.NewErrorLogger(log, logDir, consts.FeatureBackup),
 	}
+}
+
+// SetTicket mengatur ticket number untuk audit.
+func (s *Service) SetTicket(ticket string) {
+	s.ticket = ticket
 }
 
 // LoadProfile me-load profil database dengan dukungan enkripsi (--profile-key).
