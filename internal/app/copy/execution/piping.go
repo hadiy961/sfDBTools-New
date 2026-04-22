@@ -8,12 +8,13 @@ import (
 	"io"
 	"os/exec"
 	"regexp"
-	"sfdbtools/internal/app/backup/execution"
+	backup_exec "sfdbtools/internal/app/backup/execution"
 	"sfdbtools/internal/app/mysqlcli"
 	"sfdbtools/internal/domain"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/execx"
 	"sfdbtools/internal/ui/progress"
+	"strings"
 	"time"
 )
 
@@ -29,6 +30,7 @@ type PipingOptions struct {
 }
 
 // ExecutePiping menjalankan streaming copy menggunakan mysqldump | mysql.
+// Sekarang mendukung retry otomatis jika ada argumen mysqldump yang tidak didukung.
 func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) error {
 	// 1. Resolve mysqldump/mariadb-dump binary
 	dumpBin, err := execx.ResolveMariaDBDumpOrMysqldump()
@@ -36,12 +38,12 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 		return err
 	}
 
-	// 2. Build mysqldump arguments
+	// 2. Build initial mysqldump arguments
 	filter := domain.FilterOptions{
 		ExcludeData: opts.SchemaOnly,
 	}
 
-	dumpArgs := execution.BuildMysqldumpArgs(
+	dumpArgs := backup_exec.BuildMysqldumpArgs(
 		opts.BaseDumpArgs,
 		opts.Profile.DBInfo,
 		filter,
@@ -56,140 +58,176 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 		dumpArgs = append(dumpArgs, opts.TableName)
 	}
 
-	// Tambahkan flag untuk menghindari error GTID di server target
-	dumpArgs = append(dumpArgs, "--set-gtid-purged=OFF")
+	// Tambahkan flag untuk menghindari error GTID di server target secara default
+	// jika belum ada di base dump args.
+	if !strings.Contains(opts.BaseDumpArgs, "--set-gtid-purged") {
+		dumpArgs = append(dumpArgs, "--set-gtid-purged=OFF")
+	}
 
 	// 3. Build mysql client arguments
 	mysqlArgs := mysqlcli.BuildArgs(opts.Profile, opts.TargetDB)
 
-	// 4. Setup Commands
-	// Kita gunakan CommandContext agar OS process otomatis di-kill jika context dibatalkan.
-	dumpCmd := exec.CommandContext(ctx, dumpBin.Path, dumpArgs...)
-
+	// 4. Resolve mysql binary
 	mysqlBin, _, err := mysqlcli.ResolveMariaDBOrMySQLClient()
 	if err != nil {
 		return err
 	}
-	mysqlCmd := exec.CommandContext(ctx, mysqlBin, mysqlArgs...)
 
-	// Connect Pipe
-	pr, pw := io.Pipe()
-	dumpCmd.Stdout = pw
+	// Retry Loop
+	attempts := 0
+	const maxAttempts = 3
 
-	// Transformer: Ganti nama sourceDB dengan targetDB di dalam stream SQL
-	// Serta hapus klausa DEFINER untuk menghindari error hak akses.
-	transformedReader := transformSQLStream(pr, opts.SourceDB, opts.TargetDB)
+	for {
+		attempts++
+		
+		// Setup Commands
+		dumpCmd := exec.CommandContext(ctx, dumpBin.Path, dumpArgs...)
+		mysqlCmd := exec.CommandContext(ctx, mysqlBin, mysqlArgs...)
 
-	// Throttler: Batasi kecepatan jika diperlukan
-	finalReader := io.Reader(transformedReader)
-	var throttler *execx.ThrottledReader
-	if opts.LimitSpeed > 0 {
-		throttler = execx.NewThrottledReader(ctx, transformedReader, opts.LimitSpeed)
-		finalReader = throttler
-	}
+		// Connect Pipe
+		pr, pw := io.Pipe()
+		dumpCmd.Stdout = pw
 
-	mysqlCmd.Stdin = finalReader
+		// Transformer
+		transformedReader := transformSQLStream(pr, opts.SourceDB, opts.TargetDB)
 
-	// Capture errors
-	dumpStderr, _ := dumpCmd.StderrPipe()
-	mysqlStderr, _ := mysqlCmd.StderrPipe()
-
-	// Start commands
-	if err := dumpCmd.Start(); err != nil {
-		_ = pw.Close()
-		return fmt.Errorf("gagal memulai %s: %w", dumpBin.Name, err)
-	}
-
-	if err := mysqlCmd.Start(); err != nil {
-		_ = pw.Close()
-		_ = pr.Close()
-		_ = dumpCmd.Process.Kill()
-		return fmt.Errorf("gagal memulai mysql client: %w", err)
-	}
-
-	// Tampilkan spinner untuk feedback visual saat streaming berjalan
-	spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Streaming %s -> %s", opts.SourceDB, opts.TargetDB))
-	spin.Start()
-	defer spin.Stop()
-
-	// Metrics reporter goroutine
-	stopMetrics := make(chan struct{})
-	defer close(stopMetrics)
-	go func() {
-		ticker := time.NewTicker(1 * time.Second)
-		defer ticker.Stop()
-		var lastBytes int64
-		for {
-			select {
-			case <-ticker.C:
-				var currentBytes int64
-				if throttler != nil {
-					currentBytes = throttler.TotalBytes()
-				}
-				// Kita bisa hitung speed real-time walau tanpa throttler jika kita bungkus reader selalu
-				// Tapi sementara tampilkan info throttle jika aktif
-				if opts.LimitSpeed > 0 {
-					speedMB := float64(opts.LimitSpeed) / (1024 * 1024)
-					spin.Update(fmt.Sprintf("Streaming %s -> %s [%.2f MB/s limit]", opts.SourceDB, opts.TargetDB, speedMB))
-				} else if currentBytes > 0 {
-					// Hitung speed sesaat
-					diff := currentBytes - lastBytes
-					speedMB := float64(diff) / (1024 * 1024)
-					spin.Update(fmt.Sprintf("Streaming %s -> %s [%.2f MB/s]", opts.SourceDB, opts.TargetDB, speedMB))
-				}
-				lastBytes = currentBytes
-			case <-stopMetrics:
-				return
-			}
+		// Throttler
+		finalReader := io.Reader(transformedReader)
+		var throttler *execx.ThrottledReader
+		if opts.LimitSpeed > 0 {
+			throttler = execx.NewThrottledReader(ctx, transformedReader, opts.LimitSpeed)
+			finalReader = throttler
 		}
-	}()
+		mysqlCmd.Stdin = finalReader
 
-	// Log stderr in background
-	go func() {
-		sl := io.MultiReader(dumpStderr, mysqlStderr)
-		scanner := bufio.NewScanner(sl)
-		for scanner.Scan() {
-			log.Debugf("[SQL CLI] %s", scanner.Text())
+		// Capture stderr for error detection
+		var dumpStderrBuf, mysqlStderrBuf bytes.Buffer
+		dumpCmd.Stderr = &dumpStderrBuf
+		mysqlCmd.Stderr = &mysqlStderrBuf
+
+		// Feedback visual
+		spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Streaming %s -> %s", opts.SourceDB, opts.TargetDB))
+		spin.Start()
+
+		// Execute
+		if err := dumpCmd.Start(); err != nil {
+			spin.Stop()
+			_ = pw.Close()
+			return fmt.Errorf("gagal memulai %s: %w", dumpBin.Name, err)
 		}
-	}()
 
-	// Wait for commands
-	// Error handling diperkuat: jika salah satu gagal, kill yang lain.
-	errDumpChan := make(chan error, 1)
-	go func() {
-		errDumpChan <- dumpCmd.Wait()
-		_ = pw.Close() // Pastikan pipe ditutup agar mysqlCmd.Stdin mendapat EOF
-	}()
-
-	errMysqlChan := make(chan error, 1)
-	go func() {
-		errMysqlChan <- mysqlCmd.Wait()
-		_ = pr.Close()
-	}()
-
-	var errDump, errMysql error
-	for i := 0; i < 2; i++ {
-		select {
-		case errDump = <-errDumpChan:
-			if errDump != nil {
-				_ = mysqlCmd.Process.Kill()
-			}
-		case errMysql = <-errMysqlChan:
-			if errMysql != nil {
-				_ = dumpCmd.Process.Kill()
-			}
-		case <-ctx.Done():
+		if err := mysqlCmd.Start(); err != nil {
+			spin.Stop()
+			_ = pw.Close()
+			_ = pr.Close()
 			_ = dumpCmd.Process.Kill()
-			_ = mysqlCmd.Process.Kill()
-			return ctx.Err()
+			return fmt.Errorf("gagal memulai mysql client: %w", err)
 		}
-	}
 
-	if errDump != nil {
-		return fmt.Errorf("error pada %s: %w", dumpBin.Name, errDump)
-	}
-	if errMysql != nil {
-		return fmt.Errorf("error pada mysql client: %w", errMysql)
+		// Metrics reporter
+		stopMetrics := make(chan struct{})
+		go func() {
+			ticker := time.NewTicker(1 * time.Second)
+			defer ticker.Stop()
+			var lastBytes int64
+			for {
+				select {
+				case <-ticker.C:
+					var currentBytes int64
+					if throttler != nil {
+						currentBytes = throttler.TotalBytes()
+					}
+					if opts.LimitSpeed > 0 {
+						speedMB := float64(opts.LimitSpeed) / (1024 * 1024)
+						spin.Update(fmt.Sprintf("Streaming %s -> %s [%.2f MB/s limit]", opts.SourceDB, opts.TargetDB, speedMB))
+					} else if currentBytes > 0 {
+						diff := currentBytes - lastBytes
+						speedMB := float64(diff) / (1024 * 1024)
+						spin.Update(fmt.Sprintf("Streaming %s -> %s [%.2f MB/s]", opts.SourceDB, opts.TargetDB, speedMB))
+					}
+					lastBytes = currentBytes
+				case <-stopMetrics:
+					return
+				}
+			}
+		}()
+
+		// Wait
+		errDumpChan := make(chan error, 1)
+		go func() {
+			errDumpChan <- dumpCmd.Wait()
+			_ = pw.Close() // Pastikan pipe ditutup agar mysqlCmd.Stdin mendapat EOF
+		}()
+
+		errMysqlChan := make(chan error, 1)
+		go func() {
+			errMysqlChan <- mysqlCmd.Wait()
+			_ = pr.Close()
+		}()
+
+		var errDump, errMysql error
+		timedOut := false
+		
+		numFinished := 0
+		for numFinished < 2 {
+			select {
+			case e := <-errDumpChan:
+				errDump = e
+				numFinished++
+				if errDump != nil { 
+					_ = mysqlCmd.Process.Kill() 
+					numFinished = 2 // Stop waiting if one fails critically
+				}
+			case e := <-errMysqlChan:
+				errMysql = e
+				numFinished++
+				if errMysql != nil { 
+					_ = dumpCmd.Process.Kill() 
+					numFinished = 2
+				}
+			case <-ctx.Done():
+				_ = dumpCmd.Process.Kill()
+				_ = mysqlCmd.Process.Kill()
+			timedOut = true
+			numFinished = 2
+			}
+		}
+
+		close(stopMetrics)
+		spin.Stop()
+
+		if timedOut { return ctx.Err() }
+
+		// Error Detection & Retry Logic
+		if errDump != nil {
+			stderrStr := dumpStderrBuf.String()
+			log.Debugf("[%s Error] %s", dumpBin.Name, strings.TrimSpace(stderrStr))
+
+			// Cek apakah ada opsi yang tidak didukung
+			if newArgs, removed, canRetry := backup_exec.RemoveUnsupportedMysqldumpOption(dumpArgs, stderrStr); canRetry && attempts < maxAttempts {
+				log.Warnf("Opsi dump '%s' tidak didukung oleh binary sistem, mencoba ulang tanpa opsi tersebut...", removed)
+				dumpArgs = newArgs
+				continue // Retry!
+			}
+
+			// Cek SSL mismatch
+			if backup_exec.IsSSLMismatchRequiredButServerNoSupport(stderrStr) && attempts < maxAttempts {
+				if newArgs, added := backup_exec.AddDisableSSLArgs(dumpArgs); added {
+					log.Warnf("SSL mismatch terdeteksi, mencoba ulang dengan --skip-ssl...")
+					dumpArgs = newArgs
+					continue // Retry!
+				}
+			}
+
+			return fmt.Errorf("error pada %s: %w", dumpBin.Name, errDump)
+		}
+
+		if errMysql != nil {
+			log.Debugf("[MySQL Error] %s", strings.TrimSpace(mysqlStderrBuf.String()))
+			return fmt.Errorf("error pada mysql client: %w", errMysql)
+		}
+
+		break // Success!
 	}
 
 	return nil
@@ -200,7 +238,6 @@ func transformSQLStream(r io.Reader, sourceDB, targetDB string) io.Reader {
 	pr, pw := io.Pipe()
 
 	// Regex untuk DEFINER: /*!50013 DEFINER=`user`@`host` */ atau DEFINER=`user`@`host`
-	// Kita buat di luar goroutine agar tidak compile berulang kali.
 	reDefiner := regexp.MustCompile(`(?i)/\*!50017\s+DEFINER=\s*.*?\s*\*/`)
 	reDefiner2 := regexp.MustCompile(`(?i)DEFINER=\s*` + "`" + `.*?` + "`" + `@` + "`" + `.*?` + "`")
 
@@ -212,7 +249,6 @@ func transformSQLStream(r io.Reader, sourceDB, targetDB string) io.Reader {
 		buf := make([]byte, 64*1024)
 		scanner.Buffer(buf, maxCapacity)
 
-		// Pattern database replacement
 		p1Source := []byte("`" + sourceDB + "`.")
 		p1Target := []byte("`" + targetDB + "`.")
 
