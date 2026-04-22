@@ -83,7 +83,11 @@ var CmdCopyTable = &cobra.Command{
 		if targetArg != "" && !strings.Contains(targetArg, ".") {
 			targetDB = targetArg
 		} else if !copyTableNonInteractive {
-			targetDB, _ = prompt.AskText("Masukkan database tujuan:", prompt.WithDefault(sourceDB))
+			targetDB, err = svc.SelectTargetDatabaseInteractive(ctx, profile, sourceDB)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
 		}
 
 		// 4. Handle Target Table Name/Suffix
@@ -108,23 +112,48 @@ var CmdCopyTable = &cobra.Command{
 
 		// 5. Loop Execution
 		successCount := 0
-		for _, table := range sourceTables {
+		var results [][]string
+		
+		fmt.Println() // Space before start
+		for i, table := range sourceTables {
 			currTargetTable := table + tableSuffix
 			if specificTargetTable != "" {
 				currTargetTable = specificTargetTable
 			}
 
-			fmt.Printf("\\n[Processing %d/%d]: %s.%s -> %s.%s\\n", successCount+1, len(sourceTables), sourceDB, table, targetDB, currTargetTable)
+			fmt.Printf("[%d/%d] Kloning %s.%s -> %s.%s ...\n", i+1, len(sourceTables), sourceDB, table, targetDB, currTargetTable)
+			
 			_, _, err = svc.CopyTable(ctx, profile, sourceDB, table, targetDB, currTargetTable, copyTableSchemaOnly, copyTableForce, copyTableBackupFirst, copyTableNonInteractive)
+			
+			status := "Sukses"
+			note := "-"
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error copy tabel %s: %v\\n", table, err)
-				continue
+				status = "Gagal"
+				note = err.Error()
+				fmt.Printf("  ❌ Error: %v\n\n", err)
+			} else {
+				successCount++
+				fmt.Printf("  ✅ Berhasil\n\n")
 			}
-			successCount++
-			fmt.Printf("✓ Berhasil: %s.%s\\n", targetDB, currTargetTable)
+			
+			results = append(results, []string{
+				fmt.Sprintf("%s.%s", sourceDB, table),
+				fmt.Sprintf("%s.%s", targetDB, currTargetTable),
+				status,
+				note,
+			})
 		}
 
-		fmt.Printf("\\nSelesai: %d/%d tabel berhasil disalin.\\n", successCount, len(sourceTables))
+		// 6. Final Summary Table
+		fmt.Printf("\n--- Ringkasan Copy Tabel ---\n")
+		// (Optional: use ui/table if available, but let's do a simple clean one first)
+		for _, res := range results {
+			icon := "✓"
+			if res[2] == "Gagal" { icon = "✗" }
+			fmt.Printf("%s %-30s -> %-30s [%s]\n", icon, res[0], res[1], res[2])
+		}
+		
+		fmt.Printf("\nSelesai: %d/%d tabel berhasil disalin.\n", successCount, len(sourceTables))
 	},
 }
 

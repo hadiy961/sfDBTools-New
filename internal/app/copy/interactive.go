@@ -30,6 +30,42 @@ func (s *Service) SelectDatabasesInteractive(ctx context.Context, profile *domai
 	return selected, err
 }
 
+// SelectTargetDatabaseInteractive memunculkan picker untuk memilih database tujuan (existing) atau input manual.
+func (s *Service) SelectTargetDatabaseInteractive(ctx context.Context, profile *domain.ProfileInfo, defaultDB string) (string, error) {
+	client, err := profileconn.ConnectWithProfile(s.cfg, profile, "")
+	if err != nil {
+		return "", err
+	}
+	defer client.Close()
+
+	dbs, err := client.GetNonSystemDatabases(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	options := append([]string{"[Ketik Nama Database Baru]"}, dbs...)
+	
+	// Cari index defaultDB di dalam dbs untuk memposisikannya
+	defaultIdx := 0
+	for i, db := range options {
+		if db == defaultDB {
+			defaultIdx = i
+			break
+		}
+	}
+
+	choice, _, err := prompt.SelectOne("Pilih database tujuan:", options, defaultIdx)
+	if err != nil {
+		return "", err
+	}
+
+	if choice == "[Ketik Nama Database Baru]" {
+		return prompt.AskText("Masukkan nama database baru:", prompt.WithDefault(defaultDB))
+	}
+
+	return choice, nil
+}
+
 // SelectTablesInteractive memunculkan picker untuk memilih database dan tabel (multi-select).
 func (s *Service) SelectTablesInteractive(ctx context.Context, profile *domain.ProfileInfo) (dbName string, tableNames []string, err error) {
 	client, err := profileconn.ConnectWithProfile(s.cfg, profile, "")

@@ -109,7 +109,7 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 	if useDisk {
 		methodName = "Disk-based"
 	}
-	s.log.Infof("Memulai copy database: %s -> %s [Metode: %s]", sourceDB, targetDB, methodName)
+	s.log.Debugf("Memulai copy database: %s -> %s [Metode: %s]", sourceDB, targetDB, methodName)
 
 	if err := client.CreateDatabaseIfNotExists(ctx, targetDB); err != nil {
 		return "", err

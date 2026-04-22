@@ -86,7 +86,7 @@ func (s *Service) CopyTable(ctx context.Context, profile *domain.ProfileInfo, so
 		}
 	}
 
-	s.log.Infof("Memulai copy tabel: %s.%s -> %s.%s", sourceDB, sourceTable, targetDB, targetTable)
+	s.log.Debugf("Memulai copy tabel: %s.%s -> %s.%s", sourceDB, sourceTable, targetDB, targetTable)
 
 	spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Copying table %s.%s", sourceDB, sourceTable))
 	spin.Start()

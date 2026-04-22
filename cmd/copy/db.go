@@ -85,23 +85,41 @@ var CmdCopyDB = &cobra.Command{
 
 		// 4. Loop Execution
 		successCount := 0
-		for _, db := range sourceDBs {
+		var results [][]string
+		
+		fmt.Println() // Space before start
+		for i, db := range sourceDBs {
 			currTarget := targetDB
 			if len(sourceDBs) > 1 {
 				currTarget = db + suffix
 			}
 
-			fmt.Printf("\\n[Processing %d/%d]: %s -> %s\\n", successCount+1, len(sourceDBs), db, currTarget)
+			fmt.Printf("[%d/%d] Kloning %s -> %s ...\n", i+1, len(sourceDBs), db, currTarget)
 			finalTarget, err := svc.CopyDatabase(ctx, profile, db, currTarget, copyDBSchemaOnly, copyDBUseDisk, copyDBForce, copyDBBackupFirst, copyDBNonInteractive)
+			
+			status := "Sukses"
+			note := "-"
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error copy %s: %v\\n", db, err)
-				continue
+				status = "Gagal"
+				note = err.Error()
+				fmt.Printf("  ❌ Error: %v\n\n", err)
+			} else {
+				successCount++
+				fmt.Printf("  ✅ Berhasil: %s\n\n", finalTarget)
 			}
-			successCount++
-			fmt.Printf("✓ Berhasil: %s\\n", finalTarget)
+			
+			results = append(results, []string{db, currTarget, status, note})
 		}
 
-		fmt.Printf("\\nSelesai: %d/%d database berhasil disalin.\\n", successCount, len(sourceDBs))
+		// 5. Final Summary
+		fmt.Printf("\n--- Ringkasan Copy Database ---\n")
+		for _, res := range results {
+			icon := "✓"
+			if res[2] == "Gagal" { icon = "✗" }
+			fmt.Printf("%s %-30s -> %-30s [%s]\n", icon, res[0], res[1], res[2])
+		}
+
+		fmt.Printf("\nSelesai: %d/%d database berhasil disalin.\n", successCount, len(sourceDBs))
 	},
 }
 
