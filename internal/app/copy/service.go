@@ -53,6 +53,12 @@ func (s *Service) LoadProfile(profileName, profileKey string, allowInteractive b
 	if s.cfg != nil {
 		configDir = s.cfg.ConfigDir.DatabaseProfile
 	}
+	
+	// Jika interaktif diizinkan dan profil kosong, gunakan LoadSourceProfile untuk picker
+	if allowInteractive && profileName == "" {
+		return loader.LoadSourceProfile(configDir, profileName, profileKey, true)
+	}
+
 	return loader.ResolveAndLoadProfile(loader.ProfileLoadOptions{
 		ConfigDir:        configDir,
 		ProfilePath:      profileName,
