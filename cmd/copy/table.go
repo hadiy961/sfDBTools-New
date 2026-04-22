@@ -22,22 +22,49 @@ var (
 
 // CmdCopyTable menyalin tabel spesifik
 var CmdCopyTable = &cobra.Command{
-	Use:   "table <source_db.table> [target_db.table]",
+	Use:   "table [source_db.table] [target_db.table]",
 	Short: "Salin tabel spesifik",
-	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		sourceArg := args[0]
+		sourceArg := ""
+		if len(args) > 0 {
+			sourceArg = args[0]
+		}
 		targetArg := ""
 		if len(args) > 1 {
 			targetArg = args[1]
 		}
 
-		sourceParts := strings.Split(sourceArg, ".")
-		if len(sourceParts) != 2 {
-			fmt.Fprintf(os.Stderr, "Error: format source harus 'database.table'\n")
+		svc := copy.NewService(deps.Deps.Logger, deps.Deps.Config)
+		
+		// 1. Load Profile
+		profile, err := svc.LoadProfile(copyTableProfile, copyTableProfileKey, !copyTableNonInteractive)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
-		sourceDB, sourceTable := sourceParts[0], sourceParts[1]
+
+		ctx := context.Background()
+		var sourceDB, sourceTable string
+
+		// 2. Handle missing source arg
+		if sourceArg == "" {
+			if copyTableNonInteractive {
+				fmt.Fprintf(os.Stderr, "Error: source 'db.table' wajib diisi pada mode non-interaktif\n")
+				os.Exit(1)
+			}
+			sourceDB, sourceTable, err = svc.SelectTableInteractive(ctx, profile)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+		} else {
+			parts := strings.Split(sourceArg, ".")
+			if len(parts) != 2 {
+				fmt.Fprintf(os.Stderr, "Error: format source harus 'database.table'\n")
+				os.Exit(1)
+			}
+			sourceDB, sourceTable = parts[0], parts[1]
+		}
 
 		targetDB, targetTable := sourceDB, sourceTable // Default same name
 		if targetArg != "" {
@@ -49,16 +76,6 @@ var CmdCopyTable = &cobra.Command{
 			}
 		}
 
-		svc := copy.NewService(deps.Deps.Logger, deps.Deps.Config)
-		
-		// Load Profile
-		profile, err := svc.LoadProfile(copyTableProfile, copyTableProfileKey, !copyTableNonInteractive)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-
-		ctx := context.Background()
 		err = svc.CopyTable(ctx, profile, sourceDB, sourceTable, targetDB, targetTable, copyTableSchemaOnly, copyTableForce, copyTableBackupFirst, copyTableNonInteractive)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)

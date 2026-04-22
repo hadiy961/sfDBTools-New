@@ -22,11 +22,13 @@ var (
 
 // CmdCopyDB menyalin database utuh
 var CmdCopyDB = &cobra.Command{
-	Use:   "db <source_db> [target_db]",
+	Use:   "db [source_db] [target_db]",
 	Short: "Salin database utuh",
-	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		sourceDB := args[0]
+		sourceDB := ""
+		if len(args) > 0 {
+			sourceDB = args[0]
+		}
 		targetDB := ""
 		if len(args) > 1 {
 			targetDB = args[1]
@@ -34,7 +36,7 @@ var CmdCopyDB = &cobra.Command{
 
 		svc := copy.NewService(deps.Deps.Logger, deps.Deps.Config)
 		
-		// Load Profile
+		// 1. Load Profile (Interactive picker if empty)
 		profile, err := svc.LoadProfile(copyDBProfile, copyDBProfileKey, !copyDBNonInteractive)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -42,6 +44,22 @@ var CmdCopyDB = &cobra.Command{
 		}
 
 		ctx := context.Background()
+
+		// 2. Handle missing source database in interactive mode
+		if sourceDB == "" {
+			if copyDBNonInteractive {
+				fmt.Fprintf(os.Stderr, "Error: source database wajib diisi pada mode non-interaktif\n")
+				os.Exit(1)
+			}
+			
+			// Ambil list database untuk picker
+			sourceDB, err = svc.SelectDatabaseInteractive(ctx, profile)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+		}
+
 		err = svc.CopyDatabase(ctx, profile, sourceDB, targetDB, copyDBSchemaOnly, copyDBUseDisk, copyDBForce, copyDBBackupFirst, copyDBNonInteractive)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)

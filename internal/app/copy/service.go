@@ -68,6 +68,70 @@ func (s *Service) LoadProfile(profileName, profileKey string, allowInteractive b
 	})
 }
 
+// SelectDatabaseInteractive memunculkan picker untuk memilih database dari server.
+func (s *Service) SelectDatabaseInteractive(ctx context.Context, profile *domain.ProfileInfo) (string, error) {
+	client, err := profileconn.ConnectWithProfile(s.cfg, profile, "")
+	if err != nil {
+		return "", err
+	}
+	defer client.Close()
+
+	dbs, err := client.GetNonSystemDatabases(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	if len(dbs) == 0 {
+		return "", fmt.Errorf("tidak ada database yang tersedia di server")
+	}
+
+	selected, _, err := prompt.SelectOne("Pilih database sumber:", dbs, 0)
+	return selected, err
+}
+
+// SelectTableInteractive memunculkan picker untuk memilih database dan tabel dari server.
+func (s *Service) SelectTableInteractive(ctx context.Context, profile *domain.ProfileInfo) (dbName string, tableName string, err error) {
+	client, err := profileconn.ConnectWithProfile(s.cfg, profile, "")
+	if err != nil {
+		return "", "", err
+	}
+	defer client.Close()
+
+	// 1. Pilih DB
+	dbs, err := client.GetNonSystemDatabases(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	dbName, _, err = prompt.SelectOne("Pilih database:", dbs, 0)
+	if err != nil {
+		return "", "", err
+	}
+
+	// 2. Ambil list tabel
+	query := fmt.Sprintf("SHOW TABLES FROM `%s` ", dbName)
+	rows, err := client.QueryContextWithRetry(ctx, query)
+	if err != nil {
+		return "", "", err
+	}
+	defer rows.Close()
+
+	var tables []string
+	for rows.Next() {
+		var t string
+		if err := rows.Scan(&t); err == nil {
+			tables = append(tables, t)
+		}
+	}
+
+	if len(tables) == 0 {
+		return "", "", fmt.Errorf("tidak ada tabel di database '%s'", dbName)
+	}
+
+	// 3. Pilih Tabel
+	tableName, _, err = prompt.SelectOne(fmt.Sprintf("Pilih tabel di %s:", dbName), tables, 0)
+	return dbName, tableName, err
+}
+
 // CopyDatabase melakukan penyalinan database utuh.
 func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo, sourceDB, targetDB string, schemaOnly, useDisk, force, backupFirst, nonInteractive bool) error {
 	// 1. Connect to DB
