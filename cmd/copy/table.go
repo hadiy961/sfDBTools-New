@@ -76,7 +76,7 @@ var CmdCopyTable = &cobra.Command{
 			}
 		}
 
-		err = svc.CopyTable(ctx, profile, sourceDB, sourceTable, targetDB, targetTable, copyTableSchemaOnly, copyTableForce, copyTableBackupFirst, copyTableNonInteractive)
+		targetDB, targetTable, err = svc.CopyTable(ctx, profile, sourceDB, sourceTable, targetDB, targetTable, copyTableSchemaOnly, copyTableForce, copyTableBackupFirst, copyTableNonInteractive)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)

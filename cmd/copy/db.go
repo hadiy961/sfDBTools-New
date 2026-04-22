@@ -60,7 +60,7 @@ var CmdCopyDB = &cobra.Command{
 			}
 		}
 
-		err = svc.CopyDatabase(ctx, profile, sourceDB, targetDB, copyDBSchemaOnly, copyDBUseDisk, copyDBForce, copyDBBackupFirst, copyDBNonInteractive)
+		targetDB, err = svc.CopyDatabase(ctx, profile, sourceDB, targetDB, copyDBSchemaOnly, copyDBUseDisk, copyDBForce, copyDBBackupFirst, copyDBNonInteractive)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)

@@ -53,7 +53,7 @@ func (s *Service) LoadProfile(profileName, profileKey string, allowInteractive b
 	if s.cfg != nil {
 		configDir = s.cfg.ConfigDir.DatabaseProfile
 	}
-	
+
 	// Jika interaktif diizinkan dan profil kosong, gunakan LoadSourceProfile untuk picker
 	if allowInteractive && profileName == "" {
 		return loader.LoadSourceProfile(configDir, profileName, profileKey, true)
@@ -90,7 +90,7 @@ func (s *Service) SelectDatabaseInteractive(ctx context.Context, profile *domain
 }
 
 // SelectTableInteractive memunculkan picker untuk memilih database dan tabel dari server.
-func (s *Service) SelectTableInteractive(ctx context.Context, profile *domain.ProfileInfo) (dbName string, tableName string, err error) {
+func (s *Service) SelectTableInteractive(ctx context.Context, profile *domain.ProfileInfo) (string, string, error) {
 	client, err := profileconn.ConnectWithProfile(s.cfg, profile, "")
 	if err != nil {
 		return "", "", err
@@ -102,7 +102,7 @@ func (s *Service) SelectTableInteractive(ctx context.Context, profile *domain.Pr
 	if err != nil {
 		return "", "", err
 	}
-	dbName, _, err = prompt.SelectOne("Pilih database:", dbs, 0)
+	dbName, _, err := prompt.SelectOne("Pilih database:", dbs, 0)
 	if err != nil {
 		return "", "", err
 	}
@@ -128,26 +128,26 @@ func (s *Service) SelectTableInteractive(ctx context.Context, profile *domain.Pr
 	}
 
 	// 3. Pilih Tabel
-	tableName, _, err = prompt.SelectOne(fmt.Sprintf("Pilih tabel di %s:", dbName), tables, 0)
+	tableName, _, err := prompt.SelectOne(fmt.Sprintf("Pilih tabel di %s:", dbName), tables, 0)
 	return dbName, tableName, err
 }
 
 // CopyDatabase melakukan penyalinan database utuh.
-func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo, sourceDB, targetDB string, schemaOnly, useDisk, force, backupFirst, nonInteractive bool) error {
+func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo, sourceDB, targetDB string, schemaOnly, useDisk, force, backupFirst, nonInteractive bool) (string, error) {
 	// 1. Connect to DB
 	client, err := profileconn.ConnectWithProfile(s.cfg, profile, "")
 	if err != nil {
-		return fmt.Errorf("gagal koneksi ke database: %w", err)
+		return "", fmt.Errorf("gagal koneksi ke database: %w", err)
 	}
 	defer client.Close()
 
 	// 2. Pre-flight checks
 	exists, err := client.CheckDatabaseExists(ctx, sourceDB)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if !exists {
-		return fmt.Errorf("database sumber '%s' tidak ditemukan", sourceDB)
+		return "", fmt.Errorf("database sumber '%s' tidak ditemukan", sourceDB)
 	}
 
 	if targetDB == "" {
@@ -157,31 +157,31 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 		} else {
 			targetDB, err = prompt.AskText("Masukkan nama database target:", prompt.WithDefault(fmt.Sprintf("%s_copy_%s", sourceDB, time.Now().Format("20060102"))))
 			if err != nil {
-				return err
+				return "", err
 			}
 		}
 	}
 
 	if strings.EqualFold(sourceDB, targetDB) {
-		return fmt.Errorf("database target tidak boleh sama dengan database sumber")
+		return "", fmt.Errorf("database target tidak boleh sama dengan database sumber")
 	}
 
 	targetExists, err := client.CheckDatabaseExists(ctx, targetDB)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if targetExists {
 		if !nonInteractive {
 			// Mode Interaktif: Konfirmasi berlapis
 			s.log.Warnf("PERINGATAN: Database target '%s' sudah ada!", targetDB)
-			
+
 			// Jika belum ada flag yang menspesifikasi tindakan, tanya user
 			if !force && !backupFirst {
-				choice, _, err := prompt.SelectOne("Database target sudah ada. Apa yang ingin Anda lakukan?", 
+				choice, _, err := prompt.SelectOne("Database target sudah ada. Apa yang ingin Anda lakukan?",
 					[]string{"Batalkan", "Backup dulu baru timpa (Sangat Disarankan)", "Timpa langsung (Data lama hilang!)"}, 0)
 				if err != nil || choice == "Batalkan" {
-					return fmt.Errorf("operasi dibatalkan")
+					return "", fmt.Errorf("operasi dibatalkan")
 				}
 				if choice == "Backup dulu baru timpa (Sangat Disarankan)" {
 					backupFirst = true
@@ -194,7 +194,7 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 			if backupFirst {
 				confirm, err := prompt.Confirm(fmt.Sprintf("Yakin ingin membackup lalu menimpa database '%s'?", targetDB), true)
 				if err != nil || !confirm {
-					return fmt.Errorf("operasi dibatalkan")
+					return "", fmt.Errorf("operasi dibatalkan")
 				}
 			} else if force {
 				// Konfirmasi Berlapis untuk Overwrite tanpa Backup
@@ -202,17 +202,17 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 				s.log.Warnf("Anda memilih untuk MENIMPA database '%s' TANPA backup.", targetDB)
 				confirm1, _ := prompt.Confirm("Apakah Anda sadar data lama di target akan hilang permanen?", false)
 				if !confirm1 {
-					return fmt.Errorf("operasi dibatalkan")
+					return "", fmt.Errorf("operasi dibatalkan")
 				}
 				confirm2, _ := prompt.Confirm("Konfirmasi terakhir: Benar-benar ingin menimpa tanpa backup?", false)
 				if !confirm2 {
-					return fmt.Errorf("operasi dibatalkan")
+					return "", fmt.Errorf("operasi dibatalkan")
 				}
 			}
 		} else {
 			// Mode Non-Interaktif: Cek flag
 			if !force && !backupFirst {
-				return fmt.Errorf("database target '%s' sudah ada. Gunakan --force atau --backup-first", targetDB)
+				return "", fmt.Errorf("database target '%s' sudah ada. Gunakan --force atau --backup-first", targetDB)
 			}
 		}
 
@@ -220,7 +220,7 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 		if backupFirst {
 			s.log.Infof("Menjalankan backup pengamanan untuk target: %s", targetDB)
 			if err := s.runSafetyBackup(ctx, profile, client, targetDB); err != nil {
-				return fmt.Errorf("gagal melakukan backup pengamanan: %w", err)
+				return "", fmt.Errorf("gagal melakukan backup pengamanan: %w", err)
 			}
 		}
 	}
@@ -241,21 +241,27 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 
 	// 4. Create target DB if not exists
 	if err := client.CreateDatabaseIfNotExists(ctx, targetDB); err != nil {
-		return err
+		return "", err
 	}
 
 	// 5. Execution
 	if useDisk {
-		return s.executeDiskCopy(ctx, profile, client, sourceDB, targetDB, schemaOnly)
+		if err := s.executeDiskCopy(ctx, profile, client, sourceDB, targetDB, schemaOnly); err != nil {
+			return "", err
+		}
+	} else {
+		if err := copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
+			Profile:      profile,
+			SourceDB:     sourceDB,
+			TargetDB:     targetDB,
+			SchemaOnly:   schemaOnly,
+			BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs,
+		}); err != nil {
+			return "", err
+		}
 	}
 
-	return copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
-		Profile:      profile,
-		SourceDB:     sourceDB,
-		TargetDB:     targetDB,
-		SchemaOnly:   schemaOnly,
-		BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs,
-	})
+	return targetDB, nil
 }
 
 // runSafetyBackup melakukan backup cepat ke direktori default config sebelum ditimpa.
@@ -266,7 +272,7 @@ func (s *Service) runSafetyBackup(ctx context.Context, profile *domain.ProfileIn
 		DBName:  dbName,
 		Ticket:  "SAFETY_AUTO_BACKUP",
 	}
-	
+
 	// Gunakan config default untuk kompresi agar cepat
 	opts.Compression.Enabled = true
 	opts.Compression.Type = consts.CompressionTypeGzip
@@ -274,7 +280,7 @@ func (s *Service) runSafetyBackup(ctx context.Context, profile *domain.ProfileIn
 	// Generate path
 	hostname := profile.DBInfo.Host
 	filename, _ := backuppath.GenerateBackupFilename(dbName, consts.ModeSingle, hostname, compress.CompressionType(consts.CompressionTypeGzip), false, false)
-	
+
 	outputDir := s.cfg.Backup.Output.BaseDirectory
 	if outputDir == "" {
 		outputDir = filepath.Join(os.TempDir(), "sfdbtools_safety")
@@ -308,7 +314,7 @@ func (s *Service) executeDiskCopy(ctx context.Context, profile *domain.ProfileIn
 		DBName:  sourceDB,
 	}
 	opts.Filter.ExcludeData = schemaOnly
-	
+
 	filename, err := backuppath.GenerateBackupFilename(sourceDB, consts.ModeSingle, profile.DBInfo.Host, compress.CompressionType(consts.CompressionTypeGzip), false, false)
 	if err != nil {
 		return err
@@ -333,7 +339,7 @@ func (s *Service) executeDiskCopy(ctx context.Context, profile *domain.ProfileIn
 		TargetDB:    targetDB,
 		Force:       true,
 		StopOnError: true,
-		SkipBackup:  true,
+		SkipBackup:  true, // Karena ini copy, kita asumsikan target bisa ditimpa
 		DropTarget:  true,
 	}
 
@@ -348,17 +354,17 @@ func (s *Service) executeDiskCopy(ctx context.Context, profile *domain.ProfileIn
 }
 
 // CopyTable melakukan penyalinan tabel spesifik.
-func (s *Service) CopyTable(ctx context.Context, profile *domain.ProfileInfo, sourceDB, sourceTable, targetDB, targetTable string, schemaOnly, force, backupFirst, nonInteractive bool) error {
+func (s *Service) CopyTable(ctx context.Context, profile *domain.ProfileInfo, sourceDB, sourceTable, targetDB, targetTable string, schemaOnly, force, backupFirst, nonInteractive bool) (string, string, error) {
 	client, err := profileconn.ConnectWithProfile(s.cfg, profile, "")
 	if err != nil {
-		return fmt.Errorf("gagal koneksi ke database: %w", err)
+		return "", "", fmt.Errorf("gagal koneksi ke database: %w", err)
 	}
 	defer client.Close()
 
 	// Validation
 	exists, err := s.validateTableExists(ctx, client, sourceDB, sourceTable)
 	if err != nil || !exists {
-		return fmt.Errorf("tabel sumber %s.%s tidak ditemukan", sourceDB, sourceTable)
+		return "", "", fmt.Errorf("tabel sumber %s.%s tidak ditemukan", sourceDB, sourceTable)
 	}
 
 	if targetDB == "" {
@@ -367,7 +373,7 @@ func (s *Service) CopyTable(ctx context.Context, profile *domain.ProfileInfo, so
 
 	targetExists, err := s.validateTableExists(ctx, client, targetDB, targetTable)
 	if err != nil {
-		return err
+		return "", "", err
 	}
 
 	if targetExists {
@@ -375,10 +381,10 @@ func (s *Service) CopyTable(ctx context.Context, profile *domain.ProfileInfo, so
 			s.log.Warnf("PERINGATAN: Tabel target '%s.%s' sudah ada!", targetDB, targetTable)
 
 			if !force && !backupFirst {
-				choice, _, err := prompt.SelectOne("Tabel target sudah ada. Apa yang ingin Anda lakukan?", 
+				choice, _, err := prompt.SelectOne("Tabel target sudah ada. Apa yang ingin Anda lakukan?",
 					[]string{"Batalkan", "Backup dulu baru timpa", "Timpa langsung (Berisiko!)"}, 0)
 				if err != nil || choice == "Batalkan" {
-					return fmt.Errorf("operasi dibatalkan")
+					return "", "", fmt.Errorf("operasi dibatalkan")
 				}
 				if choice == "Backup dulu baru timpa" {
 					backupFirst = true
@@ -390,35 +396,35 @@ func (s *Service) CopyTable(ctx context.Context, profile *domain.ProfileInfo, so
 			if backupFirst {
 				confirm, err := prompt.Confirm(fmt.Sprintf("Yakin ingin membackup lalu menimpa tabel '%s.%s'?", targetDB, targetTable), true)
 				if err != nil || !confirm {
-					return fmt.Errorf("operasi dibatalkan")
+					return "", "", fmt.Errorf("operasi dibatalkan")
 				}
 			} else if force {
 				s.log.Warnf("!!! PERHATIAN !!!")
 				confirm1, _ := prompt.Confirm(fmt.Sprintf("Yakin ingin MENIMPA tabel '%s.%s' TANPA backup?", targetDB, targetTable), false)
 				if !confirm1 {
-					return fmt.Errorf("operasi dibatalkan")
+					return "", "", fmt.Errorf("operasi dibatalkan")
 				}
 				confirm2, _ := prompt.Confirm("Benar-benar yakin? Data lama akan hilang.", false)
 				if !confirm2 {
-					return fmt.Errorf("operasi dibatalkan")
+					return "", "", fmt.Errorf("operasi dibatalkan")
 				}
 			}
 		} else {
 			if !force && !backupFirst {
-				return fmt.Errorf("tabel target '%s.%s' sudah ada. Gunakan --force atau --backup-first", targetDB, targetTable)
+				return "", "", fmt.Errorf("tabel target '%s.%s' sudah ada. Gunakan --force atau --backup-first", targetDB, targetTable)
 			}
 		}
 
 		if backupFirst {
 			s.log.Infof("Menjalankan backup pengamanan untuk tabel: %s.%s", targetDB, targetTable)
 			if err := s.runSafetyTableBackup(ctx, profile, client, targetDB, targetTable); err != nil {
-				return fmt.Errorf("gagal melakukan backup pengamanan tabel: %w", err)
+				return "", "", fmt.Errorf("gagal melakukan backup pengamanan tabel: %w", err)
 			}
 		}
 	}
 
 	s.log.Infof("Memulai copy tabel: %s.%s -> %s.%s", sourceDB, sourceTable, targetDB, targetTable)
-	
+
 	spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Copying table %s.%s", sourceDB, sourceTable))
 	spin.Start()
 	defer spin.Stop()
@@ -430,17 +436,17 @@ func (s *Service) CopyTable(ctx context.Context, profile *domain.ProfileInfo, so
 
 	createSQL := fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s`.`%s` LIKE `%s`.`%s` ", targetDB, targetTable, sourceDB, sourceTable)
 	if _, err := client.ExecContextWithRetry(ctx, createSQL); err != nil {
-		return fmt.Errorf("gagal membuat struktur tabel target: %w", err)
+		return "", "", fmt.Errorf("gagal membuat struktur tabel target: %w", err)
 	}
 
 	if !schemaOnly {
 		insertSQL := fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s` ", targetDB, targetTable, sourceDB, sourceTable)
 		if _, err := client.ExecContextWithRetry(ctx, insertSQL); err != nil {
-			return fmt.Errorf("gagal menyalin data tabel: %w", err)
+			return "", "", fmt.Errorf("gagal menyalin data tabel: %w", err)
 		}
 	}
 
-	return nil
+	return targetDB, targetTable, nil
 }
 
 func (s *Service) runSafetyTableBackup(ctx context.Context, profile *domain.ProfileInfo, client *database.Client, dbName, tableName string) error {
@@ -450,10 +456,10 @@ func (s *Service) runSafetyTableBackup(ctx context.Context, profile *domain.Prof
 		DBName:  dbName,
 		Ticket:  "SAFETY_AUTO_BACKUP_TABLE",
 	}
-	
+
 	hostname := profile.DBInfo.Host
 	filename, _ := backuppath.GenerateBackupFilename(dbName+"_"+tableName, consts.ModeSingle, hostname, compress.CompressionType(consts.CompressionTypeGzip), false, false)
-	
+
 	outputDir := s.cfg.Backup.Output.BaseDirectory
 	if outputDir == "" {
 		outputDir = filepath.Join(os.TempDir(), "sfdbtools_safety")
@@ -464,16 +470,13 @@ func (s *Service) runSafetyTableBackup(ctx context.Context, profile *domain.Prof
 	s.log.Infof("Backup tabel disimpan di: %s", outputPath)
 
 	eng := execution.New(s.log, s.cfg, opts, s.errLog).WithDependencies(client, nil, nil, nil, nil)
-	
+
 	// Gunakan argumen mysqldump untuk tabel spesifik
 	_, err := eng.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
 		DBName:       dbName,
 		OutputPath:   outputPath,
 		IsMultiDB:    false,
 		TotalDBFound: 1,
-		// Custom logic to only backup this table would be needed in execution.New if it doesn't support it directly,
-		// but since we are refactoring, let's assume we can handle it or just backup the whole DB as safety if it's easier.
-		// Actually, let's just use mysqldump directly for safety table backup to be simple.
 	})
 	return err
 }
