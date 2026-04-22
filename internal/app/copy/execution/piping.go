@@ -2,6 +2,7 @@ package execution
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -56,7 +57,6 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 	mysqlArgs := mysqlcli.BuildArgs(opts.Profile, opts.TargetDB)
 
 	// 4. Setup Commands
-	// Kita gunakan CommandContext agar OS process otomatis di-kill jika context dibatalkan.
 	dumpCmd := exec.CommandContext(ctx, dumpBin.Path, dumpArgs...)
 
 	mysqlBin, _, err := mysqlcli.ResolveMariaDBOrMySQLClient()
@@ -68,7 +68,10 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 	// Connect Pipe
 	pr, pw := io.Pipe()
 	dumpCmd.Stdout = pw
-	mysqlCmd.Stdin = pr
+
+	// Transformer: Ganti nama sourceDB dengan targetDB di dalam stream SQL
+	transformedReader := transformSQLStream(pr, opts.SourceDB, opts.TargetDB)
+	mysqlCmd.Stdin = transformedReader
 
 	// Capture errors
 	dumpStderr, _ := dumpCmd.StderrPipe()
@@ -92,7 +95,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 	spin.Start()
 	defer spin.Stop()
 
-	// Log stderr in background untuk audit/debugging jika terjadi kegagalan
+	// Log stderr in background
 	go func() {
 		sl := io.MultiReader(dumpStderr, mysqlStderr)
 		scanner := bufio.NewScanner(sl)
@@ -102,11 +105,10 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 	}()
 
 	// Wait for commands
-	// Error handling diperkuat: jika salah satu gagal, kill yang lain.
 	errDumpChan := make(chan error, 1)
 	go func() {
 		errDumpChan <- dumpCmd.Wait()
-		_ = pw.Close() // Pastikan pipe ditutup agar mysqlCmd.Stdin mendapat EOF
+		_ = pw.Close()
 	}()
 
 	errMysqlChan := make(chan error, 1)
@@ -141,4 +143,40 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 	}
 
 	return nil
+}
+
+// transformSQLStream melakukan penggantian nama database secara real-time pada stream SQL.
+func transformSQLStream(r io.Reader, sourceDB, targetDB string) io.Reader {
+	pr, pw := io.Pipe()
+
+	go func() {
+		defer pw.Close()
+		scanner := bufio.NewScanner(r)
+
+		const maxCapacity = 10 * 1024 * 1024
+		buf := make([]byte, 64*1024)
+		scanner.Buffer(buf, maxCapacity)
+
+		// Pattern replacement
+		p1Source := []byte("`" + sourceDB + "`.")
+		p1Target := []byte("`" + targetDB + "`.")
+
+		p2Source := []byte(" " + sourceDB + ".")
+		p2Target := []byte(" " + targetDB + ".")
+
+		for scanner.Scan() {
+			line := scanner.Bytes()
+			line = bytes.ReplaceAll(line, p1Source, p1Target)
+			line = bytes.ReplaceAll(line, p2Source, p2Target)
+
+			if _, err := pw.Write(line); err != nil {
+				return
+			}
+			if _, err := pw.Write([]byte("\n")); err != nil {
+				return
+			}
+		}
+	}()
+
+	return pr
 }
