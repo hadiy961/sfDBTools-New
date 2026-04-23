@@ -13,7 +13,7 @@ import (
 )
 
 // CopyDatabase melakukan penyalinan satu database utuh.
-func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo, sourceDB, targetDB string, schemaOnly, useDisk, useConcurrent bool, workers int, limitSpeed int64, force, backupFirst, includeGrants, verify, skipRoutines, skipEvents, skipTriggers, nonInteractive bool) (string, error) {
+func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo, sourceDB, targetDB string, schemaOnly, useConcurrent bool, workers int, limitSpeed int64, force, backupFirst, includeGrants, verify, skipRoutines, skipEvents, skipTriggers, nonInteractive bool) (string, error) {
 	client, err := profileconn.ConnectWithProfile(s.cfg, profile, "")
 	if err != nil {
 		return "", fmt.Errorf("gagal koneksi ke database: %w", err)
@@ -105,7 +105,7 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 	}
 
 	// Route to Concurrent Engine if requested
-	if useConcurrent && !useDisk && !schemaOnly {
+	if useConcurrent && !schemaOnly {
 		return s.CopyDatabaseConcurrent(ctx, profile, sourceDB, targetDB, workers, limitSpeed, force, backupFirst, includeGrants, verify, skipRoutines, skipEvents, skipTriggers, nonInteractive)
 	}
 
@@ -121,50 +121,41 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 	}
 
 	methodName := "Piping"
-	if useDisk {
-		methodName = "Disk-based"
-	}
 	s.log.Debugf("Memulai copy database: %s -> %s [Metode: %s]", sourceDB, targetDB, methodName)
 
 	// Execution
-	if useDisk {
-		if err := s.executeDiskCopy(ctx, profile, client, sourceDB, targetDB, schemaOnly); err != nil {
-			return "", err
-		}
-	} else {
-		// Discover total tables for progress tracking in Piping mode
-		totalTables := 0
-		if objects, err := s.DiscoverTablesAndViews(ctx, client, sourceDB); err == nil {
-			for _, obj := range objects {
-				if obj.Type == TableTypeBaseTable {
-					totalTables++
-				}
+	// Discover total tables for progress tracking in Piping mode
+	totalTables := 0
+	if objects, err := s.DiscoverTablesAndViews(ctx, client, sourceDB); err == nil {
+		for _, obj := range objects {
+			if obj.Type == TableTypeBaseTable {
+				totalTables++
 			}
 		}
+	}
 
-		extraDumpArgs := ""
-		if !skipRoutines {
-			extraDumpArgs += " --routines"
-		}
-		if !skipEvents {
-			extraDumpArgs += " --events"
-		}
-		if !skipTriggers {
-			extraDumpArgs += " --triggers"
-		}
+	extraDumpArgs := ""
+	if !skipRoutines {
+		extraDumpArgs += " --routines"
+	}
+	if !skipEvents {
+		extraDumpArgs += " --events"
+	}
+	if !skipTriggers {
+		extraDumpArgs += " --triggers"
+	}
 
-		if err := copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
-			Profile:      profile,
-			SourceDB:     sourceDB,
-			TargetDB:     targetDB,
-			SchemaOnly:   schemaOnly,
-			BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + extraDumpArgs,
-			LimitSpeed:   limitSpeed,
-			Force:        force,
-			TotalTables:  totalTables,
-		}); err != nil {
-			return "", err
-		}
+	if err := copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
+		Profile:      profile,
+		SourceDB:     sourceDB,
+		TargetDB:     targetDB,
+		SchemaOnly:   schemaOnly,
+		BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + extraDumpArgs,
+		LimitSpeed:   limitSpeed,
+		Force:        force,
+		TotalTables:  totalTables,
+	}); err != nil {
+		return "", err
 	}
 
 	// 6. Copy Grants (if enabled)
