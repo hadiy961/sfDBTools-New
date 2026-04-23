@@ -65,11 +65,12 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 	// 3. Build mysql client arguments
 	mysqlArgs := mysqlcli.BuildArgs(opts.Profile, opts.TargetDB)
 
-	// Tambahkan flag --force jika diminta (Best effort)
-	if opts.Force {
+	// SELALU gunakan flag --force secara default (Best effort) agar tidak terhenti oleh objek yang rusak
+	// Sesuai dengan instruksi DBA untuk memastikan kelancaran copy.
+	if !strings.Contains(opts.BaseDumpArgs, "--force") && !strings.Contains(opts.BaseDumpArgs, "-f ") {
 		dumpArgs = append(dumpArgs, "--force")
-		mysqlArgs = append(mysqlArgs, "--force")
 	}
+	mysqlArgs = append(mysqlArgs, "--force")
 
 	// 4. Resolve mysql binary
 	mysqlBin, _, err := mysqlcli.ResolveMariaDBOrMySQLClient()
@@ -97,7 +98,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 
 		// Transformer
 		transformedReader := transformSQLStream(pr, opts.SourceDB, opts.TargetDB, tableUpdateChan)
-		tPR, _ := transformedReader.(*io.PipeReader)
+		ttPR, _ := transformedReader.(*io.PipeReader) // Renamed to avoid conflict with pr
 
 		// Throttler
 		finalReader := io.Reader(transformedReader)
@@ -139,8 +140,8 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 			}
 			_ = pw.Close()
 			_ = pr.Close()
-			if tPR != nil {
-				_ = tPR.Close()
+			if ttPR != nil {
+				_ = ttPR.Close()
 			}
 			_ = dumpCmd.Process.Kill()
 			return fmt.Errorf("gagal memulai mysql client: %w", err)
@@ -226,8 +227,8 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 					_ = mysqlCmd.Process.Kill()
 					_ = pw.Close()
 					_ = pr.Close()
-					if tPR != nil {
-						_ = tPR.Close()
+					if ttPR != nil {
+						_ = ttPR.Close()
 					}
 				numFinished = 2 // Stop waiting if one fails critically
 			}
@@ -238,8 +239,8 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 					_ = dumpCmd.Process.Kill()
 					_ = pw.Close()
 					_ = pr.Close()
-					if tPR != nil {
-						_ = tPR.Close()
+					if ttPR != nil {
+						_ = ttPR.Close()
 					}
 				numFinished = 2
 			}
@@ -248,8 +249,8 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 				_ = mysqlCmd.Process.Kill()
 				_ = pw.Close()
 				_ = pr.Close()
-				if tPR != nil {
-					_ = tPR.Close()
+				if ttPR != nil {
+					_ = ttPR.Close()
 				}
 			timedOut = true
 			numFinished = 2
@@ -337,7 +338,7 @@ func transformSQLStream(r io.Reader, sourceDB, targetDB string, notifyChan chan<
 				if bytes.HasPrefix(line, prefixStruct) {
 					tbl = line[len(prefixStruct):]
 				} else if bytes.HasPrefix(line, prefixData) {
-				tbl = line[len(prefixData):]
+					tbl = line[len(prefixData):]
 				}
 				if len(tbl) > 0 {
 					if endIdx := bytes.IndexByte(tbl, '`'); endIdx > 0 {
