@@ -70,7 +70,9 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 	if !strings.Contains(opts.BaseDumpArgs, "--force") && !strings.Contains(opts.BaseDumpArgs, "-f ") {
 		dumpArgs = append(dumpArgs, "--force")
 	}
-	mysqlArgs = append(mysqlArgs, "--force")
+	if !strings.Contains(strings.Join(mysqlArgs, " "), "--force") {
+		mysqlArgs = append(mysqlArgs, "--force")
+	}
 
 	// 4. Resolve mysql binary
 	mysqlBin, _, err := mysqlcli.ResolveMariaDBOrMySQLClient()
@@ -94,11 +96,11 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 		dumpCmd.Stdout = pw
 
 		// Channel untuk menangkap deteksi tabel dari stream SQL
-		tableUpdateChan := make(chan string, 100)
+	tableUpdateChan := make(chan string, 100)
 
 		// Transformer
 		transformedReader := transformSQLStream(pr, opts.SourceDB, opts.TargetDB, tableUpdateChan)
-		ttPR, _ := transformedReader.(*io.PipeReader) // Renamed to avoid conflict with pr
+		ttPR, _ := transformedReader.(*io.PipeReader)
 
 		// Throttler
 		finalReader := io.Reader(transformedReader)
@@ -231,7 +233,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 						_ = ttPR.Close()
 					}
 				numFinished = 2 // Stop waiting if one fails critically
-			}
+				}
 			case e := <-errMysqlChan:
 				errMysql = e
 				numFinished++
@@ -243,7 +245,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 						_ = ttPR.Close()
 					}
 				numFinished = 2
-			}
+				}
 			case <-ctx.Done():
 				_ = dumpCmd.Process.Kill()
 				_ = mysqlCmd.Process.Kill()
@@ -272,14 +274,25 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 			stderrStr := dumpStderrBuf.String()
 			log.Debugf("[%s Error] %s", dumpBin.Name, strings.TrimSpace(stderrStr))
 
-			// Cek apakah ada opsi yang tidak didukung
-			if newArgs, removed, canRetry := backup_exec.RemoveUnsupportedMysqldumpOption(dumpArgs, stderrStr); canRetry && attempts < maxAttempts {
-				log.Warnf("Opsi dump '%s' tidak didukung oleh binary sistem, mencoba ulang tanpa opsi tersebut...", removed)
-				dumpArgs = newArgs
-				continue // Retry!
+			// Extract exit code
+			exitCode := 1
+			if exitErr, ok := errDump.(*exec.ExitError); ok {
+				exitCode = exitErr.ExitCode()
 			}
 
-			// Cek SSL mismatch
+			// Jika exit status 2 (warning/partial success) dan --force aktif, anggap non-fatal
+			if exitCode == 2 {
+				log.Warnf("%s selesai dengan peringatan (exit status 2), dilanjutkan karena mode force aktif.", dumpBin.Name)
+				errDump = nil // Clear error agar tidak dianggap fatal
+			} else {
+				// Cek apakah ada opsi yang tidak didukung
+				if newArgs, removed, canRetry := backup_exec.RemoveUnsupportedMysqldumpOption(dumpArgs, stderrStr); canRetry && attempts < maxAttempts {
+					log.Warnf("Opsi dump '%s' tidak didukung oleh binary sistem, mencoba ulang tanpa opsi tersebut...", removed)
+					dumpArgs = newArgs
+					continue // Retry!
+				}
+
+				// Cek SSL mismatch
 			if backup_exec.IsSSLMismatchRequiredButServerNoSupport(stderrStr) && attempts < maxAttempts {
 				if newArgs, added := backup_exec.AddDisableSSLArgs(dumpArgs); added {
 					log.Warnf("SSL mismatch terdeteksi, mencoba ulang dengan --skip-ssl...")
@@ -287,8 +300,9 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 					continue // Retry!
 				}
 			}
-
+			
 			return fmt.Errorf("error pada %s: %w", dumpBin.Name, errDump)
+			}
 		}
 
 		if errMysql != nil {

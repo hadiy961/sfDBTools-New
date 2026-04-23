@@ -124,7 +124,7 @@ func (e *Engine) createWriterPipeline(baseWriter io.Writer, compressionRequired 
 //
 // 2. Secondary: pattern matching untuk edge cases (hanya untuk exit code 1)
 // 3. Log stderr yang tidak ter-classify untuk future improvement
-func (e *Engine) isFatalDumpError(toolName string, err error, stderrOutput string, exitCode int) bool {
+func (e *Engine) isFatalDumpError(toolName string, err error, stderrOutput string, exitCode int, args []string) bool {
 	if err == nil {
 		return false
 	}
@@ -135,6 +135,21 @@ func (e *Engine) isFatalDumpError(toolName string, err error, stderrOutput strin
 	}
 
 	if exitCode >= 2 {
+		// Jika --force aktif, exit code 2 (warning/partial success pada MariaDB/MySQL dump)
+		// dianggap non-fatal agar proses tetap bisa berlanjut.
+		isForce := false
+		for _, a := range args {
+			al := strings.ToLower(strings.TrimSpace(a))
+			if al == "--force" || al == "-f" {
+				isForce = true
+				break
+			}
+		}
+		if isForce && exitCode == 2 {
+			e.Log.Debugf("%s exit code 2 but --force is used, treating as non-fatal warning", strings.TrimSpace(toolName))
+			return false
+		}
+
 		e.Log.Debugf("%s exit code %d (>=2), treating as fatal", strings.TrimSpace(toolName), exitCode)
 		return true
 	}
@@ -337,7 +352,7 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 			exitCode = exitErr.ExitCode()
 		}
 
-		if e.isFatalDumpError(dumpBin.Name, runErr, stderrOutput, exitCode) {
+		if e.isFatalDumpError(dumpBin.Name, runErr, stderrOutput, exitCode, mysqldumpArgs) {
 			monitor.Finish(false)
 			result := &types_backup.BackupWriteResult{
 				StderrOutput: stderrOutput,
