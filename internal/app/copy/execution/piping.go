@@ -58,12 +58,6 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 		dumpArgs = append(dumpArgs, opts.TableName)
 	}
 
-	// Tambahkan flag untuk menghindari error GTID di server target secara default
-	// jika belum ada di base dump args.
-	if !strings.Contains(opts.BaseDumpArgs, "--set-gtid-purged") {
-		dumpArgs = append(dumpArgs, "--set-gtid-purged=OFF")
-	}
-
 	// 3. Build mysql client arguments
 	mysqlArgs := mysqlcli.BuildArgs(opts.Profile, opts.TargetDB)
 
@@ -79,7 +73,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 
 	for {
 		attempts++
-		
+
 		// Setup Commands
 		dumpCmd := exec.CommandContext(ctx, dumpBin.Path, dumpArgs...)
 		mysqlCmd := exec.CommandContext(ctx, mysqlBin, mysqlArgs...)
@@ -90,6 +84,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 
 		// Transformer
 		transformedReader := transformSQLStream(pr, opts.SourceDB, opts.TargetDB)
+		tPR, _ := transformedReader.(*io.PipeReader)
 
 		// Throttler
 		finalReader := io.Reader(transformedReader)
@@ -120,6 +115,9 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 			spin.Stop()
 			_ = pw.Close()
 			_ = pr.Close()
+			if tPR != nil {
+				_ = tPR.Close()
+			}
 			_ = dumpCmd.Process.Kill()
 			return fmt.Errorf("gagal memulai mysql client: %w", err)
 		}
@@ -167,36 +165,53 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 
 		var errDump, errMysql error
 		timedOut := false
-		
+
 		numFinished := 0
 		for numFinished < 2 {
 			select {
 			case e := <-errDumpChan:
 				errDump = e
 				numFinished++
-				if errDump != nil { 
-					_ = mysqlCmd.Process.Kill() 
-					numFinished = 2 // Stop waiting if one fails critically
+				if errDump != nil {
+					_ = mysqlCmd.Process.Kill()
+					_ = pw.Close()
+					_ = pr.Close()
+					if tPR != nil {
+						_ = tPR.Close()
+					}
+				numFinished = 2 // Stop waiting if one fails critically
 				}
 			case e := <-errMysqlChan:
 				errMysql = e
 				numFinished++
-				if errMysql != nil { 
-					_ = dumpCmd.Process.Kill() 
-					numFinished = 2
+				if errMysql != nil {
+					_ = dumpCmd.Process.Kill()
+					_ = pw.Close()
+					_ = pr.Close()
+					if tPR != nil {
+						_ = tPR.Close()
+					}
+				numFinished = 2
 				}
 			case <-ctx.Done():
 				_ = dumpCmd.Process.Kill()
 				_ = mysqlCmd.Process.Kill()
-			timedOut = true
-			numFinished = 2
+				_ = pw.Close()
+				_ = pr.Close()
+				if tPR != nil {
+					_ = tPR.Close()
+				}
+				timedOut = true
+				numFinished = 2
 			}
 		}
 
 		close(stopMetrics)
 		spin.Stop()
 
-		if timedOut { return ctx.Err() }
+		if timedOut {
+			return ctx.Err()
+		}
 
 		// Error Detection & Retry Logic
 		if errDump != nil {

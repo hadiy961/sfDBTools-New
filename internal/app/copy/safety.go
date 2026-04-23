@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"sfdbtools/internal/app/backup/execution"
@@ -50,13 +49,7 @@ func (s *Service) runSafetyBackup(ctx context.Context, profile *domain.ProfileIn
 
 	s.log.Infof("Backup disimpan di: %s", outputPath)
 
-	// Clone config untuk menyuntikkan flag safety
-	copyCfg := *s.cfg
-	if !strings.Contains(copyCfg.Backup.MysqlDumpArgs, "--set-gtid-purged") {
-		copyCfg.Backup.MysqlDumpArgs += " --set-gtid-purged=OFF"
-	}
-
-	eng := execution.New(s.log, &copyCfg, opts, s.errLog).WithDependencies(client, nil, nil, nil, nil)
+	eng := execution.New(s.log, s.cfg, opts, s.errLog).WithDependencies(client, nil, nil, nil, nil)
 	_, err := eng.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
 		DBName:       dbName,
 		OutputPath:   outputPath,
@@ -81,12 +74,6 @@ func (s *Service) executeDiskCopy(ctx context.Context, profile *domain.ProfileIn
 	}
 	defer os.RemoveAll(workdir)
 
-	// Clone config untuk menyuntikkan flag safety tanpa merusak config global
-	copyCfg := *s.cfg
-	if !strings.Contains(copyCfg.Backup.MysqlDumpArgs, "--set-gtid-purged") {
-		copyCfg.Backup.MysqlDumpArgs += " --set-gtid-purged=OFF"
-	}
-
 	ticket := s.ticket
 	if ticket == "" {
 		ticket = "INTERNAL_DB_COPY"
@@ -109,7 +96,7 @@ func (s *Service) executeDiskCopy(ctx context.Context, profile *domain.ProfileIn
 	}
 	outputPath := filepath.Join(workdir, filename)
 
-	eng := execution.New(s.log, &copyCfg, opts, s.errLog).WithDependencies(client, nil, nil, nil, nil)
+	eng := execution.New(s.log, s.cfg, opts, s.errLog).WithDependencies(client, nil, nil, nil, nil)
 	_, err = eng.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
 		DBName:       sourceDB,
 		OutputPath:   outputPath,
@@ -132,7 +119,7 @@ func (s *Service) executeDiskCopy(ctx context.Context, profile *domain.ProfileIn
 		Ticket:      ticket,
 	}
 
-	restSvc := restore.NewRestoreService(s.log, &copyCfg, restOpts)
+	restSvc := restore.NewRestoreService(s.log, s.cfg, restOpts)
 	if err := restSvc.SetupRestoreSession(ctx); err != nil {
 		return fmt.Errorf("gagal setup restore: %w", err)
 	}
@@ -169,13 +156,7 @@ func (s *Service) runSafetyTableBackup(ctx context.Context, profile *domain.Prof
 
 	s.log.Infof("Backup tabel disimpan di: %s", outputPath)
 
-	// Clone config untuk menyuntikkan flag safety
-	copyCfg := *s.cfg
-	if !strings.Contains(copyCfg.Backup.MysqlDumpArgs, "--set-gtid-purged") {
-		copyCfg.Backup.MysqlDumpArgs += " --set-gtid-purged=OFF"
-	}
-
-	eng := execution.New(s.log, &copyCfg, opts, s.errLog).WithDependencies(client, nil, nil, nil, nil)
+	eng := execution.New(s.log, s.cfg, opts, s.errLog).WithDependencies(client, nil, nil, nil, nil)
 
 	// Gunakan argumen mysqldump untuk tabel spesifik
 	_, err := eng.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{

@@ -117,7 +117,8 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 						TableName:  tbl,
 						SchemaOnly: false,
 						// Gunakan flag --no-create-info karena tabel sudah ada dari step schema
-						BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + " --no-create-info",
+						// Tambahkan --skip-triggers agar tidak mencoba membuat trigger dua kali
+						BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + " --no-create-info --skip-triggers",
 						LimitSpeed:   limitPerWorker,
 					})
 					if err != nil {
