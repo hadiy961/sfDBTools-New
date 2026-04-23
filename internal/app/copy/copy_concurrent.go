@@ -294,17 +294,35 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 func (s *Service) sanitizeArgsForData(args string) string {
 	fields := strings.Fields(args)
 	var filtered []string
-	for _, f := range fields {
+	skipNext := false
+	for i, f := range fields {
+		if skipNext {
+			skipNext = false
+			continue
+		}
 		l := strings.ToLower(f)
+		
+		// List flags yang harus dibuang bersama nilainya
+		if l == "--databases" || l == "-b" {
+			skipNext = true
+			continue
+		}
+
+		// List flags yang harus dibuang (standalone atau prefix)
 		if l == "--routines" || l == "-r" ||
 			l == "--triggers" || l == "-t" ||
 			l == "--events" || l == "-e" ||
-			l == "--databases" || l == "-b" ||
 			l == "--all-databases" || l == "-a" ||
 			strings.HasPrefix(l, "--set-gtid-purged") {
 			continue
 		}
-		filtered = append(filtered, f)
+		
+		// Jika dalam format --databases=db1 (dengan =)
+		if strings.HasPrefix(l, "--databases=") {
+			continue
+		}
+
+		filtered = append(filtered, fields[i])
 	}
 	return strings.Join(filtered, " ")
 }
