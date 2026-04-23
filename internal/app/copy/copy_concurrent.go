@@ -12,7 +12,6 @@ import (
 )
 
 // CopyDatabaseConcurrent menyalin seluruh isi database menggunakan multi-threading worker pool.
-// Metode ini jauh lebih cepat untuk database dengan banyak tabel.
 func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.ProfileInfo, sourceDB, targetDB string, workers int, limitSpeed int64, force, backupFirst, includeGrants, verify, skipRoutines, skipEvents, skipTriggers, nonInteractive bool) (string, error) {
 	client, err := profileconn.ConnectWithProfile(s.cfg, profile, "")
 	if err != nil {
@@ -21,24 +20,36 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	defer client.Close()
 
 	// 1. Discovery Objek (Gunakan Optimized SHOW commands)
-	s.log.Infof("Memulai discovery objek database '%s'விற்கு...", sourceDB)
+	s.log.Infof("Memulai discovery objek database '%s'...", sourceDB)
 	allObjects, err := s.DiscoverTablesAndViews(ctx, client, sourceDB)
 	if err != nil {
 		return "", err
 	}
 
 	var baseTables []string
-	var views []string
+	var viewNames []string
 	for _, obj := range allObjects {
 		if obj.Type == TableTypeBaseTable {
 			baseTables = append(baseTables, obj.Name)
 		} else {
-			views = append(views, obj.Name)
+			viewNames = append(viewNames, obj.Name)
 		}
 	}
 
 	totalTables := len(baseTables)
-	s.log.Infof("Ditemukan %d tabel dan %d views untuk disalin.", totalTables, len(views))
+	s.log.Infof("Ditemukan %d tabel dan %d views untuk disalin.", totalTables, len(viewNames))
+
+	// Discovery Auxiliary Objects
+	var procNames, funcNames, eventNames, triggerNames []string
+	if !skipRoutines {
+		procNames, funcNames, _ = s.DiscoverRoutines(ctx, client, sourceDB)
+	}
+	if !skipEvents {
+		eventNames, _ = s.DiscoverEvents(ctx, client, sourceDB)
+	}
+	if !skipTriggers {
+		triggerNames, _ = s.DiscoverTriggers(ctx, client, sourceDB)
+	}
 
 	// 2. Setup Target (Create & Smart Clean)
 	if err := client.CreateDatabaseIfNotExists(ctx, targetDB); err != nil {
@@ -50,10 +61,9 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 		}
 	}
 
-	// 3. Step A: Salin Struktur Tabel SAJA (Tanpa Triggers/Routines/Views)
-	// Penting: Kita skip triggers dulu agar proses insert data nanti tidak terhambat logika trigger.
+	// 3. Step A: Salin Struktur Tabel SAJA
 	if totalTables > 0 {
-		s.log.Infof("Menyalin struktur %d tabel secara paralel...", totalTables)
+		s.log.Infof("Menyalin struktur %d tabel...", totalTables)
 		
 		var completedSchema int
 		var mu sync.Mutex
@@ -72,16 +82,13 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 					default:
 					}
 
-					// Hanya salin CREATE TABLE, skip semua objek lain
-				extraArgs := " --no-data --skip-triggers --skip-routines --skip-events"
-
 					err := copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
 						Profile:      profile,
 						SourceDB:     sourceDB,
 						TargetDB:     targetDB,
 						TableName:    tbl,
 						SchemaOnly:   true,
-						BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + extraArgs,
+						BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + " --no-data --skip-triggers --skip-routines --skip-events",
 						HideProgress: true,
 					})
 
@@ -110,7 +117,6 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	}
 
 	// 4. Step B: Salin Data (Concurrent)
-	// Kita jalankan data SEBELUM View dan Trigger agar tidak ada intervensi logika.
 	if totalTables > 0 {
 		s.log.Infof("Menyalin data %d tabel menggunakan %d workers...", totalTables, workers)
 
@@ -191,15 +197,26 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	}
 
 	// 5. Step C: Salin Objek Pelengkap (Views, Triggers, Routines, Events)
-	// Kita jalankan di akhir agar data sudah siap dan tidak ada error 'Trigger already exists' atau 'Need to set modified date'.
-	if !skipRoutines || !skipEvents || !skipTriggers || len(views) > 0 {
-		s.log.Info("Menyalin views, triggers, routines, dan events (Tahap Akhir)...")
+	s.log.Info("Memasang objek tambahan (Views, Triggers, Routines, Events)...")
+
+	// Statistik Informatif
+	stats := []string{}
+	if len(viewNames) > 0 { stats = append(stats, fmt.Sprintf("%d Views", len(viewNames))) }
+	if len(triggerNames) > 0 { stats = append(stats, fmt.Sprintf("%d Triggers", len(triggerNames))) }
+	if len(procNames) > 0 { stats = append(stats, fmt.Sprintf("%d Procedures", len(procNames))) }
+	if len(funcNames) > 0 { stats = append(stats, fmt.Sprintf("%d Functions", len(funcNames))) }
+	if len(eventNames) > 0 { stats = append(stats, fmt.Sprintf("%d Events", len(eventNames))) }
+
+	if len(stats) > 0 {
+		s.log.Infof("Memproses: %s", strings.Join(stats, ", "))
+
+		// Kita salin sisa objek dalam satu stream cepat agar mysqldump menangani urutan dependensi
 		extraArgs := " --no-data --no-create-info"
 		if !skipRoutines { extraArgs += " --routines" }
 		if !skipEvents { extraArgs += " --events" }
 		if !skipTriggers { extraArgs += " --triggers" }
 		
-		err = copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
+			err = copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
 			Profile:      profile,
 			SourceDB:     sourceDB,
 			TargetDB:     targetDB,
@@ -208,7 +225,7 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 			HideProgress: false,
 		})
 		if err != nil {
-			s.log.Warnf("Gagal menyalin objek tambahan (views/triggers/routines): %v", err)
+			s.log.Warnf("Gagal menyalin objek tambahan: %v", err)
 		}
 	}
 

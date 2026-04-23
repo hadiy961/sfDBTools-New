@@ -21,7 +21,6 @@ type DBObject struct {
 }
 
 // DiscoverTablesAndViews mengambil daftar tabel dan view secara instan menggunakan SHOW FULL TABLES.
-// Metode ini jauh lebih cepat daripada query information_schema.
 func (s *Service) DiscoverTablesAndViews(ctx context.Context, client *database.Client, dbName string) ([]DBObject, error) {
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s` ", dbName)
 	rows, err := client.QueryContextWithRetry(ctx, query)
@@ -57,7 +56,6 @@ func (s *Service) DiscoverTriggers(ctx context.Context, client *database.Client,
 
 	var triggers []string
 	for rows.Next() {
-		// SHOW TRIGGERS mengembalikan banyak kolom, kita hanya butuh kolom pertama (Trigger)
 		cols, _ := rows.Columns()
 		dest := make([]interface{}, len(cols))
 		var triggerName string
@@ -84,7 +82,6 @@ func (s *Service) DiscoverRoutines(ctx context.Context, client *database.Client,
 	if err == nil {
 		for pRows.Next() {
 			var db, name string
-			// SHOW PROCEDURE STATUS: Db, Name, Type, Definer, Modified, Created, Security_type, Comment, character_set_client, collation_connection, Database Collation
 			cols, _ := pRows.Columns()
 			dest := make([]interface{}, len(cols))
 			for i := range dest {
@@ -116,4 +113,28 @@ func (s *Service) DiscoverRoutines(ctx context.Context, client *database.Client,
 	}
 
 	return procedures, functions, nil
+}
+
+// DiscoverEvents me-list seluruh Scheduled Events.
+func (s *Service) DiscoverEvents(ctx context.Context, client *database.Client, dbName string) ([]string, error) {
+	query := fmt.Sprintf("SHOW EVENTS FROM `%s` ", dbName)
+	rows, err := client.QueryContextWithRetry(ctx, query)
+	if err != nil {
+		return nil, nil
+	}
+	defer rows.Close()
+
+	var events []string
+	for rows.Next() {
+		var db, name string
+		cols, _ := rows.Columns()
+		dest := make([]interface{}, len(cols))
+		for i := range dest {
+			if i == 0 { dest[i] = &db } else if i == 1 { dest[i] = &name } else { dest[i] = new(interface{}) }
+		}
+		if err := rows.Scan(dest...); err == nil {
+			events = append(events, name)
+		}
+	}
+	return events, nil
 }
