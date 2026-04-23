@@ -28,14 +28,17 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	}
 
 	var baseTables []string
+	var views []string
 	for _, obj := range allObjects {
 		if obj.Type == TableTypeBaseTable {
 			baseTables = append(baseTables, obj.Name)
+		} else {
+			views = append(views, obj.Name)
 		}
 	}
 
 	totalTables := len(baseTables)
-	s.log.Infof("Ditemukan %d tabel untuk disalin.", totalTables)
+	s.log.Infof("Ditemukan %d tabel dan %d views untuk disalin.", totalTables, len(views))
 
 	// 2. Setup Target (Create & Smart Clean)
 	if err := client.CreateDatabaseIfNotExists(ctx, targetDB); err != nil {
@@ -47,36 +50,94 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 		}
 	}
 
-	// 3. Step A: Salin Struktur (Schema Only)
-	s.log.Info("Menyalin struktur database (schema-only)...")
-	extraDumpArgs := ""
-	if !skipRoutines {
-		extraDumpArgs += " --routines"
-	}
-	if !skipEvents {
-		extraDumpArgs += " --events"
-	}
-	if !skipTriggers {
-		extraDumpArgs += " --triggers"
+	// 3. Step A: Salin Struktur (Schema Concurrent)
+	if totalTables > 0 {
+		s.log.Infof("Menyalin struktur %d tabel secara paralel...", totalTables)
+		
+		var completedSchema int
+		var mu sync.Mutex
+		tableChan := make(chan string, totalTables)
+		errChan := make(chan error, totalTables)
+		var wg sync.WaitGroup
+
+		for w := 1; w <= workers; w++ {
+			wg.Add(1)
+			go func(workerID int) {
+				defer wg.Done()
+				for tbl := range tableChan {
+					select {
+					case <-ctx.Done():
+						return
+					default:
+					}
+
+					// Dump CREATE TABLE + TRIGGERS (jika tidak skip)
+				extraArgs := " --no-data --skip-routines --skip-events"
+					if skipTriggers {
+						extraArgs += " --skip-triggers"
+					} else {
+						extraArgs += " --triggers"
+					}
+
+					err := copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
+						Profile:      profile,
+						SourceDB:     sourceDB,
+						TargetDB:     targetDB,
+						TableName:    tbl,
+						SchemaOnly:   true,
+						BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + extraArgs,
+						HideProgress: true,
+					})
+
+					mu.Lock()
+					completedSchema++
+					percent := float64(completedSchema) * 100 / float64(totalTables)
+					fmt.Printf("\r  ⏳ Progres Schema: %d/%d tabel (%.1f%%) [Worker %d: %s]   ", completedSchema, totalTables, percent, workerID, tbl)
+					if err != nil {
+						errChan <- fmt.Errorf("schema tabel %s gagal: %w", tbl, err)
+					}
+					mu.Unlock()
+				}
+			}(w)
+		}
+
+		for _, tbl := range baseTables {
+			tableChan <- tbl
+		}
+		close(tableChan)
+		wg.Wait()
+		fmt.Println()
+
+		if len(errChan) > 0 {
+			return "", <-errChan
+		}
 	}
 
-	err = copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
-		Profile:      profile,
-		SourceDB:     sourceDB,
-		TargetDB:     targetDB,
-		SchemaOnly:   true,
-		BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + extraDumpArgs,
-		LimitSpeed:   0,
-	})
-	if err != nil {
-		return "", fmt.Errorf("gagal menyalin struktur schema: %w", err)
+	// 3.5 Salin Objek Lainnya (Views, Routines, Events) secara berurutan (untuk dependensi)
+	if !skipRoutines || !skipEvents || len(views) > 0 {
+		s.log.Info("Menyalin views, routines, dan events...")
+		extraArgs := " --no-data --no-create-info"
+		if !skipRoutines { extraArgs += " --routines" }
+		if !skipEvents { extraArgs += " --events" }
+		
+		// Kita gunakan satu stream untuk sisa objek agar mysqldump menangani urutan dependensi view
+		err = copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
+			Profile:      profile,
+			SourceDB:     sourceDB,
+			TargetDB:     targetDB,
+			SchemaOnly:   true,
+			BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + extraArgs,
+			HideProgress: false, // Tampilkan spinner karena ini satu stream
+		})
+		if err != nil {
+			s.log.Warnf("Gagal menyalin objek tambahan (views/routines): %v", err)
+		}
 	}
 
 	// 4. Step B: Salin Data (Concurrent)
 	if totalTables > 0 {
-		s.log.Infof("Menyalin data tabel menggunakan %d workers...", workers)
+		s.log.Infof("Menyalin data %d tabel menggunakan %d workers...", totalTables, workers)
 
-		// Sanitize base args: Buang flags yang memicu pembuatan objek karena sudah dibuat di Step A
 		sanitizedBaseArgs := s.sanitizeArgsForData(s.cfg.Backup.MysqlDumpArgs)
 
 		if _, err := client.ExecContextWithRetry(ctx, "SET FOREIGN_KEY_CHECKS=0"); err != nil {
@@ -98,12 +159,11 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 		if limitSpeed > 0 {
 			limitPerWorker = limitSpeed / int64(workers)
 			if limitPerWorker < 1024*1024 {
-				limitPerWorker = 1024*1024
+				limitPerWorker = 1024 * 1024
 			}
 		}
 
-		// Progress tracking
-		var completedCount int
+		var completedData int
 		var mu sync.Mutex
 
 		for w := 1; w <= workers; w++ {
@@ -125,17 +185,15 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 						SchemaOnly:   false,
 						BaseDumpArgs: sanitizedBaseArgs + " --no-create-info --skip-triggers --skip-routines --skip-events",
 						LimitSpeed:   limitPerWorker,
-						HideProgress: true, // Sembunyikan per-table spinner agar tidak berantakan
+						HideProgress: true,
 					})
 
 					mu.Lock()
-					completedCount++
-					percentage := float64(completedCount) * 100 / float64(totalTables)
-					// Tampilkan progress global yang lebih informatif
-					fmt.Printf("\r  ⏳ Progres: %d/%d tabel selesai (%.1f%%) [Worker %d: %s]   ", completedCount, totalTables, percentage, workerID, tbl)
+					completedData++
+					percent := float64(completedData) * 100 / float64(totalTables)
+					fmt.Printf("\r  ⏳ Progres Data: %d/%d tabel selesai (%.1f%%) [Worker %d: %s]   ", completedData, totalTables, percent, workerID, tbl)
 					if err != nil {
-						fmt.Printf("\n  ❌ Error pada tabel %s: %v\n", tbl, err)
-						errChan <- fmt.Errorf("tabel %s gagal: %w", tbl, err)
+						errChan <- fmt.Errorf("data tabel %s gagal: %w", tbl, err)
 					}
 					mu.Unlock()
 				}
@@ -148,15 +206,14 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 		close(tableChan)
 
 		wg.Wait()
-		fmt.Println() // Newline after progress bar
+		fmt.Println()
 		close(errChan)
 
 		if len(errChan) > 0 {
-			firstErr := <-errChan
-			return "", fmt.Errorf("terjadi error saat concurrent data copy: %w (dan %d error lainnya)", firstErr, len(errChan))
+			return "", <-errChan
 		}
 
-		// 4.5 Data Integrity Check (if enabled)
+		// 4.5 Data Integrity Check
 		if verify {
 			s.log.Info("Memulai verifikasi checksum seluruh tabel...")
 			for _, tbl := range baseTables {
