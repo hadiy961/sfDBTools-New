@@ -116,7 +116,8 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	// 3.5 Salin Objek Lainnya (Views, Routines, Events) secara berurutan (untuk dependensi)
 	if !skipRoutines || !skipEvents || len(views) > 0 {
 		s.log.Info("Menyalin views, routines, dan events...")
-		extraArgs := " --no-data --no-create-info"
+		// Tambahkan --skip-triggers karena trigger sudah dibuat per-tabel di Step 3
+		extraArgs := " --no-data --no-create-info --skip-triggers"
 		if !skipRoutines { extraArgs += " --routines" }
 		if !skipEvents { extraArgs += " --events" }
 		
