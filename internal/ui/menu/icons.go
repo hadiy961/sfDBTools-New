@@ -12,8 +12,6 @@ func getCommandIcon(cmdName string) string {
 		"backup":     "💾",
 		"db-restore": "♻️",
 		"restore":    "♻️",
-		"db-scan":    "🔍",
-		"dbscan":     "🔍",
 		"profile":    "⚙️",
 		"cleanup":    "🧹",
 		"crypto":     "🔐",

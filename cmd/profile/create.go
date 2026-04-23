@@ -15,7 +15,7 @@ var CmdProfileCreate = &cobra.Command{
 	Long: `Membuat profil koneksi database baru untuk digunakan oleh sfdbtools.
 
 Command ini akan menyimpan kredensial dan konfigurasi koneksi ke dalam file profil.
-Profil ini nantinya digunakan untuk operasi backup, restore, dan dbscan tanpa perlu memasukkan ulang kredensial.
+Profil ini nantinya digunakan untuk operasi backup dan restore tanpa perlu memasukkan ulang kredensial.
 
 Mode:
   - Interaktif (default): jika TTY dan tanpa --quiet, akan memandu input (wizard).

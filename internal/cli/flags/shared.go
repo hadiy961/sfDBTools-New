@@ -36,16 +36,6 @@ func AddFilterFlags(cmd *cobra.Command, opts *domain.FilterOptions) {
 	cmd.Flags().BoolVar(&opts.ExcludeSystem, "exclude-system", opts.ExcludeSystem, "Kecualikan system databases (information_schema, mysql, dll)")
 }
 
-// AddFilterFlagsSimple mendaftarkan flag filter versi string pointer (untuk struct yang belum menggunakan FilterOptions)
-// Ini berguna untuk transisi `dbscan` yang struct-nya masih flat.
-func AddFilterFlagsSimple(cmd *cobra.Command) {
-	cmd.Flags().String("db", "", "Daftar database yang akan di-scan/backup (comma-separated).")
-	cmd.Flags().String("db-file", "", "File berisi daftar database yang akan di-scan/backup.")
-	cmd.Flags().String("exclude-db", "", "Daftar database yang akan dikecualikan.")
-	cmd.Flags().String("exclude-file", "", "File berisi daftar database yang akan dikecualikan.")
-	cmd.Flags().Bool("exclude-system", true, "Kecualikan system databases")
-}
-
 // AddDBInfoFlags mendaftarkan flag koneksi database standar.
 // Flag: --host, --port, --user, --password
 func AddDBInfoFlags(cmd *cobra.Command) {

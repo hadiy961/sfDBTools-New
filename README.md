@@ -1,6 +1,6 @@
 # sfdbtools
 
-sfdbtools adalah CLI utility untuk operasi MySQL/MariaDB: backup, restore, db-scan, cleanup, crypto, dan manajemen profil koneksi.
+sfdbtools adalah CLI utility untuk operasi MySQL/MariaDB: backup, restore, cleanup, crypto, dan manajemen profil koneksi.
 
 Target utama: penggunaan di environment server (Linux) dengan fokus pada **streaming** (hemat RAM), **safety**, dan **otomasi**.
 
@@ -277,38 +277,6 @@ sfdbtools db-restore selection \
   --ticket "SELECTIVE-RESTORE"
 ```
 
-### 4) Database Scan
-
-#### Scan Semua Database
-
-Lihat metadata semua database di server:
-
-```bash
-sfdbtools db-scan all \
-  --profile ./configs/prod-db.cnf.enc \
-  --profile-key "my-secret-key"
-```
-
-#### Scan Database Lokal
-
-Scan database dari file backup lokal:
-
-```bash
-sfdbtools db-scan all-local \
-  --backup-dir "/backups/2026/01/05"
-```
-
-#### Scan dengan Filter
-
-Scan database yang match pattern tertentu:
-
-```bash
-sfdbtools db-scan filter \
-  --profile ./configs/prod-db.cnf.enc \
-  --profile-key "my-secret-key" \
-  --filter "dbsf_*"
-```
-
 ### 5) Cleanup Old Backups
 
 #### Cleanup Otomatis Berdasarkan Retention
@@ -500,7 +468,6 @@ sfdbtools db-backup single \
 
 - `sfdbtools db-backup`: backup database (subcommand: `all`, `filter`, `single`, `primary`, `secondary`)
 - `sfdbtools db-restore`: restore database (subcommand: `single`, `primary`, `secondary`, `all`, `selection`, `custom`)
-- `sfdbtools db-scan`: scan metadata database (subcommand: `all`, `all-local`, `filter`)
 - `sfdbtools profile`: create/show/edit/delete/clone/import profile koneksi
 - `sfdbtools cleanup`: housekeeping file backup
 - `sfdbtools crypto`: encrypt/decrypt file/text + base64 utils
@@ -522,6 +489,31 @@ sfdbtools <command> <subcommand> --help
 - `SFDB_BACKUP_ENCRYPTION_KEY`: default key untuk enkripsi backup.
 - `SFDB_ENCRYPTION_KEY`: default key untuk beberapa perintah `crypto`.
 - `SFDB_SCRIPT_KEY`: key untuk bundle `script`.
+
+## Lisensi
+
+Internal Tool DataOn.
+SFDB_SCRIPT_KEY`: key untuk bundle `script`.
+
+## Lisensi
+
+Internal Tool DataOn.
+sfdbtools <command> --help
+sfdbtools <command> <subcommand> --help
+```
+
+## Environment Variables (yang sering dipakai)
+
+- `SFDB_APPS_CONFIG`: override lokasi config YAML.
+- `SFDB_QUIET=1`: suppress banner/spinner (cocok untuk pipeline).
+- `SFDB_BACKUP_ENCRYPTION_KEY`: default key untuk enkripsi backup.
+- `SFDB_ENCRYPTION_KEY`: default key untuk beberapa perintah `crypto`.
+- `SFDB_SCRIPT_KEY`: key untuk bundle `script`.
+
+## Lisensi
+
+Internal Tool DataOn.
+SFDB_SCRIPT_KEY`: key untuk bundle `script`.
 
 ## Lisensi
 

@@ -13,7 +13,6 @@ import (
 	cleanupcmd "sfdbtools/cmd/cleanup"
 	cryptocmd "sfdbtools/cmd/crypto"
 	dbcopycmd "sfdbtools/cmd/dbcopy"
-	dbscancmd "sfdbtools/cmd/dbscan"
 	dbusercmd "sfdbtools/cmd/dbuser"
 	profilecmd "sfdbtools/cmd/profile"
 	restorecmd "sfdbtools/cmd/restore"
@@ -114,7 +113,6 @@ func init() {
 	rootCmd.AddCommand(versionCmd) // (Perlu diinisialisasi di cmd/version.go)
 	rootCmd.AddCommand(updateCmd)
 	rootCmd.AddCommand(profilecmd.CmdProfileMain)
-	rootCmd.AddCommand(dbscancmd.CmdDBScanMain)
 	rootCmd.AddCommand(cryptocmd.CmdCryptoMain)
 	rootCmd.AddCommand(scriptcmd.CmdScriptMain)
 	rootCmd.AddCommand(cleanupcmd.CmdCleanupMain)
