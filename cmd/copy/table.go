@@ -9,6 +9,7 @@ import (
 	"sfdbtools/internal/ui/prompt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -105,7 +106,7 @@ var CmdCopyTable = &cobra.Command{
 				if targetDB == sourceDB {
 					defaultSuffix = "_copy"
 				}
-				tableSuffix, _ = prompt.AskText("Banyak tabel dipilih. Masukkan akhiran (suffix) untuk nama tabel target:", prompt.WithDefault(defaultSuffix))
+			tableSuffix, _ = prompt.AskText("Banyak tabel dipilih. Masukkan akhiran (suffix) untuk nama tabel target:", prompt.WithDefault(defaultSuffix))
 			}
 		}
 
@@ -121,7 +122,6 @@ var CmdCopyTable = &cobra.Command{
 		
 		fmt.Println()
 		
-		// Setup Worker Pool
 		type tableTask struct {
 			index int
 			name  string
@@ -129,7 +129,6 @@ var CmdCopyTable = &cobra.Command{
 		taskChan := make(chan tableTask, len(sourceTables))
 		wg := sync.WaitGroup{}
 		
-		// Start Workers
 		numWorkers := copyTableWorkers
 		if numWorkers > len(sourceTables) { numWorkers = len(sourceTables) }
 		if numWorkers < 1 { numWorkers = 1 }
@@ -139,7 +138,6 @@ var CmdCopyTable = &cobra.Command{
 			go func() {
 				defer wg.Done()
 				for task := range taskChan {
-					// Check Context
 					select {
 					case <-ctx.Done():
 						return
@@ -151,11 +149,13 @@ var CmdCopyTable = &cobra.Command{
 						currTargetTable = specificTargetTable
 					}
 
+					start := time.Now()
 					mu.Lock()
 					fmt.Printf("[%d/%d] Kloning %s.%s -> %s.%s ...\n", task.index+1, len(sourceTables), sourceDB, task.name, targetDB, currTargetTable)
 					mu.Unlock()
 
 					_, _, verifyStatus, err := svc.CopyTable(ctx, profile, sourceDB, task.name, targetDB, currTargetTable, copyTableSchemaOnly, copyTableForce, copyTableBackupFirst, copyTableIncludeGrants, copyTableVerify, copyTableNonInteractive)
+					duration := time.Since(start).Round(time.Millisecond)
 					
 					status := "Sukses"
 					if err != nil {
@@ -166,7 +166,7 @@ var CmdCopyTable = &cobra.Command{
 					} else {
 						mu.Lock()
 						successCount++
-						fmt.Printf("  ✅ %s Berhasil (Checksum: %s)\n\n", task.name, verifyStatus)
+						fmt.Printf("  ✅ %s Berhasil (%s)\n\n", task.name, duration)
 						mu.Unlock()
 					}
 
@@ -176,13 +176,13 @@ var CmdCopyTable = &cobra.Command{
 						fmt.Sprintf("%s.%s", targetDB, currTargetTable),
 						status,
 						verifyStatus,
+						duration.String(),
 					})
 					mu.Unlock()
 					}
 			}()
 		}
 
-		// Feed Tasks
 		for i, tbl := range sourceTables {
 			taskChan <- tableTask{index: i, name: tbl}
 		}
@@ -191,12 +191,12 @@ var CmdCopyTable = &cobra.Command{
 
 		// 7. Final Summary Table
 		fmt.Printf("\n--- Ringkasan Copy Tabel ---\n")
-		fmt.Printf("%-35s -> %-35s [%-6s] [%s]\n", "Sumber", "Tujuan", "Status", "Checksum")
-		fmt.Println(strings.Repeat("-", 100))
+		fmt.Printf("%-35s -> %-35s [%-6s] [%-8s] [%s]\n", "Sumber", "Tujuan", "Status", "Checksum", "Durasi")
+		fmt.Println(strings.Repeat("-", 115))
 		for _, res := range results {
 			icon := "✓"
 			if res[2] == "Gagal" { icon = "✗" }
-			fmt.Printf("%s %-33s -> %-35s [%-6s] [%s]\n", icon, res[0], res[1], res[2], res[3])
+			fmt.Printf("%s %-33s -> %-35s [%-6s] [%-8s] [%s]\n", icon, res[0], res[1], res[2], res[3], res[4])
 		}
 		
 		fmt.Printf("\nSelesai: %d/%d tabel berhasil disalin.\n", successCount, len(sourceTables))

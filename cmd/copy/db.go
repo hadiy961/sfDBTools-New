@@ -92,9 +92,10 @@ var CmdCopyDB = &cobra.Command{
 			}
 
 			// 4. Handle Copy Method (Piping vs Concurrent vs Disk)
-			method := "piping" // default
+			methodLabel := "Piping" 
+			useConcurrent := false
 			if copyDBUseDisk {
-				method = "disk"
+				methodLabel = "Disk-based"
 			} else if !copyDBNonInteractive {
 				options := []string{
 					"Direct Stream (Cepat, RAM-based)",
@@ -105,9 +106,10 @@ var CmdCopyDB = &cobra.Command{
 				if err == nil {
 					switch choice {
 					case "Concurrent Stream (Sangat Cepat, Multi-threading)":
-						method = "concurrent"
+						methodLabel = "Concurrent"
+						useConcurrent = true
 					case "Disk-based (Aman, Dump file)":
-						method = "disk"
+						methodLabel = "Disk-based"
 						copyDBUseDisk = true
 					}
 				}
@@ -145,35 +147,36 @@ var CmdCopyDB = &cobra.Command{
 					currTarget = db + suffix
 				}
 
-				fmt.Printf("[%d/%d] Kloning %s -> %s ...\n", i+1, len(sourceDBs), db, currTarget)
-				
-				// Map current choice to useConcurrent flag
-				useConcurrent := (method == "concurrent")
-				
+				start := time.Now()
+				fmt.Printf("[%d/%d] Kloning %s -> %s [%s]...\n", i+1, len(sourceDBs), db, currTarget, methodLabel)
 				finalTarget, err := svc.CopyDatabase(ctx, profile, db, currTarget, copyDBSchemaOnly, copyDBUseDisk, useConcurrent, copyDBWorkers, limitSpeed, copyDBForce, copyDBBackupFirst, copyDBIncludeGrants, copyDBVerify, copyDBSkipRoutines, copyDBSkipEvents, copyDBSkipTriggers, copyDBNonInteractive)
-				
+				duration := time.Since(start).Round(time.Second)
+
 				status := "Sukses"
-				note := "-"
 				if err != nil {
 					status = "Gagal"
-					note = err.Error()
 					fmt.Printf("  ❌ Error: %v\n\n", err)
 				} else {
 					successCount++
-					fmt.Printf("  ✅ Berhasil: %s\n\n", finalTarget)
+					fmt.Printf("  ✅ Berhasil: %s (%s)\n\n", finalTarget, duration)
 				}
-				
-				results = append(results, []string{db, currTarget, status, note})
+				results = append(results, []string{
+					db, 
+					currTarget, 
+					methodLabel, 
+					duration.String(), 
+					status,
+				})
 			}
 
 			// 7. Final Summary
 			fmt.Printf("\n--- Ringkasan Copy Database ---\n")
-			fmt.Printf("%-35s -> %-35s [%s]\n", "Sumber", "Tujuan", "Status")
-			fmt.Println(strings.Repeat("-", 85))
+			fmt.Printf("% -30s -> % -30s [% -10s] [% -8s] [%s]\n", "Sumber", "Tujuan", "Metode", "Durasi", "Status")
+			fmt.Println(strings.Repeat("-", 100))
 			for _, res := range results {
 				icon := "✓"
-				if res[2] == "Gagal" { icon = "✗" }
-				fmt.Printf("%s %-33s -> %-35s [%s]\n", icon, res[0], res[1], res[2])
+				if res[4] == "Gagal" { icon = "✗" }
+				fmt.Printf("%s % -28s -> % -30s [% -10s] [% -8s] [%s]\n", icon, res[0], res[1], res[2], res[3], res[4])
 			}
 
 			fmt.Printf("\nSelesai: %d/%d database berhasil disalin.\n", successCount, len(sourceDBs))
