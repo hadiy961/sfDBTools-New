@@ -65,12 +65,9 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 	// 3. Build mysql client arguments
 	mysqlArgs := mysqlcli.BuildArgs(opts.Profile, opts.TargetDB)
 
-	// SELALU gunakan flag --force secara default (Best effort) agar tidak terhenti oleh objek yang rusak
-	// Sesuai dengan instruksi DBA untuk memastikan kelancaran copy.
-	if !strings.Contains(opts.BaseDumpArgs, "--force") && !strings.Contains(opts.BaseDumpArgs, "-f ") {
+	// Tambahkan flag --force jika diminta
+	if opts.Force {
 		dumpArgs = append(dumpArgs, "--force")
-	}
-	if !strings.Contains(strings.Join(mysqlArgs, " "), "--force") {
 		mysqlArgs = append(mysqlArgs, "--force")
 	}
 
@@ -281,7 +278,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 			}
 
 			// Jika exit status 2 (warning/partial success) dan --force aktif, anggap non-fatal
-			if exitCode == 2 {
+			if opts.Force && exitCode == 2 {
 				log.Warnf("%s selesai dengan peringatan (exit status 2), dilanjutkan karena mode force aktif.", dumpBin.Name)
 				errDump = nil // Clear error agar tidak dianggap fatal
 			} else {
