@@ -8,7 +8,7 @@ import (
 	"sfdbtools/internal/cli/runner"
 	"sfdbtools/internal/shared/execx"
 	"sfdbtools/internal/ui/prompt"
-	"strings"
+	"sfdbtools/internal/ui/table"
 	"time"
 	"runtime"
 
@@ -20,7 +20,6 @@ var (
 	copyDBProfileKey     string
 	copyDBTicket         string
 	copyDBSchemaOnly     bool
-	copyDBUseDisk        bool
 	copyDBForce          bool
 	copyDBBackupFirst    bool
 	copyDBIncludeGrants  bool
@@ -28,7 +27,6 @@ var (
 	copyDBWorkers        int
 	copyDBLimitSpeed     string
 	copyDBVerify         bool
-	copyDBCompression    string
 	copyDBSkipRoutines   bool
 	copyDBSkipEvents     bool
 	copyDBSkipTriggers   bool
@@ -92,26 +90,19 @@ var CmdCopyDB = &cobra.Command{
 				}
 			}
 
-			// 4. Handle Copy Method (Piping vs Concurrent vs Disk)
+			// 4. Handle Copy Method (Piping vs Concurrent)
 			methodLabel := "Piping" 
 			useConcurrent := false
-			if copyDBUseDisk {
-				methodLabel = "Disk-based"
-			} else if !copyDBNonInteractive {
+			if !copyDBNonInteractive {
 				options := []string{
 					"Direct Stream (Cepat, RAM-based)",
 					"Concurrent Stream (Sangat Cepat, Multi-threading)",
-					"Disk-based (Aman, Dump file)",
 				}
 				choice, _, err := prompt.SelectOne("Pilih metode penyalinan:", options, 0)
 				if err == nil {
-					switch choice {
-					case "Concurrent Stream (Sangat Cepat, Multi-threading)":
+					if choice == "Concurrent Stream (Sangat Cepat, Multi-threading)" {
 						methodLabel = "Concurrent"
 						useConcurrent = true
-					case "Disk-based (Aman, Dump file)":
-						methodLabel = "Disk-based"
-						copyDBUseDisk = true
 					}
 				}
 			}
@@ -150,12 +141,14 @@ var CmdCopyDB = &cobra.Command{
 
 				start := time.Now()
 				fmt.Printf("[%d/%d] Kloning %s -> %s [%s]...\n", i+1, len(sourceDBs), db, currTarget, methodLabel)
-				finalTarget, err := svc.CopyDatabase(ctx, profile, db, currTarget, copyDBSchemaOnly, copyDBUseDisk, useConcurrent, copyDBWorkers, limitSpeed, copyDBForce, copyDBBackupFirst, copyDBIncludeGrants, copyDBVerify, copyDBSkipRoutines, copyDBSkipEvents, copyDBSkipTriggers, copyDBNonInteractive)
-			duration := time.Since(start).Round(time.Second)
+				finalTarget, err := svc.CopyDatabase(ctx, profile, db, currTarget, copyDBSchemaOnly, useConcurrent, copyDBWorkers, limitSpeed, copyDBForce, copyDBBackupFirst, copyDBIncludeGrants, copyDBVerify, copyDBSkipRoutines, copyDBSkipEvents, copyDBSkipTriggers, copyDBNonInteractive)
+				duration := time.Since(start).Round(time.Second)
 				
 				status := "Sukses"
+				icon := "✅"
 				if err != nil {
 					status = "Gagal"
+					icon = "❌"
 					fmt.Printf("  ❌ Error: %v\n\n", err)
 				} else {
 					successCount++
@@ -163,7 +156,7 @@ var CmdCopyDB = &cobra.Command{
 				}
 				
 				results = append(results, []string{
-					db, 
+					icon + " " + db, 
 					currTarget, 
 					methodLabel, 
 					duration.String(), 
@@ -173,13 +166,8 @@ var CmdCopyDB = &cobra.Command{
 
 			// 7. Final Summary
 			fmt.Printf("\n--- Ringkasan Copy Database ---\n")
-			fmt.Printf("%-30s -> %-30s [%-10s] [%-8s] [%s]\n", "Sumber", "Tujuan", "Metode", "Durasi", "Status")
-			fmt.Println(strings.Repeat("-", 100))
-			for _, res := range results {
-				icon := "✓"
-				if res[4] == "Gagal" { icon = "✗" }
-				fmt.Printf("%s %-28s -> %-30s [%-10s] [%-8s] [%s]\n", icon, res[0], res[1], res[2], res[3], res[4])
-			}
+			headers := []string{"Sumber", "Tujuan", "Metode", "Durasi", "Status"}
+			table.Render(headers, results)
 
 			fmt.Printf("\nSelesai: %d/%d database berhasil disalin.\n", successCount, len(sourceDBs))
 			return nil
@@ -198,12 +186,10 @@ func init() {
 	CmdCopyDB.Flags().IntVarP(&copyDBWorkers, "workers", "w", defaultWorkers, "Jumlah worker untuk concurrent copy (default: jumlah CPU)")
 	CmdCopyDB.Flags().StringVar(&copyDBLimitSpeed, "limit-speed", "", "Batasi kecepatan transfer (misal: 10MB/s)")
 	CmdCopyDB.Flags().BoolVar(&copyDBVerify, "verify", false, "Verifikasi integritas data dengan checksum setelah copy")
-	CmdCopyDB.Flags().StringVar(&copyDBCompression, "compression", "gzip", "Metode kompresi untuk disk-based (gzip, pgzip, zstd)")
 	CmdCopyDB.Flags().BoolVar(&copyDBSkipRoutines, "skip-routines", false, "Jangan salin stored procedures & functions")
 	CmdCopyDB.Flags().BoolVar(&copyDBSkipEvents, "skip-events", false, "Jangan salin events")
 	CmdCopyDB.Flags().BoolVar(&copyDBSkipTriggers, "skip-triggers", false, "Jangan salin triggers")
 	CmdCopyDB.Flags().BoolVar(&copyDBSchemaOnly, "schema-only", false, "Hanya salin struktur (tanpa data)")
-	CmdCopyDB.Flags().BoolVar(&copyDBUseDisk, "use-disk", false, "Gunakan media disk (dump & restore) alih-alih streaming RAM")
 	CmdCopyDB.Flags().BoolVar(&copyDBForce, "force", false, "Timpa database target jika sudah ada (tanpa backup)")
 	CmdCopyDB.Flags().BoolVar(&copyDBBackupFirst, "backup-first", false, "Backup database target terlebih dahulu sebelum menimpa")
 	CmdCopyDB.Flags().BoolVar(&copyDBIncludeGrants, "include-grants", false, "Salin hak akses user (grants) dari database sumber")

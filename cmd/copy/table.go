@@ -7,6 +7,7 @@ import (
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/runner"
 	"sfdbtools/internal/ui/prompt"
+	"sfdbtools/internal/ui/table"
 	"strings"
 	"sync"
 	"time"
@@ -159,8 +160,10 @@ var CmdCopyTable = &cobra.Command{
 						duration := time.Since(start).Round(time.Millisecond)
 						
 						status := "Sukses"
+						icon := "✅"
 						if err != nil {
 							status = "Gagal"
+							icon = "❌"
 							mu.Lock()
 							fmt.Printf("  ❌ Error %s: %v\n\n", task.name, err)
 							mu.Unlock()
@@ -173,7 +176,7 @@ var CmdCopyTable = &cobra.Command{
 
 						mu.Lock()
 						results = append(results, []string{
-							fmt.Sprintf("%s.%s", sourceDB, task.name),
+							icon + " " + fmt.Sprintf("%s.%s", sourceDB, task.name),
 							fmt.Sprintf("%s.%s", targetDB, currTargetTable),
 							status,
 							verifyStatus,
@@ -192,13 +195,8 @@ var CmdCopyTable = &cobra.Command{
 
 			// 7. Final Summary Table
 			fmt.Printf("\n--- Ringkasan Copy Tabel ---\n")
-			fmt.Printf("%-35s -> %-35s [%-6s] [%-8s] [%s]\n", "Sumber", "Tujuan", "Status", "Checksum", "Durasi")
-			fmt.Println(strings.Repeat("-", 115))
-			for _, res := range results {
-				icon := "✓"
-				if res[2] == "Gagal" { icon = "✗" }
-				fmt.Printf("%s %-33s -> %-35s [%-6s] [%-8s] [%s]\n", icon, res[0], res[1], res[2], res[3], res[4])
-			}
+			headers := []string{"Sumber", "Tujuan", "Status", "Checksum", "Durasi"}
+			table.Render(headers, results)
 			
 			fmt.Printf("\nSelesai: %d/%d tabel berhasil disalin.\n", successCount, len(sourceTables))
 			return nil
