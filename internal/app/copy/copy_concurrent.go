@@ -3,6 +3,7 @@ package copy
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	copyexec "sfdbtools/internal/app/copy/execution"
@@ -20,7 +21,7 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	defer client.Close()
 
 	// 1. Discovery Objek (Gunakan Optimized SHOW commands)
-	s.log.Infof("Memulai discovery objek database '%s'...", sourceDB)
+	s.log.Infof("Memulai discovery objek database '%s'விற்கு...", sourceDB)
 	allObjects, err := s.DiscoverTablesAndViews(ctx, client, sourceDB)
 	if err != nil {
 		return "", err
@@ -33,7 +34,8 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 		}
 	}
 
-	s.log.Infof("Ditemukan %d tabel untuk disalin.", len(baseTables))
+	totalTables := len(baseTables)
+	s.log.Infof("Ditemukan %d tabel untuk disalin.", totalTables)
 
 	// 2. Setup Target (Create & Smart Clean)
 	if err := client.CreateDatabaseIfNotExists(ctx, targetDB); err != nil {
@@ -71,10 +73,12 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	}
 
 	// 4. Step B: Salin Data (Concurrent)
-	if len(baseTables) > 0 {
+	if totalTables > 0 {
 		s.log.Infof("Menyalin data tabel menggunakan %d workers...", workers)
 
-		// Matikan checks di target agar load data cepat dan tidak error FK
+		// Sanitize base args: Buang flags yang memicu pembuatan objek karena sudah dibuat di Step A
+		sanitizedBaseArgs := s.sanitizeArgsForData(s.cfg.Backup.MysqlDumpArgs)
+
 		if _, err := client.ExecContextWithRetry(ctx, "SET FOREIGN_KEY_CHECKS=0"); err != nil {
 			return "", err
 		}
@@ -86,17 +90,21 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 			_, _ = client.ExecContextWithRetry(ctx, "SET UNIQUE_CHECKS=1")
 		}()
 
-		tableChan := make(chan string, len(baseTables))
-		errChan := make(chan error, len(baseTables))
+		tableChan := make(chan string, totalTables)
+		errChan := make(chan error, totalTables)
 		var wg sync.WaitGroup
 
 		limitPerWorker := int64(0)
 		if limitSpeed > 0 {
 			limitPerWorker = limitSpeed / int64(workers)
 			if limitPerWorker < 1024*1024 {
-				limitPerWorker = 1024 * 1024
+				limitPerWorker = 1024*1024
 			}
 		}
+
+		// Progress tracking
+		var completedCount int
+		var mu sync.Mutex
 
 		for w := 1; w <= workers; w++ {
 			wg.Add(1)
@@ -109,21 +117,27 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 					default:
 					}
 
-					s.log.Debugf("[Worker %d] Menyalin data tabel: %s", workerID, tbl)
 					err := copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
-						Profile:    profile,
-						SourceDB:   sourceDB,
-						TargetDB:   targetDB,
-						TableName:  tbl,
-						SchemaOnly: false,
-						// Gunakan flag --no-create-info karena tabel sudah ada dari step schema
-						// Tambahkan skip untuk objek non-data agar tidak terjadi bentrokan (duplicate)
-						BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + " --no-create-info --skip-triggers --skip-routines --skip-events",
+						Profile:      profile,
+						SourceDB:     sourceDB,
+						TargetDB:     targetDB,
+						TableName:    tbl,
+						SchemaOnly:   false,
+						BaseDumpArgs: sanitizedBaseArgs + " --no-create-info --skip-triggers --skip-routines --skip-events",
 						LimitSpeed:   limitPerWorker,
+						HideProgress: true, // Sembunyikan per-table spinner agar tidak berantakan
 					})
+
+					mu.Lock()
+					completedCount++
+					percentage := float64(completedCount) * 100 / float64(totalTables)
+					// Tampilkan progress global yang lebih informatif
+					fmt.Printf("\r  ⏳ Progres: %d/%d tabel selesai (%.1f%%) [Worker %d: %s]   ", completedCount, totalTables, percentage, workerID, tbl)
 					if err != nil {
+						fmt.Printf("\n  ❌ Error pada tabel %s: %v\n", tbl, err)
 						errChan <- fmt.Errorf("tabel %s gagal: %w", tbl, err)
 					}
+					mu.Unlock()
 				}
 			}(w)
 		}
@@ -134,6 +148,7 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 		close(tableChan)
 
 		wg.Wait()
+		fmt.Println() // Newline after progress bar
 		close(errChan)
 
 		if len(errChan) > 0 {
@@ -163,4 +178,23 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	}
 
 	return targetDB, nil
+}
+
+// sanitizeArgsForData membuang flag yang tidak diinginkan untuk fase penyalinan data murni.
+func (s *Service) sanitizeArgsForData(args string) string {
+	fields := strings.Fields(args)
+	var filtered []string
+	for _, f := range fields {
+		l := strings.ToLower(f)
+		if l == "--routines" || l == "-r" ||
+			l == "--triggers" || l == "-t" ||
+			l == "--events" || l == "-e" ||
+			l == "--databases" || l == "-b" ||
+			l == "--all-databases" || l == "-a" ||
+			strings.HasPrefix(l, "--set-gtid-purged") {
+			continue
+		}
+		filtered = append(filtered, f)
+	}
+	return strings.Join(filtered, " ")
 }

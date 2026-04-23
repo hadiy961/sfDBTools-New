@@ -27,6 +27,7 @@ type PipingOptions struct {
 	SchemaOnly   bool
 	BaseDumpArgs string
 	LimitSpeed   int64 // Bytes per second
+	HideProgress bool  // Jika true, jangan tampilkan spinner/progress internal
 }
 
 // ExecutePiping menjalankan streaming copy menggunakan mysqldump | mysql.
@@ -101,18 +102,25 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 		mysqlCmd.Stderr = &mysqlStderrBuf
 
 		// Feedback visual
-		spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Streaming %s -> %s", opts.SourceDB, opts.TargetDB))
-		spin.Start()
+		var spin *progress.Spinner
+		if !opts.HideProgress {
+			spin = progress.NewSpinnerWithElapsed(fmt.Sprintf("Streaming %s -> %s", opts.SourceDB, opts.TargetDB))
+			spin.Start()
+		}
 
 		// Execute
 		if err := dumpCmd.Start(); err != nil {
-			spin.Stop()
+			if spin != nil {
+				spin.Stop()
+			}
 			_ = pw.Close()
 			return fmt.Errorf("gagal memulai %s: %w", dumpBin.Name, err)
 		}
 
 		if err := mysqlCmd.Start(); err != nil {
-			spin.Stop()
+			if spin != nil {
+				spin.Stop()
+			}
 			_ = pw.Close()
 			_ = pr.Close()
 			if tPR != nil {
@@ -135,13 +143,15 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 					if throttler != nil {
 						currentBytes = throttler.TotalBytes()
 					}
-					if opts.LimitSpeed > 0 {
-						speedMB := float64(opts.LimitSpeed) / (1024 * 1024)
-						spin.Update(fmt.Sprintf("Streaming %s -> %s [%.2f MB/s limit]", opts.SourceDB, opts.TargetDB, speedMB))
-					} else if currentBytes > 0 {
-						diff := currentBytes - lastBytes
-						speedMB := float64(diff) / (1024 * 1024)
-						spin.Update(fmt.Sprintf("Streaming %s -> %s [%.2f MB/s]", opts.SourceDB, opts.TargetDB, speedMB))
+					if spin != nil {
+						if opts.LimitSpeed > 0 {
+							speedMB := float64(opts.LimitSpeed) / (1024 * 1024)
+							spin.Update(fmt.Sprintf("Streaming %s -> %s [%.2f MB/s limit]", opts.SourceDB, opts.TargetDB, speedMB))
+						} else if currentBytes > 0 {
+							diff := currentBytes - lastBytes
+							speedMB := float64(diff) / (1024 * 1024)
+							spin.Update(fmt.Sprintf("Streaming %s -> %s [%.2f MB/s]", opts.SourceDB, opts.TargetDB, speedMB))
+						}
 					}
 					lastBytes = currentBytes
 				case <-stopMetrics:
@@ -179,7 +189,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 					if tPR != nil {
 						_ = tPR.Close()
 					}
-				numFinished = 2 // Stop waiting if one fails critically
+					numFinished = 2 // Stop waiting if one fails critically
 				}
 			case e := <-errMysqlChan:
 				errMysql = e
@@ -191,7 +201,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 					if tPR != nil {
 						_ = tPR.Close()
 					}
-				numFinished = 2
+					numFinished = 2
 				}
 			case <-ctx.Done():
 				_ = dumpCmd.Process.Kill()
@@ -207,7 +217,9 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 		}
 
 		close(stopMetrics)
-		spin.Stop()
+		if spin != nil {
+			spin.Stop()
+		}
 
 		if timedOut {
 			return ctx.Err()
