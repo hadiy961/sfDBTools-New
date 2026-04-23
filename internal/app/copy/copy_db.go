@@ -132,6 +132,16 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 			return "", err
 		}
 	} else {
+		// Discover total tables for progress tracking in Piping mode
+		totalTables := 0
+		if objects, err := s.DiscoverTablesAndViews(ctx, client, sourceDB); err == nil {
+			for _, obj := range objects {
+				if obj.Type == TableTypeBaseTable {
+					totalTables++
+				}
+			}
+		}
+
 		extraDumpArgs := ""
 		if !skipRoutines {
 			extraDumpArgs += " --routines"
@@ -151,6 +161,7 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 			BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + extraDumpArgs,
 			LimitSpeed:   limitSpeed,
 			Force:        force,
+			TotalTables:  totalTables,
 		}); err != nil {
 			return "", err
 		}

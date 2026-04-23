@@ -30,6 +30,7 @@ type PipingOptions struct {
 	HideProgress bool  // Jika true, jangan tampilkan spinner/progress internal
 	Label        string // Label kustom untuk progress bar
 	Force        bool   // Jika true, gunakan --force di mysqldump dan mysql
+	TotalTables  int    // Untuk kalkulasi persentase progress di mode Piping
 }
 
 // ExecutePiping menjalankan streaming copy menggunakan mysqldump | mysql.
@@ -91,8 +92,11 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 		pr, pw := io.Pipe()
 		dumpCmd.Stdout = pw
 
+		// Channel untuk menangkap deteksi tabel dari stream SQL
+		tableUpdateChan := make(chan string, 100)
+
 		// Transformer
-		transformedReader := transformSQLStream(pr, opts.SourceDB, opts.TargetDB)
+		transformedReader := transformSQLStream(pr, opts.SourceDB, opts.TargetDB, tableUpdateChan)
 		tPR, _ := transformedReader.(*io.PipeReader)
 
 		// Throttler
@@ -148,8 +152,19 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 			ticker := time.NewTicker(1 * time.Second)
 			defer ticker.Stop()
 			var lastBytes int64
+			
+			var currentTable string
+			var tablesProcessed int
+			seenTables := make(map[string]bool)
+
 			for {
 				select {
+				case tbl := <-tableUpdateChan:
+					if !seenTables[tbl] {
+						seenTables[tbl] = true
+						tablesProcessed++
+					}
+					currentTable = tbl
 				case <-ticker.C:
 					var currentBytes int64
 					if throttler != nil {
@@ -158,7 +173,13 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 					if spin != nil {
 						label := opts.Label
 						if label == "" {
-							label = fmt.Sprintf("Streaming %s -> %s", opts.SourceDB, opts.TargetDB)
+							if opts.TotalTables > 0 {
+								percent := float64(tablesProcessed) * 100 / float64(opts.TotalTables)
+								if percent > 100 { percent = 100 }
+								label = fmt.Sprintf("Streaming %d/%d tabel (%.1f%%) [%s]", tablesProcessed, opts.TotalTables, percent, currentTable)
+							} else {
+								label = fmt.Sprintf("Streaming %s -> %s", opts.SourceDB, opts.TargetDB)
+							}
 						}
 						
 						if opts.LimitSpeed > 0 {
@@ -168,6 +189,8 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 							diff := currentBytes - lastBytes
 							speedMB := float64(diff) / (1024 * 1024)
 							spin.Update(fmt.Sprintf("%s [%.2f MB/s]", label, speedMB))
+						} else {
+							spin.Update(label)
 						}
 					}
 					lastBytes = currentBytes
@@ -207,7 +230,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 						_ = tPR.Close()
 					}
 				numFinished = 2 // Stop waiting if one fails critically
-				}
+			}
 			case e := <-errMysqlChan:
 				errMysql = e
 				numFinished++
@@ -219,7 +242,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 						_ = tPR.Close()
 					}
 				numFinished = 2
-				}
+			}
 			case <-ctx.Done():
 				_ = dumpCmd.Process.Kill()
 				_ = mysqlCmd.Process.Kill()
@@ -234,6 +257,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 		}
 
 		close(stopMetrics)
+		close(tableUpdateChan)
 		if spin != nil {
 			spin.Stop()
 		}
@@ -278,7 +302,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 }
 
 // transformSQLStream melakukan penggantian nama database secara real-time pada stream SQL.
-func transformSQLStream(r io.Reader, sourceDB, targetDB string) io.Reader {
+func transformSQLStream(r io.Reader, sourceDB, targetDB string, notifyChan chan<- string) io.Reader {
 	pr, pw := io.Pipe()
 
 	// Regex untuk DEFINER: /*!50013 DEFINER=`user`@`host` */ atau DEFINER=`user`@`host`
@@ -293,14 +317,37 @@ func transformSQLStream(r io.Reader, sourceDB, targetDB string) io.Reader {
 		buf := make([]byte, 64*1024)
 		scanner.Buffer(buf, maxCapacity)
 
+		// Pattern database replacement
 		p1Source := []byte("`" + sourceDB + "`.")
 		p1Target := []byte("`" + targetDB + "`.")
 
 		p2Source := []byte(" " + sourceDB + ".")
 		p2Target := []byte(" " + targetDB + ".")
 
+		// Pattern deteksi tabel mysqldump
+		prefixStruct := []byte("-- Table structure for table `")
+		prefixData := []byte("-- Dumping data for table `")
+
 		for scanner.Scan() {
 			line := scanner.Bytes()
+
+			// Deteksi Progres Tabel
+			if notifyChan != nil {
+				var tbl []byte
+				if bytes.HasPrefix(line, prefixStruct) {
+					tbl = line[len(prefixStruct):]
+				} else if bytes.HasPrefix(line, prefixData) {
+				tbl = line[len(prefixData):]
+				}
+				if len(tbl) > 0 {
+					if endIdx := bytes.IndexByte(tbl, '`'); endIdx > 0 {
+						select {
+						case notifyChan <- string(tbl[:endIdx]):
+						default:
+						}
+					}
+				}
+			}
 
 			// 1. Ganti nama Database (Trigger/View fix)
 			line = bytes.ReplaceAll(line, p1Source, p1Target)
