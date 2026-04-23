@@ -219,7 +219,8 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 		if len(procNames) > 0 {
 			s.log.Infof("Memasang %d Procedures...", len(procNames))
 			for i, name := range procNames {
-				fmt.Printf("\r  ⏳ Progres Procedures: %d/%d [%s]           ", i+1, len(procNames), name)
+				percent := float64(i+1) * 100 / float64(len(procNames))
+				fmt.Printf("\r  ⏳ Progres Procedures: %d/%d (%.1f%%) [%s]           ", i+1, len(procNames), percent, name)
 				if err := s.copyIndividualObject(ctx, client, profile, sourceDB, targetDB, "PROCEDURE", name); err != nil {
 					s.log.Warnf("\nGagal menyalin procedure %s: %v", name, err)
 				}
@@ -229,7 +230,8 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 		if len(funcNames) > 0 {
 			s.log.Infof("Memasang %d Functions...", len(funcNames))
 			for i, name := range funcNames {
-				fmt.Printf("\r  ⏳ Progres Functions: %d/%d [%s]            ", i+1, len(funcNames), name)
+				percent := float64(i+1) * 100 / float64(len(funcNames))
+				fmt.Printf("\r  ⏳ Progres Functions: %d/%d (%.1f%%) [%s]            ", i+1, len(funcNames), percent, name)
 				if err := s.copyIndividualObject(ctx, client, profile, sourceDB, targetDB, "FUNCTION", name); err != nil {
 					s.log.Warnf("\nGagal menyalin function %s: %v", name, err)
 				}
@@ -242,7 +244,8 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	if !skipEvents && len(eventNames) > 0 {
 		s.log.Infof("Memasang %d Events...", len(eventNames))
 		for i, name := range eventNames {
-			fmt.Printf("\r  ⏳ Progres Events: %d/%d [%s]               ", i+1, len(eventNames), name)
+			percent := float64(i+1) * 100 / float64(len(eventNames))
+			fmt.Printf("\r  ⏳ Progres Events: %d/%d (%.1f%%) [%s]               ", i+1, len(eventNames), percent, name)
 			if err := s.copyIndividualObject(ctx, client, profile, sourceDB, targetDB, "EVENT", name); err != nil {
 				s.log.Warnf("\nGagal menyalin event %s: %v", name, err)
 			}
