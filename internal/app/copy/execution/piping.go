@@ -29,6 +29,7 @@ type PipingOptions struct {
 	LimitSpeed   int64 // Bytes per second
 	HideProgress bool  // Jika true, jangan tampilkan spinner/progress internal
 	Label        string // Label kustom untuk progress bar
+	Force        bool   // Jika true, gunakan --force di mysqldump dan mysql
 }
 
 // ExecutePiping menjalankan streaming copy menggunakan mysqldump | mysql.
@@ -62,6 +63,12 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 
 	// 3. Build mysql client arguments
 	mysqlArgs := mysqlcli.BuildArgs(opts.Profile, opts.TargetDB)
+
+	// Tambahkan flag --force jika diminta (Best effort)
+	if opts.Force {
+		dumpArgs = append(dumpArgs, "--force")
+		mysqlArgs = append(mysqlArgs, "--force")
+	}
 
 	// 4. Resolve mysql binary
 	mysqlBin, _, err := mysqlcli.ResolveMariaDBOrMySQLClient()

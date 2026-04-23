@@ -150,6 +150,7 @@ func (s *Service) CopyDatabase(ctx context.Context, profile *domain.ProfileInfo,
 			SchemaOnly:   schemaOnly,
 			BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + extraDumpArgs,
 			LimitSpeed:   limitSpeed,
+			Force:        force,
 		}); err != nil {
 			return "", err
 		}
