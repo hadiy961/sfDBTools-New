@@ -10,6 +10,7 @@ import (
 	"sfdbtools/internal/ui/prompt"
 	"strings"
 	"time"
+	"runtime"
 
 	"github.com/spf13/cobra"
 )
@@ -150,8 +151,8 @@ var CmdCopyDB = &cobra.Command{
 				start := time.Now()
 				fmt.Printf("[%d/%d] Kloning %s -> %s [%s]...\n", i+1, len(sourceDBs), db, currTarget, methodLabel)
 				finalTarget, err := svc.CopyDatabase(ctx, profile, db, currTarget, copyDBSchemaOnly, copyDBUseDisk, useConcurrent, copyDBWorkers, limitSpeed, copyDBForce, copyDBBackupFirst, copyDBIncludeGrants, copyDBVerify, copyDBSkipRoutines, copyDBSkipEvents, copyDBSkipTriggers, copyDBNonInteractive)
-				duration := time.Since(start).Round(time.Second)
-
+			duration := time.Since(start).Round(time.Second)
+				
 				status := "Sukses"
 				if err != nil {
 					status = "Gagal"
@@ -160,6 +161,7 @@ var CmdCopyDB = &cobra.Command{
 					successCount++
 					fmt.Printf("  ✅ Berhasil: %s (%s)\n\n", finalTarget, duration)
 				}
+				
 				results = append(results, []string{
 					db, 
 					currTarget, 
@@ -171,12 +173,12 @@ var CmdCopyDB = &cobra.Command{
 
 			// 7. Final Summary
 			fmt.Printf("\n--- Ringkasan Copy Database ---\n")
-			fmt.Printf("% -30s -> % -30s [% -10s] [% -8s] [%s]\n", "Sumber", "Tujuan", "Metode", "Durasi", "Status")
+			fmt.Printf("%-30s -> %-30s [%-10s] [%-8s] [%s]\n", "Sumber", "Tujuan", "Metode", "Durasi", "Status")
 			fmt.Println(strings.Repeat("-", 100))
 			for _, res := range results {
 				icon := "✓"
 				if res[4] == "Gagal" { icon = "✗" }
-				fmt.Printf("%s % -28s -> % -30s [% -10s] [% -8s] [%s]\n", icon, res[0], res[1], res[2], res[3], res[4])
+				fmt.Printf("%s %-28s -> %-30s [%-10s] [%-8s] [%s]\n", icon, res[0], res[1], res[2], res[3], res[4])
 			}
 
 			fmt.Printf("\nSelesai: %d/%d database berhasil disalin.\n", successCount, len(sourceDBs))
@@ -186,10 +188,14 @@ var CmdCopyDB = &cobra.Command{
 }
 
 func init() {
+	defaultWorkers := runtime.NumCPU()
+	if defaultWorkers > 16 { defaultWorkers = 16 }
+	if defaultWorkers < 1 { defaultWorkers = 1 }
+
 	CmdCopyDB.Flags().StringVarP(&copyDBProfile, "profile", "p", "", "Nama atau path profil database")
 	CmdCopyDB.Flags().StringVar(&copyDBProfileKey, "profile-key", "", "Kunci enkripsi profil (jika dienkripsi)")
 	CmdCopyDB.Flags().StringVarP(&copyDBTicket, "ticket", "t", "", "Ticket number untuk audit")
-	CmdCopyDB.Flags().IntVarP(&copyDBWorkers, "workers", "w", 4, "Jumlah worker untuk concurrent copy")
+	CmdCopyDB.Flags().IntVarP(&copyDBWorkers, "workers", "w", defaultWorkers, "Jumlah worker untuk concurrent copy (default: jumlah CPU)")
 	CmdCopyDB.Flags().StringVar(&copyDBLimitSpeed, "limit-speed", "", "Batasi kecepatan transfer (misal: 10MB/s)")
 	CmdCopyDB.Flags().BoolVar(&copyDBVerify, "verify", false, "Verifikasi integritas data dengan checksum setelah copy")
 	CmdCopyDB.Flags().StringVar(&copyDBCompression, "compression", "gzip", "Metode kompresi untuk disk-based (gzip, pgzip, zstd)")
