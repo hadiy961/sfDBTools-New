@@ -8,7 +8,7 @@ import (
 	"sfdbtools/internal/cli/runner"
 	"sfdbtools/internal/shared/execx"
 	"sfdbtools/internal/ui/prompt"
-	"strings"
+	"sfdbtools/internal/ui/table"
 	"time"
 	"runtime"
 
@@ -145,8 +145,10 @@ var CmdCopyDB = &cobra.Command{
 				duration := time.Since(start).Round(time.Second)
 				
 				status := "Sukses"
+				icon := "✅"
 				if err != nil {
 					status = "Gagal"
+					icon = "❌"
 					fmt.Printf("  ❌ Error: %v\n\n", err)
 				} else {
 					successCount++
@@ -154,7 +156,7 @@ var CmdCopyDB = &cobra.Command{
 				}
 				
 				results = append(results, []string{
-					db, 
+					icon + " " + db, 
 					currTarget, 
 					methodLabel, 
 					duration.String(), 
@@ -164,13 +166,8 @@ var CmdCopyDB = &cobra.Command{
 
 			// 7. Final Summary
 			fmt.Printf("\n--- Ringkasan Copy Database ---\n")
-			fmt.Printf("% -30s -> % -30s [% -10s] [% -8s] [%s]\n", "Sumber", "Tujuan", "Metode", "Durasi", "Status")
-			fmt.Println(strings.Repeat("-", 100))
-			for _, res := range results {
-				icon := "✓"
-				if res[4] == "Gagal" { icon = "✗" }
-				fmt.Printf("%s % -28s -> % -30s [% -10s] [% -8s] [%s]\n", icon, res[0], res[1], res[2], res[3], res[4])
-			}
+			headers := []string{"Sumber", "Tujuan", "Metode", "Durasi", "Status"}
+			table.Render(headers, results)
 
 			fmt.Printf("\nSelesai: %d/%d database berhasil disalin.\n", successCount, len(sourceDBs))
 			return nil
