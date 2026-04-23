@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"regexp"
 
 	copyexec "sfdbtools/internal/app/copy/execution"
 	profileconn "sfdbtools/internal/app/profile/connection"
 	"sfdbtools/internal/domain"
+	"sfdbtools/internal/shared/database"
 )
 
 // CopyDatabaseConcurrent menyalin seluruh isi database menggunakan multi-threading worker pool.
@@ -20,7 +22,7 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	defer client.Close()
 
 	// 1. Discovery Objek (Gunakan Optimized SHOW commands)
-	s.log.Infof("Memulai discovery objek database '%s'...", sourceDB)
+	s.log.Infof("Memulai discovery objek database '%s'வுகளில்", sourceDB)
 	allObjects, err := s.DiscoverTablesAndViews(ctx, client, sourceDB)
 	if err != nil {
 		return "", err
@@ -199,34 +201,66 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	// 5. Step C: Salin Objek Pelengkap (Views, Triggers, Routines, Events)
 	s.log.Info("Memasang objek tambahan (Views, Triggers, Routines, Events)...")
 
-	// Statistik Informatif
-	stats := []string{}
-	if len(viewNames) > 0 { stats = append(stats, fmt.Sprintf("%d Views", len(viewNames))) }
-	if len(triggerNames) > 0 { stats = append(stats, fmt.Sprintf("%d Triggers", len(triggerNames))) }
-	if len(procNames) > 0 { stats = append(stats, fmt.Sprintf("%d Procedures", len(procNames))) }
-	if len(funcNames) > 0 { stats = append(stats, fmt.Sprintf("%d Functions", len(funcNames))) }
-	if len(eventNames) > 0 { stats = append(stats, fmt.Sprintf("%d Events", len(eventNames))) }
-
-	if len(stats) > 0 {
-		s.log.Infof("Memproses: %s", strings.Join(stats, ", "))
-
-		// Kita salin sisa objek dalam satu stream cepat agar mysqldump menangani urutan dependensi
-		extraArgs := " --no-data --no-create-info"
-		if !skipRoutines { extraArgs += " --routines" }
-		if !skipEvents { extraArgs += " --events" }
-		if !skipTriggers { extraArgs += " --triggers" }
-		
-			err = copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
+	// 5.1 Salin Triggers (Bulk)
+	if !skipTriggers && len(triggerNames) > 0 {
+		err = copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
 			Profile:      profile,
 			SourceDB:     sourceDB,
 			TargetDB:     targetDB,
 			SchemaOnly:   true,
-			BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + extraArgs,
-			HideProgress: false,
+			BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + " --no-create-info --triggers --skip-routines --skip-events",
+			Label:        fmt.Sprintf("Memasang %d Triggers", len(triggerNames)) ,
 		})
-		if err != nil {
-			s.log.Warnf("Gagal menyalin objek tambahan: %v", err)
+		if err != nil { s.log.Warnf("Gagal menyalin Triggers: %v", err) }
+	}
+
+	// 5.2 Salin Procedures & Functions (Individual)
+	if !skipRoutines {
+		if len(procNames) > 0 {
+			s.log.Infof("Memasang %d Procedures...", len(procNames))
+			for i, name := range procNames {
+				fmt.Printf("\r  ⏳ Progres Procedures: %d/%d [%s]           ", i+1, len(procNames), name)
+				if err := s.copyIndividualObject(ctx, client, profile, sourceDB, targetDB, "PROCEDURE", name); err != nil {
+					s.log.Warnf("\nGagal menyalin procedure %s: %v", name, err)
+				}
+			}
+			fmt.Println()
 		}
+		if len(funcNames) > 0 {
+			s.log.Infof("Memasang %d Functions...", len(funcNames))
+			for i, name := range funcNames {
+				fmt.Printf("\r  ⏳ Progres Functions: %d/%d [%s]            ", i+1, len(funcNames), name)
+				if err := s.copyIndividualObject(ctx, client, profile, sourceDB, targetDB, "FUNCTION", name); err != nil {
+					s.log.Warnf("\nGagal menyalin function %s: %v", name, err)
+				}
+			}
+			fmt.Println()
+		}
+	}
+
+	// 5.3 Salin Events (Individual)
+	if !skipEvents && len(eventNames) > 0 {
+		s.log.Infof("Memasang %d Events...", len(eventNames))
+		for i, name := range eventNames {
+			fmt.Printf("\r  ⏳ Progres Events: %d/%d [%s]               ", i+1, len(eventNames), name)
+			if err := s.copyIndividualObject(ctx, client, profile, sourceDB, targetDB, "EVENT", name); err != nil {
+				s.log.Warnf("\nGagal menyalin event %s: %v", name, err)
+			}
+		}
+		fmt.Println()
+	}
+
+	// 5.4 Salin Views (Bulk)
+	if len(viewNames) > 0 {
+		err = copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
+			Profile:      profile,
+			SourceDB:     sourceDB,
+			TargetDB:     targetDB,
+			SchemaOnly:   true,
+			BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + " --no-create-info --skip-triggers --skip-routines --skip-events",
+			Label:        fmt.Sprintf("Memasang %d Views", len(viewNames)) ,
+		})
+		if err != nil { s.log.Warnf("Gagal menyalin Views: %v", err) }
 	}
 
 	// 6. Data Integrity Check
@@ -250,6 +284,34 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 	}
 
 	return targetDB, nil
+}
+
+// copyIndividualObject menyalin satu objek (Procedure/Function/Event) menggunakan SHOW CREATE dan Exec.
+func (s *Service) copyIndividualObject(ctx context.Context, client *database.Client, profile *domain.ProfileInfo, sourceDB, targetDB, objType, name string) error {
+	query := fmt.Sprintf("SHOW CREATE %s `%s`.`%s` ", objType, sourceDB, name) 
+	row := client.DB().QueryRowContext(ctx, query) 
+	
+	var n, sql, charSet, collation string
+	var err error
+	if objType == "EVENT" {
+		var sqlMode, tz string
+		err = row.Scan(&n, &sqlMode, &tz, &sql, &charSet, &collation, new(interface{}))
+	} else {
+		err = row.Scan(&n, new(interface{}), &sql, &charSet, &collation, new(interface{}))
+	}
+	
+	if err != nil { return err }
+
+	sql = strings.ReplaceAll(sql, "`"+sourceDB+"`.", "`"+targetDB+"`.")
+	sql = strings.ReplaceAll(sql, " "+sourceDB+".", " "+targetDB+".")
+	
+	re := regexp.MustCompile(`(?i)DEFINER=\s*` + "`" + `.*?` + "`" + `@` + "`" + `.*?` + "`")
+	sql = re.ReplaceAllString(sql, "")
+
+	useQuery := fmt.Sprintf("USE `%s` ", targetDB) 
+	if _, err := client.ExecContextWithRetry(ctx, useQuery); err != nil { return err }
+	_, err = client.ExecContextWithRetry(ctx, sql)
+	return err
 }
 
 // sanitizeArgsForData membuang flag yang tidak diinginkan untuk fase penyalinan data murni.

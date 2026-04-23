@@ -28,6 +28,7 @@ type PipingOptions struct {
 	BaseDumpArgs string
 	LimitSpeed   int64 // Bytes per second
 	HideProgress bool  // Jika true, jangan tampilkan spinner/progress internal
+	Label        string // Label kustom untuk progress bar
 }
 
 // ExecutePiping menjalankan streaming copy menggunakan mysqldump | mysql.
@@ -104,7 +105,11 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 		// Feedback visual
 		var spin *progress.Spinner
 		if !opts.HideProgress {
-			spin = progress.NewSpinnerWithElapsed(fmt.Sprintf("Streaming %s -> %s", opts.SourceDB, opts.TargetDB))
+			label := opts.Label
+			if label == "" {
+				label = fmt.Sprintf("Streaming %s -> %s", opts.SourceDB, opts.TargetDB)
+			}
+			spin = progress.NewSpinnerWithElapsed(label)
 			spin.Start()
 		}
 
@@ -144,13 +149,18 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 						currentBytes = throttler.TotalBytes()
 					}
 					if spin != nil {
+						label := opts.Label
+						if label == "" {
+							label = fmt.Sprintf("Streaming %s -> %s", opts.SourceDB, opts.TargetDB)
+						}
+						
 						if opts.LimitSpeed > 0 {
 							speedMB := float64(opts.LimitSpeed) / (1024 * 1024)
-							spin.Update(fmt.Sprintf("Streaming %s -> %s [%.2f MB/s limit]", opts.SourceDB, opts.TargetDB, speedMB))
+							spin.Update(fmt.Sprintf("%s [%.2f MB/s limit]", label, speedMB))
 						} else if currentBytes > 0 {
 							diff := currentBytes - lastBytes
 							speedMB := float64(diff) / (1024 * 1024)
-							spin.Update(fmt.Sprintf("Streaming %s -> %s [%.2f MB/s]", opts.SourceDB, opts.TargetDB, speedMB))
+							spin.Update(fmt.Sprintf("%s [%.2f MB/s]", label, speedMB))
 						}
 					}
 					lastBytes = currentBytes
@@ -189,7 +199,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 					if tPR != nil {
 						_ = tPR.Close()
 					}
-					numFinished = 2 // Stop waiting if one fails critically
+				numFinished = 2 // Stop waiting if one fails critically
 				}
 			case e := <-errMysqlChan:
 				errMysql = e
@@ -201,7 +211,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 					if tPR != nil {
 						_ = tPR.Close()
 					}
-					numFinished = 2
+				numFinished = 2
 				}
 			case <-ctx.Done():
 				_ = dumpCmd.Process.Kill()
@@ -211,8 +221,8 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 				if tPR != nil {
 					_ = tPR.Close()
 				}
-				timedOut = true
-				numFinished = 2
+			timedOut = true
+			numFinished = 2
 			}
 		}
 
