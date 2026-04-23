@@ -50,7 +50,8 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 		}
 	}
 
-	// 3. Step A: Salin Struktur (Schema Concurrent)
+	// 3. Step A: Salin Struktur Tabel SAJA (Tanpa Triggers/Routines/Views)
+	// Penting: Kita skip triggers dulu agar proses insert data nanti tidak terhambat logika trigger.
 	if totalTables > 0 {
 		s.log.Infof("Menyalin struktur %d tabel secara paralel...", totalTables)
 		
@@ -71,13 +72,8 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 					default:
 					}
 
-					// Dump CREATE TABLE + TRIGGERS (jika tidak skip)
-				extraArgs := " --no-data --skip-routines --skip-events"
-					if skipTriggers {
-						extraArgs += " --skip-triggers"
-					} else {
-						extraArgs += " --triggers"
-					}
+					// Hanya salin CREATE TABLE, skip semua objek lain
+				extraArgs := " --no-data --skip-triggers --skip-routines --skip-events"
 
 					err := copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
 						Profile:      profile,
@@ -92,9 +88,9 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 					mu.Lock()
 					completedSchema++
 					percent := float64(completedSchema) * 100 / float64(totalTables)
-					fmt.Printf("\r  ⏳ Progres Schema: %d/%d tabel (%.1f%%) [Worker %d: %s]   ", completedSchema, totalTables, percent, workerID, tbl)
+					fmt.Printf("\r  ⏳ Progres Struktur: %d/%d tabel (%.1f%%) [Worker %d: %s]   ", completedSchema, totalTables, percent, workerID, tbl)
 					if err != nil {
-						errChan <- fmt.Errorf("schema tabel %s gagal: %w", tbl, err)
+						errChan <- fmt.Errorf("struktur tabel %s gagal: %w", tbl, err)
 					}
 					mu.Unlock()
 				}
@@ -113,29 +109,8 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 		}
 	}
 
-	// 3.5 Salin Objek Lainnya (Views, Routines, Events) secara berurutan (untuk dependensi)
-	if !skipRoutines || !skipEvents || len(views) > 0 {
-		s.log.Info("Menyalin views, routines, dan events...")
-		// Tambahkan --skip-triggers karena trigger sudah dibuat per-tabel di Step 3
-		extraArgs := " --no-data --no-create-info --skip-triggers"
-		if !skipRoutines { extraArgs += " --routines" }
-		if !skipEvents { extraArgs += " --events" }
-		
-		// Kita gunakan satu stream untuk sisa objek agar mysqldump menangani urutan dependensi view
-		err = copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
-			Profile:      profile,
-			SourceDB:     sourceDB,
-			TargetDB:     targetDB,
-			SchemaOnly:   true,
-			BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + extraArgs,
-			HideProgress: false, // Tampilkan spinner karena ini satu stream
-		})
-		if err != nil {
-			s.log.Warnf("Gagal menyalin objek tambahan (views/routines): %v", err)
-		}
-	}
-
 	// 4. Step B: Salin Data (Concurrent)
+	// Kita jalankan data SEBELUM View dan Trigger agar tidak ada intervensi logika.
 	if totalTables > 0 {
 		s.log.Infof("Menyalin data %d tabel menggunakan %d workers...", totalTables, workers)
 
@@ -213,22 +188,44 @@ func (s *Service) CopyDatabaseConcurrent(ctx context.Context, profile *domain.Pr
 		if len(errChan) > 0 {
 			return "", <-errChan
 		}
+	}
 
-		// 4.5 Data Integrity Check
-		if verify {
-			s.log.Info("Memulai verifikasi checksum seluruh tabel...")
-			for _, tbl := range baseTables {
-				ok, err := s.VerifyChecksum(ctx, client, sourceDB, tbl, targetDB, tbl)
-				if err != nil {
-					s.log.Warnf("Gagal verifikasi checksum %s: %v", tbl, err)
-				} else if !ok {
-					s.log.Errorf("Mismatch checksum pada tabel: %s", tbl)
-				}
+	// 5. Step C: Salin Objek Pelengkap (Views, Triggers, Routines, Events)
+	// Kita jalankan di akhir agar data sudah siap dan tidak ada error 'Trigger already exists' atau 'Need to set modified date'.
+	if !skipRoutines || !skipEvents || !skipTriggers || len(views) > 0 {
+		s.log.Info("Menyalin views, triggers, routines, dan events (Tahap Akhir)...")
+		extraArgs := " --no-data --no-create-info"
+		if !skipRoutines { extraArgs += " --routines" }
+		if !skipEvents { extraArgs += " --events" }
+		if !skipTriggers { extraArgs += " --triggers" }
+		
+		err = copyexec.ExecutePiping(ctx, s.log, copyexec.PipingOptions{
+			Profile:      profile,
+			SourceDB:     sourceDB,
+			TargetDB:     targetDB,
+			SchemaOnly:   true,
+			BaseDumpArgs: s.cfg.Backup.MysqlDumpArgs + extraArgs,
+			HideProgress: false,
+		})
+		if err != nil {
+			s.log.Warnf("Gagal menyalin objek tambahan (views/triggers/routines): %v", err)
+		}
+	}
+
+	// 6. Data Integrity Check
+	if verify && totalTables > 0 {
+		s.log.Info("Memulai verifikasi checksum seluruh tabel...")
+		for _, tbl := range baseTables {
+			ok, err := s.VerifyChecksum(ctx, client, sourceDB, tbl, targetDB, tbl)
+			if err != nil {
+				s.log.Warnf("Gagal verifikasi checksum %s: %v", tbl, err)
+			} else if !ok {
+				s.log.Errorf("Mismatch checksum pada tabel: %s", tbl)
 			}
 		}
 	}
 
-	// 5. Step C: Copy Grants (if enabled)
+	// 7. Step D: Copy Grants (if enabled)
 	if includeGrants {
 		if err := s.CopyGrants(ctx, profile, sourceDB, targetDB); err != nil {
 			s.log.Warnf("Gagal menyalin hak akses user: %v", err)
