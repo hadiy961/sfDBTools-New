@@ -120,7 +120,8 @@ func (e *Engine) createWriterPipeline(baseWriter io.Writer, compressionRequired 
 // 1. Primary: gunakan exit code sebagai indikator utama
 //   - Exit 0: Success (tidak error)
 //   - Exit 1: Ambiguous (bisa warning atau error ringan) - cek pattern
-//   - Exit 2+: Fatal error
+//   - Exit 2: Warning/Partial Success (pada MariaDB/MySQL dump) - anggap non-fatal
+//   - Exit 3+: Fatal error
 //
 // 2. Secondary: pattern matching untuk edge cases (hanya untuk exit code 1)
 // 3. Log stderr yang tidak ter-classify untuk future improvement
@@ -134,8 +135,15 @@ func (e *Engine) isFatalDumpError(toolName string, err error, stderrOutput strin
 		return false
 	}
 
-	if exitCode >= 2 {
-		e.Log.Debugf("%s exit code %d (>=2), treating as fatal", strings.TrimSpace(toolName), exitCode)
+	// Pada MariaDB/MySQL dump, exit code 2 biasanya adalah peringatan non-fatal
+	// (misal: broken view atau referensi invalid). Kita anggap non-fatal agar proses lanjut.
+	if exitCode == 2 {
+		e.Log.Debugf("%s exit code 2, treating as non-fatal warning", strings.TrimSpace(toolName))
+		return false
+	}
+
+	if exitCode >= 3 {
+		e.Log.Debugf("%s exit code %d (>=3), treating as fatal", strings.TrimSpace(toolName), exitCode)
 		return true
 	}
 

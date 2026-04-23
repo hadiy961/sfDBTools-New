@@ -7,8 +7,11 @@
 package runner
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	appdeps "sfdbtools/internal/cli/deps"
 
@@ -18,7 +21,6 @@ import (
 const depsMissingMsg = "✗ Dependencies tidak tersedia. Pastikan aplikasi diinisialisasi dengan benar."
 
 // Run mengeksekusi action dengan guard dependency dan logging error terpusat.
-// Catatan: fungsi ini sengaja TIDAK panic dan TIDAK melakukan os.Exit.
 func Run(cmd *cobra.Command, action func() error) {
 	if appdeps.Deps == nil {
 		printErr(cmd, depsMissingMsg)
@@ -28,6 +30,42 @@ func Run(cmd *cobra.Command, action func() error) {
 		return
 	}
 	if err := action(); err != nil {
+		logOrPrintErr(cmd, err)
+	}
+}
+
+// RunContext mengeksekusi action dengan context yang mendukung graceful shutdown (Ctrl+C).
+func RunContext(cmd *cobra.Command, action func(ctx context.Context) error) {
+	if appdeps.Deps == nil {
+		printErr(cmd, depsMissingMsg)
+		return
+	}
+	if action == nil {
+		return
+	}
+
+	// Setup context dengan cancellation
+	ctx, cancel := context.WithCancel(cmd.Context())
+	defer cancel()
+
+	// Setup signal handler
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigChan)
+
+	// Goroutine untuk memantau signal
+	go func() {
+		select {
+		case <-sigChan:
+			if appdeps.Deps.Logger != nil {
+				appdeps.Deps.Logger.Warn("Menerima sinyal interrupt, menghentikan proses...")
+			}
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	if err := action(ctx); err != nil {
 		logOrPrintErr(cmd, err)
 	}
 }

@@ -13,7 +13,8 @@ import (
 	"sync"
 )
 
-func resolveMariaDBOrMySQLClient() (binPath string, binName string, err error) {
+// ResolveMariaDBOrMySQLClient memilih mariadb client jika tersedia, dan fallback ke mysql client.
+func ResolveMariaDBOrMySQLClient() (binPath string, binName string, err error) {
 	// Default: mariadb client (mysql CLI compatible)
 	if p, e := exec.LookPath("mariadb"); e == nil {
 		return p, "mariadb", nil
@@ -67,8 +68,6 @@ func BuildArgs(profile *domain.ProfileInfo, database string, extraArgs ...string
 }
 
 // ExecSummary adalah ringkasan issue yang terdeteksi dari output client mysql/mariadb.
-// Catatan: client biasanya menulis ERROR/WARNING ke stderr, tapi sebagian environment
-// bisa menulis ke stdout juga (mis. konfigurasi tertentu).
 type ExecSummary struct {
 	BinName      string
 	SQLErrors    int
@@ -83,9 +82,6 @@ func classifyMySQLClientLine(line string) (isErr bool, isWarn bool) {
 		return false, false
 	}
 	l := strings.ToLower(t)
-	// MariaDB/MySQL client common patterns:
-	// - "ERROR 1418 (HY000) at line ...: ..."
-	// - "Warning: Using a password on the command line interface can be insecure."
 	if strings.HasPrefix(l, "error") || strings.Contains(l, " error ") {
 		return true, false
 	}
@@ -95,15 +91,8 @@ func classifyMySQLClientLine(line string) (isErr bool, isWarn bool) {
 	return false, false
 }
 
-// Execute menjalankan mysql/mariadb client dengan stdin reader, sambil
-// mendeteksi dan mencatat error/warning dari outputnya ke logger.
-//
-// Penting:
-//   - Jangan pernah log args secara penuh karena mengandung password.
-//   - Saat client dijalankan dengan --force/-f, SQL error dapat terjadi namun command tetap exit 0.
-//     Fungsi ini tetap akan mencatat error/warning tersebut ke logs.
 func Execute(ctx context.Context, args []string, stdin io.Reader, logger applog.Logger) (*ExecSummary, error) {
-	binPath, binName, err := resolveMariaDBOrMySQLClient()
+	binPath, binName, err := ResolveMariaDBOrMySQLClient()
 	if err != nil {
 		return nil, err
 	}
