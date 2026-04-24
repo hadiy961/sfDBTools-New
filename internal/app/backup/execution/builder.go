@@ -12,6 +12,7 @@ import (
 
 	"sfdbtools/internal/app/backup/metadata"
 	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/app/backup/verify"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/timex"
 )
@@ -90,6 +91,12 @@ func (e *Engine) buildRealBackupInfo(
 	duration := timer.Elapsed()
 	endTime := time.Now()
 	meta := e.generateBackupMetadata(cfg, writeResult, duration, startTime, endTime, status, dbVersion)
+
+	// Post-backup verification
+	if e.Config.Backup.Verification.PostBackupCheck && status != consts.BackupStatusFailed {
+		verifyResult := verify.PostBackupCheck(cfg.OutputPath, e.Config.Backup.Verification, e.Log)
+		meta.Verification = verifyResult
+	}
 
 	manifestPath := ""
 	if e.Config.Backup.Output.SaveBackupInfo {

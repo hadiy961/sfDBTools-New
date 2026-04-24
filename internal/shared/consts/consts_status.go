@@ -5,6 +5,7 @@ const (
 	BackupStatusDryRun              = "dry-run"
 	BackupStatusSuccess             = "success"
 	BackupStatusSuccessWithWarnings = "success_with_warnings"
+	BackupStatusFailed              = "failed"
 )
 
 // Exit codes untuk semantic error handling
