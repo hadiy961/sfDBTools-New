@@ -62,6 +62,33 @@ type BackupConfig struct {
 	Output        OutputConfig       `yaml:"output"`
 	Verification  VerificationConfig `yaml:"verification"`
 	Replication   ReplicationConfig  `yaml:"replication"`
+	Scheduler     SchedulerConfig    `yaml:"scheduler"`
+}
+
+type SchedulerConfig struct {
+	Jobs []BackupJob `yaml:"jobs"`
+}
+
+type BackupJob struct {
+	Name        string           `yaml:"name"`
+	Enabled     bool             `yaml:"enabled"`
+	Schedule    string           `yaml:"schedule"`
+	Mode        string           `yaml:"mode"`
+	OutputMode  string           `yaml:"output_mode"` // Khusus mode filter: "single-file" atau "multi-file"
+	IncludeFile string           `yaml:"include_file"`
+	Profile     string           `yaml:"profile"`
+	Ticket      string           `yaml:"ticket"`
+	Output      JobOutputConfig  `yaml:"output"`
+	Cleanup     JobCleanupConfig `yaml:"cleanup"`
+}
+
+type JobOutputConfig struct {
+	BaseDirectory string `yaml:"base_directory"`
+}
+
+type JobCleanupConfig struct {
+	Enabled       bool `yaml:"enabled"`
+	RetentionDays int  `yaml:"retention_days"`
 }
 
 type IncludeConfig struct {
