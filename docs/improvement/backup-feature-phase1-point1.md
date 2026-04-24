@@ -22,8 +22,37 @@
 >
 > DBA bisa enable post-backup header check di config jika bersedia mengorbankan waktu.
 
+> [!IMPORTANT]
+> **3. Dual-Mode: Interaktif & Non-Interaktif**
+> Command `backup verify` mendukung dua mode:
+>
+> - **Interaktif (default):** Wizard dengan `survey` prompt — DBA dipandu memilih target, algorithm, dan opsi verifikasi.
+> - **Non-interaktif (flags/args):** Semua parameter lewat flags — cocok untuk scripting, cron, pipeline, dan scheduler systemd.
+>
+> Pattern: jika `args == 0` dan tidak ada flags yang di-set → mode interaktif. Jika ada `args[0]` (file path) atau `--dir`/`--latest` → mode non-interaktif. Konsisten dengan command lain (`backup filter`, `profile create`, dll).
+
+> [!IMPORTANT]
+> **4. Go Best Practice: Thin `cmd/` Layer**
+> File `cmd/backup/verify.go` harus **tipis** — hanya berisi:
+> - Flag registration (`init()`)
+> - Mode detection (interaktif vs non-interaktif)
+> - Survey prompts (karena ini UI concern, boleh di `cmd/`)
+> - Delegasi ke `internal/app/backup/verify/` untuk semua business logic
+>
+> **Yang TIDAK boleh ada di `cmd/`:**
+> - Directory scanning / file filtering (`os.ReadDir`, extension check)
+> - Option building / config mapping
+> - Result aggregation / batch processing
+>
+> Semua itu harus di package `internal/app/backup/verify/`. Pattern ini konsisten dengan command lain seperti `backup filter` yang mendelegasikan ke `internal/app/backup`.
+>
+> ```
+> cmd/backup/verify.go           → parse flags, detect mode, call internal
+> internal/app/backup/verify/     → ALL business logic
+> ```
+
 > [!WARNING]
-> **3. Dry-Run Restore ditunda ke iterasi berikutnya**
+> **5. Dry-Run Restore ditunda ke iterasi berikutnya**
 > Fitur restore test (parse SQL ke temporary database) memiliki risiko side-effect pada production DB server. Untuk iterasi pertama, fokus pada:
 > - ✅ Checksum generation & comparison
 > - ✅ File size sanity check
@@ -139,7 +168,7 @@ Streaming checksum generation. Baca file sekali, hasilkan hex hash.
 
 ```go
 // GenerateChecksum menghitung hash dari file on-disk (tanpa decrypt/decompress)
-// Menggunakan io.Copy dari file ke hash.Hash untuk memory-efficient streaming
+// Menggunakan io.CopyBuffer dari file ke hash.Hash untuk memory-efficient streaming
 func GenerateChecksum(filePath string, algo string) (string, error)
 
 // CompareChecksum menghitung hash dan membandingkan dengan expected
@@ -202,17 +231,17 @@ func OpenVerifyReader(filePath string, encryptionKey string) (io.Reader, []io.Cl
 Display hasil verifikasi ke terminal.
 
 ```go
-// DisplayResult menampilkan hasil verifikasi dalam format tabel
-func DisplayResult(result *types_backup.VerificationResult, filePath string)
+// DisplayResult menampilkan hasil verifikasi dalam format tabel atau JSON
+func DisplayResult(result *types_backup.VerificationResult, filePath string, format string)
 
 // DisplayBatchResults menampilkan hasil verifikasi batch (directory scan)
-func DisplayBatchResults(results map[string]*types_backup.VerificationResult)
+func DisplayBatchResults(results map[string]*types_backup.VerificationResult, format string)
 ```
 
-Output contoh:
+Output contoh (format table):
 ```
 📋 Hasil Verifikasi Backup
---------------------------------------------------------------------------------
+────────────────────────────────────────────────────────────────────────────
 ┌──────────────────┬───────────────────────────────────────────────────────┐
 │ Parameter        │ Nilai                                                 │
 ├──────────────────┼───────────────────────────────────────────────────────┤
@@ -226,17 +255,165 @@ Output contoh:
 └──────────────────┴───────────────────────────────────────────────────────┘
 ```
 
+Output contoh (format json):
+```json
+{
+  "file": "dbsaas_host_20260424_153025_dbserver1.sql.zst.enc",
+  "verify_status": "passed",
+  "checksum_algo": "sha256",
+  "checksum_hash": "a3f2b1c4d5e6...",
+  "header_valid": true,
+  "footer_valid": true,
+  "size_valid": true,
+  "file_size_bytes": 159621120,
+  "verified_at": "2026-04-24T15:31:02+07:00"
+}
+```
+
+Batch output contoh (format table):
+```
+📋 Hasil Verifikasi Batch — /backup/test/
+────────────────────────────────────────────────────────────────────────────
+┌─────────────────────────────────────────┬────────┬──────────┬────────┬────────┐
+│ FILE                                    │ STATUS │ CHECKSUM │ HEADER │ FOOTER │
+├─────────────────────────────────────────┼────────┼──────────┼────────┼────────┤
+│ dbsaas_host_20260424.sql.zst.enc        │ ✓ PASS │ a3f2b1.. │ ✓      │ ✓      │
+│ dbsf_biznet_20260424.sql.zst.enc        │ ✓ PASS │ 7e9c4d.. │ ✓      │ ✓      │
+│ mysql_20260424.sql.zst.enc              │ ✗ FAIL │ -        │ ✓      │ ✗      │
+└─────────────────────────────────────────┴────────┴──────────┴────────┴────────┘
+
+Summary: 2/3 passed, 1 failed
+```
+
 ---
 
-### Component 4: CLI Command
+### Component 4: CLI Command (Dual-Mode: Interaktif & Non-Interaktif)
 
-#### [NEW] `cmd/backup/verify.go`
+#### [REFACTOR] `cmd/backup/verify.go`
 
-Registers `sfdbtools backup verify` dengan subcommands dan flags.
+> [!WARNING]
+> **Refactoring Required:** File `verify.go` saat ini mencampur business logic (directory scanning, file extension filtering, option building, result aggregation) langsung di `cmd/` layer. Ini harus di-refactor agar `cmd/` hanya menjadi **thin wrapper**.
+
+##### Tanggung Jawab `cmd/backup/verify.go` (seharusnya):
+
+```go
+// cmd/backup/verify.go — THIN LAYER ONLY
+//
+// ✅ Yang boleh ada di sini:
+//   - Flag registration (init)
+//   - Mode detection (interaktif vs non-interaktif)
+//   - Survey prompts (UI concern)
+//   - Build CheckOptions dari flags/prompts
+//   - Panggil verify.CheckSingle() / verify.CheckBatch()
+//   - Panggil verify.DisplayResult() / verify.DisplayBatchResults()
+//   - Exit code handling
+//
+// ❌ Yang TIDAK boleh ada di sini:
+//   - os.ReadDir / filepath.Walk (→ pindah ke verify.CheckBatch)
+//   - File extension filtering (→ pindah ke verify.IsBackupFile)
+//   - Result map aggregation (→ pindah ke verify.CheckBatch)
+//   - getLatestBackup logic (→ pindah ke verify atau catalog package)
+```
+
+##### Refactoring: Pindahkan logic ke `internal/`
+
+**Sebelum (❌ current — semua di `cmd/`):**
+```go
+// cmd/backup/verify.go — terlalu banyak logic
+func runBatchVerify(dirPath string) {
+    files, _ := os.ReadDir(dirPath)           // ❌ business logic
+    for _, f := range files {
+        ext := filepath.Ext(f.Name())          // ❌ business logic  
+        if ext == ".sql" || ext == ".zst" ... { // ❌ business logic
+            res, _ := verify.Check(filePath, opts, logger)
+            results[filePath] = res             // ❌ aggregation logic
+        }
+    }
+    verify.DisplayBatchResults(results, format)
+}
+```
+
+**Sesudah (✅ thin cmd layer):**
+```go
+// cmd/backup/verify.go — thin wrapper
+func runBatchVerify(dirPath string) {
+    opts := buildCheckOptionsFromFlags()  // ✅ flag → opts mapping
+    results, err := verify.CheckBatch(dirPath, opts, getLogger())  // ✅ delegasi
+    if err != nil {
+        fmt.Printf("Error: %v\n", err)
+        os.Exit(1)
+    }
+    verify.DisplayBatchResults(results, verifyFormat)  // ✅ delegasi
+    if verify.HasFailures(results) {
+        os.Exit(1)
+    }
+}
+```
+
+##### Fungsi baru di `internal/app/backup/verify/`:
+
+```go
+// checker.go — tambahkan batch verification
+
+// CheckBatch melakukan verifikasi pada semua backup files di directory
+// Handles: directory scanning, file filtering, result aggregation
+func CheckBatch(dirPath string, opts CheckOptions, logger applog.Logger) (map[string]*VerificationResult, error)
+
+// IsBackupFile mengecek apakah file adalah backup file berdasarkan extension
+// Mendukung: .sql, .gz, .zst, .enc, .zip, dan kombinasinya
+func IsBackupFile(filename string) bool
+
+// HasFailures mengecek apakah ada failure di batch results
+func HasFailures(results map[string]*VerificationResult) bool
+```
+
+##### Struktur akhir `cmd/backup/verify.go`:
+
+```go
+var CmdBackupVerify = &cobra.Command{
+    Run: func(cmd *cobra.Command, args []string) {
+        // 1. Mode detection
+        if verifyDir != "" {
+            runBatchVerify(verifyDir)
+            return
+        }
+        if len(args) == 0 && !verifyLatest {
+            runInteractiveVerify()  // survey prompts → build opts → delegasi
+            return
+        }
+        // 2. Resolve target file
+        targetFile := resolveTargetFile(args)
+        // 3. Build opts dari flags → delegasi ke internal
+        runSingleVerify(targetFile)
+    },
+}
+
+// runSingleVerify — thin: build opts + call verify.Check + display
+func runSingleVerify(targetFile string) { ... }
+
+// runBatchVerify — thin: call verify.CheckBatch + display
+func runBatchVerify(dirPath string) { ... }
+
+// runInteractiveVerify — survey prompts → build opts → call verify.Check
+func runInteractiveVerify() { ... }
+
+// buildCheckOptionsFromFlags — map CLI flags ke verify.CheckOptions
+func buildCheckOptionsFromFlags() verify.CheckOptions { ... }
+```
+
+Registers `sfdbtools backup verify` — **Verifikasi integritas file backup.**
+
+Mode detection logic:
+- `args[0]` ada (file path) → **non-interaktif**, single file verify
+- `--dir` flag di-set → **non-interaktif**, batch verify
+- `--latest` flag di-set → **non-interaktif**, latest backup verify
+- Tidak ada args dan tidak ada flags → **interaktif**, wizard
+
+##### Non-Interaktif (flags/args)
 
 ```bash
 # Verify single file (full check: checksum + size + header/footer)
-sfdbtools backup verify <backup-file>
+sfdbtools backup verify /backup/test/dbsaas_host_20260424.sql.zst.enc
 
 # Verify semua backup di directory
 sfdbtools backup verify --dir /media/ArchiveDB/20260424/
@@ -245,16 +422,66 @@ sfdbtools backup verify --dir /media/ArchiveDB/20260424/
 sfdbtools backup verify --latest --profile localhost_3306.cnf.enc
 
 # Hanya checksum (cepat, tanpa decrypt/decompress)
-sfdbtools backup verify --checksum-only <backup-file>
+sfdbtools backup verify --checksum-only /backup/test/dbsaas_host.sql.zst.enc
 
-# Compare dengan expected hash (untuk validasi setelah transfer)
-sfdbtools backup verify --expected-hash <sha256hex> <backup-file>
+# Compare dengan expected hash (untuk validasi setelah rsync/scp)
+sfdbtools backup verify --expected-hash a3f2b1c4d5e6... /backup/test/dbsaas_host.sql.zst.enc
 
 # Output format JSON (untuk scripting/monitoring)
-sfdbtools backup verify --format json <backup-file>
+sfdbtools backup verify --format json /backup/test/dbsaas_host.sql.zst.enc
+
+# Encryption key untuk header/footer check pada file .enc
+sfdbtools backup verify --encryption-key mySecretKey /backup/test/dbsaas_host.sql.zst.enc
+
+# Pipeline: verify dan pipe JSON ke monitoring tool
+sfdbtools backup verify --format json --dir /backup/test/ | jq '.[] | select(.verify_status == "failed")'
+
+# Cron job: verify terbaru dan exit code non-zero jika gagal
+sfdbtools backup verify --latest --profile localhost_3306.cnf.enc --checksum-only
 ```
 
-Flags:
+##### Interaktif (wizard)
+
+Jika dijalankan tanpa arguments dan tanpa flags:
+
+```
+=== Interactive Backup Verification ===
+
+? Pilih target verifikasi: (Use arrow keys)
+  > Single File
+    Directory (Batch)
+
+? Masukkan path file/directory: /backup/test/dbsaas_host_20260424.sql.zst.enc
+
+? Lakukan validasi struktur SQL (Header/Footer)? (Y/n) Yes
+
+? Apakah backup ini dienkripsi (.enc)? (y/N) Yes
+? Masukkan Encryption Key: ********
+
+? Pilih Algoritma Checksum: (Use arrow keys)
+  > sha256
+    md5
+    skip (tidak generate checksum)
+
+Memulai verifikasi...
+
+📋 Hasil Verifikasi Backup
+────────────────────────────────────────────────────────────────────────────
+┌──────────────────┬───────────────────────────────────────────────────────┐
+│ Parameter        │ Nilai                                                 │
+├──────────────────┼───────────────────────────────────────────────────────┤
+│ File             │ dbsaas_host_20260424_153025_dbserver1.sql.zst.enc     │
+│ Status           │ ✓ PASSED                                             │
+│ Checksum (SHA256)│ a3f2b1c4d5e6...                                      │
+│ File Size        │ 152.3 MB (valid, min: 1 KB)                          │
+│ SQL Header       │ ✓ Valid (-- MariaDB dump 11.4.5)                     │
+│ SQL Footer       │ ✓ Valid (-- Dump completed on 2026-04-24 15:30:25)   │
+│ Verified At      │ 2026-04-24 15:31:02                                  │
+└──────────────────┴───────────────────────────────────────────────────────┘
+```
+
+##### Flags
+
 | Flag | Default | Deskripsi |
 |------|---------|-----------|
 | `--dir` | - | Verify semua file di directory |
@@ -264,6 +491,19 @@ Flags:
 | `--expected-hash` | - | Expected hash untuk comparison |
 | `--format` | table | Output format: `table` atau `json` |
 | `--algo` | sha256 | Override checksum algorithm |
+| `--encryption-key` | - | Kunci dekripsi untuk header/footer check pada file .enc |
+| `--min-size` | 0 | Override minimum file size (bytes) |
+
+##### Exit Code Behavior
+
+| Scenario | Exit Code | Gunanya |
+|----------|-----------|---------|
+| Semua check passed | 0 | Scripting: `if sfdbtools backup verify ...; then ...` |
+| Ada check yang failed | 1 | Monitoring: alert jika backup korup |
+| File tidak ditemukan / error fatal | 1 | Error handling |
+
+> [!TIP]
+> **Exit code non-zero pada failure** memungkinkan integrasi dengan monitoring tools (Nagios, Zabbix, cron mailto) tanpa perlu parsing output.
 
 ---
 
@@ -296,11 +536,12 @@ Setelah backup selesai dan metadata dihasilkan, jalankan post-backup verificatio
 
 #### [NEW] `internal/app/backup/verify/post_backup.go`
 
-Convenience function khusus untuk post-backup check (subset dari full verify).
+Convenience function khusus untuk post-backup check (subset dari full verify). Ini selalu **non-interaktif** karena dipanggil dari engine.
 
 ```go
 // PostBackupCheck menjalankan verifikasi ringan setelah backup selesai
-// Default: checksum + size check saja (tanpa header/footer)
+// Default: checksum + size check saja (tanpa header/footer, kecuali config enable)
+// Selalu non-interaktif (dipanggil dari engine, bukan CLI)
 func PostBackupCheck(filePath string, cfg appconfig.VerificationConfig, logger applog.Logger) *types_backup.VerificationResult
 ```
 
@@ -341,12 +582,26 @@ internal/app/backup/verify/
 ├── header_validator.go # SQL header/footer validation (rolling tail buffer)
 ├── size_validator.go   # File size sanity check + ParseMinFileSize
 ├── reader.go           # Reader pipeline helper (decrypt → decompress)
-├── post_backup.go      # Convenience function untuk auto-verify post-backup
+├── post_backup.go      # Convenience function untuk auto-verify post-backup (non-interaktif)
 └── report.go           # Display verification results (table/JSON)
 
 cmd/backup/
-├── verify.go           # CLI: sfdbtools backup verify
+├── verify.go           # CLI: sfdbtools backup verify (interaktif + non-interaktif)
 ```
+
+## Interaktif vs Non-Interaktif — Summary
+
+| Scenario | Mode | Trigger |
+|----------|------|---------|
+| `sfdbtools backup verify` (tanpa args) | **Interaktif** | Wizard: pilih target → header/footer? → encryption key → algo |
+| `sfdbtools backup verify <file>` | **Non-interaktif** | Full verify langsung, flags optional |
+| `sfdbtools backup verify --dir <path>` | **Non-interaktif** | Batch verify, semua file di directory |
+| `sfdbtools backup verify --latest --profile <p>` | **Non-interaktif** | Verify backup terbaru |
+| `sfdbtools backup verify --checksum-only <file>` | **Non-interaktif** | Hanya checksum (cepat) |
+| Post-backup auto-verify (engine) | **Non-interaktif** | Otomatis, config-driven |
+
+> [!TIP]
+> **Pattern Detection:** Mode interaktif hanya aktif jika `len(args) == 0` DAN tidak ada flags `--dir` / `--latest` yang di-set. Ini berbeda dari pattern `--quiet` yang dipakai di `filter.go` karena verify command sudah punya argumen posisional (file path) sebagai indikator non-interaktif.
 
 ## Verification Plan
 
@@ -371,21 +626,45 @@ cmd/backup/
    - Baca `.meta.json`, pastikan field `verification.checksum_hash` terisi
    - Pastikan `verification.verify_status` = `"passed"`
 
+5. **Exit code:**
+   - Verify file valid → exit 0
+   - Verify file korup → exit 1
+
 ### Manual Verification
 
-1. **CLI verify:**
+1. **Interaktif — verify wizard:**
+   ```bash
+   sfdbtools backup verify
+   # Pastikan wizard muncul: pilih target → header/footer → algo
+   ```
+
+2. **Non-interaktif — single file:**
    ```bash
    sfdbtools backup verify /backup/test/dbsaas_host_20260424.sql.zst.enc
-   ```
-   Pastikan output tabel muncul dengan benar.
-
-2. **Checksum comparison setelah transfer:**
-   ```bash
-   sfdbtools backup verify --expected-hash $(cat backup.sha256) backup.sql.zst.enc
+   # Pastikan output tabel muncul tanpa prompt
    ```
 
-3. **Directory scan:**
+3. **Non-interaktif — batch directory:**
    ```bash
    sfdbtools backup verify --dir /backup/test/
+   # Pastikan semua file diproses dan batch summary ditampilkan
    ```
-   Pastikan semua file diproses dan hasilnya ditampilkan dalam batch summary.
+
+4. **Non-interaktif — checksum comparison (post-transfer):**
+   ```bash
+   sfdbtools backup verify --expected-hash $(cat backup.sha256) backup.sql.zst.enc
+   # Pastikan match/mismatch terdeteksi
+   ```
+
+5. **Non-interaktif — JSON output (scripting):**
+   ```bash
+   sfdbtools backup verify --format json /backup/test/dbsaas_host.sql.zst.enc
+   # Pastikan output JSON valid dan parseable
+   ```
+
+6. **Post-backup auto-verify:**
+   ```bash
+   sfdbtools backup single --db dbsaas_host --profile localhost_3306
+   cat /backup/test/*.meta.json | jq '.verification'
+   # Pastikan checksum_hash dan verify_status terisi
+   ```
