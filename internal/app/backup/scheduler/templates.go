@@ -8,7 +8,7 @@ After=network.target
 Type=oneshot
 User=root
 # We use flock to ensure serial execution (no parallel backup jobs running at the same time)
-ExecStart=/usr/bin/flock /var/lock/sfdbtools-global-backup.lock {{ .ExecPath }} backup {{ .Mode }} --quiet --ticket="{{ .Ticket }}" --profile="{{ .Profile }}"{{ if .IncludeFile }} --db-file="{{ .IncludeFile }}"{{ end }} --backup-dir="{{ .OutputDir }}"
+ExecStart=/usr/bin/flock /var/lock/sfdbtools-global-backup.lock {{ .ExecPath }} backup {{ .Mode }} --quiet --ticket="{{ .Ticket }}" --profile="{{ .Profile }}"{{ if .IncludeFile }} --db-file="{{ .IncludeFile }}"{{ end }}{{ if .OutputMode }} --mode="{{ .OutputMode }}"{{ end }} --backup-dir="{{ .OutputDir }}"
 `
 
 const timerTemplate = `[Unit]

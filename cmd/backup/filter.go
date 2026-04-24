@@ -62,8 +62,16 @@ func getBackupMode(cmd *cobra.Command) (string, error) {
 	// Dapatkan mode dari flag
 	mode, _ := cmd.Flags().GetString("mode")
 
-	// Jika mode tidak di-provide (masih default "single-file"), tanyakan interaktif
+	// Jika mode tidak di-set secara eksplisit, tanyakan interaktif atau gunakan default
 	if !cmd.Flags().Changed("mode") {
+		// Cek apakah dalam mode non-interaktif (--quiet)
+		isQuiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
+		if isQuiet {
+			// Dalam mode scheduler/non-interaktif: default ke multi-file (satu file per DB)
+			// Ini adalah perilaku paling aman untuk automated backup
+			return consts.ModeSeparated, nil
+		}
+
 		modeOptions := []string{
 			"single-file (gabungkan semua database dalam satu file)",
 			"multi-file (pisahkan setiap database ke file terpisah)",

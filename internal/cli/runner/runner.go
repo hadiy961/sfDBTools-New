@@ -95,9 +95,10 @@ func logOrPrintErr(cmd *cobra.Command, err error) {
 	}
 	if appdeps.Deps != nil && appdeps.Deps.Logger != nil {
 		appdeps.Deps.Logger.Error(err.Error())
-		return
+	} else {
+		printErr(cmd, err.Error())
 	}
-	printErr(cmd, err.Error())
+	os.Exit(1)
 }
 
 func printErr(cmd *cobra.Command, msg string) {

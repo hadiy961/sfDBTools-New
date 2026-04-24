@@ -30,6 +30,7 @@ type TemplateData struct {
 	JobName     string
 	ExecPath    string
 	Mode        string
+	OutputMode  string
 	Ticket      string
 	Profile     string
 	IncludeFile string
@@ -92,6 +93,7 @@ func (m *Manager) Sync(ctx context.Context) error {
 			JobName:     job.Name,
 			ExecPath:    execPath,
 			Mode:        job.Mode,
+			OutputMode:  job.OutputMode,
 			Ticket:      job.Ticket,
 			Profile:     job.Profile,
 			IncludeFile: job.IncludeFile,

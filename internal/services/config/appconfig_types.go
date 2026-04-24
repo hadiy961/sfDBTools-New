@@ -74,6 +74,7 @@ type BackupJob struct {
 	Enabled     bool             `yaml:"enabled"`
 	Schedule    string           `yaml:"schedule"`
 	Mode        string           `yaml:"mode"`
+	OutputMode  string           `yaml:"output_mode"` // Khusus mode filter: "single-file" atau "multi-file"
 	IncludeFile string           `yaml:"include_file"`
 	Profile     string           `yaml:"profile"`
 	Ticket      string           `yaml:"ticket"`
