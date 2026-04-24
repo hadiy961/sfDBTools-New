@@ -137,7 +137,11 @@ type OutputConfig struct {
 }
 
 type VerificationConfig struct {
-	DiskSpaceCheck bool `yaml:"disk_space_check"`
+	DiskSpaceCheck    bool   `yaml:"disk_space_check"`
+	ChecksumAlgorithm string `yaml:"checksum_algorithm"`
+	PostBackupCheck   bool   `yaml:"post_backup_check"`
+	HeaderFooterCheck bool   `yaml:"header_footer_check"`
+	MinFileSize       string `yaml:"min_file_size"`
 }
 
 type ReplicationConfig struct {

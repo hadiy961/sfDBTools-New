@@ -36,6 +36,19 @@ type BackupWriteResult struct {
 	FileSize     int64  // File size after write (sama dengan BytesWritten untuk consistency)
 }
 
+// VerificationResult menyimpan hasil verifikasi integritas backup
+type VerificationResult struct {
+	ChecksumAlgo   string     `json:"checksum_algo,omitempty"`   // "sha256" atau "md5"
+	ChecksumHash   string     `json:"checksum_hash,omitempty"`   // hex-encoded hash
+	HeaderValid    *bool      `json:"header_valid,omitempty"`    // nil = not checked
+	FooterValid    *bool      `json:"footer_valid,omitempty"`    // nil = not checked
+	SizeValid      *bool      `json:"size_valid,omitempty"`      // nil = not checked
+	FileSizeBytes  int64      `json:"file_size_bytes,omitempty"` // actual file size saat verify
+	VerifiedAt     *time.Time `json:"verified_at,omitempty"`     // timestamp verifikasi
+	VerifyStatus   string     `json:"verify_status,omitempty"`   // "passed", "failed", "partial"
+	FailureReason  string     `json:"failure_reason,omitempty"`  // alasan jika gagal
+}
+
 // BackupMetadata menyimpan metadata lengkap untuk sebuah backup file
 type BackupMetadata struct {
 	BackupFile        string                 `json:"backup_file"`                  // Path file backup
@@ -69,6 +82,7 @@ type BackupMetadata struct {
 	ReplicationPassword string `json:"replication_password,omitempty"` // Password replikasi
 	SourceHost          string `json:"source_host,omitempty"`          // IP/Host sumber database
 	SourcePort          int    `json:"source_port,omitempty"`          // Port sumber database
+	Verification        *VerificationResult `json:"verification,omitempty"` // Hasil verifikasi
 }
 
 // DatabaseBackupDetail menyimpan detail backup per database (untuk primary/secondary mode)
@@ -162,6 +176,7 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 		Ticket          string                 `json:"ticket,omitempty"`
 		Generator       generatorInfo          `json:"generator"`
 		Warnings        []string               `json:"warnings,omitempty"`
+		Verification    *VerificationResult    `json:"verification,omitempty"`
 	}{
 		Backup: backupInfo{
 			File:              b.BackupFile,
@@ -211,6 +226,7 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 			GeneratedAt: b.GeneratedAt,
 		},
 		Warnings: b.Warnings,
+		Verification: b.Verification,
 	}
 
 	return json.MarshalIndent(metaJSON, "", "  ")
@@ -282,6 +298,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		Ticket          string                 `json:"ticket,omitempty"`
 		Generator       generatorInfo          `json:"generator"`
 		Warnings        []string               `json:"warnings,omitempty"`
+		Verification    *VerificationResult    `json:"verification,omitempty"`
 	}
 
 	var grouped metaJSONGrouped
@@ -338,6 +355,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		b.GeneratedBy = grouped.Generator.GeneratedBy
 		b.GeneratedAt = grouped.Generator.GeneratedAt
 		b.Warnings = grouped.Warnings
+		b.Verification = grouped.Verification
 
 		return nil
 	}
@@ -368,6 +386,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		SourceHost          string    `json:"source_host,omitempty"`
 		SourcePort          int       `json:"source_port,omitempty"`
 		Ticket              string    `json:"ticket,omitempty"`
+		Verification        *VerificationResult `json:"verification,omitempty"`
 	}
 
 	var mj metaJSONIn
@@ -422,6 +441,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 	b.SourceHost = mj.SourceHost
 	b.SourcePort = mj.SourcePort
 	b.Ticket = mj.Ticket
+	b.Verification = mj.Verification
 
 	return nil
 }
