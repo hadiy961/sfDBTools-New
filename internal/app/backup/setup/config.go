@@ -15,15 +15,19 @@ import (
 	"sfdbtools/internal/ui/prompt"
 )
 
-type Setup struct {
-	Log               applog.Logger
-	Config            *appconfig.Config
-	Options           *types_backup.BackupDBOptions
-	ExcludedDatabases *[]string
+type StateUpdater interface {
+	SetExcludedDatabases([]string)
 }
 
-func New(log applog.Logger, cfg *appconfig.Config, opts *types_backup.BackupDBOptions, excluded *[]string) *Setup {
-	return &Setup{Log: log, Config: cfg, Options: opts, ExcludedDatabases: excluded}
+type Setup struct {
+	Log          applog.Logger
+	Config       *appconfig.Config
+	Options      *types_backup.BackupDBOptions
+	StateUpdater StateUpdater
+}
+
+func New(log applog.Logger, cfg *appconfig.Config, opts *types_backup.BackupDBOptions, updater StateUpdater) *Setup {
+	return &Setup{Log: log, Config: cfg, Options: opts, StateUpdater: updater}
 }
 
 // isInteractiveMode adalah source-of-truth tunggal untuk mode-mode backup yang

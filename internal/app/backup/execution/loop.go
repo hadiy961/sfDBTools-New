@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"sfdbtools/internal/app/backup/model/types_backup"
@@ -76,7 +77,11 @@ func (e *Engine) ExecuteBackupLoop(
 			break
 		}
 
-		e.executeSingleBackupInLoop(ctx, dbName, idx+1, len(databases), config, outputPathFunc, &result)
+		if err := e.executeSingleBackupInLoop(ctx, dbName, idx+1, len(databases), config, outputPathFunc, &result); err != nil {
+			e.Log.Errorf("Menghentikan proses backup karena error kritikal: %v", err)
+			result.Errors = append(result.Errors, "Proses backup dihentikan karena error koneksi/autentikasi fatal")
+			break
+		}
 	}
 
 	return result
@@ -84,6 +89,7 @@ func (e *Engine) ExecuteBackupLoop(
 
 // executeSingleBackupInLoop executes backup untuk satu database dalam loop context.
 // Updates result object dengan success/failure info.
+// Mengembalikan error non-nil jika terjadi error fatal (connection/auth) untuk menghentikan loop.
 func (e *Engine) executeSingleBackupInLoop(
 	ctx context.Context,
 	dbName string,
@@ -91,14 +97,14 @@ func (e *Engine) executeSingleBackupInLoop(
 	config types_backup.BackupLoopConfig,
 	outputPathFunc func(string) (string, error),
 	result *types_backup.BackupLoopResult,
-) {
+) error {
 	// Early context check BEFORE starting backup
 	// Mencegah partial backup jika context sudah cancelled
 	select {
 	case <-ctx.Done():
 		e.Log.Warnf("⚠️  Backup cancelled before database %s (context done)", dbName)
 		result.Errors = append(result.Errors, fmt.Sprintf("Backup cancelled before %s", dbName))
-		return
+		return ctx.Err()
 	default:
 		// Context masih aktif, lanjut backup
 	}
@@ -116,7 +122,7 @@ func (e *Engine) executeSingleBackupInLoop(
 			Error:        msg,
 		})
 		result.Failed++
-		return
+		return nil
 	}
 
 	// Execute backup untuk database ini
@@ -135,7 +141,16 @@ func (e *Engine) executeSingleBackupInLoop(
 			Error:        err.Error(),
 		})
 		result.Failed++
-		return
+
+		// Circuit Breaker: jika error terkait koneksi atau autentikasi yang fatal, hentikan loop
+		errStr := strings.ToLower(err.Error())
+		if strings.Contains(errStr, "access denied") ||
+			strings.Contains(errStr, "connection refused") ||
+			strings.Contains(errStr, "can't connect") ||
+			strings.Contains(errStr, "unknown server") {
+			return fmt.Errorf("fatal connection/auth error: %w", err)
+		}
+		return nil
 	}
 
 	result.BackupInfos = append(result.BackupInfos, backupInfo)
@@ -155,4 +170,6 @@ func (e *Engine) executeSingleBackupInLoop(
 			}
 		}
 	}
+
+	return nil
 }

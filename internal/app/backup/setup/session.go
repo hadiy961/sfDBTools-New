@@ -96,11 +96,11 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 			return nil, nil, fmt.Errorf("gagal mendapatkan daftar database: %w", err)
 		}
 
-		if s.Options.Mode == consts.ModeAll && stats != nil && s.ExcludedDatabases != nil {
-			*s.ExcludedDatabases = stats.ExcludedDatabases
-			s.Log.Infof("Menyimpan %d excluded databases untuk metadata", len(*s.ExcludedDatabases))
-			if len(*s.ExcludedDatabases) > 0 {
-				s.Log.Debugf("Excluded databases: %v", *s.ExcludedDatabases)
+		if s.Options.Mode == consts.ModeAll && stats != nil && s.StateUpdater != nil {
+			s.StateUpdater.SetExcludedDatabases(stats.ExcludedDatabases)
+			s.Log.Infof("Menyimpan %d excluded databases untuk metadata", len(stats.ExcludedDatabases))
+			if len(stats.ExcludedDatabases) > 0 {
+				s.Log.Debugf("Excluded databases: %v", stats.ExcludedDatabases)
 			}
 		}
 

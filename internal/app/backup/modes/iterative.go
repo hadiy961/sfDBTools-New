@@ -91,7 +91,7 @@ func (e *IterativeExecutor) Execute(ctx context.Context, dbList []string) types_
 
 		if isSinglePrimaryPackage(dbList) {
 			e.generateCombinedMetadata(loopResult, dbList)
-			res.BackupInfo = e.aggregateBackupInfos(loopResult.BackupInfos)
+			res.BackupInfo = e.aggregateBackupInfos(loopResult.BackupInfos, dbList)
 		}
 	}
 
@@ -165,16 +165,24 @@ func (e *IterativeExecutor) createOutputPathFunc(dbList []string) func(string) (
 
 // aggregateBackupInfos menggabungkan multiple backup infos menjadi satu entry
 // Digunakan untuk primary/secondary yang backup multiple databases tapi display sebagai satu
-func (e *IterativeExecutor) aggregateBackupInfos(backupInfos []types_backup.DatabaseBackupInfo) []types_backup.DatabaseBackupInfo {
+func (e *IterativeExecutor) aggregateBackupInfos(backupInfos []types_backup.DatabaseBackupInfo, dbList []string) []types_backup.DatabaseBackupInfo {
 	if len(backupInfos) == 0 {
 		return backupInfos
 	}
 
-	// Ambil info pertama sebagai base
-	aggregated := backupInfos[0]
+	primaryIndex := 0
+	for i, info := range backupInfos {
+		if len(dbList) > 0 && info.DatabaseName == dbList[0] {
+			primaryIndex = i
+			break
+		}
+	}
+
+	// Ambil info utama sebagai base
+	aggregated := backupInfos[primaryIndex]
 
 	// Update database name untuk menunjukkan multiple databases
-	aggregated.DatabaseName = fmt.Sprintf("%s + %d companion databases", backupInfos[0].DatabaseName, len(backupInfos)-1)
+	aggregated.DatabaseName = fmt.Sprintf("%s + %d companion databases", aggregated.DatabaseName, len(backupInfos)-1)
 
 	// Sum up file sizes dari semua backup
 	totalSize := int64(0)
@@ -184,8 +192,8 @@ func (e *IterativeExecutor) aggregateBackupInfos(backupInfos []types_backup.Data
 	aggregated.FileSize = totalSize
 	aggregated.FileSizeHuman = fmt.Sprintf("%.2f MB", float64(totalSize)/(1024*1024))
 
-	// Metadata file adalah dari database pertama (combined metadata)
-	aggregated.ManifestFile = backupInfos[0].OutputFile + consts.ExtMetaJSON
+	// Metadata file adalah dari database yang terpilih sebagai base
+	aggregated.ManifestFile = aggregated.OutputFile + consts.ExtMetaJSON
 
 	return []types_backup.DatabaseBackupInfo{aggregated}
 }
@@ -200,23 +208,32 @@ func (e *IterativeExecutor) generateCombinedMetadata(loopResult types_backup.Bac
 
 	e.service.GetLog().Debug(fmt.Sprintf("Generating combined metadata untuk %d databases", len(dbList)))
 
+	// Cari primary file, prioritas pada index asli primary db
+	primaryIndex := 0
+	for i, info := range loopResult.BackupInfos {
+		if len(dbList) > 0 && info.DatabaseName == dbList[0] {
+			primaryIndex = i
+			break
+		}
+	}
+
 	// Untuk primary/secondary:
 	// 1. Update metadata pertama dengan DatabaseNames dan DatabaseDetails (info lengkap per database)
 	// 2. Hapus semua metadata individual untuk companion databases
 
-	// Update metadata pertama dengan full database list dan details
-	primaryBackupFile := loopResult.BackupInfos[0].OutputFile
+	// Update metadata utama dengan full database list dan details
+	primaryBackupFile := loopResult.BackupInfos[primaryIndex].OutputFile
 	permissions := e.service.GetConfig().Backup.Output.MetadataPermissions
 	if err := metadata.UpdateMetadataWithDatabaseDetails(primaryBackupFile, dbList, loopResult.BackupInfos, permissions, e.service.GetLog()); err != nil {
 		e.service.GetLog().Warn("Gagal update combined metadata: " + err.Error())
 	}
 
-	// Hapus metadata individual untuk companion databases (index 1+)
+	// Hapus metadata individual untuk database lainnya
 	for i, info := range loopResult.BackupInfos {
-		if i == 0 {
+		if i == primaryIndex {
 			continue
 		}
-		// Companion databases: hapus metadata individual
+		// Hapus metadata individual
 		metadataPath := info.OutputFile + consts.ExtMetaJSON
 		e.service.GetLog().Debug("Menghapus metadata companion: " + metadataPath)
 		os.Remove(metadataPath)

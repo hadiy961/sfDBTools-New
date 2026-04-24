@@ -17,7 +17,7 @@ import (
 )
 
 // maskDumpArgsForLog menghindari kebocoran kredensial saat menampilkan dump args ke log.
-// Saat ini yang di-mask: --password=... dan form dua-arg "--password" "..."
+// Saat ini yang di-mask: --password=... dan form dua-arg "--password" "..." serta short flag "-p"
 func maskDumpArgsForLog(args []string) []string {
 	if len(args) == 0 {
 		return args
@@ -30,8 +30,12 @@ func maskDumpArgsForLog(args []string) []string {
 			out = append(out, "--password=***")
 			continue
 		}
-		if al == "--password" {
-			out = append(out, "--password")
+		if strings.HasPrefix(al, "-p") && al != "-p" {
+			out = append(out, "-p***")
+			continue
+		}
+		if al == "--password" || al == "-p" {
+			out = append(out, a)
 			// mask next token value if present
 			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
 				out = append(out, "***")

@@ -14,8 +14,8 @@ import (
 	"sfdbtools/internal/shared/consts"
 )
 
-// UpdateMetadataUserGrantsFile membaca metadata yang ada, update UserGrantsFile field, dan save kembali
-func UpdateMetadataUserGrantsFile(backupFilePath string, userGrantsPath string, permissions string, logger applog.Logger) error {
+// UpdateMetadataUserFiles membaca metadata yang ada, update UserGrantsFile dan UserDefinitionFile field, dan save kembali
+func UpdateMetadataUserFiles(backupFilePath string, userDefPath string, userGrantsPath string, permissions string, logger applog.Logger) error {
 	manifestPath := backupFilePath + consts.ExtMetaJSON
 
 	// Baca metadata yang ada
@@ -35,6 +35,13 @@ func UpdateMetadataUserGrantsFile(backupFilePath string, userGrantsPath string, 
 		meta.UserGrantsFile = "none"
 	} else {
 		meta.UserGrantsFile = userGrantsPath
+	}
+
+	// Update UserDefinitionFile - jika empty string, set ke "none"
+	if userDefPath == "" {
+		meta.UserDefinitionFile = "none"
+	} else {
+		meta.UserDefinitionFile = userDefPath
 	}
 
 	// Save kembali

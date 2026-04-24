@@ -197,19 +197,38 @@ func (e *Engine) isFatalDumpError(toolName string, err error, stderrOutput strin
 	return true
 }
 
-// isRetryableError menentukan apakah error bisa di-retry (seperti SSL mismatch)
-// Error yang bisa di-retry tidak perlu log path di writer layer karena akan di-handle di execution layer
-// Fungsi ini menggunakan pattern yang sama dengan execution.IsSSLMismatchRequiredButServerNoSupport
-// untuk konsistensi deteksi retry-able errors
-func (e *Engine) isRetryableError(stderrOutput string) bool {
-	if stderrOutput == "" {
-		return false
+// CappedBuffer limits the amount of data stored to prevent OOM
+type CappedBuffer struct {
+	maxBytes int
+	buffer   []byte
+	overflow bool
+}
+
+func newCappedBuffer(maxBytes int) *CappedBuffer {
+	return &CappedBuffer{
+		maxBytes: maxBytes,
+		buffer:   make([]byte, 0, 1024),
 	}
-	stderrLower := strings.ToLower(stderrOutput)
-	// SSL mismatch adalah retry-able error (pattern sama dengan execution.IsSSLMismatchRequiredButServerNoSupport)
-	return strings.Contains(stderrLower, "tls/ssl error") &&
-		strings.Contains(stderrLower, "ssl is required") &&
-		strings.Contains(stderrLower, "server does not support")
+}
+
+func (c *CappedBuffer) Write(p []byte) (n int, err error) {
+	if len(c.buffer)+len(p) > c.maxBytes {
+		allowed := c.maxBytes - len(c.buffer)
+		if allowed > 0 {
+			c.buffer = append(c.buffer, p[:allowed]...)
+		}
+		c.overflow = true
+	} else {
+		c.buffer = append(c.buffer, p...)
+	}
+	return len(p), nil // Always report successful write of all bytes to not break cmd.Run
+}
+
+func (c *CappedBuffer) String() string {
+	if c.overflow {
+		return string(c.buffer) + "\n... (output truncated due to size limit)"
+	}
+	return string(c.buffer)
 }
 
 // parseFilePermissions mengkonversi string permissions (e.g., "0600") ke os.FileMode
@@ -319,8 +338,9 @@ func (e *Engine) ExecuteMysqldumpWithPipe(ctx context.Context, mysqldumpArgs []s
 	monitor := newDatabaseMonitorWriter(writer, spin, e.Log)
 	cmd.Stdout = monitor
 
-	var stderrBuf strings.Builder
-	cmd.Stderr = &stderrBuf
+	// Use CappedBuffer (max 1MB) for stderr to prevent OOM
+	stderrBuf := newCappedBuffer(1 * 1024 * 1024)
+	cmd.Stderr = stderrBuf
 
 	runErr := cmd.Run()
 
