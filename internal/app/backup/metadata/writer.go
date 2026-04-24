@@ -13,7 +13,7 @@ import (
 	"sfdbtools/internal/app/backup/model/types_backup"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/consts"
-	"strconv"
+	"sfdbtools/internal/shared/fsops"
 )
 
 // SaveBackupMetadata menyimpan metadata ke file dengan atomic write
@@ -28,7 +28,7 @@ func SaveBackupMetadata(meta *types_backup.BackupMetadata, permissions string, l
 	tmpManifest := manifestPath + consts.ExtTmp
 
 	// Parse permissions string to os.FileMode
-	perm := parseFilePermissions(permissions, logger)
+	perm := fsops.ParseFilePermissions(permissions, 0600, logger)
 
 	// Marshal metadata to JSON
 	manifestBytes, err := json.MarshalIndent(meta, "", "  ")
@@ -71,23 +71,4 @@ func TrySaveBackupMetadata(meta *types_backup.BackupMetadata, permissions string
 	}
 
 	return path
-}
-
-// parseFilePermissions mengkonversi string permissions (e.g., "0600") ke os.FileMode
-// Jika parsing gagal atau permissions kosong, return default 0600 (lebih restrictive)
-func parseFilePermissions(permStr string, logger applog.Logger) os.FileMode {
-	const defaultPerm = 0600
-
-	if permStr == "" {
-		return defaultPerm
-	}
-
-	// Parse octal string to uint32
-	perm, err := strconv.ParseUint(permStr, 8, 32)
-	if err != nil {
-		logger.Warnf("Invalid metadata_permissions '%s', using default 0600: %v", permStr, err)
-		return defaultPerm
-	}
-
-	return os.FileMode(perm)
 }

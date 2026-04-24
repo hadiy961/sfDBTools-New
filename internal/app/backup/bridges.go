@@ -36,7 +36,7 @@ func (s *Service) handleSingleModeSetup(ctx context.Context, client interface {
 // =============================================================================
 
 func (s *Service) SetupBackupExecution(state *BackupExecutionState) error {
-	return setup.New(s.Log, s.Config, s.BackupDBOptions, &state.ExcludedDatabases).SetupBackupExecution()
+	return setup.New(s.Log, s.Config, s.BackupDBOptions, state).SetupBackupExecution()
 }
 
 // PrepareBackupSession bridge to setup.PrepareBackupSession.
@@ -48,7 +48,7 @@ func (s *Service) PrepareBackupSession(ctx context.Context, state *BackupExecuti
 	pathGenerator := func(ctx context.Context, client *database.Client, dbFiltered []string) ([]string, error) {
 		return s.GenerateBackupPaths(ctx, state, client, dbFiltered)
 	}
-	return setup.New(s.Log, s.Config, s.BackupDBOptions, &state.ExcludedDatabases).
+	return setup.New(s.Log, s.Config, s.BackupDBOptions, state).
 		PrepareBackupSession(ctx, headerTitle, nonInteractive, pathGenerator)
 }
 

@@ -35,6 +35,13 @@ type BackupExecutionState struct {
 	mu                sync.Mutex
 }
 
+// SetExcludedDatabases updates the excluded databases list safely
+func (s *BackupExecutionState) SetExcludedDatabases(excluded []string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.ExcludedDatabases = excluded
+}
+
 // SetCurrentBackupFile mencatat file backup yang sedang dibuat (thread-safe)
 func (s *BackupExecutionState) SetCurrentBackupFile(filePath string) {
 	s.mu.Lock()

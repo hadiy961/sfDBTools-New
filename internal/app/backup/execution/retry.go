@@ -246,9 +246,23 @@ func removeFlagArg(args []string, candidate string, rawToken string) ([]string, 
 		removed := arg
 
 		// Jika opsi dalam format dua-arg ("--opt" "value"), hapus value juga
+		// Hati-hati jangan sampai menelan argumen posisional (nama database) yang berada di akhir.
+		isNextArgPositional := false
+		if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+			allRemainingNonFlags := true
+			for j := i + 1; j < len(args); j++ {
+				if strings.HasPrefix(args[j], "-") {
+					allRemainingNonFlags = false
+					break
+				}
+			}
+			isNextArgPositional = allRemainingNonFlags
+		}
+
 		removeNextValue := !strings.Contains(arg, "=") &&
 			i+1 < len(args) &&
-			!strings.HasPrefix(args[i+1], "-")
+			!strings.HasPrefix(args[i+1], "-") &&
+			!isNextArgPositional
 
 		out := make([]string, 0, len(args))
 		out = append(out, args[:i]...)

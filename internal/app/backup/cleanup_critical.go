@@ -41,13 +41,23 @@ func criticalCleanup(state *BackupExecutionState, logger applog.Logger) {
 		} else {
 			logger.Debugf("✓ Partial backup file terhapus: %s", currentFile)
 		}
-		state.ClearCurrentBackupFile()
-	}
 
-	// 2. Cleanup additional resources via state's Cleanup method
-	// Ini akan cleanup resources yang di-register via EnableCleanup()
-	// Contoh: lock files, temp directories, dll
-	state.Cleanup()
+		// Hapus metadata file jika ada (menghindari orphaned metadata)
+		metaFile := currentFile + ".meta.json"
+		if err := os.Remove(metaFile); err != nil {
+			logger.Debugf("Gagal menghapus metadata file (mungkin belum dibuat): %v", err)
+		} else {
+			logger.Debugf("✓ Metadata file terhapus: %s", metaFile)
+		}
+
+		// Panggil Cleanup dari state (berisi logika spesifik tambahan) SEBELUM state dibersihkan
+		state.Cleanup()
+
+		state.ClearCurrentBackupFile()
+	} else {
+		// Jika tidak ada current file, tetap panggil Cleanup untuk resources lain
+		state.Cleanup()
+	}
 
 	logger.Debug("Critical cleanup selesai")
 }

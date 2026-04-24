@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"sfdbtools/internal/app/backup/metadata"
 	"sfdbtools/internal/app/usersgrants"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/shared/database"
+	"sfdbtools/internal/shared/fsops"
 )
 
 func defaultSystemUsers() []string {
@@ -54,21 +54,6 @@ func formatDatabasesForError(databases []string) string {
 	}
 	head := strings.Join(databases[:max], ",")
 	return fmt.Sprintf("%s,...(+%d)", head, len(databases)-max)
-}
-
-// parseFilePermissions mengkonversi string permissions (e.g., "0600") ke os.FileMode.
-// Jika parsing gagal atau permissions kosong, return default 0600 (lebih restrictive).
-func parseFilePermissions(permStr string, logger applog.Logger) os.FileMode {
-	const defaultPerm = 0600
-	if strings.TrimSpace(permStr) == "" {
-		return defaultPerm
-	}
-	perm, err := strconv.ParseUint(strings.TrimSpace(permStr), 8, 32)
-	if err != nil {
-		logger.Warnf("Invalid metadata_permissions '%s', using default 0600: %v", permStr, err)
-		return defaultPerm
-	}
-	return os.FileMode(perm)
 }
 
 // ExportUserGrantsIfNeeded exports user grants unless excluded or in dry-run.
@@ -142,7 +127,7 @@ func ExportUserGrantsIfNeeded(
 
 		// Naming: karena isinya user definition, kita pakai _users.sql
 		userDefPath := metadata.GenerateUserDefinitionFilePath(referenceBackupFile)
-		perm := parseFilePermissions(metadataPermissions, log)
+		perm := fsops.ParseFilePermissions(metadataPermissions, 0600, log)
 		if err := os.WriteFile(userDefPath, []byte(sqlText), perm); err != nil {
 			log.Errorf("Gagal menulis file user definitions: %v", err)
 			return "", "", nil
@@ -180,7 +165,7 @@ func ExportUserGrantsIfNeeded(
 		return "", "", handleExportError(err, databases, requireGrants, log)
 	}
 
-	perm := parseFilePermissions(metadataPermissions, log)
+	perm := fsops.ParseFilePermissions(metadataPermissions, 0600, log)
 
 	// Write Users
 	userDefPath := metadata.GenerateUserDefinitionFilePath(referenceBackupFile)
@@ -222,8 +207,7 @@ func handleExportError(err error, databases []string, requireGrants bool, log ap
 
 // UpdateMetadataUserGrantsPath updates backup metadata with the actual user grants file path.
 func UpdateMetadataUserGrantsPath(log applog.Logger, backupFilePath string, userDefPath string, userGrantsPath string, permissions string) {
-	// Kita reuse key UserGrantsFile di metadata untuk path grants.
-	// Jika userDefPath ada, kita mungkin perlu method update baru atau update manual.
-	// TODO: Pastikan method di metadata.Updater support path tambahan atau kita update satu-satu.
-	// Saat ini hanya stub karena engine.go yang memanggil method ini perlu diupdate juga.
+	if err := metadata.UpdateMetadataUserFiles(backupFilePath, userDefPath, userGrantsPath, permissions, log); err != nil {
+		log.Warnf("Gagal mengupdate path file user/grants ke metadata: %v", err)
+	}
 }
