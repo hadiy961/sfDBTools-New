@@ -80,3 +80,67 @@ func SelectFileInteractive(directory string, message string, extensions []string
 		}
 	}
 }
+// SelectDirectoryInteractive menampilkan directory selector interaktif dengan fitur browse.
+func SelectDirectoryInteractive(directory string, message string) (string, error) {
+	if err := ensureInteractiveAllowed(); err != nil {
+		return "", err
+	}
+	fmt.Println()
+	fmt.Println("📁 Directory Selector - Tekan Enter untuk browse directory saat ini")
+	fmt.Printf("   Current: %s\n", directory)
+	fmt.Println()
+
+	for {
+		var userInput string
+		prompt := &survey.Input{
+			Message: message,
+			Default: directory,
+			Help:    "Tekan Enter untuk browse, atau ketik path directory",
+		}
+		err := survey.AskOne(prompt, &userInput, survey.WithStdio(
+			os.Stdin,
+			os.Stdout,
+			os.Stderr,
+		))
+		if err != nil {
+			return "", err
+		}
+
+		userInput = strings.TrimSpace(userInput)
+		if userInput == "" {
+			userInput = directory
+		}
+
+		// Expand home directory
+		if strings.HasPrefix(userInput, "~") {
+			home, err := os.UserHomeDir()
+			if err == nil {
+				userInput = strings.Replace(userInput, "~", home, 1)
+			}
+		}
+
+		fileInfo, err := os.Stat(userInput)
+		if err != nil {
+			if os.IsNotExist(err) {
+				fmt.Printf("Path tidak ditemukan: %s\n", userInput)
+				continue
+			}
+			return "", fmt.Errorf("gagal mengakses path: %w", err)
+		}
+
+		if !fileInfo.IsDir() {
+			fmt.Printf("Path bukan directory: %s\n", userInput)
+			continue
+		}
+
+		selectedDir, err := selectDirectoryFromDirectory(userInput)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			continue
+		}
+		if selectedDir == "" {
+			continue
+		}
+		return selectedDir, nil
+	}
+}

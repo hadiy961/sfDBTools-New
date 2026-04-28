@@ -93,3 +93,66 @@ func selectFileFromDirectory(directory string, extensions []string) (string, err
 
 	return filepath.Join(directory, selected), nil
 }
+// selectDirectoryFromDirectory menampilkan list directory untuk dipilih atau browse lebih dalam.
+func selectDirectoryFromDirectory(directory string) (string, error) {
+	if err := ensureInteractiveAllowed(); err != nil {
+		return "", err
+	}
+	files, err := os.ReadDir(directory)
+	if err != nil {
+		return "", fmt.Errorf("gagal membaca directory: %w", err)
+	}
+
+	var subDirs []string
+	for _, file := range files {
+		if file.IsDir() {
+			subDirs = append(subDirs, file.Name()+"/")
+		}
+	}
+
+	var options []string
+	// Option to select current directory
+	options = append(options, "✅ [ Gunakan directory ini ]")
+	
+	if directory != "/" {
+		options = append(options, "📁 .. (parent directory)")
+	}
+	for _, dir := range subDirs {
+		options = append(options, "📁 "+dir)
+	}
+	options = append(options, "────────────────────────")
+	options = append(options, "⌨️  [ Masukkan path manual ]")
+
+	var selected string
+	prompt := &survey.Select{
+		Message:  fmt.Sprintf("Browse Directory: %s", directory),
+		Options:  options,
+		PageSize: 15,
+	}
+	err = survey.AskOne(prompt, &selected, survey.WithStdio(
+		os.Stdin,
+		os.Stdout,
+		os.Stderr,
+	))
+	if err != nil {
+		return "", err
+	}
+
+	if selected == "✅ [ Gunakan directory ini ]" {
+		return directory, nil
+	}
+	if selected == "⌨️  [ Masukkan path manual ]" || selected == "────────────────────────" {
+		return "", nil
+	}
+
+	selected = strings.TrimPrefix(selected, "📁 ")
+	selected = strings.TrimSpace(selected)
+
+	if selected == ".. (parent directory)" {
+		parentDir := filepath.Dir(directory)
+		return selectDirectoryFromDirectory(parentDir)
+	}
+	
+	subPath := filepath.Join(directory, strings.TrimSuffix(selected, "/"))
+	return selectDirectoryFromDirectory(subPath)
+}

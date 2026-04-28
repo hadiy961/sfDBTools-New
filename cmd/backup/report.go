@@ -1,13 +1,17 @@
 package backupcmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"sfdbtools/internal/app/backup/catalog"
+	appdeps "sfdbtools/internal/cli/deps"
 	applog "sfdbtools/internal/services/log"
+	"sfdbtools/internal/ui/table"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +42,7 @@ var CmdBackupReport = &cobra.Command{
 			fmt.Println("\n📊 Generating report...")
 		}
 
-		repo := catalog.NewJSONFileRepository("/etc/sfDBTools/catalog.json") // Todo: read from config
+		repo := catalog.NewJSONFileRepository(appdeps.Deps.Config.Backup.Catalog.FilePath)
 		svc := catalog.NewService(repo, applog.NullLogger())
 
 		report, err := svc.GenerateReport(reportPeriod)
@@ -47,8 +51,26 @@ var CmdBackupReport = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if reportFormat != "table" {
-			fmt.Printf("[Format %s placeholder - implement rendering here]\n", reportFormat)
+		if reportFormat == "json" {
+			b, _ := json.MarshalIndent(report, "", "  ")
+			fmt.Println(string(b))
+			return
+		}
+
+		if reportFormat == "markdown" {
+			fmt.Printf("## Backup Report — %s\n\n", report.Period)
+			fmt.Println("### Summary")
+			fmt.Printf("- **Total Backups:** %d\n", report.TotalBackups)
+			fmt.Printf("- **Total Size:** %s\n", report.TotalSizeHuman)
+			fmt.Printf("- **Success Rate:** %.1f%%\n", report.SuccessRate)
+			fmt.Printf("- **Failed:** %d\n\n", report.FailedCount)
+			
+			fmt.Println("### Database Coverage")
+			fmt.Println("| Database | Backup Count | Total Size | Last Backup |")
+			fmt.Println("|---|---|---|---|")
+			for _, db := range report.DatabaseCoverage {
+				fmt.Printf("| %s | %d | %s | %s |\n", db.DatabaseName, db.BackupCount, humanize.Bytes(uint64(db.TotalSize)), db.LastBackup.Format("2006-01-02 15:04"))
+			}
 			return
 		}
 
@@ -59,10 +81,19 @@ var CmdBackupReport = &cobra.Command{
 		fmt.Printf("  Success Rate  : %.1f%%\n", report.SuccessRate)
 		fmt.Printf("  Failed        : %d\n", report.FailedCount)
 		fmt.Println()
+		
 		fmt.Println("Database Coverage:")
+		var rows [][]string
 		for _, db := range report.DatabaseCoverage {
-			fmt.Printf("  - %s: %d backups (Last: %s)\n", db.DatabaseName, db.BackupCount, db.LastBackup.Format("2006-01-02 15:04"))
+			rows = append(rows, []string{
+				db.DatabaseName,
+				db.LastBackup.Format("2006-01-02 15:04"),
+				fmt.Sprintf("%d", db.BackupCount),
+				humanize.Bytes(uint64(db.TotalSize)),
+			})
 		}
+		headers := []string{"DATABASE", "LAST BACKUP", "COUNT", "SIZE"}
+		table.Render(headers, rows)
 	},
 }
 
