@@ -44,7 +44,7 @@ func DisplayResult(result *types_backup.VerificationResult, filePath string, for
 	fmt.Fprintln(w, "---------\t-----")
 
 	fmt.Fprintf(w, "File\t%s\n", filepath.Base(filePath))
-	
+
 	statusSymbol := "❌"
 	if result.VerifyStatus == "passed" {
 		statusSymbol = "✓"

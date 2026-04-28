@@ -8,7 +8,28 @@ import (
 	"hash"
 	"io"
 	"os"
+
+	"github.com/cespare/xxhash/v2"
 )
+
+// GetHasher mengembalikan instance hasher berdasarkan algoritma yang dipilih
+func GetHasher(algo string) (hash.Hash, error) {
+	switch algo {
+	case "md5":
+		return md5.New(), nil
+	case "sha256", "": // default
+		return sha256.New(), nil
+	case "xxhash":
+		return xxhash.New(), nil
+	default:
+		return nil, fmt.Errorf("unsupported checksum algorithm: %s", algo)
+	}
+}
+
+// HashToString mengembalikan string representasi (hex) dari hasher yang sudah di-sum
+func HashToString(hasher hash.Hash) string {
+	return hex.EncodeToString(hasher.Sum(nil))
+}
 
 // GenerateChecksum menghitung hash dari file on-disk (tanpa decrypt/decompress)
 // Menggunakan io.CopyBuffer dari file ke hash.Hash untuk memory-efficient streaming
@@ -19,14 +40,9 @@ func GenerateChecksum(filePath string, algo string) (string, error) {
 	}
 	defer file.Close()
 
-	var hasher hash.Hash
-	switch algo {
-	case "md5":
-		hasher = md5.New()
-	case "sha256", "": // default to sha256
-		hasher = sha256.New()
-	default:
-		return "", fmt.Errorf("unsupported checksum algorithm: %s", algo)
+	hasher, err := GetHasher(algo)
+	if err != nil {
+		return "", err
 	}
 
 	buf := make([]byte, 256*1024) // 256KB read buffer
@@ -34,7 +50,7 @@ func GenerateChecksum(filePath string, algo string) (string, error) {
 		return "", fmt.Errorf("failed to read file for checksum: %w", err)
 	}
 
-	return hex.EncodeToString(hasher.Sum(nil)), nil
+	return HashToString(hasher), nil
 }
 
 // CompareChecksum menghitung hash dan membandingkan dengan expected

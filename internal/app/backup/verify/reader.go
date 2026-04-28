@@ -3,6 +3,7 @@ package verify
 import (
 	"bufio"
 	"fmt"
+	"hash"
 	"io"
 	"os"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
@@ -12,15 +13,21 @@ import (
 )
 
 // OpenVerifyReader membuka file dan menyiapkan reader dengan decrypt/decompress
-// Digunakan untuk header/footer validation
-func OpenVerifyReader(filePath string, encryptionKey string) (io.Reader, []io.Closer, error) {
+// Jika hasher diberikan (!= nil), maka akan disisipkan io.TeeReader di layer paling bawah
+// sehingga pembacaan stream akan langsung dikalkulasikan hash-nya.
+func OpenVerifyReader(filePath string, encryptionKey string, hasher hash.Hash) (io.Reader, []io.Closer, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("gagal membuka file: %w", err)
 	}
 
+	var baseReader io.Reader = file
+	if hasher != nil {
+		baseReader = io.TeeReader(file, hasher)
+	}
+
 	// Buffer file reads to improve large sequential throughput
-	reader := io.Reader(bufio.NewReaderSize(file, 4*1024*1024))
+	reader := io.Reader(bufio.NewReaderSize(baseReader, 4*1024*1024))
 	closers := []io.Closer{file}
 
 	// Decrypt if encrypted
