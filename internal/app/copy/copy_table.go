@@ -3,127 +3,190 @@ package copy
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
 
 	profileconn "sfdbtools/internal/app/profile/connection"
-	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/ui/progress"
-	"sfdbtools/internal/ui/prompt"
 )
 
+// CopyTableResult menyimpan status eksekusi kloning per tabel.
+type CopyTableResult struct {
+	SourceDB     string
+	SourceTable  string
+	TargetDB     string
+	TargetTable  string
+	Status       string
+	VerifyStatus string
+	Duration     time.Duration
+	Error        error
+}
+
+// CopyTablesConcurrent melakukan penyalinan banyak tabel secara paralel menggunakan worker pool.
+func (s *Service) CopyTablesConcurrent(ctx context.Context, opts CopyTablesConcurrentOptions) ([]CopyTableResult, error) {
+	var results []CopyTableResult
+	var mu sync.Mutex
+
+	type tableTask struct {
+		index int
+		name  string
+	}
+	taskChan := make(chan tableTask, len(opts.SourceTables))
+	wg := sync.WaitGroup{}
+
+	numWorkers := opts.Workers
+	if numWorkers > len(opts.SourceTables) {
+		numWorkers = len(opts.SourceTables)
+	}
+	if numWorkers < 1 {
+		numWorkers = 1
+	}
+
+	for w := 0; w < numWorkers; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for task := range taskChan {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+
+				// Prepare specific options for this table
+				tableOpts := opts.CopyTableOptions
+				tableOpts.SourceTable = task.name
+				if tableOpts.TargetTable == "" {
+					tableOpts.TargetTable = task.name // default to same name
+				}
+
+				start := time.Now()
+				s.log.Infof("[%d/%d] Kloning %s.%s -> %s.%s ...", task.index+1, len(opts.SourceTables), tableOpts.SourceDB, tableOpts.SourceTable, tableOpts.TargetDB, tableOpts.TargetTable)
+
+				_, _, verifyStatus, err := s.CopyTable(ctx, tableOpts)
+				duration := time.Since(start).Round(time.Millisecond)
+
+				status := "Sukses"
+				if err != nil {
+					status = "Gagal"
+					s.log.Errorf("  ❌ Error %s: %v", task.name, err)
+				} else {
+					s.log.Infof("  ✅ %s Berhasil (%s)", task.name, duration)
+				}
+
+				mu.Lock()
+				results = append(results, CopyTableResult{
+					SourceDB:     tableOpts.SourceDB,
+					SourceTable:  tableOpts.SourceTable,
+					TargetDB:     tableOpts.TargetDB,
+					TargetTable:  tableOpts.TargetTable,
+					Status:       status,
+					VerifyStatus: verifyStatus,
+					Duration:     duration,
+					Error:        err,
+				})
+				mu.Unlock()
+			}
+		}()
+	}
+
+	for i, tbl := range opts.SourceTables {
+		taskChan <- tableTask{index: i, name: tbl}
+	}
+	close(taskChan)
+	wg.Wait()
+
+	return results, nil
+}
+
 // CopyTable melakukan penyalinan tabel spesifik.
-func (s *Service) CopyTable(ctx context.Context, profile *domain.ProfileInfo, sourceDB, sourceTable, targetDB, targetTable string, schemaOnly, force, backupFirst, includeGrants, verify, nonInteractive bool) (string, string, string, error) {
-	client, err := profileconn.ConnectWithProfile(s.cfg, profile, "")
+func (s *Service) CopyTable(ctx context.Context, opts CopyTableOptions) (string, string, string, error) {
+	client, err := profileconn.ConnectWithProfile(s.cfg, opts.Profile, "")
 	if err != nil {
 		return "", "", "", fmt.Errorf("gagal koneksi ke database: %w", err)
 	}
 	defer client.Close()
 
 	// Validation
-	exists, err := s.validateTableExists(ctx, client, sourceDB, sourceTable)
+	exists, err := s.validateTableExists(ctx, client, opts.SourceDB, opts.SourceTable)
 	if err != nil || !exists {
-		return "", "", "", fmt.Errorf("tabel sumber %s.%s tidak ditemukan", sourceDB, sourceTable)
+		return "", "", "", fmt.Errorf("tabel sumber %s.%s tidak ditemukan", opts.SourceDB, opts.SourceTable)
 	}
 
-	if targetDB == "" {
-		targetDB = sourceDB
+	if opts.TargetDB == "" {
+		opts.TargetDB = opts.SourceDB
 	}
 
 	// Create DB if not exists
-	if err := client.CreateDatabaseIfNotExists(ctx, targetDB); err != nil {
+	if err := client.CreateDatabaseIfNotExists(ctx, opts.TargetDB); err != nil {
 		return "", "", "", err
 	}
 
-	targetExists, err := s.validateTableExists(ctx, client, targetDB, targetTable)
+	targetExists, err := s.validateTableExists(ctx, client, opts.TargetDB, opts.TargetTable)
 	if err != nil {
 		return "", "", "", err
 	}
 
 	if targetExists {
-		if !nonInteractive {
-			s.log.Warnf("PERINGATAN: Tabel target '%s.%s' sudah ada!", targetDB, targetTable)
-
-			if !force && !backupFirst {
-				choice, _, err := prompt.SelectOne("Tabel target sudah ada. Apa yang ingin Anda lakukan?",
-					[]string{"Batalkan", "Backup dulu baru timpa", "Timpa langsung (Berisiko!)"}, 0)
-				if err != nil || choice == "Batalkan" {
-					return "", "", "", fmt.Errorf("operasi dibatalkan")
-				}
-				if choice == "Backup dulu baru timpa" {
-					backupFirst = true
-				} else {
-					force = true
-				}
-			}
-
-			if backupFirst {
-				confirm, err := prompt.Confirm(fmt.Sprintf("Yakin ingin membackup lalu menimpa tabel '%s.%s'?", targetDB, targetTable), true)
-				if err != nil || !confirm {
-					return "", "", "", fmt.Errorf("operasi dibatalkan")
-				}
-			} else if force {
-				s.log.Warnf("!!! PERHATIAN !!!")
-				confirm1, _ := prompt.Confirm(fmt.Sprintf("Yakin ingin MENIMPA tabel '%s.%s' TANPA backup?", targetDB, targetTable), false)
-				if !confirm1 {
-					return "", "", "", fmt.Errorf("operasi dibatalkan")
-				}
-				confirm2, _ := prompt.Confirm("Benar-benar yakin? Data lama akan hilang.", false)
-				if !confirm2 {
-					return "", "", "", fmt.Errorf("operasi dibatalkan")
-				}
-			}
-		} else {
-			if !force && !backupFirst {
-				return "", "", "", fmt.Errorf("tabel target '%s.%s' sudah ada. Gunakan --force atau --backup-first", targetDB, targetTable)
-			}
+		// Gunakan helper konsolidasi untuk konfirmasi overwrite
+		var err error
+		opts.Force, opts.BackupFirst, err = s.ConfirmOverwriteInteractive(
+			fmt.Sprintf("%s.%s", opts.TargetDB, opts.TargetTable),
+			opts.NonInteractive,
+			opts.Force,
+			opts.BackupFirst,
+		)
+		if err != nil {
+			return "", "", "", err
 		}
 
-		if backupFirst {
-			s.log.Infof("Menjalankan backup pengamanan untuk tabel: %s.%s", targetDB, targetTable)
-			if err := s.runSafetyTableBackup(ctx, profile, client, targetDB, targetTable); err != nil {
+		if opts.BackupFirst {
+			s.log.Infof("Menjalankan backup pengamanan untuk tabel: %s.%s", opts.TargetDB, opts.TargetTable)
+			if err := s.runSafetyTableBackup(ctx, opts.Profile, client, opts.TargetDB, opts.TargetTable); err != nil {
 				return "", "", "", fmt.Errorf("gagal melakukan backup pengamanan tabel: %w", err)
 			}
 		}
 	}
 
-	s.log.Debugf("Memulai copy tabel: %s.%s -> %s.%s", sourceDB, sourceTable, targetDB, targetTable)
+	s.log.Debugf("Memulai copy tabel: %s.%s -> %s.%s", opts.SourceDB, opts.SourceTable, opts.TargetDB, opts.TargetTable)
 
-	spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Copying table %s.%s", sourceDB, sourceTable))
+	spin := progress.NewSpinnerWithElapsed(fmt.Sprintf("Copying table %s.%s", opts.SourceDB, opts.SourceTable))
 	spin.Start()
 	defer spin.Stop()
 
-	if force || backupFirst {
-		dropSQL := fmt.Sprintf("DROP TABLE IF EXISTS `%s`.`%s` ", targetDB, targetTable)
+	if opts.Force || opts.BackupFirst {
+		dropSQL := fmt.Sprintf("DROP TABLE IF EXISTS `%s`.`%s` ", opts.TargetDB, opts.TargetTable)
 		_, _ = client.ExecContextWithRetry(ctx, dropSQL)
 	}
 
-	createSQL := fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s`.`%s` LIKE `%s`.`%s` ", targetDB, targetTable, sourceDB, sourceTable)
+	createSQL := fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s`.`%s` LIKE `%s`.`%s` ", opts.TargetDB, opts.TargetTable, opts.SourceDB, opts.SourceTable)
 	if _, err := client.ExecContextWithRetry(ctx, createSQL); err != nil {
 		return "", "", "", fmt.Errorf("gagal membuat struktur tabel target: %w", err)
 	}
 
-	if !schemaOnly {
-		insertSQL := fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s` ", targetDB, targetTable, sourceDB, sourceTable)
+	if !opts.SchemaOnly {
+		insertSQL := fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s` ", opts.TargetDB, opts.TargetTable, opts.SourceDB, opts.SourceTable)
 		if _, err := client.ExecContextWithRetry(ctx, insertSQL); err != nil {
 			return "", "", "", fmt.Errorf("gagal menyalin data tabel: %w", err)
 		}
 	}
 
 	// 6. Copy Grants (if enabled)
-	if includeGrants {
+	if opts.IncludeGrants {
 		// Untuk tabel tunggal, kita tetap menyalin grants database-level sebagai pendekatan aman
-		if err := s.CopyGrants(ctx, profile, sourceDB, targetDB); err != nil {
+		if err := s.CopyGrants(ctx, opts.Profile, opts.SourceDB, opts.TargetDB); err != nil {
 			s.log.Warnf("Gagal menyalin hak akses user: %v", err)
 		}
 	}
 
 	// 7. Verify Checksum
 	verifyStatus := "-"
-	if verify && !schemaOnly {
-		ok, err := s.VerifyChecksum(ctx, client, sourceDB, sourceTable, targetDB, targetTable)
+	if opts.Verify && !opts.SchemaOnly {
+		ok, err := s.VerifyChecksum(ctx, client, opts.SourceDB, opts.SourceTable, opts.TargetDB, opts.TargetTable)
 		if err != nil {
 			verifyStatus = "Error Verifikasi"
-			s.log.Warnf("Gagal verifikasi checksum %s: %v", sourceTable, err)
+			s.log.Warnf("Gagal verifikasi checksum %s: %v", opts.SourceTable, err)
 		} else if ok {
 			verifyStatus = "Cocok"
 		} else {
@@ -131,7 +194,7 @@ func (s *Service) CopyTable(ctx context.Context, profile *domain.ProfileInfo, so
 		}
 	}
 
-	return targetDB, targetTable, verifyStatus, nil
+	return opts.TargetDB, opts.TargetTable, verifyStatus, nil
 }
 
 func (s *Service) validateTableExists(ctx context.Context, client *database.Client, dbName, tableName string) (bool, error) {

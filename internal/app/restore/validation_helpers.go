@@ -8,8 +8,8 @@ package restore
 import (
 	"context"
 	"fmt"
-	"sfdbtools/internal/domain"
 	"sfdbtools/internal/crypto"
+	"sfdbtools/internal/domain"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"

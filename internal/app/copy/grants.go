@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"sfdbtools/internal/app/usersgrants"
 	profileconn "sfdbtools/internal/app/profile/connection"
+	"sfdbtools/internal/app/usersgrants"
 	"sfdbtools/internal/domain"
 )
 
@@ -71,14 +71,14 @@ func (s *Service) CopyGrants(ctx context.Context, profile *domain.ProfileInfo, s
 func (s *Service) transformGrantsSQL(sql, sourceDB, targetDB string) string {
 	// Pola umum: ON `db`.* atau ON db.*
 	// Kita ganti dengan case-insensitive jika perlu, tapi biasanya SHOW GRANTS mengikuti case DB.
-	
+
 	// 1. Ganti dengan backticks
 	sourceQuoted := "`" + sourceDB + "`"
 	targetQuoted := "`" + targetDB + "`"
 	res := strings.ReplaceAll(sql, " ON "+sourceQuoted+".", " ON "+targetQuoted+".")
-	
+
 	// 2. Ganti tanpa backticks (untuk safety)
 	res = strings.ReplaceAll(res, " ON "+sourceDB+".", " ON "+targetDB+".")
-	
+
 	return res
 }

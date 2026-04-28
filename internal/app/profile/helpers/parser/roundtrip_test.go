@@ -261,7 +261,7 @@ password = testpass
 	defer os.RemoveAll(tempDir)
 
 	plainFile := filepath.Join(tempDir, "original.cnf")
-	
+
 	// Write original
 	if err := os.WriteFile(plainFile, []byte(content), 0644); err != nil {
 		t.Fatalf("Failed to write: %v", err)
@@ -270,7 +270,7 @@ password = testpass
 	// Encrypt and decrypt multiple times
 	for i := 0; i < 5; i++ {
 		encFile := filepath.Join(tempDir, "encrypted_"+string(rune('0'+i))+".cnf.enc")
-		
+
 		// Encrypt
 		if err := crypto.EncryptFile(plainFile, encFile, []byte(testKey)); err != nil {
 			t.Fatalf("Round %d: Failed to encrypt: %v", i, err)

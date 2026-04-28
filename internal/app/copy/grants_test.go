@@ -6,7 +6,7 @@ import (
 
 func TestTransformGrantsSQL(t *testing.T) {
 	s := &Service{}
-	
+
 	tests := []struct {
 		name     string
 		sql      string

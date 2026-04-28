@@ -68,7 +68,7 @@ func (s *Service) CreateAndRestoreDatabase(ctx context.Context, dbName string, f
 					"database": dbName,
 					"file":     filePath,
 				}, strings.Join(sum.ErrLines, "\n"), fmt.Errorf("terdeteksi %d SQL error selama restore database", sum.SQLErrors))
-				
+
 				if logPath != "" {
 					s.Log.Warnf("Terdeteksi %d SQL error (dan %d peringatan) selama restore. Detail log tersimpan di: %s", sum.SQLErrors, sum.SQLWarnings, logPath)
 				}
@@ -106,7 +106,7 @@ func (s *Service) RestoreUserGrantsIfAvailable(ctx context.Context, grantsFile s
 					"action": fmt.Sprintf("restore_user_grants_%s", s.GetCurrentMode()),
 					"file":   grantsFile,
 				}, strings.Join(sum.ErrLines, "\n"), fmt.Errorf("terdeteksi %d SQL error selama restore user grants", sum.SQLErrors))
-				
+
 				if logPath != "" {
 					s.Log.Warnf("Terdeteksi %d SQL error (dan %d peringatan) pada user grants. Detail log tersimpan di: %s", sum.SQLErrors, sum.SQLWarnings, logPath)
 				}

@@ -237,7 +237,7 @@ func TestProfileConnectTimeout_NonConformingConfig(t *testing.T) {
 	}
 
 	badCfg := &BadConfig{SomeOtherField: "test"}
-	
+
 	// Set env to verify it falls through to env
 	os.Setenv("SFDB_PROFILE_CONNECT_TIMEOUT", "35s")
 	defer os.Unsetenv("SFDB_PROFILE_CONNECT_TIMEOUT")

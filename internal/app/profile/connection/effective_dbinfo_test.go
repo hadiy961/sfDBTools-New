@@ -13,7 +13,7 @@ import (
 // TestEffectiveDBInfo_NilProfile tests nil profile returns empty DBInfo
 func TestEffectiveDBInfo_NilProfile(t *testing.T) {
 	info := EffectiveDBInfo(nil)
-	
+
 	if info.Host != "" || info.Port != 0 || info.User != "" || info.Password != "" {
 		t.Error("Expected empty DBInfo for nil profile")
 	}
@@ -105,7 +105,7 @@ func TestEffectiveDBInfo_SSHTunnelResolved(t *testing.T) {
 	if info.Port != 13306 {
 		t.Errorf("Expected port 13306 (resolved local port), got %d", info.Port)
 	}
-	
+
 	// User and password should remain the same
 	if info.User != "dbuser" {
 		t.Errorf("Expected user 'dbuser', got '%s'", info.User)
@@ -275,11 +275,11 @@ func TestEffectiveDBInfo_SSHTunnelDisabledWithResolvedPort(t *testing.T) {
 // TestEffectiveDBInfo_PreservesCredentials tests that credentials are always preserved
 func TestEffectiveDBInfo_PreservesCredentials(t *testing.T) {
 	testCases := []struct {
-		name           string
-		sshEnabled     bool
-		resolvedPort   int
-		expectedHost   string
-		expectedPort   int
+		name         string
+		sshEnabled   bool
+		resolvedPort int
+		expectedHost string
+		expectedPort int
 	}{
 		{"direct", false, 0, "db.example.com", 3306},
 		{"ssh_resolved", true, 13306, "127.0.0.1", 13306},

@@ -195,10 +195,10 @@ func TestTrimProfileSuffix_LongNames(t *testing.T) {
 // TestTrimProfileSuffix_Idempotent tests that running twice gives same result
 func TestTrimProfileSuffix_Idempotent(t *testing.T) {
 	input := "profile.cnf.enc"
-	
+
 	// First trim
 	result1 := TrimProfileSuffix(input)
-	
+
 	// Second trim on result
 	result2 := TrimProfileSuffix(result1)
 

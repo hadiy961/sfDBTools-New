@@ -168,7 +168,7 @@ func (e *AllExecutor) performStreamingRestore(ctx context.Context, opts *restore
 				logPath := e.service.GetErrorLogger().LogWithOutput(map[string]interface{}{
 					"action": "restore_streaming_all",
 				}, strings.Join(sum.ErrLines, "\n"), fmt.Errorf("terdeteksi %d SQL error selama restore", sum.SQLErrors))
-				
+
 				if logPath != "" {
 					logger.Warnf("Terdeteksi %d SQL error (dan %d peringatan) selama restore streaming. Detail log tersimpan di: %s", sum.SQLErrors, sum.SQLWarnings, logPath)
 				}

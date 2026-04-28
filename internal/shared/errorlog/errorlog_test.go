@@ -2,8 +2,8 @@ package errorlog
 
 import (
 	"errors"
-	"testing"
 	applog "sfdbtools/internal/services/log"
+	"testing"
 )
 
 func TestErrorLogger_Log_TypedNil(t *testing.T) {

@@ -130,4 +130,3 @@ func init() {
 	CmdCryptoMain.AddCommand(CmdEnvTest)
 	CmdEnvTest.Flags().StringP("text", "t", "", "Plaintext untuk test (default: 'test')")
 }
-

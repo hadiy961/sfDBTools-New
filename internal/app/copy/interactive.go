@@ -44,7 +44,7 @@ func (s *Service) SelectTargetDatabaseInteractive(ctx context.Context, profile *
 	}
 
 	options := append([]string{"[Ketik Nama Database Baru]"}, dbs...)
-	
+
 	// Cari index defaultDB di dalam dbs untuk memposisikannya
 	defaultIdx := 0
 	for i, db := range options {
@@ -108,3 +108,54 @@ func (s *Service) SelectTablesInteractive(ctx context.Context, profile *domain.P
 	tableNames, _, err = prompt.SelectMany(fmt.Sprintf("Pilih tabel di %s (Spasi untuk memilih):", dbName), tables, nil)
 	return dbName, tableNames, err
 }
+
+// ConfirmOverwriteInteractive menangani alur konfirmasi jika target sudah ada.
+func (s *Service) ConfirmOverwriteInteractive(targetName string, nonInteractive, force, backupFirst bool) (finalForce, finalBackupFirst bool, err error) {
+	if nonInteractive {
+		if !force && !backupFirst {
+			return false, false, fmt.Errorf("target '%s' sudah ada. Gunakan --force atau --backup-first", targetName)
+		}
+		return force, backupFirst, nil
+	}
+
+	// Mode Interaktif
+	s.log.Warnf("PERINGATAN: Target '%s' sudah ada!", targetName)
+
+	finalForce = force
+	finalBackupFirst = backupFirst
+
+	if !finalForce && !finalBackupFirst {
+		choice, _, err := prompt.SelectOne(fmt.Sprintf("Target '%s' sudah ada. Apa yang ingin Anda lakukan?", targetName),
+			[]string{"Batalkan", "Backup dulu baru timpa (Sangat Disarankan)", "Timpa langsung (Data lama hilang!)"}, 0)
+		if err != nil || choice == "Batalkan" {
+			return false, false, fmt.Errorf("operasi dibatalkan")
+		}
+		if choice == "Backup dulu baru timpa (Sangat Disarankan)" {
+			finalBackupFirst = true
+		} else {
+			finalForce = true
+		}
+	}
+
+	// Konfirmasi Akhir
+	if finalBackupFirst {
+		confirm, err := prompt.Confirm(fmt.Sprintf("Yakin ingin membackup lalu menimpa '%s'?", targetName), true)
+		if err != nil || !confirm {
+			return false, false, fmt.Errorf("operasi dibatalkan")
+		}
+	} else if finalForce {
+		s.log.Warnf("!!! PERHATIAN !!!")
+		s.log.Warnf("Anda memilih untuk MENIMPA '%s' TANPA backup.", targetName)
+		confirm1, _ := prompt.Confirm("Apakah Anda sadar data lama di target akan hilang permanen?", false)
+		if !confirm1 {
+			return false, false, fmt.Errorf("operasi dibatalkan")
+		}
+		confirm2, _ := prompt.Confirm("Konfirmasi terakhir: Benar-benar ingin menimpa tanpa backup?", false)
+		if !confirm2 {
+			return false, false, fmt.Errorf("operasi dibatalkan")
+		}
+	}
+
+	return finalForce, finalBackupFirst, nil
+}
+

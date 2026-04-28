@@ -206,7 +206,7 @@ func (s *Setup) PrepareBackupSession(ctx context.Context, headerTitle string, no
 				if errEnc != nil {
 					return nil, nil, errEnc
 				}
-				
+
 				switch actionEnc {
 				case "Matikan Enkripsi (Lanjutkan tanpa kunci)":
 					s.Options.Encryption.Enabled = false

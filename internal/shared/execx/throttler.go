@@ -73,7 +73,7 @@ func (t *ThrottledReader) Read(p []byte) (n int, err error) {
 	}
 
 	t.total += int64(n)
-	
+
 	// Kalkulasi waktu yang seharusnya dibutuhkan untuk jumlah bytes ini
 	expectedDuration := time.Duration(t.total) * time.Second / time.Duration(t.bps)
 	actualDuration := time.Since(t.start)
@@ -81,7 +81,7 @@ func (t *ThrottledReader) Read(p []byte) (n int, err error) {
 	if actualDuration < expectedDuration {
 		// Kita terlalu cepat, harus tidur sejenak
 		sleepTime := expectedDuration - actualDuration
-		
+
 		timer := time.NewTimer(sleepTime)
 		select {
 		case <-t.ctx.Done():

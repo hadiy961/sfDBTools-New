@@ -264,7 +264,7 @@ func TestResolveAndLoadProfile_OptionalProfile(t *testing.T) {
 	if err != nil {
 		t.Logf("Got error (expected for optional missing profile): %v", err)
 	}
-	
+
 	if profile != nil {
 		t.Log("Profile is not nil (may have loaded from somewhere)")
 	}
@@ -309,7 +309,7 @@ func TestResolveAndLoadProfile_WrongKey(t *testing.T) {
 // TestResolveAndLoadProfile_EmptyConfigDir tests error with empty ConfigDir for relative path
 func TestResolveAndLoadProfile_EmptyConfigDir(t *testing.T) {
 	_, err := ResolveAndLoadProfile(ProfileLoadOptions{
-		ConfigDir:   "", // Empty
+		ConfigDir:   "",                      // Empty
 		ProfilePath: "test-profile1.cnf.enc", // Relative path
 		ProfileKey:  testEncryptionKey,
 	})

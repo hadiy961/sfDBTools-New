@@ -3,16 +3,13 @@ package copycmd
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sfdbtools/internal/app/copy"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/runner"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/internal/ui/table"
 	"strings"
-	"sync"
-	"time"
-	"runtime"
-
 	"github.com/spf13/cobra"
 )
 
@@ -47,20 +44,20 @@ var CmdCopyTable = &cobra.Command{
 						sourceTables = append(sourceTables, parts[1])
 					}
 				}
-			targetArg = args[len(args)-1]
+				targetArg = args[len(args)-1]
 			} else if len(args) == 1 {
-			parts := strings.Split(args[0], ".")
-			if len(parts) == 2 {
-				sourceDB = parts[0]
-				sourceTables = append(sourceTables, parts[1])
+				parts := strings.Split(args[0], ".")
+				if len(parts) == 2 {
+					sourceDB = parts[0]
+					sourceTables = append(sourceTables, parts[1])
+				}
 			}
-		}
 
-		svc := copy.NewService(appdeps.Deps.Logger, appdeps.Deps.Config)
-		svc.SetTicket(copyTableTicket)
-		
-		// 1. Load Profile
-		profile, err := svc.LoadProfile(copyTableProfile, copyTableProfileKey, !copyTableNonInteractive)
+			svc := copy.NewService(appdeps.Deps.Logger, appdeps.Deps.Config)
+			svc.SetTicket(copyTableTicket)
+
+			// 1. Load Profile
+			profile, err := svc.LoadProfile(copyTableProfile, copyTableProfileKey, !copyTableNonInteractive)
 			if err != nil {
 				return err
 			}
@@ -82,7 +79,7 @@ var CmdCopyTable = &cobra.Command{
 			}
 
 			// 3. Handle Target Database
-		targetDB := sourceDB
+			targetDB := sourceDB
 			if targetArg != "" && !strings.Contains(targetArg, ".") {
 				targetDB = targetArg
 			} else if !copyTableNonInteractive {
@@ -117,87 +114,52 @@ var CmdCopyTable = &cobra.Command{
 				copyTableIncludeGrants, _ = prompt.Confirm("Salin hak akses (grants) user untuk database target?", true)
 			}
 
-			// 6. Execution with Worker Pool
-		successCount := 0
-			var results [][]string
-			var mu sync.Mutex
-			
+			// 6. Execution
 			fmt.Println()
-			
-			type tableTask struct {
-				index int
-				name  string
+						resList, err := svc.CopyTablesConcurrent(ctx, copy.CopyTablesConcurrentOptions{
+				CopyTableOptions: copy.CopyTableOptions{
+					Profile:        profile,
+					SourceDB:       sourceDB,
+					TargetDB:       targetDB,
+					SchemaOnly:     copyTableSchemaOnly,
+					Force:          copyTableForce,
+					BackupFirst:    copyTableBackupFirst,
+					IncludeGrants:  copyTableIncludeGrants,
+					Verify:         copyTableVerify,
+					NonInteractive: copyTableNonInteractive,
+				},
+				SourceTables:        sourceTables,
+				Suffix:              tableSuffix,
+				TargetTableIfSingle: specificTargetTable,
+				Workers:             copyTableWorkers,
+			})
+			if err != nil && len(resList) == 0 {
+				return err
 			}
-			taskChan := make(chan tableTask, len(sourceTables))
-			wg := sync.WaitGroup{}
-			
-			numWorkers := copyTableWorkers
-			if numWorkers > len(sourceTables) { numWorkers = len(sourceTables) }
-			if numWorkers < 1 { numWorkers = 1 }
-
-			for w := 0; w < numWorkers; w++ {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					for task := range taskChan {
-						select {
-						case <-ctx.Done():
-							return
-						default:
-						}
-
-						currTargetTable := task.name + tableSuffix
-						if specificTargetTable != "" {
-							currTargetTable = specificTargetTable
-						}
-
-						start := time.Now()
-						mu.Lock()
-						fmt.Printf("[%d/%d] Kloning %s.%s -> %s.%s ...\n", task.index+1, len(sourceTables), sourceDB, task.name, targetDB, currTargetTable)
-						mu.Unlock()
-
-						_, _, verifyStatus, err := svc.CopyTable(ctx, profile, sourceDB, task.name, targetDB, currTargetTable, copyTableSchemaOnly, copyTableForce, copyTableBackupFirst, copyTableIncludeGrants, copyTableVerify, copyTableNonInteractive)
-						duration := time.Since(start).Round(time.Millisecond)
-						
-						status := "Sukses"
-						icon := "✅"
-						if err != nil {
-							status = "Gagal"
-							icon = "❌"
-							mu.Lock()
-							fmt.Printf("  ❌ Error %s: %v\n\n", task.name, err)
-							mu.Unlock()
-						} else {
-							mu.Lock()
-							successCount++
-							fmt.Printf("  ✅ %s Berhasil (%s)\n\n", task.name, duration)
-							mu.Unlock()
-						}
-
-						mu.Lock()
-						results = append(results, []string{
-							icon + " " + fmt.Sprintf("%s.%s", sourceDB, task.name),
-							fmt.Sprintf("%s.%s", targetDB, currTargetTable),
-							status,
-							verifyStatus,
-							duration.String(),
-						})
-						mu.Unlock()
-					}
-				}()
-			}
-
-			for i, tbl := range sourceTables {
-				taskChan <- tableTask{index: i, name: tbl}
-			}
-			close(taskChan)
-			wg.Wait()
 
 			// 7. Final Summary Table
+			var results [][]string
+			successCount := 0
+			for _, r := range resList {
+				icon := "✅"
+				if r.Error != nil {
+					icon = "❌"
+				} else {
+					successCount++
+				}
+				results = append(results, []string{
+					icon + " " + fmt.Sprintf("%s.%s", r.SourceDB, r.SourceTable),
+					fmt.Sprintf("%s.%s", r.TargetDB, r.TargetTable),
+					r.Status,
+					r.VerifyStatus,
+					r.Duration.String(),
+				})
+			}
+
 			fmt.Printf("\n--- Ringkasan Copy Tabel ---\n")
 			headers := []string{"Sumber", "Tujuan", "Status", "Checksum", "Durasi"}
 			table.Render(headers, results)
-			
+
 			fmt.Printf("\nSelesai: %d/%d tabel berhasil disalin.\n", successCount, len(sourceTables))
 			return nil
 		})
@@ -206,8 +168,12 @@ var CmdCopyTable = &cobra.Command{
 
 func init() {
 	defaultWorkers := runtime.NumCPU()
-	if defaultWorkers > 16 { defaultWorkers = 16 }
-	if defaultWorkers < 1 { defaultWorkers = 1 }
+	if defaultWorkers > 16 {
+		defaultWorkers = 16
+	}
+	if defaultWorkers < 1 {
+		defaultWorkers = 1
+	}
 
 	CmdCopyTable.Flags().StringVarP(&copyTableProfile, "profile", "p", "", "Nama atau path profil database")
 	CmdCopyTable.Flags().StringVar(&copyTableProfileKey, "profile-key", "", "Kunci enkripsi profil (jika dienkripsi)")

@@ -47,17 +47,17 @@ func TestThrottledReader_Timing(t *testing.T) {
 	// Test data: 100KB
 	size := 100 * 1024
 	data := strings.Repeat("a", size)
-	
+
 	// Speed: 50KB/s
 	// Expected duration: 100 / 50 = 2 seconds
 	speed := int64(50 * 1024)
-	
+
 	ctx := context.Background()
 	reader := strings.NewReader(data)
 	throttled := NewThrottledReader(ctx, reader, speed)
-	
+
 	start := time.Now()
-	
+
 	buf := make([]byte, 8192)
 	totalRead := 0
 	for {
@@ -70,18 +70,18 @@ func TestThrottledReader_Timing(t *testing.T) {
 			t.Fatalf("Unexpected error: %v", err)
 		}
 	}
-	
+
 	duration := time.Since(start)
-	
+
 	if totalRead != size {
 		t.Errorf("Total read %d, want %d", totalRead, size)
 	}
-	
+
 	// Kita toleransi margin error waktu (misal min 1.8 detik)
 	if duration < 1800*time.Millisecond {
 		t.Errorf("Throttling too fast: finished in %v, expected ~2s", duration)
 	}
-	
+
 	if duration > 3*time.Second {
 		t.Errorf("Throttling too slow: finished in %v, expected ~2s", duration)
 	}
@@ -91,7 +91,7 @@ func TestThrottledReader_NoThrottle(t *testing.T) {
 	data := "some data"
 	reader := strings.NewReader(data)
 	throttled := NewThrottledReader(context.Background(), reader, 0) // 0 means no limit
-	
+
 	buf := make([]byte, 1024)
 	n, err := throttled.Read(buf)
 	if n != len(data) || (err != nil && err != io.EOF) {

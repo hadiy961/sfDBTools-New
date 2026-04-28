@@ -17,7 +17,7 @@ const testEncryptionKey = "test-encryption-key-123"
 // TestLoadAndParseProfile_ValidEncrypted tests loading valid encrypted profile
 func TestLoadAndParseProfile_ValidEncrypted(t *testing.T) {
 	testFile := filepath.Join("testdata", "valid_encrypted.cnf.enc")
-	
+
 	profile, err := LoadAndParseProfile(testFile, testEncryptionKey)
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
@@ -51,7 +51,7 @@ func TestLoadAndParseProfile_ValidEncrypted(t *testing.T) {
 // TestLoadAndParseProfile_ValidEncryptedWithSSH tests loading profile with SSH tunnel
 func TestLoadAndParseProfile_ValidEncryptedWithSSH(t *testing.T) {
 	testFile := filepath.Join("testdata", "valid_with_ssh_encrypted.cnf.enc")
-	
+
 	profile, err := LoadAndParseProfile(testFile, testEncryptionKey)
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
@@ -90,7 +90,7 @@ func TestLoadAndParseProfile_ValidEncryptedWithSSH(t *testing.T) {
 func TestLoadAndParseProfile_InvalidEncryptionKey(t *testing.T) {
 	testFile := filepath.Join("testdata", "valid_encrypted.cnf.enc")
 	wrongKey := "wrong-key-that-will-fail"
-	
+
 	_, err := LoadAndParseProfile(testFile, wrongKey)
 	if err == nil {
 		t.Fatal("Expected decryption error with wrong key, got nil")
@@ -108,7 +108,7 @@ func TestLoadAndParseProfile_InvalidEncryptionKey(t *testing.T) {
 // TestLoadAndParseProfile_CorruptEncryptedFile tests with corrupted encrypted data
 func TestLoadAndParseProfile_CorruptEncryptedFile(t *testing.T) {
 	testFile := filepath.Join("testdata", "corrupt_encrypted.cnf.enc")
-	
+
 	_, err := LoadAndParseProfile(testFile, testEncryptionKey)
 	if err == nil {
 		t.Fatal("Expected error with corrupt file, got nil")
@@ -120,7 +120,7 @@ func TestLoadAndParseProfile_CorruptEncryptedFile(t *testing.T) {
 // TestLoadAndParseProfile_FileNotFound tests with non-existent file
 func TestLoadAndParseProfile_FileNotFound(t *testing.T) {
 	testFile := filepath.Join("testdata", "nonexistent.cnf.enc")
-	
+
 	_, err := LoadAndParseProfile(testFile, testEncryptionKey)
 	if err == nil {
 		t.Fatal("Expected file not found error, got nil")
@@ -137,25 +137,25 @@ func TestLoadAndParseProfile_InvalidINIFormat(t *testing.T) {
 	// First, encrypt the invalid format file
 	invalidFile := filepath.Join("testdata", "invalid_format.cnf")
 	invalidEncFile := filepath.Join("testdata", "invalid_format_temp.cnf.enc")
-	
+
 	// Cleanup temp file after test
 	defer os.Remove(invalidEncFile)
-	
+
 	// Encrypt it
 	data, err := os.ReadFile(invalidFile)
 	if err != nil {
 		t.Fatalf("Failed to read invalid format file: %v", err)
 	}
-	
+
 	encrypted, err := crypto.EncryptData(data, []byte(testEncryptionKey))
 	if err != nil {
 		t.Fatalf("Failed to encrypt test data: %v", err)
 	}
-	
+
 	if err := os.WriteFile(invalidEncFile, encrypted, 0644); err != nil {
 		t.Fatalf("Failed to write encrypted test file: %v", err)
 	}
-	
+
 	// Now test loading it
 	_, err = LoadAndParseProfile(invalidEncFile, testEncryptionKey)
 	if err == nil {
@@ -175,23 +175,23 @@ func TestLoadAndParseProfile_MissingRequiredFields(t *testing.T) {
 	// Encrypt the missing fields file
 	missingFile := filepath.Join("testdata", "missing_fields.cnf")
 	missingEncFile := filepath.Join("testdata", "missing_fields_temp.cnf.enc")
-	
+
 	defer os.Remove(missingEncFile)
-	
+
 	data, err := os.ReadFile(missingFile)
 	if err != nil {
 		t.Fatalf("Failed to read missing fields file: %v", err)
 	}
-	
+
 	encrypted, err := crypto.EncryptData(data, []byte(testEncryptionKey))
 	if err != nil {
 		t.Fatalf("Failed to encrypt test data: %v", err)
 	}
-	
+
 	if err := os.WriteFile(missingEncFile, encrypted, 0644); err != nil {
 		t.Fatalf("Failed to write encrypted test file: %v", err)
 	}
-	
+
 	// Load should succeed but fields will be empty
 	profile, err := LoadAndParseProfile(missingEncFile, testEncryptionKey)
 	if err != nil {
@@ -215,23 +215,23 @@ func TestLoadAndParseProfile_SpecialCharacters(t *testing.T) {
 	// Encrypt the special chars file
 	specialFile := filepath.Join("testdata", "special_chars.cnf")
 	specialEncFile := filepath.Join("testdata", "special_chars_temp.cnf.enc")
-	
+
 	defer os.Remove(specialEncFile)
-	
+
 	data, err := os.ReadFile(specialFile)
 	if err != nil {
 		t.Fatalf("Failed to read special chars file: %v", err)
 	}
-	
+
 	encrypted, err := crypto.EncryptData(data, []byte(testEncryptionKey))
 	if err != nil {
 		t.Fatalf("Failed to encrypt test data: %v", err)
 	}
-	
+
 	if err := os.WriteFile(specialEncFile, encrypted, 0644); err != nil {
 		t.Fatalf("Failed to write encrypted test file: %v", err)
 	}
-	
+
 	profile, err := LoadAndParseProfile(specialEncFile, testEncryptionKey)
 	if err != nil {
 		t.Fatalf("Expected no error with special chars, got: %v", err)
@@ -241,7 +241,7 @@ func TestLoadAndParseProfile_SpecialCharacters(t *testing.T) {
 	if profile.DBInfo.User != "test@user" {
 		t.Errorf("Expected user 'test@user', got '%s'", profile.DBInfo.User)
 	}
-	
+
 	expectedPassword := "p@$$w0rd!#%^&*()_+-=[]{}|;:'\"" + ",.<>?/~`"
 	if profile.DBInfo.Password != expectedPassword {
 		t.Errorf("Expected password with special chars, got '%s'", profile.DBInfo.Password)
@@ -253,23 +253,23 @@ func TestLoadAndParseProfile_DuplicateKeys(t *testing.T) {
 	// Encrypt the duplicate keys file
 	dupFile := filepath.Join("testdata", "duplicate_keys.cnf")
 	dupEncFile := filepath.Join("testdata", "duplicate_keys_temp.cnf.enc")
-	
+
 	defer os.Remove(dupEncFile)
-	
+
 	data, err := os.ReadFile(dupFile)
 	if err != nil {
 		t.Fatalf("Failed to read duplicate keys file: %v", err)
 	}
-	
+
 	encrypted, err := crypto.EncryptData(data, []byte(testEncryptionKey))
 	if err != nil {
 		t.Fatalf("Failed to encrypt test data: %v", err)
 	}
-	
+
 	if err := os.WriteFile(dupEncFile, encrypted, 0644); err != nil {
 		t.Fatalf("Failed to write encrypted test file: %v", err)
 	}
-	
+
 	profile, err := LoadAndParseProfile(dupEncFile, testEncryptionKey)
 	if err != nil {
 		t.Fatalf("Expected no error with duplicate keys, got: %v", err)
@@ -289,14 +289,14 @@ func TestLoadAndParseProfile_EmptyKey(t *testing.T) {
 	// This test requires mocking or setting environment variable
 	// For now, we'll test that it attempts to resolve key
 	testFile := filepath.Join("testdata", "valid_encrypted.cnf.enc")
-	
+
 	// Save current env
 	oldEnv := os.Getenv("SFDB_SOURCE_PROFILE_KEY")
 	defer os.Setenv("SFDB_SOURCE_PROFILE_KEY", oldEnv)
-	
+
 	// Set test key in env
 	os.Setenv("SFDB_SOURCE_PROFILE_KEY", testEncryptionKey)
-	
+
 	// Call with empty key - should use env
 	profile, err := LoadAndParseProfile(testFile, "")
 	if err != nil {
@@ -307,7 +307,7 @@ func TestLoadAndParseProfile_EmptyKey(t *testing.T) {
 	if profile.DBInfo.Host != "localhost" {
 		t.Errorf("Expected host 'localhost', got '%s'", profile.DBInfo.Host)
 	}
-	
+
 	// Verify encryption source is env
 	if profile.EncryptionSource != "env" {
 		t.Errorf("Expected encryption source 'env', got '%s'", profile.EncryptionSource)
@@ -317,7 +317,7 @@ func TestLoadAndParseProfile_EmptyKey(t *testing.T) {
 // TestLoadAndParseProfile_ProfileNameExtraction tests profile name extraction from path
 func TestLoadAndParseProfile_ProfileNameExtraction(t *testing.T) {
 	testFile := filepath.Join("testdata", "valid_encrypted.cnf.enc")
-	
+
 	profile, err := LoadAndParseProfile(testFile, testEncryptionKey)
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
@@ -345,19 +345,19 @@ host = sshhost
 user = sshuser
 ssh_password = sshpass
 `
-	
+
 	tempFile := filepath.Join("testdata", "ssh_default_port_temp.cnf.enc")
 	defer os.Remove(tempFile)
-	
+
 	encrypted, err := crypto.EncryptData([]byte(content), []byte(testEncryptionKey))
 	if err != nil {
 		t.Fatalf("Failed to encrypt test data: %v", err)
 	}
-	
+
 	if err := os.WriteFile(tempFile, encrypted, 0644); err != nil {
 		t.Fatalf("Failed to write encrypted test file: %v", err)
 	}
-	
+
 	profile, err := LoadAndParseProfile(tempFile, testEncryptionKey)
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
@@ -375,8 +375,8 @@ ssh_password = sshpass
 // TestLoadAndParseProfile_SSHEnabledVariations tests various SSH enabled values
 func TestLoadAndParseProfile_SSHEnabledVariations(t *testing.T) {
 	testCases := []struct {
-		name        string
-		enabledVal  string
+		name         string
+		enabledVal   string
 		shouldEnable bool
 	}{
 		{"true", "true", true},
@@ -399,19 +399,19 @@ func TestLoadAndParseProfile_SSHEnabledVariations(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			content := "[client]\nhost = localhost\nport = 3306\nuser = test\npassword = test\n\n"
 			content += "[ssh]\nenabled = " + tc.enabledVal + "\nhost = sshhost\nport = 22\nuser = sshuser\n"
-			
+
 			tempFile := filepath.Join("testdata", "ssh_enabled_"+tc.name+"_temp.cnf.enc")
 			defer os.Remove(tempFile)
-			
+
 			encrypted, err := crypto.EncryptData([]byte(content), []byte(testEncryptionKey))
 			if err != nil {
 				t.Fatalf("Failed to encrypt: %v", err)
 			}
-			
+
 			if err := os.WriteFile(tempFile, encrypted, 0644); err != nil {
 				t.Fatalf("Failed to write: %v", err)
 			}
-			
+
 			profile, err := LoadAndParseProfile(tempFile, testEncryptionKey)
 			if err != nil {
 				t.Fatalf("Expected no error, got: %v", err)

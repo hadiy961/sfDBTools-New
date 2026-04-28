@@ -62,10 +62,10 @@ func AddDisableSSLArgs(args []string) ([]string, bool) {
 // - "unknown variable 'set-gtid-purged=OFF'"
 //
 // Returns: (newArgs, removedOption, success)
-// - newArgs: args setelah opsi dihapus
-// - removedOption: opsi yang dihapus (untuk logging). Bisa berisi beberapa flag jika
-//   opsi yang sama muncul berkali-kali (contoh: banyak --ignore-table-data=...).
-// - success: true jika berhasil mendeteksi dan menghapus
+//   - newArgs: args setelah opsi dihapus
+//   - removedOption: opsi yang dihapus (untuk logging). Bisa berisi beberapa flag jika
+//     opsi yang sama muncul berkali-kali (contoh: banyak --ignore-table-data=...).
+//   - success: true jika berhasil mendeteksi dan menghapus
 func RemoveUnsupportedMysqldumpOption(args []string, stderrOutput string) ([]string, string, bool) {
 	stderrLower := strings.ToLower(stderrOutput)
 	if !strings.Contains(stderrLower, "unknown option") && !strings.Contains(stderrLower, "unknown variable") {

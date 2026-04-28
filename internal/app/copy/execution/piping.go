@@ -26,8 +26,8 @@ type PipingOptions struct {
 	TableName    string // Opsional, jika ingin copy table tertentu
 	SchemaOnly   bool
 	BaseDumpArgs string
-	LimitSpeed   int64 // Bytes per second
-	HideProgress bool  // Jika true, jangan tampilkan spinner/progress internal
+	LimitSpeed   int64  // Bytes per second
+	HideProgress bool   // Jika true, jangan tampilkan spinner/progress internal
 	Label        string // Label kustom untuk progress bar
 	Force        bool   // Jika true, gunakan --force di mysqldump dan mysql
 	TotalTables  int    // Untuk kalkulasi persentase progress di mode Piping
@@ -93,7 +93,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 		dumpCmd.Stdout = pw
 
 		// Channel untuk menangkap deteksi tabel dari stream SQL
-	tableUpdateChan := make(chan string, 100)
+		tableUpdateChan := make(chan string, 100)
 
 		// Transformer
 		transformedReader := transformSQLStream(pr, opts.SourceDB, opts.TargetDB, tableUpdateChan)
@@ -152,7 +152,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 			ticker := time.NewTicker(1 * time.Second)
 			defer ticker.Stop()
 			var lastBytes int64
-			
+
 			var currentTable string
 			var tablesProcessed int
 			seenTables := make(map[string]bool)
@@ -175,13 +175,15 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 						if label == "" {
 							if opts.TotalTables > 0 {
 								percent := float64(tablesProcessed) * 100 / float64(opts.TotalTables)
-								if percent > 100 { percent = 100 }
+								if percent > 100 {
+									percent = 100
+								}
 								label = fmt.Sprintf("Streaming %d/%d tabel (%.1f%%) [%s]", tablesProcessed, opts.TotalTables, percent, currentTable)
 							} else {
 								label = fmt.Sprintf("Streaming %s -> %s", opts.SourceDB, opts.TargetDB)
 							}
 						}
-						
+
 						if opts.LimitSpeed > 0 {
 							speedMB := float64(opts.LimitSpeed) / (1024 * 1024)
 							spin.Update(fmt.Sprintf("%s [%.2f MB/s limit]", label, speedMB))
@@ -229,7 +231,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 					if ttPR != nil {
 						_ = ttPR.Close()
 					}
-				numFinished = 2 // Stop waiting if one fails critically
+					numFinished = 2 // Stop waiting if one fails critically
 				}
 			case e := <-errMysqlChan:
 				errMysql = e
@@ -241,7 +243,7 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 					if ttPR != nil {
 						_ = ttPR.Close()
 					}
-				numFinished = 2
+					numFinished = 2
 				}
 			case <-ctx.Done():
 				_ = dumpCmd.Process.Kill()
@@ -251,8 +253,8 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 				if ttPR != nil {
 					_ = ttPR.Close()
 				}
-			timedOut = true
-			numFinished = 2
+				timedOut = true
+				numFinished = 2
 			}
 		}
 
@@ -290,15 +292,15 @@ func ExecutePiping(ctx context.Context, log applog.Logger, opts PipingOptions) e
 				}
 
 				// Cek SSL mismatch
-			if backup_exec.IsSSLMismatchRequiredButServerNoSupport(stderrStr) && attempts < maxAttempts {
-				if newArgs, added := backup_exec.AddDisableSSLArgs(dumpArgs); added {
-					log.Warnf("SSL mismatch terdeteksi, mencoba ulang dengan --skip-ssl...")
-					dumpArgs = newArgs
-					continue // Retry!
+				if backup_exec.IsSSLMismatchRequiredButServerNoSupport(stderrStr) && attempts < maxAttempts {
+					if newArgs, added := backup_exec.AddDisableSSLArgs(dumpArgs); added {
+						log.Warnf("SSL mismatch terdeteksi, mencoba ulang dengan --skip-ssl...")
+						dumpArgs = newArgs
+						continue // Retry!
+					}
 				}
-			}
-			
-			return fmt.Errorf("error pada %s: %w", dumpBin.Name, errDump)
+
+				return fmt.Errorf("error pada %s: %w", dumpBin.Name, errDump)
 			}
 		}
 

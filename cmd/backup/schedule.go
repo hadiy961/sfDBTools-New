@@ -30,7 +30,7 @@ var CmdBackupScheduleSync = &cobra.Command{
 		if err := mgr.Sync(cmd.Context()); err != nil {
 			return fmt.Errorf("gagal sync scheduler: %w", err)
 		}
-		
+
 		deps.Logger.Info("Sinkronisasi jadwal backup berhasil.")
 		return nil
 	},
@@ -49,7 +49,7 @@ var CmdBackupScheduleStatus = &cobra.Command{
 		if err := mgr.ShowStatus(cmd.Context()); err != nil {
 			return fmt.Errorf("gagal menampilkan status scheduler: %w", err)
 		}
-		
+
 		return nil
 	},
 }
