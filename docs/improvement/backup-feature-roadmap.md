@@ -92,14 +92,15 @@ cmd/backup/
 ---
 
 ### Feature 2: Backup Catalog & History
-**Priority: 🔴 Critical** · **Complexity: Medium**
+**Priority: ✅ Selesai** · **Complexity: Medium**
 
 > *"Saya punya 500 file backup, mana yang terbaru untuk `dbsf_biznet_jtrust`?"*
 
 DBA butuh satu tempat untuk melihat semua backup yang ada, history, dan status.
+Fitur ini telah diimplementasikan mengikuti prinsip *Golang Enterprise Standard* (SOLID, Separation of Concerns). Terdapat lapisan *Repository* (untuk I/O `catalog.json`), *Service* (untuk filter, rebuild), dan *Delivery* (untuk CLI Command).
 
 #### Key Capabilities
-1. **Catalog Index** — Local JSON/SQLite index yang track semua backups:
+1. **Catalog Index** — Local JSON index yang otomatis di-*update* tiap backup:
    - Database name, backup time, file size, mode, status
    - Checksum, compression type, encrypted status
    - GTID position (untuk PITR chain tracking)
@@ -111,12 +112,10 @@ DBA butuh satu tempat untuk melihat semua backup yang ada, history, dan status.
    - `sfdbtools backup list --status failed` — Filter by status
 
 3. **Backup Report** — Summary untuk reporting:
-   - Total backup size per hari/minggu/bulan
-   - Success/failure rate
-   - Database coverage (DB mana yang belum di-backup?)
-   - Storage trend (growth rate)
+   - Total backups, success rate, dan Total Size.
+   - Database coverage.
 
-4. **Auto-catalog** — Setiap backup otomatis register ke catalog
+4. **Auto-catalog** — Setiap backup otomatis register ke catalog.
 
 #### CLI Commands
 ```bash
