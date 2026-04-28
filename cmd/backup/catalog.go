@@ -7,6 +7,7 @@ import (
 	"sfdbtools/internal/app/backup/catalog"
 	applog "sfdbtools/internal/services/log"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -25,6 +26,31 @@ var catalogRebuildCmd = &cobra.Command{
 	Use:   "rebuild",
 	Short: "Membangun ulang catalog dari direktori yang ditentukan",
 	Run: func(cmd *cobra.Command, args []string) {
+		isQuiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
+		if !isQuiet && catalogDir == "" {
+			fmt.Println("=== Catalog Rebuild ===")
+			err := survey.AskOne(&survey.Input{
+				Message: "Masukkan directory untuk scan:",
+				Default: ".",
+			}, &catalogDir)
+			if err != nil || catalogDir == "" {
+				fmt.Println("Dibatalkan.")
+				return
+			}
+			
+			if !catalogForce {
+				var confirm bool
+				survey.AskOne(&survey.Confirm{
+					Message: "Ini akan memindai dan me-register ulang metadata. Lanjutkan?",
+					Default: true,
+				}, &confirm)
+				if !confirm {
+					fmt.Println("Dibatalkan.")
+					return
+				}
+			}
+		}
+
 		if catalogDir == "" {
 			fmt.Println("Error: --dir harus diisi untuk rebuild catalog")
 			os.Exit(1)
@@ -33,7 +59,7 @@ var catalogRebuildCmd = &cobra.Command{
 		repo := catalog.NewJSONFileRepository("/etc/sfDBTools/catalog.json") // Todo: read from config
 		svc := catalog.NewService(repo, applog.NullLogger())
 
-		fmt.Printf("🔍 Scanning directory: %s\n", catalogDir)
+		fmt.Printf("\n🔍 Scanning directory: %s\n", catalogDir)
 		count, err := svc.RebuildFromDirectory(catalogDir)
 		if err != nil {
 			fmt.Printf("Error rebuilding catalog: %v\n", err)
@@ -51,7 +77,21 @@ var catalogPruneCmd = &cobra.Command{
 		repo := catalog.NewJSONFileRepository("/etc/sfDBTools/catalog.json") // Todo: read from config
 		svc := catalog.NewService(repo, applog.NullLogger())
 
-		fmt.Println("🔍 Checking catalog entries for missing files...")
+		isQuiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
+		if !isQuiet {
+			fmt.Println("=== Catalog Prune ===")
+			var confirm bool
+			survey.AskOne(&survey.Confirm{
+				Message: "Hapus entry catalog yang filenya sudah tidak ada di disk?",
+				Default: true,
+			}, &confirm)
+			if !confirm {
+				fmt.Println("Dibatalkan.")
+				return
+			}
+		}
+
+		fmt.Println("\n🔍 Checking catalog entries for missing files...")
 		removed, err := svc.Prune()
 		if err != nil {
 			fmt.Printf("Error pruning catalog: %v\n", err)

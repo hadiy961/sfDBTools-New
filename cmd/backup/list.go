@@ -8,6 +8,7 @@ import (
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/ui/table"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -24,6 +25,41 @@ var CmdBackupList = &cobra.Command{
 	Use:   "list",
 	Short: "Menampilkan daftar backup dari catalog",
 	Run: func(cmd *cobra.Command, args []string) {
+		isQuiet, _ := cmd.Root().PersistentFlags().GetBool("quiet")
+		noFlags := listDB == "" && listSince == "" && listStatus == "" && listHostname == ""
+
+		if !isQuiet && noFlags {
+			fmt.Println("=== Backup Catalog - List ===")
+			
+			var filters []string
+			survey.AskOne(&survey.MultiSelect{
+				Message: "Pilih filter yang ingin digunakan:",
+				Options: []string{"Database Name", "Time Range", "Status", "Hostname"},
+			}, &filters)
+
+			for _, f := range filters {
+				switch f {
+				case "Database Name":
+					survey.AskOne(&survey.Input{Message: "Masukkan nama database (partial match):"}, &listDB)
+				case "Time Range":
+					survey.AskOne(&survey.Input{Message: "Masukkan time range (e.g., 24h, 7d):"}, &listSince)
+				case "Status":
+					survey.AskOne(&survey.Select{
+						Message: "Pilih status:",
+						Options: []string{"success", "failed", "partial"},
+					}, &listStatus)
+				case "Hostname":
+					survey.AskOne(&survey.Input{Message: "Masukkan hostname:"}, &listHostname)
+				}
+			}
+
+			survey.AskOne(&survey.Select{
+				Message: "Pilih format output:",
+				Options: []string{"table", "json"},
+				Default: "table",
+			}, &listFormat)
+		}
+
 		repo := catalog.NewJSONFileRepository("/etc/sfDBTools/catalog.json") // Todo: load from config
 		svc := catalog.NewService(repo, applog.NullLogger())
 
@@ -42,7 +78,13 @@ var CmdBackupList = &cobra.Command{
 		}
 
 		if len(entries) == 0 {
-			fmt.Println("Tidak ada backup yang ditemukan di catalog.")
+			fmt.Println("\nTidak ada backup yang ditemukan di catalog.")
+			return
+		}
+
+		fmt.Println()
+		if listFormat == "json" {
+			fmt.Println("[JSON Output placeholder - implement JSON marshalling here]")
 			return
 		}
 
