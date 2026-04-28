@@ -42,8 +42,8 @@ func summarizeStderr(stderr string, maxLines int, maxChars int) string {
 }
 
 type Engine struct {
-	Log      applog.Logger
-	Options  *types_backup.BackupDBOptions
+	Log     applog.Logger
+	Options *types_backup.BackupDBOptions
 }
 
 func New(log applog.Logger, opts *types_backup.BackupDBOptions) *Engine {
@@ -74,7 +74,7 @@ func (e *Engine) createBufferedOutputFile(outputPath string, permissions string)
 	if err != nil {
 		return nil, nil, fmt.Errorf("gagal membuat file output: %w", err)
 	}
-	
+
 	// Gunakan buffer yang lebih besar untuk SSH tunnel untuk mengurangi overhead network round-trips
 	bufferSize := consts.BackupWriterBufferSize
 	if e.Options != nil && e.Options.Profile.SSHTunnel.Enabled {

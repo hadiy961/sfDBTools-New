@@ -16,9 +16,17 @@ import (
 
 // runSafetyBackup melakukan backup cepat ke direktori default config sebelum ditimpa.
 func (s *Service) runSafetyBackup(ctx context.Context, profile *domain.ProfileInfo, client *database.Client, dbName string) error {
+	return s.executeSafetyBackup(ctx, profile, client, dbName, "", "INTERNAL_SAFETY_BACKUP")
+}
+
+func (s *Service) runSafetyTableBackup(ctx context.Context, profile *domain.ProfileInfo, client *database.Client, dbName, tableName string) error {
+	return s.executeSafetyBackup(ctx, profile, client, dbName, tableName, "INTERNAL_SAFETY_BACKUP_TABLE")
+}
+
+func (s *Service) executeSafetyBackup(ctx context.Context, profile *domain.ProfileInfo, client *database.Client, dbName, tableName, ticketPrefix string) error {
 	ticket := s.ticket
 	if ticket == "" {
-		ticket = "INTERNAL_SAFETY_BACKUP"
+		ticket = ticketPrefix
 	}
 
 	opts := &types_backup.BackupDBOptions{
@@ -34,7 +42,11 @@ func (s *Service) runSafetyBackup(ctx context.Context, profile *domain.ProfileIn
 
 	// Generate path
 	hostname := profile.DBInfo.Host
-	filename, _ := backuppath.GenerateBackupFilename(dbName, consts.ModeSingle, hostname, compress.CompressionType(consts.CompressionTypeGzip), false, false)
+	label := dbName
+	if tableName != "" {
+		label = dbName + "_" + tableName
+	}
+	filename, _ := backuppath.GenerateBackupFilename(label, consts.ModeSingle, hostname, compress.CompressionType(consts.CompressionTypeGzip), false, false)
 
 	outputDir := s.cfg.Backup.Output.BaseDirectory
 	if outputDir == "" {
@@ -43,48 +55,13 @@ func (s *Service) runSafetyBackup(ctx context.Context, profile *domain.ProfileIn
 	}
 	outputPath := filepath.Join(outputDir, filename)
 
-	s.log.Infof("Backup disimpan di: %s", outputPath)
+	if tableName != "" {
+		s.log.Infof("Backup tabel disimpan di: %s", outputPath)
+	} else {
+		s.log.Infof("Backup disimpan di: %s", outputPath)
+	}
 
 	eng := execution.New(s.log, s.cfg, opts, s.errLog).WithDependencies(client, nil, nil, nil, nil)
-	_, err := eng.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
-		DBName:       dbName,
-		OutputPath:   outputPath,
-		IsMultiDB:    false,
-		TotalDBFound: 1,
-	})
-	return err
-}
-
-func (s *Service) runSafetyTableBackup(ctx context.Context, profile *domain.ProfileInfo, client *database.Client, dbName, tableName string) error {
-	ticket := s.ticket
-	if ticket == "" {
-		ticket = "INTERNAL_SAFETY_BACKUP_TABLE"
-	}
-
-	opts := &types_backup.BackupDBOptions{
-		Profile: *profile,
-		Mode:    consts.ModeSingle,
-		DBName:  dbName,
-		Ticket:  ticket,
-	}
-	opts.Compression.Enabled = true
-	opts.Compression.Type = consts.CompressionTypeGzip
-
-	hostname := profile.DBInfo.Host
-	filename, _ := backuppath.GenerateBackupFilename(dbName+"_"+tableName, consts.ModeSingle, hostname, compress.CompressionType(consts.CompressionTypeGzip), false, false)
-
-	outputDir := s.cfg.Backup.Output.BaseDirectory
-	if outputDir == "" {
-		outputDir = filepath.Join(os.TempDir(), "sfdbtools_safety")
-		_ = os.MkdirAll(outputDir, 0755)
-	}
-	outputPath := filepath.Join(outputDir, filename)
-
-	s.log.Infof("Backup tabel disimpan di: %s", outputPath)
-
-	eng := execution.New(s.log, s.cfg, opts, s.errLog).WithDependencies(client, nil, nil, nil, nil)
-
-	// Gunakan argumen mysqldump untuk tabel spesifik
 	_, err := eng.ExecuteAndBuildBackup(ctx, types_backup.BackupExecutionConfig{
 		DBName:       dbName,
 		OutputPath:   outputPath,

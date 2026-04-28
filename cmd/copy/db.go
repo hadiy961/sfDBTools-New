@@ -3,6 +3,7 @@ package copycmd
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sfdbtools/internal/app/copy"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/runner"
@@ -10,7 +11,6 @@ import (
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/internal/ui/table"
 	"time"
-	"runtime"
 
 	"github.com/spf13/cobra"
 )
@@ -51,7 +51,7 @@ var CmdCopyDB = &cobra.Command{
 
 			svc := copy.NewService(appdeps.Deps.Logger, appdeps.Deps.Config)
 			svc.SetTicket(copyDBTicket)
-			
+
 			// 1. Load Profile (Interactive picker if empty)
 			profile, err := svc.LoadProfile(copyDBProfile, copyDBProfileKey, !copyDBNonInteractive)
 			if err != nil {
@@ -91,7 +91,6 @@ var CmdCopyDB = &cobra.Command{
 			}
 
 			// 4. Handle Copy Method (Piping vs Concurrent)
-			methodLabel := "Piping" 
 			useConcurrent := false
 			if !copyDBNonInteractive {
 				options := []string{
@@ -101,7 +100,6 @@ var CmdCopyDB = &cobra.Command{
 				choice, _, err := prompt.SelectOne("Pilih metode penyalinan:", options, 0)
 				if err == nil {
 					if choice == "Concurrent Stream (Sangat Cepat, Multi-threading)" {
-						methodLabel = "Concurrent"
 						useConcurrent = true
 					}
 				}
@@ -121,50 +119,51 @@ var CmdCopyDB = &cobra.Command{
 				copyDBIncludeGrants, _ = prompt.Confirm("Salin hak akses (grants) user dari database sumber?", true)
 			}
 
-			// 6. Loop Execution
-			successCount := 0
-			var results [][]string
-			
+			// 6. Execution
 			fmt.Println() // Space before start
-			for i, db := range sourceDBs {
-				// Check for graceful shutdown
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				default:
-				}
-
-				currTarget := targetDB
-				if len(sourceDBs) > 1 {
-					currTarget = db + suffix
-				}
-
-				start := time.Now()
-				fmt.Printf("[%d/%d] Kloning %s -> %s [%s]...\n", i+1, len(sourceDBs), db, currTarget, methodLabel)
-				finalTarget, err := svc.CopyDatabase(ctx, profile, db, currTarget, copyDBSchemaOnly, useConcurrent, copyDBWorkers, limitSpeed, copyDBForce, copyDBBackupFirst, copyDBIncludeGrants, copyDBVerify, copyDBSkipRoutines, copyDBSkipEvents, copyDBSkipTriggers, copyDBNonInteractive)
-				duration := time.Since(start).Round(time.Second)
-				
-				status := "Sukses"
-				icon := "✅"
-				if err != nil {
-					status = "Gagal"
-					icon = "❌"
-					fmt.Printf("  ❌ Error: %v\n\n", err)
-				} else {
-					successCount++
-					fmt.Printf("  ✅ Berhasil: %s (%s)\n\n", finalTarget, duration)
-				}
-				
-				results = append(results, []string{
-					icon + " " + db, 
-					currTarget, 
-					methodLabel, 
-					duration.String(), 
-					status,
-				})
+						resList, err := svc.CopyDatabases(ctx, copy.CopyDatabasesOptions{
+				CopyDatabaseOptions: copy.CopyDatabaseOptions{
+					Profile:        profile,
+					SchemaOnly:     copyDBSchemaOnly,
+					UseConcurrent:  useConcurrent,
+					Workers:        copyDBWorkers,
+					LimitSpeed:     limitSpeed,
+					Force:          copyDBForce,
+					BackupFirst:    copyDBBackupFirst,
+					IncludeGrants:  copyDBIncludeGrants,
+					Verify:         copyDBVerify,
+					SkipRoutines:   copyDBSkipRoutines,
+					SkipEvents:     copyDBSkipEvents,
+					SkipTriggers:   copyDBSkipTriggers,
+					NonInteractive: copyDBNonInteractive,
+				},
+				SourceDBs:        sourceDBs,
+				Suffix:           suffix,
+				TargetDBIfSingle: targetDB,
+			})
+			if err != nil && len(resList) == 0 {
+				return err
 			}
 
 			// 7. Final Summary
+			var results [][]string
+			successCount := 0
+			for _, r := range resList {
+				icon := "✅"
+				if r.Error != nil {
+					icon = "❌"
+				} else {
+					successCount++
+				}
+				results = append(results, []string{
+					icon + " " + r.SourceDB,
+					r.TargetDB,
+					r.Method,
+					r.Duration.String(),
+					r.Status,
+				})
+			}
+
 			fmt.Printf("\n--- Ringkasan Copy Database ---\n")
 			headers := []string{"Sumber", "Tujuan", "Metode", "Durasi", "Status"}
 			table.Render(headers, results)
@@ -177,8 +176,12 @@ var CmdCopyDB = &cobra.Command{
 
 func init() {
 	defaultWorkers := runtime.NumCPU()
-	if defaultWorkers > 16 { defaultWorkers = 16 }
-	if defaultWorkers < 1 { defaultWorkers = 1 }
+	if defaultWorkers > 16 {
+		defaultWorkers = 16
+	}
+	if defaultWorkers < 1 {
+		defaultWorkers = 1
+	}
 
 	CmdCopyDB.Flags().StringVarP(&copyDBProfile, "profile", "p", "", "Nama atau path profil database")
 	CmdCopyDB.Flags().StringVar(&copyDBProfileKey, "profile-key", "", "Kunci enkripsi profil (jika dienkripsi)")

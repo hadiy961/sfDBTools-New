@@ -89,4 +89,3 @@ func TestRemoveUnsupportedMysqldumpOption_NoMatch(t *testing.T) {
 		t.Fatalf("expected args unchanged")
 	}
 }
-

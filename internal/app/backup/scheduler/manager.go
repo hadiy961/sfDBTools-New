@@ -72,7 +72,7 @@ func (m *Manager) Sync(ctx context.Context) error {
 
 		serviceName := fmt.Sprintf("sfdbtools-backup-%s.service", job.Name)
 		timerName := fmt.Sprintf("sfdbtools-backup-%s.timer", job.Name)
-		
+
 		servicePath := filepath.Join(systemdDir, serviceName)
 		timerPath := filepath.Join(systemdDir, timerName)
 

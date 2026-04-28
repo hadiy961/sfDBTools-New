@@ -349,7 +349,7 @@ func TestValidateConnectPreflight_SSHTunnelValidIdentityFile(t *testing.T) {
 	// Create temp file
 	tempDir := t.TempDir()
 	identityFile := filepath.Join(tempDir, "id_rsa")
-	
+
 	if err := os.WriteFile(identityFile, []byte("fake ssh key content"), 0600); err != nil {
 		t.Fatalf("Failed to create temp identity file: %v", err)
 	}

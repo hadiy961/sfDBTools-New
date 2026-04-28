@@ -122,10 +122,10 @@ key = value
 // TestINIParsing_SectionNameCaseInsensitive tests case insensitivity
 func TestINIParsing_SectionNameCaseInsensitive(t *testing.T) {
 	testCases := []struct {
-		name           string
-		clientSection  string
-		sshSection     string
-		shouldParse    bool
+		name          string
+		clientSection string
+		sshSection    string
+		shouldParse   bool
 	}{
 		{"lowercase", "[client]", "[ssh]", true},
 		{"uppercase", "[CLIENT]", "[SSH]", true},
@@ -327,7 +327,7 @@ key = value
 	if profile.SSHTunnel.Enabled {
 		t.Error("Empty SSH section should not enable SSH tunnel")
 	}
-	
+
 	// Client section should still be parsed
 	if profile.DBInfo.Host != "localhost" {
 		t.Error("Client section should be parsed despite empty SSH section")
@@ -368,7 +368,7 @@ password = clientpass
 	if profile.DBInfo.Host != "only-client.example.com" {
 		t.Error("Failed to parse profile with only client section")
 	}
-	
+
 	// SSH should be disabled by default
 	if profile.SSHTunnel.Enabled {
 		t.Error("SSH should be disabled when no [ssh] section")

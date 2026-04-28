@@ -15,7 +15,7 @@ import (
 // TestErrorHandling_FileNotFound tests file not found error
 func TestErrorHandling_FileNotFound(t *testing.T) {
 	nonExistentFile := filepath.Join("testdata", "this-file-does-not-exist.cnf.enc")
-	
+
 	_, err := LoadAndParseProfile(nonExistentFile, "any-key")
 	if err == nil {
 		t.Fatal("Expected error for non-existent file")
@@ -38,7 +38,7 @@ func TestErrorHandling_PermissionDenied(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	restrictedFile := filepath.Join(tempDir, "no_read_permission.cnf.enc")
-	
+
 	// Create file with content
 	content := []byte("some encrypted content")
 	if err := os.WriteFile(restrictedFile, content, 0644); err != nil {
@@ -62,7 +62,7 @@ func TestErrorHandling_PermissionDenied(t *testing.T) {
 // TestErrorHandling_DirectoryInsteadOfFile tests providing directory path
 func TestErrorHandling_DirectoryInsteadOfFile(t *testing.T) {
 	dirPath := filepath.Join("testdata")
-	
+
 	_, err := LoadAndParseProfile(dirPath, "any-key")
 	if err == nil {
 		t.Fatal("Expected error when providing directory path")
@@ -78,7 +78,7 @@ func TestErrorHandling_EmptyFile(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	emptyFile := filepath.Join(tempDir, "empty.cnf.enc")
-	
+
 	// Create empty file
 	if err := os.WriteFile(emptyFile, []byte{}, 0644); err != nil {
 		t.Fatalf("Failed to create empty file: %v", err)
@@ -99,7 +99,7 @@ func TestErrorHandling_TooSmallFile(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	smallFile := filepath.Join(tempDir, "too_small.cnf.enc")
-	
+
 	// Create file with only a few bytes (invalid encrypted data)
 	if err := os.WriteFile(smallFile, []byte("tiny"), 0644); err != nil {
 		t.Fatalf("Failed to create small file: %v", err)
@@ -120,7 +120,7 @@ func TestErrorHandling_InvalidEncryptionHeader(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	invalidFile := filepath.Join(tempDir, "invalid_header.cnf.enc")
-	
+
 	// Create file with invalid header
 	invalidData := []byte("NotSalted__InvalidHeaderData1234567890ABCDEFGH")
 	if err := os.WriteFile(invalidFile, invalidData, 0644); err != nil {
@@ -144,7 +144,7 @@ func TestErrorHandling_TruncatedEncryptedData(t *testing.T) {
 	// First create a valid encrypted file
 	testKey := "truncate-test-key"
 	content := "[client]\nhost = localhost\nport = 3306\n"
-	
+
 	encrypted, err := crypto.EncryptData([]byte(content), []byte(testKey))
 	if err != nil {
 		t.Fatalf("Failed to encrypt: %v", err)
@@ -152,7 +152,7 @@ func TestErrorHandling_TruncatedEncryptedData(t *testing.T) {
 
 	// Truncate the encrypted data
 	truncatedData := encrypted[:len(encrypted)/2]
-	
+
 	truncatedFile := filepath.Join(tempDir, "truncated.cnf.enc")
 	if err := os.WriteFile(truncatedFile, truncatedData, 0644); err != nil {
 		t.Fatalf("Failed to write truncated file: %v", err)
@@ -175,7 +175,7 @@ func TestErrorHandling_ModifiedEncryptedData(t *testing.T) {
 	// Create valid encrypted file
 	testKey := "modify-test-key"
 	content := "[client]\nhost = localhost\nport = 3306\nuser = test\npassword = test\n"
-	
+
 	encrypted, err := crypto.EncryptData([]byte(content), []byte(testKey))
 	if err != nil {
 		t.Fatalf("Failed to encrypt: %v", err)
@@ -187,7 +187,7 @@ func TestErrorHandling_ModifiedEncryptedData(t *testing.T) {
 		encrypted[16] ^= 0xFF
 		encrypted[17] ^= 0xFF
 	}
-	
+
 	modifiedFile := filepath.Join(tempDir, "modified.cnf.enc")
 	if err := os.WriteFile(modifiedFile, encrypted, 0644); err != nil {
 		t.Fatalf("Failed to write modified file: %v", err)
@@ -213,11 +213,11 @@ func TestErrorHandling_DecryptionWithEmptyKey(t *testing.T) {
 	}()
 
 	testFile := filepath.Join("testdata", "valid_encrypted.cnf.enc")
-	
+
 	// This might prompt for key in interactive mode, or fail
 	// In non-interactive test environment, it should fail
 	_, err := LoadAndParseProfile(testFile, "")
-	
+
 	// May succeed if it prompts, or fail if non-interactive
 	if err != nil {
 		t.Logf("Expected error without key (non-interactive): %v", err)
@@ -229,7 +229,7 @@ func TestErrorHandling_DecryptionWithEmptyKey(t *testing.T) {
 // TestErrorHandling_WrongKeyDetailed tests detailed error messages for wrong key
 func TestErrorHandling_WrongKeyDetailed(t *testing.T) {
 	testFile := filepath.Join("testdata", "valid_encrypted.cnf.enc")
-	
+
 	testCases := []struct {
 		name       string
 		key        string
@@ -244,13 +244,13 @@ func TestErrorHandling_WrongKeyDetailed(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := LoadAndParseProfile(testFile, tc.key)
-			
+
 			if tc.shouldFail && err == nil {
 				t.Error("Expected error but got none")
 			} else if !tc.shouldFail && err != nil {
 				t.Errorf("Expected success but got error: %v", err)
 			}
-			
+
 			if err != nil {
 				t.Logf("Error message: %v", err)
 				// Verify error message is helpful
@@ -305,13 +305,13 @@ func TestErrorHandling_BinaryGarbage(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	garbageFile := filepath.Join(tempDir, "garbage.cnf.enc")
-	
+
 	// Create file with random bytes
 	garbageData := make([]byte, 1024)
 	for i := range garbageData {
 		garbageData[i] = byte(i % 256)
 	}
-	
+
 	if err := os.WriteFile(garbageFile, garbageData, 0644); err != nil {
 		t.Fatalf("Failed to write garbage file: %v", err)
 	}
@@ -331,7 +331,7 @@ func TestErrorHandling_SymbolicLink(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get working directory: %v", err)
 	}
-	
+
 	tempDir := filepath.Join(wd, "testdata", "symlink_temp")
 	os.MkdirAll(tempDir, 0755)
 	defer os.RemoveAll(tempDir)
@@ -339,14 +339,14 @@ func TestErrorHandling_SymbolicLink(t *testing.T) {
 	// Create a target file
 	targetFile := filepath.Join(tempDir, "target.cnf.enc")
 	validEncFile := filepath.Join(wd, "testdata", "valid_encrypted.cnf.enc")
-	
+
 	// Copy valid encrypted file
 	data, err := os.ReadFile(validEncFile)
 	if err != nil {
 		t.Skipf("Skipping symlink test: %v", err)
 		return
 	}
-	
+
 	if err := os.WriteFile(targetFile, data, 0644); err != nil {
 		t.Fatalf("Failed to create target file: %v", err)
 	}
@@ -374,12 +374,12 @@ func TestErrorHandling_VeryLongPath(t *testing.T) {
 	// Create nested directories to make a long path
 	basePath := filepath.Join("testdata", "long_path_temp")
 	longPath := basePath
-	
+
 	// Create a moderately long path (not extreme to avoid OS limits)
 	for i := 0; i < 10; i++ {
 		longPath = filepath.Join(longPath, "very_long_directory_name_for_testing_purposes")
 	}
-	
+
 	if err := os.MkdirAll(longPath, 0755); err != nil {
 		t.Skipf("Cannot create long path: %v", err)
 		return
@@ -387,14 +387,14 @@ func TestErrorHandling_VeryLongPath(t *testing.T) {
 	defer os.RemoveAll(basePath)
 
 	longFile := filepath.Join(longPath, "profile.cnf.enc")
-	
+
 	// Copy valid encrypted file to long path
 	validEncFile := filepath.Join("testdata", "valid_encrypted.cnf.enc")
 	data, err := os.ReadFile(validEncFile)
 	if err != nil {
 		t.Fatalf("Failed to read valid file: %v", err)
 	}
-	
+
 	if err := os.WriteFile(longFile, data, 0644); err != nil {
 		t.Fatalf("Failed to write to long path: %v", err)
 	}
@@ -411,11 +411,11 @@ func TestErrorHandling_VeryLongPath(t *testing.T) {
 // TestErrorHandling_ConcurrentReads tests concurrent profile loading
 func TestErrorHandling_ConcurrentReads(t *testing.T) {
 	testFile := filepath.Join("testdata", "valid_encrypted.cnf.enc")
-	
+
 	// Launch multiple goroutines to read same file
 	concurrency := 10
 	errors := make(chan error, concurrency)
-	
+
 	for i := 0; i < concurrency; i++ {
 		go func() {
 			_, err := LoadAndParseProfile(testFile, testEncryptionKey)

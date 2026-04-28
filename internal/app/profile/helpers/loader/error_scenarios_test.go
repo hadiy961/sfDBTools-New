@@ -256,11 +256,11 @@ func TestErrorScenarios_ConcurrentLoads(t *testing.T) {
 // TestErrorScenarios_CorruptedProfile tests loading corrupted profile file
 func TestErrorScenarios_CorruptedProfile(t *testing.T) {
 	testDir := getTestDataDir(t)
-	
+
 	// Create a corrupted profile file
 	corruptPath := filepath.Join(testDir, "corrupted.cnf.enc")
 	corruptData := []byte("This is not a valid encrypted profile file!@#$%^&*()")
-	
+
 	if err := os.WriteFile(corruptPath, corruptData, 0644); err != nil {
 		t.Fatalf("Failed to create corrupted file: %v", err)
 	}
@@ -282,7 +282,7 @@ func TestErrorScenarios_CorruptedProfile(t *testing.T) {
 // TestErrorScenarios_EmptyProfile tests loading empty file
 func TestErrorScenarios_EmptyProfile(t *testing.T) {
 	testDir := getTestDataDir(t)
-	
+
 	// Create an empty file
 	emptyPath := filepath.Join(testDir, "empty.cnf.enc")
 	if err := os.WriteFile(emptyPath, []byte{}, 0644); err != nil {
@@ -330,10 +330,10 @@ func TestErrorScenarios_ProfilePurposeInError(t *testing.T) {
 // TestErrorScenarios_MixedSlashes tests path with mixed slashes
 func TestErrorScenarios_MixedSlashes(t *testing.T) {
 	testDir := getTestDataDir(t)
-	
+
 	// This should be normalized
 	mixedPath := filepath.Join(testDir, "test-profile1.cnf.enc")
-	
+
 	profile, err := ResolveAndLoadProfile(ProfileLoadOptions{
 		ProfilePath: mixedPath,
 		ProfileKey:  testEncryptionKey,
@@ -352,10 +352,10 @@ func TestErrorScenarios_MixedSlashes(t *testing.T) {
 // TestErrorScenarios_SymbolicLink tests loading profile through symlink
 func TestErrorScenarios_SymbolicLink(t *testing.T) {
 	testDir := getTestDataDir(t)
-	
+
 	targetFile := filepath.Join(testDir, "test-profile1.cnf.enc")
 	symlinkFile := filepath.Join(testDir, "symlink-profile.cnf.enc")
-	
+
 	// Create symlink
 	if err := os.Symlink(targetFile, symlinkFile); err != nil {
 		t.Skipf("Symlink not supported: %v", err)
@@ -382,14 +382,14 @@ func TestErrorScenarios_SymbolicLink(t *testing.T) {
 // TestErrorScenarios_VeryLongProfileName tests with very long profile name
 func TestErrorScenarios_VeryLongProfileName(t *testing.T) {
 	testDir := getTestDataDir(t)
-	
+
 	// Create a profile with very long name
 	longName := string(make([]byte, 255)) // Max filename length on most systems
 	for i := range longName {
 		longName = longName[:i] + "a"
 	}
 	longName += ".cnf.enc"
-	
+
 	// This might fail at OS level
 	_, err := ResolveAndLoadProfile(ProfileLoadOptions{
 		ConfigDir:   testDir,
@@ -407,12 +407,12 @@ func TestErrorScenarios_VeryLongProfileName(t *testing.T) {
 // TestErrorScenarios_SpecialCharactersInName tests special characters in profile name
 func TestErrorScenarios_SpecialCharactersInName(t *testing.T) {
 	testDir := getTestDataDir(t)
-	
+
 	// Special characters that might be problematic
 	specialNames := []string{
 		"profile@test.cnf.enc",
 		"profile#test.cnf.enc",
-		"profile test.cnf.enc", // space
+		"profile test.cnf.enc",  // space
 		"profile\ttest.cnf.enc", // tab
 	}
 

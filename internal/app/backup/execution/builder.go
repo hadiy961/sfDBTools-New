@@ -12,6 +12,7 @@ import (
 
 	"sfdbtools/internal/app/backup/metadata"
 	"sfdbtools/internal/app/backup/model/types_backup"
+	"sfdbtools/internal/app/backup/verify"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/timex"
 )
@@ -91,6 +92,12 @@ func (e *Engine) buildRealBackupInfo(
 	endTime := time.Now()
 	meta := e.generateBackupMetadata(cfg, writeResult, duration, startTime, endTime, status, dbVersion)
 
+	// Post-backup verification
+	if e.Config.Backup.Verification.PostBackupCheck && status != consts.BackupStatusFailed {
+		verifyResult := verify.PostBackupCheck(cfg.OutputPath, e.Config.Backup.Verification, e.Log)
+		meta.Verification = verifyResult
+	}
+
 	manifestPath := ""
 	if e.Config.Backup.Output.SaveBackupInfo {
 		manifestPath = metadata.TrySaveBackupMetadata(meta, e.Config.Backup.Output.MetadataPermissions, e.Log)
@@ -129,24 +136,24 @@ func (e *Engine) generateBackupMetadata(
 	excludedDBs := getExcludedDatabases(cfg.BackupType, e.ExcludedDatabases)
 
 	return metadata.GenerateBackupMetadata(types_backup.MetadataConfig{
-		BackupFile:          cfg.OutputPath,
-		BackupType:          cfg.BackupType,
-		DatabaseNames:       dbNames,
-		ExcludedDatabases:   excludedDBs,
-		Hostname:            e.Options.Profile.DBInfo.HostName,
-		FileSize:            writeResult.FileSize,
-		Compressed:          e.Options.Compression.Enabled,
-		CompressionType:     e.Options.Compression.Type,
-		Encrypted:           e.Options.Encryption.Enabled,
-		ExcludeData:         e.Options.Filter.ExcludeData,
-		GTIDInfo:            gtidStr,
-		BackupStatus:        status,
-		StderrOutput:        writeResult.StderrOutput,
-		Duration:            duration,
-		StartTime:           startTime,
-		EndTime:             endTime,
-		Logger:              e.Log,
-		ReplicationUser:     e.Config.Backup.Replication.ReplicationUser,
+		BackupFile:        cfg.OutputPath,
+		BackupType:        cfg.BackupType,
+		DatabaseNames:     dbNames,
+		ExcludedDatabases: excludedDBs,
+		Hostname:          e.Options.Profile.DBInfo.HostName,
+		FileSize:          writeResult.FileSize,
+		Compressed:        e.Options.Compression.Enabled,
+		CompressionType:   e.Options.Compression.Type,
+		Encrypted:         e.Options.Encryption.Enabled,
+		ExcludeData:       e.Options.Filter.ExcludeData,
+		GTIDInfo:          gtidStr,
+		BackupStatus:      status,
+		StderrOutput:      writeResult.StderrOutput,
+		Duration:          duration,
+		StartTime:         startTime,
+		EndTime:           endTime,
+		Logger:            e.Log,
+		ReplicationUser:   e.Config.Backup.Replication.ReplicationUser,
 		// SECURITY: Jangan pernah menyimpan password replikasi ke metadata/manifest.
 		ReplicationPassword: "",
 		SourceHost:          e.Options.Profile.DBInfo.Host,

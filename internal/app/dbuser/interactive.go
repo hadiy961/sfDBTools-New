@@ -301,7 +301,7 @@ func showExportPreview(opts *ExportOptions, dbList []string) (bool, error) {
 	scope := "All Users & Grants"
 	if len(opts.Users) > 0 {
 		scope = fmt.Sprintf("Specific Users (%d accounts)", len(opts.Users))
-	} else if len(opts.Databases) > 0 || strings.TrimSpace(opts.DBFile) != "" || strings.TrimSpace(opts.ClientCode) != "" { 
+	} else if len(opts.Databases) > 0 || strings.TrimSpace(opts.DBFile) != "" || strings.TrimSpace(opts.ClientCode) != "" {
 		scope = fmt.Sprintf("Filtered by Database (%d DBs resolved)", len(dbList))
 	}
 	fmt.Printf("Scope          : %s\n", scope)

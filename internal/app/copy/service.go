@@ -17,6 +17,58 @@ type Service struct {
 	ticket string
 }
 
+// CopyDatabaseOptions mengkonfigurasi operasi copy database.
+type CopyDatabaseOptions struct {
+	Profile        *domain.ProfileInfo
+	SourceDB       string
+	TargetDB       string
+	SchemaOnly     bool
+	UseConcurrent  bool
+	Workers        int
+	LimitSpeed     int64
+	Force          bool
+	BackupFirst    bool
+	IncludeGrants  bool
+	Verify         bool
+	SkipRoutines   bool
+	SkipEvents     bool
+	SkipTriggers   bool
+	NonInteractive bool
+}
+
+// CopyDatabasesOptions mengkonfigurasi operasi copy banyak database.
+type CopyDatabasesOptions struct {
+	CopyDatabaseOptions
+	SourceDBs        []string
+	Suffix           string
+	TargetDBIfSingle string
+}
+
+// CopyTableOptions mengkonfigurasi operasi copy tabel tunggal.
+type CopyTableOptions struct {
+	Profile        *domain.ProfileInfo
+	SourceDB       string
+	SourceTable    string
+	TargetDB       string
+	TargetTable    string
+	SchemaOnly     bool
+	Force          bool
+	BackupFirst    bool
+	IncludeGrants  bool
+	Verify         bool
+	NonInteractive bool
+}
+
+// CopyTablesConcurrentOptions mengkonfigurasi operasi copy banyak tabel secara paralel.
+type CopyTablesConcurrentOptions struct {
+	CopyTableOptions
+	SourceTables        []string
+	Suffix              string
+	TargetTableIfSingle string
+	Workers             int
+}
+
+
 // NewService membuat instance baru dari Service.
 func NewService(log applog.Logger, cfg *appconfig.Config) *Service {
 	logDir := consts.DefaultLogDir

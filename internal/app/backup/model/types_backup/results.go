@@ -36,39 +36,53 @@ type BackupWriteResult struct {
 	FileSize     int64  // File size after write (sama dengan BytesWritten untuk consistency)
 }
 
+// VerificationResult menyimpan hasil verifikasi integritas backup
+type VerificationResult struct {
+	ChecksumAlgo  string     `json:"checksum_algo,omitempty"`   // "sha256" atau "md5"
+	ChecksumHash  string     `json:"checksum_hash,omitempty"`   // hex-encoded hash
+	HeaderValid   *bool      `json:"header_valid,omitempty"`    // nil = not checked
+	FooterValid   *bool      `json:"footer_valid,omitempty"`    // nil = not checked
+	SizeValid     *bool      `json:"size_valid,omitempty"`      // nil = not checked
+	FileSizeBytes int64      `json:"file_size_bytes,omitempty"` // actual file size saat verify
+	VerifiedAt    *time.Time `json:"verified_at,omitempty"`     // timestamp verifikasi
+	VerifyStatus  string     `json:"verify_status,omitempty"`   // "passed", "failed", "partial"
+	FailureReason string     `json:"failure_reason,omitempty"`  // alasan jika gagal
+}
+
 // BackupMetadata menyimpan metadata lengkap untuk sebuah backup file
 type BackupMetadata struct {
-	BackupFile        string                 `json:"backup_file"`                  // Path file backup
-	BackupType        string                 `json:"backup_type"`                  // "combined" atau "separated"
-	DatabaseNames     []string               `json:"database_names"`               // List database yang di-backup
-	ExcludedDatabases []string               `json:"excluded_databases,omitempty"` // List database yang dikecualikan (untuk mode 'all')
-	DatabaseDetails   []DatabaseBackupDetail `json:"database_details,omitempty"`   // Detail per database untuk primary/secondary
-	Hostname          string                 `json:"hostname"`                     // Database server hostname
-	BackupStartTime   time.Time              `json:"backup_start_time"`            // Waktu mulai backup
-	BackupEndTime     time.Time              `json:"backup_end_time"`              // Waktu selesai backup
-	BackupDuration    string                 `json:"backup_duration"`              // Duration dalam format human-readable
-	FileSize          int64                  `json:"file_size_bytes"`              // Ukuran file backup
-	FileSizeHuman     string                 `json:"file_size_human"`              // Ukuran file human-readable
-	Compressed        bool                   `json:"compressed"`                   // Apakah terkompresi
-	CompressionType   string                 `json:"compression_type,omitempty"`   // gzip, zstd, xz, dll
-	Encrypted         bool                   `json:"encrypted"`                    // Apakah terenkripsi
-	ExcludeData       bool                   `json:"exclude_data"`                 // Jika true, hanya backup struktur (tanpa data)
-	MysqldumpVersion  string                 `json:"mysqldump_version,omitempty"`  // Versi mysqldump
-	MariaDBVersion    string                 `json:"mariadb_version,omitempty"`    // Versi MariaDB/MySQL
-	GTIDInfo          string                 `json:"gtid_info,omitempty"`          // GTID information
-	GTIDFile          string                 `json:"gtid_file,omitempty"`          // Path ke file GTID
-	UserGrantsFile    string                 `json:"user_grants_file,omitempty"`   // Path ke file user grants
+	BackupFile         string                 `json:"backup_file"`                    // Path file backup
+	BackupType         string                 `json:"backup_type"`                    // "combined" atau "separated"
+	DatabaseNames      []string               `json:"database_names"`                 // List database yang di-backup
+	ExcludedDatabases  []string               `json:"excluded_databases,omitempty"`   // List database yang dikecualikan (untuk mode 'all')
+	DatabaseDetails    []DatabaseBackupDetail `json:"database_details,omitempty"`     // Detail per database untuk primary/secondary
+	Hostname           string                 `json:"hostname"`                       // Database server hostname
+	BackupStartTime    time.Time              `json:"backup_start_time"`              // Waktu mulai backup
+	BackupEndTime      time.Time              `json:"backup_end_time"`                // Waktu selesai backup
+	BackupDuration     string                 `json:"backup_duration"`                // Duration dalam format human-readable
+	FileSize           int64                  `json:"file_size_bytes"`                // Ukuran file backup
+	FileSizeHuman      string                 `json:"file_size_human"`                // Ukuran file human-readable
+	Compressed         bool                   `json:"compressed"`                     // Apakah terkompresi
+	CompressionType    string                 `json:"compression_type,omitempty"`     // gzip, zstd, xz, dll
+	Encrypted          bool                   `json:"encrypted"`                      // Apakah terenkripsi
+	ExcludeData        bool                   `json:"exclude_data"`                   // Jika true, hanya backup struktur (tanpa data)
+	MysqldumpVersion   string                 `json:"mysqldump_version,omitempty"`    // Versi mysqldump
+	MariaDBVersion     string                 `json:"mariadb_version,omitempty"`      // Versi MariaDB/MySQL
+	GTIDInfo           string                 `json:"gtid_info,omitempty"`            // GTID information
+	GTIDFile           string                 `json:"gtid_file,omitempty"`            // Path ke file GTID
+	UserGrantsFile     string                 `json:"user_grants_file,omitempty"`     // Path ke file user grants
 	UserDefinitionFile string                 `json:"user_definition_file,omitempty"` // Path ke file user definitions
-	BackupStatus      string                 `json:"backup_status"`                // "success", "partial", "failed"
-	Warnings          []string               `json:"warnings,omitempty"`           // Warning messages
-	GeneratedBy       string                 `json:"generated_by"`                 // Tool name dan version
-	GeneratedAt       time.Time              `json:"generated_at"`                 // Waktu generate metadata
-	Ticket            string                 `json:"ticket"`                       // Ticket number untuk request backup
+	BackupStatus       string                 `json:"backup_status"`                  // "success", "partial", "failed"
+	Warnings           []string               `json:"warnings,omitempty"`             // Warning messages
+	GeneratedBy        string                 `json:"generated_by"`                   // Tool name dan version
+	GeneratedAt        time.Time              `json:"generated_at"`                   // Waktu generate metadata
+	Ticket             string                 `json:"ticket"`                         // Ticket number untuk request backup
 	// Replication information
-	ReplicationUser     string `json:"replication_user,omitempty"`     // User replikasi
-	ReplicationPassword string `json:"replication_password,omitempty"` // Password replikasi
-	SourceHost          string `json:"source_host,omitempty"`          // IP/Host sumber database
-	SourcePort          int    `json:"source_port,omitempty"`          // Port sumber database
+	ReplicationUser     string              `json:"replication_user,omitempty"`     // User replikasi
+	ReplicationPassword string              `json:"replication_password,omitempty"` // Password replikasi
+	SourceHost          string              `json:"source_host,omitempty"`          // IP/Host sumber database
+	SourcePort          int                 `json:"source_port,omitempty"`          // Port sumber database
+	Verification        *VerificationResult `json:"verification,omitempty"`         // Hasil verifikasi
 }
 
 // DatabaseBackupDetail menyimpan detail backup per database (untuk primary/secondary mode)
@@ -162,6 +176,7 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 		Ticket          string                 `json:"ticket,omitempty"`
 		Generator       generatorInfo          `json:"generator"`
 		Warnings        []string               `json:"warnings,omitempty"`
+		Verification    *VerificationResult    `json:"verification,omitempty"`
 	}{
 		Backup: backupInfo{
 			File:              b.BackupFile,
@@ -210,7 +225,8 @@ func (b BackupMetadata) MarshalJSON() ([]byte, error) {
 			GeneratedBy: b.GeneratedBy,
 			GeneratedAt: b.GeneratedAt,
 		},
-		Warnings: b.Warnings,
+		Warnings:     b.Warnings,
+		Verification: b.Verification,
 	}
 
 	return json.MarshalIndent(metaJSON, "", "  ")
@@ -282,6 +298,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		Ticket          string                 `json:"ticket,omitempty"`
 		Generator       generatorInfo          `json:"generator"`
 		Warnings        []string               `json:"warnings,omitempty"`
+		Verification    *VerificationResult    `json:"verification,omitempty"`
 	}
 
 	var grouped metaJSONGrouped
@@ -338,36 +355,38 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 		b.GeneratedBy = grouped.Generator.GeneratedBy
 		b.GeneratedAt = grouped.Generator.GeneratedAt
 		b.Warnings = grouped.Warnings
+		b.Verification = grouped.Verification
 
 		return nil
 	}
 
 	// Fallback: parse dengan struktur flat untuk backward compatibility
 	type metaJSONIn struct {
-		BackupFile          string    `json:"backup_file"`
-		BackupType          string    `json:"backup_type"`
-		DatabaseNames       []string  `json:"database_names"`
-		Hostname            string    `json:"hostname"`
-		BackupStartTime     string    `json:"backup_start_time"`
-		BackupEndTime       string    `json:"backup_end_time"`
-		BackupDuration      string    `json:"backup_duration"`
-		FileSize            int64     `json:"file_size_bytes"`
-		FileSizeHuman       string    `json:"file_size_human"`
-		Compressed          bool      `json:"compressed"`
-		CompressionType     string    `json:"compression_type,omitempty"`
-		Encrypted           bool      `json:"encrypted"`
-		MysqldumpVersion    string    `json:"mysqldump_version,omitempty"`
-		MariaDBVersion      string    `json:"mariadb_version,omitempty"`
-		GTIDInfo            string    `json:"gtid_info,omitempty"`
-		BackupStatus        string    `json:"backup_status"`
-		Warnings            []string  `json:"warnings,omitempty"`
-		GeneratedBy         string    `json:"generated_by"`
-		GeneratedAt         time.Time `json:"generated_at"`
-		ReplicationUser     string    `json:"replication_user,omitempty"`
-		ReplicationPassword string    `json:"replication_password,omitempty"`
-		SourceHost          string    `json:"source_host,omitempty"`
-		SourcePort          int       `json:"source_port,omitempty"`
-		Ticket              string    `json:"ticket,omitempty"`
+		BackupFile          string              `json:"backup_file"`
+		BackupType          string              `json:"backup_type"`
+		DatabaseNames       []string            `json:"database_names"`
+		Hostname            string              `json:"hostname"`
+		BackupStartTime     string              `json:"backup_start_time"`
+		BackupEndTime       string              `json:"backup_end_time"`
+		BackupDuration      string              `json:"backup_duration"`
+		FileSize            int64               `json:"file_size_bytes"`
+		FileSizeHuman       string              `json:"file_size_human"`
+		Compressed          bool                `json:"compressed"`
+		CompressionType     string              `json:"compression_type,omitempty"`
+		Encrypted           bool                `json:"encrypted"`
+		MysqldumpVersion    string              `json:"mysqldump_version,omitempty"`
+		MariaDBVersion      string              `json:"mariadb_version,omitempty"`
+		GTIDInfo            string              `json:"gtid_info,omitempty"`
+		BackupStatus        string              `json:"backup_status"`
+		Warnings            []string            `json:"warnings,omitempty"`
+		GeneratedBy         string              `json:"generated_by"`
+		GeneratedAt         time.Time           `json:"generated_at"`
+		ReplicationUser     string              `json:"replication_user,omitempty"`
+		ReplicationPassword string              `json:"replication_password,omitempty"`
+		SourceHost          string              `json:"source_host,omitempty"`
+		SourcePort          int                 `json:"source_port,omitempty"`
+		Ticket              string              `json:"ticket,omitempty"`
+		Verification        *VerificationResult `json:"verification,omitempty"`
 	}
 
 	var mj metaJSONIn
@@ -422,6 +441,7 @@ func (b *BackupMetadata) UnmarshalJSON(data []byte) error {
 	b.SourceHost = mj.SourceHost
 	b.SourcePort = mj.SourcePort
 	b.Ticket = mj.Ticket
+	b.Verification = mj.Verification
 
 	return nil
 }
