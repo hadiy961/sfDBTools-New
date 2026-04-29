@@ -34,4 +34,7 @@ func init() {
 	CmdBackupMain.AddCommand(CmdBackupSecondary)
 	CmdBackupMain.AddCommand(CmdBackupSchedule)
 	CmdBackupMain.AddCommand(CmdBackupVerify)
+	CmdBackupMain.AddCommand(CmdBackupList)
+	CmdBackupMain.AddCommand(CmdBackupReport)
+	CmdBackupMain.AddCommand(CmdBackupCatalog)
 }

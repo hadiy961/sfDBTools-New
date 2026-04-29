@@ -63,6 +63,12 @@ type BackupConfig struct {
 	Verification  VerificationConfig `yaml:"verification"`
 	Replication   ReplicationConfig  `yaml:"replication"`
 	Scheduler     SchedulerConfig    `yaml:"scheduler"`
+	Catalog       CatalogConfig      `yaml:"catalog"`
+}
+
+type CatalogConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	FilePath string `yaml:"file_path"`
 }
 
 type SchedulerConfig struct {

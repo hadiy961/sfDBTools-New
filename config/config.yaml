@@ -49,6 +49,10 @@ backup:
     replication_user: repl_user
     replication_password: repl_password
 
+  catalog:
+    enabled: true
+    file_path: /etc/sfDBTools/catalog.json
+
   # Scheduler backup berbasis systemd timer.
   # - Format schedule menggunakan cron (5 kolom)
   # - Banyak job diperbolehkan (local/NFS/NAS, harian/mingguan/bulanan, dll)

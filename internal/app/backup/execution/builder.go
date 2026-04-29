@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"sfdbtools/internal/app/backup/catalog"
 	"sfdbtools/internal/app/backup/metadata"
 	"sfdbtools/internal/app/backup/model/types_backup"
 	"sfdbtools/internal/app/backup/verify"
@@ -101,6 +102,17 @@ func (e *Engine) buildRealBackupInfo(
 	manifestPath := ""
 	if e.Config.Backup.Output.SaveBackupInfo {
 		manifestPath = metadata.TrySaveBackupMetadata(meta, e.Config.Backup.Output.MetadataPermissions, e.Log)
+	}
+
+	// Auto-register ke catalog (jika enabled)
+	if e.Config.Backup.Catalog.Enabled && e.Config.Backup.Catalog.FilePath != "" {
+		repo := catalog.NewJSONFileRepository(e.Config.Backup.Catalog.FilePath)
+		catalogSvc := catalog.NewService(repo, e.Log)
+		
+		// Fallback for mode since it might not be directly in BackupDBOptions
+		// It's usually in the broader context but we use "auto" if undefined
+		mode := "auto" 
+		catalogSvc.TryRegisterBackup(meta, mode, e.Options.Profile.Path)
 	}
 
 	return (&metadata.DatabaseBackupInfoBuilder{
