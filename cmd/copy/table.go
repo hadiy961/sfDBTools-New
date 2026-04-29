@@ -7,9 +7,12 @@ import (
 	"sfdbtools/internal/app/copy"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/runner"
+	"sfdbtools/internal/services/notify"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/internal/ui/table"
 	"strings"
+	"time"
+
 	"github.com/spf13/cobra"
 )
 
@@ -133,6 +136,15 @@ var CmdCopyTable = &cobra.Command{
 				TargetTableIfSingle: specificTargetTable,
 				Workers:             copyTableWorkers,
 			})
+
+			// Kirim notifikasi
+			var totalDuration time.Duration
+			for _, r := range resList {
+				totalDuration += r.Duration
+			}
+			msg := notify.BuildCopyTableMessage(sourceDB, targetDB, sourceTables, totalDuration, err, copyTableTicket)
+			appdeps.Deps.NotifyService.Send(msg)
+
 			if err != nil && len(resList) == 0 {
 				return err
 			}

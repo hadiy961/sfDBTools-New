@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	appdeps "sfdbtools/internal/cli/deps"
+	"sfdbtools/internal/services/notify"
 	applog "sfdbtools/internal/services/log"
 	"sfdbtools/internal/ui/print"
 	"syscall"
@@ -125,6 +126,35 @@ func executeRestoreCommand(
 		errMsgPrefix,
 		errFunction,
 	)
+
+	// Kirim notifikasi best-effort (jangan biarkan notify crash menggagalkan return error asli)
+	if result != nil || err != nil {
+		targetHost := "unknown"
+		if svc.Profile != nil {
+			targetHost = svc.Profile.DBInfo.Host
+		}
+		// Abaikan jika dibatalkan user
+		if err == nil || cmd.Context().Err() == nil {
+			ticket := ""
+			if svc.RestoreOpts != nil {
+				ticket = svc.RestoreOpts.Ticket
+			} else if svc.RestorePrimaryOpts != nil {
+				ticket = svc.RestorePrimaryOpts.Ticket
+			} else if svc.RestoreSecondaryOpts != nil {
+				ticket = svc.RestoreSecondaryOpts.Ticket
+			} else if svc.RestoreAllOpts != nil {
+				ticket = svc.RestoreAllOpts.Ticket
+			} else if svc.RestoreSelOpts != nil {
+				ticket = svc.RestoreSelOpts.Ticket
+			} else if svc.RestoreCustomOpts != nil {
+				ticket = svc.RestoreCustomOpts.Ticket
+			}
+
+			msg := notify.BuildRestoreMessage(result, err, targetHost, ticket)
+			deps.NotifyService.Send(msg)
+		}
+	}
+
 	if err != nil {
 		return err
 	}

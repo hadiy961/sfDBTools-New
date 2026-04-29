@@ -35,7 +35,7 @@ func NewCleanupService(config *appconfig.Config, logger applog.Logger, opts clea
 }
 
 // ExecuteCleanupCommand adalah entry point utama untuk cleanup execution
-func (s *Service) ExecuteCleanupCommand(config cleanupmodel.CleanupEntryConfig) error {
+func (s *Service) ExecuteCleanupCommand(config cleanupmodel.CleanupEntryConfig) (*cleanupmodel.CleanupResult, error) {
 	// Log prefix untuk tracking
 	if config.LogPrefix != "" {
 		s.Log.Infof("[%s] Memulai cleanup dengan mode: %s", config.LogPrefix, config.Mode)
@@ -53,10 +53,10 @@ func (s *Service) ExecuteCleanupCommand(config cleanupmodel.CleanupEntryConfig) 
 		return s.cleanupCore(dryRun, s.CleanupOptions.Pattern)
 	case "pattern":
 		if s.CleanupOptions.Pattern == "" {
-			return ErrInvalidCleanupMode
+			return nil, ErrInvalidCleanupMode
 		}
 		return s.cleanupCore(dryRun, s.CleanupOptions.Pattern)
 	default:
-		return ErrInvalidCleanupMode
+		return nil, ErrInvalidCleanupMode
 	}
 }
