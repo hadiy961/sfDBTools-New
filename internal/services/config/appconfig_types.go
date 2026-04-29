@@ -18,6 +18,55 @@ type Config struct {
 	SystemUsers SystemUsersConfig `yaml:"system_users"`
 	Script      ScriptConfig      `yaml:"script"`
 	DBUser      DBUserConfig      `yaml:"db_user"`
+	Notify      NotifyConfig      `yaml:"notify"` // [NEW]
+}
+
+// ============================================================
+// Notify Config — Shared Notification Service
+// ============================================================
+
+// NotifyConfig mengatur konfigurasi global notification service.
+// Digunakan oleh semua fitur yang butuh kirim notifikasi.
+type NotifyConfig struct {
+	// DefaultChannels menentukan channel default jika caller tidak specify
+	// contoh: ["telegram", "email"]
+	DefaultChannels []string `yaml:"default_channels"`
+
+	Telegram TelegramConfig `yaml:"telegram"`
+	Email    EmailConfig    `yaml:"email"`
+}
+
+// TelegramConfig mengatur Telegram Bot API
+type TelegramConfig struct {
+	Enabled bool `yaml:"enabled"`
+	// Token dari @BotFather
+	BotToken string `yaml:"bot_token"`
+	// Chat/Group/Channel ID (bisa negatif untuk group)
+	ChatID string `yaml:"chat_id"`
+	// ParseMode: "HTML" atau "Markdown" atau "MarkdownV2"
+	// default: "HTML"
+	ParseMode string `yaml:"parse_mode"`
+}
+
+// EmailConfig mengatur SMTP email sender
+type EmailConfig struct {
+	Enabled bool `yaml:"enabled"`
+	// contoh: "smtp.gmail.com"
+	SMTPHost string `yaml:"smtp_host"`
+	// 587 (TLS) atau 465 (SSL)
+	SMTPPort int `yaml:"smtp_port"`
+	// SMTP username / email sender
+	Username string `yaml:"username"`
+	// SMTP password / app password
+	Password string `yaml:"password"`
+	// contoh: "sfDBTools Alert"
+	FromName string `yaml:"from_name"`
+	// contoh: "alerts@example.com"
+	FromEmail string `yaml:"from_email"`
+	// daftar penerima default
+	ToEmails []string `yaml:"to_emails"`
+	// false = STARTTLS, true = SSL/TLS langsung
+	UseTLS bool `yaml:"use_tls"`
 }
 
 type DBUserConfig struct {

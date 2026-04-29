@@ -65,6 +65,12 @@ func defaultConfigForPath(configPath string) *Config {
 	cfg.DBUser.Export.IncludeGrants = true
 	cfg.DBUser.Export.SplitOutput = false
 
+	// Default notify config
+	cfg.Notify.Telegram.ParseMode = "HTML"
+	cfg.Notify.Email.SMTPPort = 587
+	cfg.Notify.Email.FromName = "sfDBTools Alert"
+	cfg.Notify.Email.UseTLS = false
+
 	return cfg
 }
 

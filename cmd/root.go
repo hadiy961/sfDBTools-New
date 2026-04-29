@@ -17,6 +17,7 @@ import (
 	profilecmd "sfdbtools/cmd/profile"
 	restorecmd "sfdbtools/cmd/restore"
 	scriptcmd "sfdbtools/cmd/script"
+	notifycmd "sfdbtools/cmd/notify"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/shared/sanitize"
@@ -120,5 +121,6 @@ func init() {
 	rootCmd.AddCommand(restorecmd.CmdRestore)
 	rootCmd.AddCommand(copycmd.CmdCopyMain)
 	rootCmd.AddCommand(dbusercmd.CmdDBUserMain)
+	rootCmd.AddCommand(notifycmd.CmdNotifyMain)
 	rootCmd.AddCommand(completionCmd)
 }
