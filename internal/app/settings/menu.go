@@ -81,14 +81,17 @@ func (s *Service) EditSettingsMenu() {
 }
 
 func (s *Service) GenericCategoryMenu(db *sql.DB, category string) {
-	rows, _ := db.Query("SELECT key, value FROM app_settings WHERE category = ?", category)
+	rows, _ := db.Query("SELECT key, value, is_locked FROM app_settings WHERE category = ?", category)
 	var keys []string
 	valMap := make(map[string]string)
+	lockedMap := make(map[string]bool)
 	for rows.Next() {
 		var k, v string
-		rows.Scan(&k, &v)
+		var l int
+		rows.Scan(&k, &v, &l)
 		keys = append(keys, k)
 		valMap[k] = v
+		lockedMap[k] = l == 1
 	}
 	rows.Close()
 	sort.Strings(keys)
@@ -105,25 +108,37 @@ func (s *Service) GenericCategoryMenu(db *sql.DB, category string) {
 
 	for _, key := range keys {
 		val := valMap[key]
-		k := key // simpan di scope for loop untuk safety jika dibutuhkan
+		isLocked := lockedMap[key]
+		k := key
+		
+		title := k
+		if isLocked {
+			title = fmt.Sprintf("%s %s", k, color.RedString("[LOCKED BY ADMIN]"))
+		}
 		
 		if val == "true" || val == "false" {
 			b := val == "true"
 			boolPtrs[k] = &b
-			fields = append(fields, huh.NewConfirm().Title(k).Value(boolPtrs[k]))
+			f := huh.NewConfirm().Title(title).Value(boolPtrs[k])
+			if isLocked {
+				f = f.ReadOnly(true)
+			}
+			fields = append(fields, f)
 		} else {
 			str := val
 			strPtrs[k] = &str
 			
-			// Auto password mask if the key contains "token", "password", "key", or "secret"
 			isSecret := false
 			if strings.Contains(k, "key") || strings.Contains(k, "token") || strings.Contains(k, "password") || strings.Contains(k, "secret") {
 				isSecret = true
 			}
 			
-			input := huh.NewInput().Title(k).Value(strPtrs[k])
+			input := huh.NewInput().Title(title).Value(strPtrs[k])
 			if isSecret {
 				input = input.EchoMode(huh.EchoModePassword)
+			}
+			if isLocked {
+				input = input.ReadOnly(true)
 			}
 			fields = append(fields, input)
 		}
@@ -141,6 +156,9 @@ func (s *Service) GenericCategoryMenu(db *sql.DB, category string) {
 
 	changes := 0
 	for _, key := range keys {
+		if lockedMap[key] {
+			continue // Jangan simpan jika di-lock
+		}
 		oldVal := valMap[key]
 		var newVal string
 		if bPtr, ok := boolPtrs[key]; ok {
