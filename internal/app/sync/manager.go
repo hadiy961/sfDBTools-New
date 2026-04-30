@@ -60,21 +60,18 @@ func (m *SyncManager) RunSync(ctx context.Context, mode string) error {
 }
 
 func (m *SyncManager) PullAll(ctx context.Context) error {
-	// Pull Settings
+	// 1. Pull Settings
 	settings, err := m.remote.PullSettings(ctx, m.clientCode)
 	if err != nil {
 		return err
 	}
 	for _, s := range settings {
-		// Local-First: Check if local is newer or locked by admin
 		var localUpdatedAt time.Time
 		err := m.localDB.QueryRow("SELECT updated_at FROM app_settings WHERE key = ?", s.Key).Scan(&localUpdatedAt)
 		if err != nil && err != sql.ErrNoRows {
 			return err
 		}
 
-		// If locked by admin, always override local
-		// If not locked, only override if remote is newer
 		if s.IsLocked || s.UpdatedAt.After(localUpdatedAt) {
 			isLockedVal := 0
 			if s.IsLocked {
@@ -88,12 +85,42 @@ func (m *SyncManager) PullAll(ctx context.Context) error {
 		}
 	}
 
-	// Pull Profiles & Jobs (Simplified for now)
+	// 2. Pull Profiles
+	profiles, err := m.remote.PullProfiles(ctx, m.clientCode)
+	if err != nil {
+		return err
+	}
+	for _, p := range profiles {
+		_, err = m.localDB.Exec("INSERT OR REPLACE INTO profiles (name, encrypted_data, account_code, created_at) VALUES (?, ?, ?, ?)",
+			p.Name, p.EncryptedData, p.AccountCode, p.UpdatedAt)
+		if err != nil {
+			return err
+		}
+	}
+
+	// 3. Pull Jobs
+	jobs, err := m.remote.PullJobs(ctx, m.clientCode)
+	if err != nil {
+		return err
+	}
+	for _, j := range jobs {
+		enabled := 0
+		if j.Enabled {
+			enabled = 1
+		}
+		_, err = m.localDB.Exec(`INSERT OR REPLACE INTO backup_jobs (name, enabled, schedule, mode, output_mode, include_file, profile_name, ticket, output_dir, retention_days, last_run) 
+								VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			j.Name, enabled, j.Schedule, j.Mode, j.OutputMode, j.IncludeFile, j.ProfileName, j.Ticket, j.OutputDir, j.RetentionDays, j.UpdatedAt)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 func (m *SyncManager) PushAll(ctx context.Context) error {
-	// Push Settings
+	// 1. Push Settings
 	rows, err := m.localDB.Query("SELECT key, value, category, is_locked, updated_at FROM app_settings")
 	if err != nil {
 		return err
@@ -110,17 +137,59 @@ func (m *SyncManager) PushAll(ctx context.Context) error {
 		s.IsLocked = isLocked == 1
 		settings = append(settings, s)
 	}
-
-	// Encrypt sensitive fields if E2E is required (already encrypted in DB usually, but we can wrap the whole payload)
-	// For now, we push as is because RemoteProvider handles individual items.
-	// Task 2 Step 1 mentions E2E for the whole payload.
-	
 	if err := m.remote.PushSettings(ctx, m.clientCode, settings); err != nil {
+		return err
+	}
+
+	// 2. Push Profiles
+	pRows, err := m.localDB.Query("SELECT name, encrypted_data, account_code, created_at FROM profiles")
+	if err != nil {
+		return err
+	}
+	defer pRows.Close()
+
+	var profiles []SyncProfile
+	for pRows.Next() {
+		var p SyncProfile
+		if err := pRows.Scan(&p.Name, &p.EncryptedData, &p.AccountCode, &p.UpdatedAt); err != nil {
+			return err
+		}
+		profiles = append(profiles, p)
+	}
+	if err := m.remote.PushProfiles(ctx, m.clientCode, profiles); err != nil {
+		return err
+	}
+
+	// 3. Push Jobs
+	jRows, err := m.localDB.Query("SELECT name, enabled, schedule, mode, output_mode, include_file, profile_name, ticket, output_dir, retention_days, last_run FROM backup_jobs")
+	if err != nil {
+		return err
+	}
+	defer jRows.Close()
+
+	var jobs []SyncJob
+	for jRows.Next() {
+		var j SyncJob
+		var enabled int
+		var lastRun sql.NullTime
+		if err := jRows.Scan(&j.Name, &enabled, &j.Schedule, &j.Mode, &j.OutputMode, &j.IncludeFile, &j.ProfileName, &j.Ticket, &j.OutputDir, &j.RetentionDays, &lastRun); err != nil {
+			return err
+		}
+		j.Enabled = enabled == 1
+		if lastRun.Valid {
+			j.UpdatedAt = lastRun.Time
+		} else {
+			j.UpdatedAt = time.Now()
+		}
+		jobs = append(jobs, j)
+	}
+	if err := m.remote.PushJobs(ctx, m.clientCode, jobs); err != nil {
 		return err
 	}
 
 	return nil
 }
+
 
 func (m *SyncManager) SendHeartbeat(ctx context.Context) error {
 	backupDir := database.GetSetting("backup_output_base_directory")
