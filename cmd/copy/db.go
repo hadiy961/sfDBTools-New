@@ -7,6 +7,7 @@ import (
 	"sfdbtools/internal/app/copy"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/runner"
+	"sfdbtools/internal/services/notify"
 	"sfdbtools/internal/shared/execx"
 	"sfdbtools/internal/ui/prompt"
 	"sfdbtools/internal/ui/table"
@@ -141,6 +142,19 @@ var CmdCopyDB = &cobra.Command{
 				Suffix:           suffix,
 				TargetDBIfSingle: targetDB,
 			})
+
+			// Kirim notifikasi
+			var notifyInfos []notify.CopyDBInfo
+			for _, r := range resList {
+				notifyInfos = append(notifyInfos, notify.CopyDBInfo{
+					SourceDB: r.SourceDB,
+					TargetDB: r.TargetDB,
+					Duration: r.Duration,
+					Error:    r.Error,
+				})
+			}
+			appdeps.Deps.NotifyService.Send(notify.BuildCopyDBMessage(notifyInfos, err, copyDBTicket))
+
 			if err != nil && len(resList) == 0 {
 				return err
 			}

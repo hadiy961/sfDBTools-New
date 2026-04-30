@@ -8,7 +8,8 @@ import (
 	"sfdbtools/internal/autoupdate"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/crypto"
-	config "sfdbtools/internal/services/config"
+	"sfdbtools/internal/services/config"
+	"sfdbtools/internal/services/notify"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/progress"
@@ -18,7 +19,7 @@ import (
 )
 
 // Inisialisasi awal untuk Config dan Logger.
-var cfg *config.Config
+var cfg *appconfig.Config
 var appLogger applog.Logger
 
 func main() {
@@ -73,7 +74,7 @@ func main() {
 	// 1. Muat Konfigurasi (skip saat completion/version agar output bersih)
 	var err error
 	if !isCompletion && !isVersion && !isUpdate {
-		cfg, err = config.LoadConfigFromEnv()
+		cfg, err = appconfig.LoadConfigFromEnv()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "FATAL: Gagal memuat konfigurasi: %v\n", err)
 			os.Exit(1)
@@ -108,9 +109,17 @@ func main() {
 	// }
 
 	// 4. Buat objek dependensi untuk di-inject
+	var notifyService *notify.Service
+	if cfg != nil {
+		notifyService = notify.NewService(&cfg.Notify, appLogger)
+	} else {
+		notifyService = notify.NewService(nil, appLogger)
+	}
+
 	deps := &appdeps.Dependencies{
-		Config: cfg, // bisa nil saat completion, akan di-skip oleh PersistentPreRunE
-		Logger: appLogger,
+		Config:        cfg, // bisa nil saat completion, akan di-skip oleh PersistentPreRunE
+		Logger:        appLogger,
+		NotifyService: notifyService,
 	}
 
 	// 5. Jalankan perintah Cobra dengan dependensi

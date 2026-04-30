@@ -17,3 +17,9 @@ type CleanupEntryConfig struct {
 	SuccessMsg  string
 	LogPrefix   string
 }
+
+// CleanupResult menyimpan statistik eksekusi cleanup untuk keperluan notifikasi.
+type CleanupResult struct {
+	DeletedCount   int
+	TotalFreedSize int64
+}

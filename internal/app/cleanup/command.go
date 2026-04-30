@@ -9,6 +9,7 @@ import (
 	cleanupmodel "sfdbtools/internal/app/cleanup/model"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/parsing"
+	"sfdbtools/internal/services/notify"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
 
@@ -62,7 +63,13 @@ func executeCleanupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, co
 	}
 
 	// Execute cleanup command
-	if err := svc.ExecuteCleanupCommand(config); err != nil {
+	res, err := svc.ExecuteCleanupCommand(config)
+	
+	// Send notification
+	msg := notify.BuildCleanupMessage(config.Mode, res, err, "")
+	deps.NotifyService.Send(msg)
+
+	if err != nil {
 		return err
 	}
 

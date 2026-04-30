@@ -6,9 +6,11 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 	backupcmd "sfdbtools/cmd/backup"
 	cleanupcmd "sfdbtools/cmd/cleanup"
 	copycmd "sfdbtools/cmd/copy"
@@ -17,13 +19,20 @@ import (
 	profilecmd "sfdbtools/cmd/profile"
 	restorecmd "sfdbtools/cmd/restore"
 	scriptcmd "sfdbtools/cmd/script"
+	notifycmd "sfdbtools/cmd/notify"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/shared/sanitize"
 	"sfdbtools/internal/ui/menu"
 	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/shared/database"
+	"sfdbtools/internal/app/settings"
+	"sfdbtools/internal/autoupdate"
+	"sfdbtools/internal/shared/connectivity"
+	"sfdbtools/internal/app/sync"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -47,13 +56,60 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 		if cmd.Name() == "completion" || cmd.HasParent() && cmd.Parent().Name() == "completion" {
 			return nil
 		}
-		// Version dan update harus bisa jalan tanpa config (mis. sebelum instalasi config.yaml)
-		if cmd.Name() == "version" || cmd.Name() == "update" {
+		// Version, update, dan init harus bisa jalan tanpa config (mis. sebelum instalasi config.yaml)
+		if cmd.Name() == "version" || cmd.Name() == "update" || cmd.Name() == "init" {
 			return nil
 		}
 
 		if appdeps.Deps == nil || appdeps.Deps.Config == nil || appdeps.Deps.Logger == nil {
 			return fmt.Errorf("dependensi belum di-inject. Pastikan untuk memanggil Execute(deps) dari main.go")
+		}
+
+		// [VERIFIKASI INIT] Cek apakah database sudah diinisialisasi
+		if !database.IsInitialized(appdeps.Deps.Config.Storage.LocalDB) {
+			fmt.Println(color.RedString("\n[ERROR] Aplikasi belum diinisialisasi!"))
+			fmt.Println("Silakan jalankan perintah berikut untuk setup awal:")
+			fmt.Println(color.CyanString("  sfdbtools init\n"))
+			os.Exit(1)
+		}
+
+		// [INIT SQLITE] Inisialisasi instance database global untuk digunakan di modul lain
+		if err := database.InitSQLite(appdeps.Deps.Config.Storage.LocalDB); err != nil {
+			return fmt.Errorf("gagal menginisialisasi database sqlite: %v", err)
+		}
+
+		// [SQLITE SYNC] Override konfigurasi YAML dengan nilai dari database
+		settings.SyncConfig(appdeps.Deps.Config)
+
+		// [STARTUP NETWORK SEQUENCE]
+		isOnline := false
+		if database.GetSettingBool("check_internet_startup") {
+			isOnline = connectivity.IsInternetAvailable(cmd.Context(), 2*time.Second)
+		}
+
+		if isOnline {
+			// 1. Auto Update Check
+			if database.GetSettingBool("auto_update_enabled") {
+				autoupdate.MaybeAutoUpdate(cmd.Context(), appdeps.Deps.Logger)
+			}
+
+			// 2. Remote Sync Check
+			if database.GetSettingBool("sync_auto") && database.GetSettingBool("sync_enabled") {
+				syncType := database.GetSetting("sync_type")
+				fmt.Printf("%s Menyinkronkan data dengan remote hub (%s)...\n", color.BlueString("[SYNC]"), syncType)
+				
+				remote, err := database.ConnectToRemoteHub()
+				if err == nil {
+					defer remote.Close()
+					local, _ := database.GetSQLite()
+					syncSvc := sync.NewService(local, remote, appdeps.Deps.Config.General.ClientCode)
+					
+					ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+					defer cancel()
+
+					_ = syncSvc.RunSync(ctx, database.GetSetting("sync_mode"))
+				}
+			}
 		}
 
 		// Log bahwa perintah akan dieksekusi, termasuk argumen (tanpa membocorkan secret).
@@ -120,5 +176,6 @@ func init() {
 	rootCmd.AddCommand(restorecmd.CmdRestore)
 	rootCmd.AddCommand(copycmd.CmdCopyMain)
 	rootCmd.AddCommand(dbusercmd.CmdDBUserMain)
+	rootCmd.AddCommand(notifycmd.CmdNotifyMain)
 	rootCmd.AddCommand(completionCmd)
 }

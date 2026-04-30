@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	backupfile "sfdbtools/internal/app/backup/helpers/file"
 	"sfdbtools/internal/app/backup/model/types_backup"
+	cleanupmodel "sfdbtools/internal/app/cleanup/model"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/ui/text"
 	"sort"
@@ -21,7 +22,7 @@ import (
 )
 
 // cleanupCore adalah fungsi inti terpadu untuk semua logika pembersihan.
-func (s *Service) cleanupCore(dryRun bool, pattern string) error {
+func (s *Service) cleanupCore(dryRun bool, pattern string) (*cleanupmodel.CleanupResult, error) {
 	mode := "Menjalankan"
 	if dryRun {
 		mode = "Menjalankan DRY-RUN"
@@ -36,7 +37,7 @@ func (s *Service) cleanupCore(dryRun bool, pattern string) error {
 	retentionDays := s.Config.Backup.Cleanup.Days
 	if retentionDays <= 0 {
 		s.Log.Info("Retention days tidak valid, melewati proses")
-		return nil
+		return nil, nil
 	}
 
 	s.Log.Info("Path backup base directory:", s.Config.Backup.Output.BaseDirectory)
@@ -48,21 +49,23 @@ func (s *Service) cleanupCore(dryRun bool, pattern string) error {
 	// Pindai file
 	filesToDelete, err := s.scanFiles(s.Config.Backup.Output.BaseDirectory, cutoffTime, pattern)
 	if err != nil {
-		return fmt.Errorf("gagal memindai file backup: %w", err)
+		return nil, fmt.Errorf("gagal memindai file backup: %w", err)
 	}
 
 	if len(filesToDelete) == 0 {
 		s.Log.Info("Tidak ada file backup lama yang perlu dihapus")
-		return nil
+		return &cleanupmodel.CleanupResult{DeletedCount: 0, TotalFreedSize: 0}, nil
 	}
 
+	var res *cleanupmodel.CleanupResult
 	if dryRun {
 		s.logDryRunSummary(filesToDelete)
+		res = &cleanupmodel.CleanupResult{DeletedCount: 0, TotalFreedSize: 0}
 	} else {
-		s.performDeletion(filesToDelete)
+		res = s.performDeletion(filesToDelete)
 	}
 
-	return nil
+	return res, nil
 }
 
 // scanFiles memindai file berdasarkan kriteria retensi dan pattern.
@@ -110,7 +113,7 @@ func (s *Service) scanFiles(baseDir string, cutoff time.Time, pattern string) ([
 }
 
 // performDeletion menghapus file yang ada dalam daftar.
-func (s *Service) performDeletion(files []types_backup.BackupFileInfo) {
+func (s *Service) performDeletion(files []types_backup.BackupFileInfo) *cleanupmodel.CleanupResult {
 	s.Log.Infof("Ditemukan %d file backup lama yang akan dihapus", len(files))
 
 	var deletedCount int
@@ -128,4 +131,9 @@ func (s *Service) performDeletion(files []types_backup.BackupFileInfo) {
 
 	s.Log.Infof("Cleanup selesai: %d file dihapus, total %s ruang dibebaskan.",
 		deletedCount, text.FormatFileSize(totalFreedSize))
+	
+	return &cleanupmodel.CleanupResult{
+		DeletedCount:   deletedCount,
+		TotalFreedSize: totalFreedSize,
+	}
 }
