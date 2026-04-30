@@ -275,3 +275,17 @@ func MustValidateApplicationPassword() {
 func GetFailedDecodeCount() uint64 {
 	return key.GetFailedDecodeCount()
 }
+
+// ========================
+// Sync Payload E2E
+// ========================
+
+// EncryptSyncPayload encrypts a sync payload using the master key.
+func EncryptSyncPayload(payload []byte, masterKey string) ([]byte, error) {
+	return EncryptData(payload, []byte(masterKey))
+}
+
+// DecryptSyncPayload decrypts a sync payload using the master key.
+func DecryptSyncPayload(ciphertext []byte, masterKey string) ([]byte, error) {
+	return DecryptData(ciphertext, []byte(masterKey))
+}
