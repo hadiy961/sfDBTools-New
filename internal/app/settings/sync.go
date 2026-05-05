@@ -115,23 +115,28 @@ func (s *Service) SpecificSettingsForm(db *sql.DB, title string, keys []string, 
 		if val == "true" || val == "false" || val == "" && (strings.Contains(k, "enabled") || strings.Contains(k, "auto")) {
 			b := val == "true"
 			boolPtrs[key] = &b
-			f := huh.NewConfirm().Title(fTitle).Value(boolPtrs[key])
 			if isLocked {
-				f = f.ReadOnly(true)
+				fields = append(fields, huh.NewNote().Title(fTitle).Description(fmt.Sprintf("Current value: %v", b)))
+			} else {
+				fields = append(fields, huh.NewConfirm().Title(fTitle).Value(boolPtrs[key]))
 			}
-			fields = append(fields, f)
 		} else {
 			str := val
 			strPtrs[key] = &str
 			isSecret := strings.Contains(k, "password") || strings.Contains(k, "key")
-			input := huh.NewInput().Title(fTitle).Value(strPtrs[key])
-			if isSecret {
-				input = input.EchoMode(huh.EchoModePassword)
-			}
 			if isLocked {
-				input = input.ReadOnly(true)
+				displayVal := str
+				if isSecret {
+					displayVal = "********"
+				}
+				fields = append(fields, huh.NewNote().Title(fTitle).Description(fmt.Sprintf("Current value: %s", displayVal)))
+			} else {
+				input := huh.NewInput().Title(fTitle).Value(strPtrs[key])
+				if isSecret {
+					input = input.EchoMode(huh.EchoModePassword)
+				}
+				fields = append(fields, input)
 			}
-			fields = append(fields, input)
 		}
 	}
 

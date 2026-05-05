@@ -3,11 +3,9 @@ package sync
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"runtime"
 	"sfdbtools/internal/app/version"
-	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/shared/systeminfo"
 	"time"
@@ -91,10 +89,18 @@ func (m *SyncManager) PullAll(ctx context.Context) error {
 		return err
 	}
 	for _, p := range profiles {
-		_, err = m.localDB.Exec("INSERT OR REPLACE INTO profiles (name, encrypted_data, account_code, created_at) VALUES (?, ?, ?, ?)",
-			p.Name, p.EncryptedData, p.AccountCode, p.UpdatedAt)
-		if err != nil {
+		var localUpdatedAt time.Time
+		err := m.localDB.QueryRow("SELECT updated_at FROM profiles WHERE name = ?", p.Name).Scan(&localUpdatedAt)
+		if err != nil && err != sql.ErrNoRows {
 			return err
+		}
+
+		if p.UpdatedAt.After(localUpdatedAt) {
+			_, err = m.localDB.Exec("INSERT OR REPLACE INTO profiles (name, encrypted_data, account_code, updated_at) VALUES (?, ?, ?, ?)",
+				p.Name, p.EncryptedData, p.AccountCode, p.UpdatedAt)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -104,15 +110,23 @@ func (m *SyncManager) PullAll(ctx context.Context) error {
 		return err
 	}
 	for _, j := range jobs {
-		enabled := 0
-		if j.Enabled {
-			enabled = 1
-		}
-		_, err = m.localDB.Exec(`INSERT OR REPLACE INTO backup_jobs (name, enabled, schedule, mode, output_mode, include_file, profile_name, ticket, output_dir, retention_days, last_run) 
-								VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			j.Name, enabled, j.Schedule, j.Mode, j.OutputMode, j.IncludeFile, j.ProfileName, j.Ticket, j.OutputDir, j.RetentionDays, j.UpdatedAt)
-		if err != nil {
+		var localUpdatedAt time.Time
+		err := m.localDB.QueryRow("SELECT updated_at FROM backup_jobs WHERE name = ?", j.Name).Scan(&localUpdatedAt)
+		if err != nil && err != sql.ErrNoRows {
 			return err
+		}
+
+		if j.UpdatedAt.After(localUpdatedAt) {
+			enabled := 0
+			if j.Enabled {
+				enabled = 1
+			}
+			_, err = m.localDB.Exec(`INSERT OR REPLACE INTO backup_jobs (name, enabled, schedule, mode, output_mode, include_file, profile_name, ticket, output_dir, retention_days, updated_at) 
+									VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				j.Name, enabled, j.Schedule, j.Mode, j.OutputMode, j.IncludeFile, j.ProfileName, j.Ticket, j.OutputDir, j.RetentionDays, j.UpdatedAt)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -142,7 +156,7 @@ func (m *SyncManager) PushAll(ctx context.Context) error {
 	}
 
 	// 2. Push Profiles
-	pRows, err := m.localDB.Query("SELECT name, encrypted_data, account_code, created_at FROM profiles")
+	pRows, err := m.localDB.Query("SELECT name, encrypted_data, account_code, updated_at FROM profiles")
 	if err != nil {
 		return err
 	}
@@ -161,7 +175,7 @@ func (m *SyncManager) PushAll(ctx context.Context) error {
 	}
 
 	// 3. Push Jobs
-	jRows, err := m.localDB.Query("SELECT name, enabled, schedule, mode, output_mode, include_file, profile_name, ticket, output_dir, retention_days, last_run FROM backup_jobs")
+	jRows, err := m.localDB.Query("SELECT name, enabled, schedule, mode, output_mode, include_file, profile_name, ticket, output_dir, retention_days, updated_at FROM backup_jobs")
 	if err != nil {
 		return err
 	}
@@ -171,20 +185,41 @@ func (m *SyncManager) PushAll(ctx context.Context) error {
 	for jRows.Next() {
 		var j SyncJob
 		var enabled int
-		var lastRun sql.NullTime
-		if err := jRows.Scan(&j.Name, &enabled, &j.Schedule, &j.Mode, &j.OutputMode, &j.IncludeFile, &j.ProfileName, &j.Ticket, &j.OutputDir, &j.RetentionDays, &lastRun); err != nil {
+		if err := jRows.Scan(&j.Name, &enabled, &j.Schedule, &j.Mode, &j.OutputMode, &j.IncludeFile, &j.ProfileName, &j.Ticket, &j.OutputDir, &j.RetentionDays, &j.UpdatedAt); err != nil {
 			return err
 		}
 		j.Enabled = enabled == 1
-		if lastRun.Valid {
-			j.UpdatedAt = lastRun.Time
-		} else {
-			j.UpdatedAt = time.Now()
-		}
 		jobs = append(jobs, j)
 	}
 	if err := m.remote.PushJobs(ctx, m.clientCode, jobs); err != nil {
 		return err
+	}
+
+	// 4. Push Logs
+	lRows, err := m.localDB.Query("SELECT id, event_type, details, timestamp FROM audit_logs WHERE is_synced = 0")
+	if err != nil {
+		return err
+	}
+	defer lRows.Close()
+
+	var logs []AuditLog
+	var logIDs []int
+	for lRows.Next() {
+		var l AuditLog
+		var id int
+		if err := lRows.Scan(&id, &l.EventType, &l.Details, &l.Timestamp); err != nil {
+			return err
+		}
+		logs = append(logs, l)
+		logIDs = append(logIDs, id)
+	}
+	if len(logs) > 0 {
+		if err := m.remote.PushLogs(ctx, m.clientCode, logs); err != nil {
+			return err
+		}
+		for _, id := range logIDs {
+			_, _ = m.localDB.Exec("UPDATE audit_logs SET is_synced = 1 WHERE id = ?", id)
+		}
 	}
 
 	return nil

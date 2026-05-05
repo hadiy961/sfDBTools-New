@@ -18,22 +18,28 @@ type Config struct {
 	SystemUsers SystemUsersConfig `yaml:"system_users"`
 	Script      ScriptConfig      `yaml:"script"`
 	DBUser      DBUserConfig      `yaml:"db_user"`
-	Notify      NotifyConfig      `yaml:"notify"` // [NEW]
+	Notify      NotifyConfig      `yaml:"notify"`
+	Storage     StorageConfig     `yaml:"storage"`
+	Crypto      CryptoConfig      `yaml:"crypto"`
 }
 
-// ============================================================
-// Notify Config — Shared Notification Service
-// ============================================================
+// CryptoConfig untuk encryption key global
+type CryptoConfig struct {
+	EncryptionKey string `yaml:"encryption_key"`
+}
 
 // NotifyConfig mengatur konfigurasi global notification service.
-// Digunakan oleh semua fitur yang butuh kirim notifikasi.
 type NotifyConfig struct {
-	// DefaultChannels menentukan channel default jika caller tidak specify
-	// contoh: ["telegram", "email"]
 	DefaultChannels []string `yaml:"default_channels"`
-
 	Telegram TelegramConfig `yaml:"telegram"`
+	Discord  DiscordConfig  `yaml:"discord"`
 	Email    EmailConfig    `yaml:"email"`
+}
+
+// DiscordConfig untuk Webhook Discord
+type DiscordConfig struct {
+	Enabled    bool   `yaml:"enabled"`
+	WebhookURL string `yaml:"webhook_url"`
 }
 
 // TelegramConfig mengatur Telegram Bot API
@@ -98,6 +104,16 @@ type ScriptConfig struct {
 	// BundleOutputDir jika diisi, output .sftools akan ditaruh di folder ini.
 	// Jika kosong, default: satu folder dengan entrypoint.
 	BundleOutputDir string `yaml:"bundle_output_dir"`
+}
+
+// StorageConfig mengatur penyimpanan data persisten (SQLite).
+type StorageConfig struct {
+	// LocalDB adalah path lengkap ke file database SQLite.
+	// default: "/etc/sfDBTools/sfdbtools.db"
+	LocalDB string `yaml:"local_db"`
+	// ConfigDir adalah folder utama untuk konfigurasi.
+	// default: "/etc/sfDBTools"
+	ConfigDir string `yaml:"config_dir"`
 }
 
 // Struct untuk bagian 'backup'

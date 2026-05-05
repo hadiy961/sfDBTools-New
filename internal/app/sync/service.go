@@ -13,9 +13,12 @@ type Service struct {
 
 func NewService(localDB *sql.DB, remoteDB *database.Client, clientID string) *Service {
 	provider := NewSQLRemoteProvider(remoteDB)
-	// For simplicity, we assume masterKey is handled outside or injected.
-	// In sfDBTools, the master key is usually resolved from env or key file.
-	manager := NewSyncManager(localDB, provider, clientID, "")
+	
+	// Resolve sync_key from settings for E2E encryption
+	var syncKey string
+	_ = localDB.QueryRow("SELECT value FROM app_settings WHERE key = 'sync_key'").Scan(&syncKey)
+	
+	manager := NewSyncManager(localDB, provider, clientID, syncKey)
 	return &Service{manager: manager}
 }
 

@@ -119,11 +119,11 @@ func (s *Service) GenericCategoryMenu(db *sql.DB, category string) {
 		if val == "true" || val == "false" {
 			b := val == "true"
 			boolPtrs[k] = &b
-			f := huh.NewConfirm().Title(title).Value(boolPtrs[k])
 			if isLocked {
-				f = f.ReadOnly(true)
+				fields = append(fields, huh.NewNote().Title(title).Description(fmt.Sprintf("Current value: %v", b)))
+			} else {
+				fields = append(fields, huh.NewConfirm().Title(title).Value(boolPtrs[k]))
 			}
-			fields = append(fields, f)
 		} else {
 			str := val
 			strPtrs[k] = &str
@@ -133,14 +133,19 @@ func (s *Service) GenericCategoryMenu(db *sql.DB, category string) {
 				isSecret = true
 			}
 			
-			input := huh.NewInput().Title(title).Value(strPtrs[k])
-			if isSecret {
-				input = input.EchoMode(huh.EchoModePassword)
-			}
 			if isLocked {
-				input = input.ReadOnly(true)
+				displayVal := str
+				if isSecret {
+					displayVal = "********"
+				}
+				fields = append(fields, huh.NewNote().Title(title).Description(fmt.Sprintf("Current value: %s", displayVal)))
+			} else {
+				input := huh.NewInput().Title(title).Value(strPtrs[k])
+				if isSecret {
+					input = input.EchoMode(huh.EchoModePassword)
+				}
+				fields = append(fields, input)
 			}
-			fields = append(fields, input)
 		}
 	}
 

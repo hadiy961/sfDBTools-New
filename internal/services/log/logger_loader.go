@@ -93,7 +93,9 @@ func NewLogger(appCfg *appconfig.Config) Logger {
 	if err != nil {
 		configuredLevel = logrus.InfoLevel
 		log.SetLevel(configuredLevel)
-		log.Warnf("Level log '%s' tidak valid. Menggunakan default: info", cfg.Level)
+		if cfg.Level != "" {
+			log.Warnf("Level log '%s' tidak valid. Menggunakan default: info", cfg.Level)
+		}
 	} else {
 		log.SetLevel(configuredLevel)
 	}

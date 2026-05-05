@@ -10,7 +10,18 @@ import (
 	"strconv"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/terminal"
+	"os"
 )
+
+// handleInterrupt checks if the error is a user interrupt and exits if so.
+func handleInterrupt(err error) error {
+	if err == terminal.InterruptErr {
+		fmt.Println("\n[INTERRUPT] Operasi dibatalkan oleh pengguna.")
+		os.Exit(0)
+	}
+	return err
+}
 
 // AskPassword prompts user for a password with input masking.
 func AskPassword(message string, validator survey.Validator) (string, error) {
@@ -26,7 +37,7 @@ func AskPassword(message string, validator survey.Validator) (string, error) {
 	}
 
 	err := survey.AskOne(prompt, &answer, opts...)
-	return answer, err
+	return answer, handleInterrupt(err)
 }
 
 func AskInt(message string, defaultValue int, validator survey.Validator) (int, error) {
@@ -45,7 +56,7 @@ func AskInt(message string, defaultValue int, validator survey.Validator) (int, 
 	}
 
 	if err := survey.AskOne(prompt, &answer, opts...); err != nil {
-		return 0, err
+		return 0, handleInterrupt(err)
 	}
 	val, _ := strconv.Atoi(answer)
 	return val, nil
@@ -67,7 +78,7 @@ func AskString(message, defaultValue string, validator survey.Validator) (string
 	}
 
 	err := survey.AskOne(prompt, &answer, opts...)
-	return answer, err
+	return answer, handleInterrupt(err)
 }
 
 func AskYesNo(question string, defaultValue bool) (bool, error) {
@@ -79,7 +90,8 @@ func AskYesNo(question string, defaultValue bool) (bool, error) {
 		Message: question,
 		Default: defaultValue,
 	}
-	return response, survey.AskOne(prompt, &response)
+	err := survey.AskOne(prompt, &response)
+	return response, handleInterrupt(err)
 }
 
 // PromptString meminta input string dari user.
@@ -108,7 +120,7 @@ func SelectSingleFromList(items []string, message string) (string, error) {
 		Options: items,
 	}
 	err := survey.AskOne(prompt, &selected)
-	return selected, err
+	return selected, handleInterrupt(err)
 }
 
 // SelectSingleFromListWithDefault menampilkan list dan meminta user memilih satu item,
@@ -124,5 +136,6 @@ func SelectSingleFromListWithDefault(items []string, message string, defaultValu
 		Default: defaultValue,
 	}
 	err := survey.AskOne(prompt, &selected)
-	return selected, err
+	return selected, handleInterrupt(err)
 }
+

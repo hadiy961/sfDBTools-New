@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sfdbtools/internal/domain"
-	applog "sfdbtools/internal/services/log"
+	"strconv"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -45,18 +45,34 @@ func ConnectToDestinationDatabase(creds domain.DestinationDBConnection) (*Client
 }
 
 // ConnectionTest - Menguji koneksi database berdasarkan informasi yang diberikan
-func ConnectionTest(dbInfo *domain.DBInfo, applog applog.Logger) error {
-	applog.Info("Memeriksa koneksi database ke " + dbInfo.Host + ":" + fmt.Sprintf("%d", dbInfo.Port) + "...")
-	connectionInfo := domain.DestinationDBConnection{
-		DBInfo:   *dbInfo,
-		Database: "mysql", // Tidak perlu database spesifik untuk tes koneksi
+func ConnectToRemoteHub() (*Client, error) {
+	syncType := GetSetting("sync_type")
+	host := GetSetting("sync_host")
+	portStr := GetSetting("sync_port")
+	user := GetSetting("sync_user")
+	pass := GetSetting("sync_password")
+	dbName := GetSetting("sync_database")
+	
+	port, _ := strconv.Atoi(portStr)
+
+	if syncType == "postgres" || syncType == "supabase" {
+		cfg := PostgresConfig{
+			Host:     host,
+			Port:     port,
+			User:     user,
+			Password: pass,
+			Database: dbName,
+		}
+		return NewPostgresClient(context.Background(), cfg, 5*time.Second)
 	}
-	client, err := ConnectToDestinationDatabase(connectionInfo)
-	if err != nil {
-		applog.Error(err.Error())
-		return err
+
+	// Default to MySQL/MariaDB
+	cfg := Config{
+		Host:     host,
+		Port:     port,
+		User:     user,
+		Password: pass,
+		Database: dbName,
 	}
-	defer client.db.Close()
-	applog.Info("Koneksi database ke " + dbInfo.Host + ":" + fmt.Sprintf("%d", dbInfo.Port) + " berhasil.")
-	return nil
+	return NewClient(context.Background(), cfg, 5*time.Second, 5, 2, 0)
 }

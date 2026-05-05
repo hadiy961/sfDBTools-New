@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"sfdbtools/internal/crypto"
-	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/ui/prompt"
 	"strings"
 

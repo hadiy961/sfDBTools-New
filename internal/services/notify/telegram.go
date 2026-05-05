@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sfdbtools/internal/shared/database"
 	"time"
 )
 
@@ -39,12 +40,16 @@ type telegramGetUpdatesResponse struct {
 
 // GetUpdates mengambil pesan terbaru yang masuk ke bot
 func (s *Service) GetUpdates() ([]TelegramUpdate, error) {
-	cfg := s.cfg.Telegram
-	if cfg.BotToken == "" {
-		return nil, fmt.Errorf("telegram bot_token harus diisi di config")
+	botToken := s.cfg.Telegram.BotToken
+	if botToken == "" {
+		botToken = database.GetSetting("telegram_bot_token")
 	}
 
-	url := fmt.Sprintf(telegramUpdatesURL, cfg.BotToken)
+	if botToken == "" {
+		return nil, fmt.Errorf("telegram bot_token harus diisi di config atau settings")
+	}
+
+	url := fmt.Sprintf(telegramUpdatesURL, botToken)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -77,12 +82,16 @@ func (s *Service) GetUpdates() ([]TelegramUpdate, error) {
 
 // DeleteWebhook menghapus webhook aktif agar bisa menggunakan polling (getUpdates)
 func (s *Service) DeleteWebhook() error {
-	cfg := s.cfg.Telegram
-	if cfg.BotToken == "" {
-		return fmt.Errorf("telegram bot_token harus diisi di config")
+	botToken := s.cfg.Telegram.BotToken
+	if botToken == "" {
+		botToken = database.GetSetting("telegram_bot_token")
 	}
 
-	url := fmt.Sprintf(telegramDeleteWebhookURL, cfg.BotToken)
+	if botToken == "" {
+		return fmt.Errorf("telegram bot_token harus diisi di config atau settings")
+	}
+
+	url := fmt.Sprintf(telegramDeleteWebhookURL, botToken)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -112,14 +121,30 @@ type telegramPayload struct {
 
 // sendTelegram mengirimkan Message ke Telegram
 func (s *Service) sendTelegram(msg Message) error {
-	cfg := s.cfg.Telegram
-	if !cfg.Enabled {
-		return nil // silently skip jika tidak diaktifkan
-	}
-	if cfg.BotToken == "" || cfg.ChatID == "" {
-		return fmt.Errorf("telegram bot_token dan chat_id harus diisi")
+	enabled := s.cfg.Telegram.Enabled
+	if !enabled {
+		enabled = database.GetSettingBool("telegram_enabled")
 	}
 
+	if !enabled {
+		return nil // silently skip jika tidak diaktifkan
+	}
+
+	botToken := s.cfg.Telegram.BotToken
+	if botToken == "" {
+		botToken = database.GetSetting("telegram_bot_token")
+	}
+
+	chatID := s.cfg.Telegram.ChatID
+	if chatID == "" {
+		chatID = database.GetSetting("telegram_chat_id")
+	}
+
+	if botToken == "" || chatID == "" {
+		return fmt.Errorf("telegram bot_token dan chat_id harus diisi di config atau settings")
+	}
+
+	cfg := s.cfg.Telegram
 	parseMode := cfg.ParseMode
 	if parseMode == "" {
 		parseMode = "HTML"
@@ -128,7 +153,7 @@ func (s *Service) sendTelegram(msg Message) error {
 	text := FormatTelegramMessage(msg)
 
 	payload := telegramPayload{
-		ChatID:    cfg.ChatID,
+		ChatID:    chatID,
 		Text:      text,
 		ParseMode: parseMode,
 	}
@@ -138,7 +163,7 @@ func (s *Service) sendTelegram(msg Message) error {
 		return fmt.Errorf("failed to marshal telegram payload: %w", err)
 	}
 
-	url := fmt.Sprintf(telegramAPIURL, cfg.BotToken)
+	url := fmt.Sprintf(telegramAPIURL, botToken)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 

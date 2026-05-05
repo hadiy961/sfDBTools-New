@@ -6,9 +6,11 @@
 package initialize
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
+	"sfdbtools/internal/app/sync"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/ui/print"
@@ -264,9 +266,13 @@ func (s *Service) PerformZeroConfigSetup(clientCode, dbPath string) error {
 	user, _ := prompt.AskText("User Remote Hub:", prompt.WithDefault(""))
 	pass, _ := prompt.AskPassword("Password Remote Hub:", nil)
 	dbname, _ := prompt.AskText("Nama Database Hub:", prompt.WithDefault("sfdbtools_sync"))
-	syncKey, _ := prompt.AskPassword("Sync Encryption Key:", nil)
+	syncKey, _ := prompt.AskPassword("Sync Encryption Key (Master Key):", nil)
 
-	db, _ := database.GetSQLite()
+	db, err := database.GetSQLite()
+	if err != nil {
+		return err
+	}
+
 	s.saveSetting(db, "sync_enabled", "true", "cloud")
 	s.saveSetting(db, "sync_type", syncType, "cloud")
 	s.saveSetting(db, "sync_host", host, "cloud")
@@ -283,15 +289,21 @@ func (s *Service) PerformZeroConfigSetup(clientCode, dbPath string) error {
 	}
 	defer remote.Close()
 
-	fmt.Println(color.CyanString("Menarik konfigurasi dari Hub..."))
-	// Use sync manager for initial pull
-	// We pass the master key (syncKey) to decrypt E2E payload if needed
-	// For now, sync manager pull logic is used.
-	// Note: We need to instantiate it carefully as some dependencies might not be fully initialized.
-	// But database.GetSQLite() is already working.
+	fmt.Println(color.CyanString("Menghubungkan ke Remote Hub dan menarik konfigurasi..."))
 	
-	// Implementation note: we reuse the sync manager pull logic here
-	// (Simplified for this wizard)
+	provider := sync.NewSQLRemoteProvider(remote)
+	manager := sync.NewSyncManager(db, provider, clientCode, syncKey)
+	
+	ctx := context.Background()
+	
+	// Ensure remote tables exist (just in case)
+	_ = provider.Migrate(ctx)
+
+	// Perform initial pull
+	if err := manager.PullAll(ctx); err != nil {
+		return fmt.Errorf("gagal menarik data dari hub: %w", err)
+	}
+
 	return nil
 }
 

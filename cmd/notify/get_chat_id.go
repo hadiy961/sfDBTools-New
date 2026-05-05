@@ -11,7 +11,7 @@ var CmdNotifyGetChatID = &cobra.Command{
 	Short: "Cari Telegram Chat ID dari pesan terbaru yang masuk ke bot",
 	Long: `Membantu mencari Chat ID (User atau Group).
 Caranya:
-1. Pastikan bot_token sudah diisi di config.yaml
+1. Pastikan bot_token sudah diisi di config.yaml atau lewat 'sfdbtools settings'
 2. Kirim pesan apa saja ke bot Anda (lewat private chat atau grup)
 3. Jalankan perintah ini untuk melihat Chat ID dari pengirim pesan.`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -54,6 +54,6 @@ Caranya:
 			fmt.Printf("%-15s | %-15d | %-15s | %s\n", chatType, chatID, sender, text)
 		}
 		fmt.Println("--------------------------------------------------------------------------------")
-		fmt.Println("\n✅ Silakan copy Chat ID di atas dan masukkan ke config.yaml (notify.telegram.chat_id)")
+		fmt.Println("\n✅ Silakan copy Chat ID di atas dan masukkan ke settings (telegram_chat_id) atau config.yaml")
 	},
 }

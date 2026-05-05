@@ -24,7 +24,7 @@ func ShowMenu(title string, options []string) (int, error) {
 		os.Stderr,
 	))
 	if err != nil {
-		return 0, err
+		return 0, handleInterrupt(err)
 	}
 
 	// survey returns 0-based index; convert to 1-based.
@@ -49,8 +49,9 @@ func ShowMultiSelect(title string, options []string) ([]int, error) {
 		os.Stderr,
 	))
 	if err != nil {
-		return nil, err
+		return nil, handleInterrupt(err)
 	}
+
 
 	idxs := make([]int, 0, len(selected))
 	for _, sel := range selected {

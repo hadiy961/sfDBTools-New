@@ -57,3 +57,10 @@ type Heartbeat struct {
 	ToolVersions map[string]string `json:"tool_versions"`
 	Timestamp    time.Time         `json:"timestamp"`
 }
+
+// AuditLog represents a log entry to be synchronized.
+type AuditLog struct {
+	EventType string    `json:"event_type"`
+	Details   string    `json:"details"`
+	Timestamp time.Time `json:"timestamp"`
+}

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sfdbtools/internal/shared/database"
-	"time"
 )
 
 // RemoteProvider defines the interface for communicating with the Remote Hub.
@@ -17,6 +16,7 @@ type RemoteProvider interface {
 	PullProfiles(ctx context.Context, clientCode string) ([]SyncProfile, error)
 	PushJobs(ctx context.Context, clientCode string, jobs []SyncJob) error
 	PullJobs(ctx context.Context, clientCode string) ([]SyncJob, error)
+	PushLogs(ctx context.Context, clientCode string, logs []AuditLog) error
 	SendHeartbeat(ctx context.Context, hb Heartbeat) error
 	Close() error
 }
@@ -42,6 +42,7 @@ func (p *SQLRemoteProvider) Migrate(ctx context.Context) error {
 			`CREATE TABLE IF NOT EXISTS sf_client_profiles (client_code TEXT, name TEXT, encrypted_data TEXT, account_code TEXT, updated_at TIMESTAMP, PRIMARY KEY (client_code, name))`,
 			`CREATE TABLE IF NOT EXISTS sf_client_jobs (client_code TEXT, name TEXT, enabled INTEGER, schedule TEXT, mode TEXT, output_mode TEXT, include_file TEXT, profile_name TEXT, ticket TEXT, output_dir TEXT, retention_days INTEGER, updated_at TIMESTAMP, PRIMARY KEY (client_code, name))`,
 			`CREATE TABLE IF NOT EXISTS sf_client_heartbeat (client_code TEXT PRIMARY KEY, client_alias TEXT, os_version TEXT, tool_version TEXT, cpu_model TEXT, mem_total BIGINT, mem_used BIGINT, disk_total BIGINT, disk_free BIGINT, tool_versions_json TEXT, updated_at TIMESTAMP)`,
+			`CREATE TABLE IF NOT EXISTS sf_client_logs (id SERIAL PRIMARY KEY, client_code TEXT, event_type TEXT, details TEXT, timestamp TIMESTAMP)`,
 		}
 	} else {
 		queries = []string{
@@ -49,6 +50,7 @@ func (p *SQLRemoteProvider) Migrate(ctx context.Context) error {
 			`CREATE TABLE IF NOT EXISTS sf_client_profiles (client_code VARCHAR(100), name VARCHAR(100), encrypted_data TEXT, account_code VARCHAR(100), updated_at DATETIME, PRIMARY KEY (client_code, name))`,
 			`CREATE TABLE IF NOT EXISTS sf_client_jobs (client_code VARCHAR(100), name VARCHAR(100), enabled TINYINT, schedule VARCHAR(100), mode VARCHAR(100), output_mode VARCHAR(100), include_file VARCHAR(100), profile_name VARCHAR(100), ticket VARCHAR(100), output_dir TEXT, retention_days INT, updated_at DATETIME, PRIMARY KEY (client_code, name))`,
 			`CREATE TABLE IF NOT EXISTS sf_client_heartbeat (client_code VARCHAR(100) PRIMARY KEY, client_alias VARCHAR(100), os_version VARCHAR(100), tool_version VARCHAR(100), cpu_model VARCHAR(255), mem_total BIGINT, mem_used BIGINT, disk_total BIGINT, disk_free BIGINT, tool_versions_json TEXT, updated_at DATETIME)`,
+			`CREATE TABLE IF NOT EXISTS sf_client_logs (id INT AUTO_INCREMENT PRIMARY KEY, client_code VARCHAR(100), event_type VARCHAR(100), details TEXT, timestamp DATETIME)`,
 		}
 	}
 
@@ -211,6 +213,22 @@ func (p *SQLRemoteProvider) PullJobs(ctx context.Context, clientCode string) ([]
 		jobs = append(jobs, j)
 	}
 	return jobs, nil
+}
+
+func (p *SQLRemoteProvider) PushLogs(ctx context.Context, clientCode string, logs []AuditLog) error {
+	for _, l := range logs {
+		var query string
+		if p.client.Driver() == "postgres" {
+			query = `INSERT INTO sf_client_logs (client_code, event_type, details, timestamp) VALUES ($1, $2, $3, $4)`
+		} else {
+			query = `INSERT INTO sf_client_logs (client_code, event_type, details, timestamp) VALUES (?, ?, ?, ?)`
+		}
+		_, err := p.client.DB().ExecContext(ctx, query, clientCode, l.EventType, l.Details, l.Timestamp)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *SQLRemoteProvider) SendHeartbeat(ctx context.Context, hb Heartbeat) error {

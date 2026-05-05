@@ -197,6 +197,9 @@ func runBasicMigrations(db *sql.DB) error {
 	// Migrasi tambahan (Update skema)
 	// Tambah kolom is_locked ke app_settings jika belum ada
 	_, _ = db.Exec("ALTER TABLE app_settings ADD COLUMN is_locked INTEGER DEFAULT 0")
+	_, _ = db.Exec("ALTER TABLE profiles ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP")
+	_, _ = db.Exec("ALTER TABLE backup_jobs ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP")
+	_, _ = db.Exec("ALTER TABLE audit_logs ADD COLUMN is_synced INTEGER DEFAULT 0")
 
 	return nil
 }

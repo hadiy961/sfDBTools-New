@@ -16,6 +16,7 @@ import (
 	"time"
 
 	applog "sfdbtools/internal/services/log"
+	"github.com/fatih/color"
 )
 
 // Inisialisasi awal untuk Config dan Logger.
@@ -31,6 +32,7 @@ func main() {
 	isCompletion := len(os.Args) > 1 && os.Args[1] == "completion"
 	isVersion := len(os.Args) > 1 && os.Args[1] == "version"
 	isUpdate := len(os.Args) > 1 && os.Args[1] == "update"
+	isInit := len(os.Args) > 1 && os.Args[1] == "init"
 	if isCompletion {
 		quiet = true // pastikan tidak ada header/spinner yang tampil
 		runtimecfg.SetQuiet(true)
@@ -38,6 +40,10 @@ func main() {
 	if isVersion {
 		quiet = true // output versi sebaiknya bersih untuk scripting
 		runtimecfg.SetQuiet(true)
+	}
+	if isInit {
+		// Init harus interaktif, jangan set quiet
+		runtimecfg.SetQuiet(false)
 	}
 	if isUpdate {
 		quiet = true // update sebaiknya bersih dan tidak perlu header
@@ -76,12 +82,20 @@ func main() {
 	if !isCompletion && !isVersion && !isUpdate {
 		cfg, err = appconfig.LoadConfigFromEnv()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "FATAL: Gagal memuat konfigurasi: %v\n", err)
-			os.Exit(1)
+			if isInit {
+				// Jika init, jangan fatal error, biarkan init yang menghandle/memperbaiki.
+				fmt.Printf("%s Konfigurasi tidak valid atau hilang, masuk ke mode inisialisasi...\n", color.YellowString("[WARN]"))
+			} else {
+				fmt.Fprintf(os.Stderr, "FATAL: Gagal memuat konfigurasi: %v\n", err)
+				fmt.Println("Gunakan 'sfdbtools init' untuk memperbaiki konfigurasi.")
+				os.Exit(1)
+			}
 		}
-		// Konfigurasi path key file MariaDB untuk derive master key env terenkripsi.
-		// Jika kosong, akan fallback ke default internal.
-		crypto.SetMariaDBKeyFilePath(cfg.Mariadb.KeyMariaNBCFile)
+		if cfg != nil {
+			// Konfigurasi path key file MariaDB untuk derive master key env terenkripsi.
+			// Jika kosong, akan fallback ke default internal.
+			crypto.SetMariaDBKeyFilePath(cfg.Mariadb.KeyMariaNBCFile)
+		}
 	}
 
 	// 2. Inisialisasi Logger Kustom
