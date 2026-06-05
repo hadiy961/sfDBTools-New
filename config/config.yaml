@@ -130,3 +130,28 @@ db_user:
     include_create_user: true
     include_grants: true
     split_output: true
+
+# ─────────────────────────────────────────────────────────────
+# Notification Service (Global — digunakan semua fitur)
+# ─────────────────────────────────────────────────────────────
+notify:
+  # Channel default jika caller tidak specify channel
+  # Kosongkan array jika tidak ingin notifikasi default
+  default_channels: [] # contoh: ["telegram", "email"]
+
+  telegram:
+    enabled: false
+    bot_token: "" # Token dari @BotFather
+    chat_id: "" # Chat ID / Group ID (grup = angka negatif)
+    parse_mode: "HTML" # HTML, Markdown, atau MarkdownV2
+
+  email:
+    enabled: false
+    smtp_host: "" # contoh: smtp.gmail.com
+    smtp_port: 587 # 587 = STARTTLS, 465 = SSL/TLS
+    username: ""
+    password: ""
+    from_name: "sfDBTools Alert"
+    from_email: ""
+    to_emails: [] # contoh: ["dba@example.com", "ops@example.com"]
+    use_tls: false # false = STARTTLS (port 587), true = SSL langsung (port 465)

@@ -98,7 +98,9 @@ func applyRuntimeDefaults(cfg *Config, configPath string) {
 	// Hardcode app identity (tidak boleh diubah lewat config)
 	cfg.General.AppName = HardcodedAppName
 	cfg.General.Author = HardcodedAuthor
-	cfg.General.ClientCode = HardcodedClientCode
+	if cfg.General.ClientCode == "" {
+		cfg.General.ClientCode = HardcodedClientCode
+	}
 	if cfg.General.Version == "" {
 		cfg.General.Version = defaultConfigForPath(configPath).General.Version
 	}

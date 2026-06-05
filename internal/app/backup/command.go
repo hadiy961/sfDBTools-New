@@ -16,6 +16,7 @@ import (
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/cli/parsing"
 	resolver "sfdbtools/internal/cli/resolver"
+	"sfdbtools/internal/services/notify"
 	"sfdbtools/internal/shared/consts"
 	"sfdbtools/internal/shared/execx"
 	"sfdbtools/internal/shared/runtimecfg"
@@ -48,11 +49,11 @@ func ExecuteBackup(cmd *cobra.Command, deps *appdeps.Dependencies, mode string) 
 // =============================================================================
 
 // ExecuteBackupCommand adalah unified entry point untuk semua jenis backup
-func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecutionState, config types_backup.BackupEntryConfig) error {
+func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecutionState, config types_backup.BackupEntryConfig) (*types_backup.BackupResult, error) {
 	// Check requirements sebelum memulai sesi
 	// 1. Binary check: mariadb-dump / mysqldump
 	if _, err := execx.ResolveMariaDBDumpOrMysqldump(); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Setup session (koneksi database source)
@@ -62,7 +63,7 @@ func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecuti
 	sourceClient, dbFiltered, err := s.PrepareBackupSession(ctx, state, config.HeaderTitle, config.NonInteractive)
 	if err != nil {
 		// Client sudah di-close di PrepareBackupSession jika error
-		return err
+		return nil, err
 	}
 
 	// CRITICAL: Register cleanup IMMEDIATELY setelah resource acquisition berhasil.
@@ -77,7 +78,7 @@ func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecuti
 	// Lakukan backup (returns result, state, error)
 	result, _, err := s.ExecuteBackup(ctx, state, sourceClient, dbFiltered, config.BackupMode)
 	if err != nil {
-		return err
+		return result, err
 	}
 
 	// Tampilkan hasil (skip output interaktif saat quiet)
@@ -97,7 +98,7 @@ func (s *Service) ExecuteBackupCommand(ctx context.Context, state *BackupExecuti
 		}
 		s.Log.Info(config.SuccessMsg)
 	}
-	return nil
+	return result, nil
 }
 
 // =============================================================================
@@ -198,7 +199,19 @@ func executeBackupWithConfig(cmd *cobra.Command, deps *appdeps.Dependencies, con
 		BackupMode:     config.Mode,
 	}
 
-	if err := svc.ExecuteBackupCommand(ctx, execState, backupConfig); err != nil {
+	result, err := svc.ExecuteBackupCommand(ctx, execState, backupConfig)
+
+	// Injeksi Notifikasi (Best-effort, jika dibatalkan oleh pengguna jangan kirim error critical)
+	if !(errors.Is(err, validation.ErrUserCancelled) || errors.Is(err, context.Canceled) || ctx.Err() != nil) {
+		profileName := ""
+		if svc.Profile != nil {
+			profileName = svc.Profile.Name
+		}
+		msg := notify.BuildBackupMessage(result, err, config.Mode, parsedOpts.Ticket, profileName)
+		deps.NotifyService.Send(msg)
+	}
+
+	if err != nil {
 		if errors.Is(err, validation.ErrUserCancelled) {
 			logger.Warn("Proses dibatalkan oleh pengguna.")
 			return nil

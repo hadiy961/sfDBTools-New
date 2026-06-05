@@ -1,24 +1,22 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"sfdbtools/cmd"
-	"sfdbtools/internal/autoupdate"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/crypto"
-	config "sfdbtools/internal/services/config"
+	"sfdbtools/internal/services/config"
+	"sfdbtools/internal/services/notify"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/internal/ui/progress"
-	"time"
 
 	applog "sfdbtools/internal/services/log"
+	"github.com/fatih/color"
 )
 
 // Inisialisasi awal untuk Config dan Logger.
-var cfg *config.Config
+var cfg *appconfig.Config
 var appLogger applog.Logger
 
 func main() {
@@ -30,6 +28,7 @@ func main() {
 	isCompletion := len(os.Args) > 1 && os.Args[1] == "completion"
 	isVersion := len(os.Args) > 1 && os.Args[1] == "version"
 	isUpdate := len(os.Args) > 1 && os.Args[1] == "update"
+	isInit := len(os.Args) > 1 && os.Args[1] == "init"
 	if isCompletion {
 		quiet = true // pastikan tidak ada header/spinner yang tampil
 		runtimecfg.SetQuiet(true)
@@ -38,32 +37,13 @@ func main() {
 		quiet = true // output versi sebaiknya bersih untuk scripting
 		runtimecfg.SetQuiet(true)
 	}
+	if isInit {
+		// Init harus interaktif, jangan set quiet
+		runtimecfg.SetQuiet(false)
+	}
 	if isUpdate {
 		quiet = true // update sebaiknya bersih dan tidak perlu header
 		runtimecfg.SetQuiet(true)
-	}
-
-	// Auto-update dijalankan sebelum load config agar tidak tergantung config.yaml.
-	// Skip untuk completion/version/update.
-	if !isCompletion && !isVersion && !isUpdate {
-		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-		defer cancel()
-		// Logger aman walau cfg nil.
-		tmpLogger := applog.NewLogger(nil)
-
-		// Tampilkan spinner hanya jika auto-update aktif dan tidak dalam quiet.
-		var sp *progress.Spinner
-		if autoupdate.AutoUpdateEnabled() && !runtimecfg.IsQuiet() {
-			sp = progress.NewSpinnerWithElapsed("Cek update")
-			sp.Start()
-		}
-		if err := autoupdate.MaybeAutoUpdate(ctx, tmpLogger); err != nil {
-			// Jangan silent-fail: biasanya error permission (/usr/bin) atau koneksi.
-			tmpLogger.Warnf("Auto-update gagal: %v", err)
-		}
-		if sp != nil {
-			sp.Stop()
-		}
 	}
 
 	if !quiet {
@@ -73,14 +53,22 @@ func main() {
 	// 1. Muat Konfigurasi (skip saat completion/version agar output bersih)
 	var err error
 	if !isCompletion && !isVersion && !isUpdate {
-		cfg, err = config.LoadConfigFromEnv()
+		cfg, err = appconfig.LoadConfigFromEnv()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "FATAL: Gagal memuat konfigurasi: %v\n", err)
-			os.Exit(1)
+			if isInit {
+				// Jika init, jangan fatal error, biarkan init yang menghandle/memperbaiki.
+				fmt.Printf("%s Konfigurasi tidak valid atau hilang, masuk ke mode inisialisasi...\n", color.YellowString("[WARN]"))
+			} else {
+				fmt.Fprintf(os.Stderr, "FATAL: Gagal memuat konfigurasi: %v\n", err)
+				fmt.Println("Gunakan 'sfdbtools init' untuk memperbaiki konfigurasi.")
+				os.Exit(1)
+			}
 		}
-		// Konfigurasi path key file MariaDB untuk derive master key env terenkripsi.
-		// Jika kosong, akan fallback ke default internal.
-		crypto.SetMariaDBKeyFilePath(cfg.Mariadb.KeyMariaNBCFile)
+		if cfg != nil {
+			// Konfigurasi path key file MariaDB untuk derive master key env terenkripsi.
+			// Jika kosong, akan fallback ke default internal.
+			crypto.SetMariaDBKeyFilePath(cfg.Mariadb.KeyMariaNBCFile)
+		}
 	}
 
 	// 2. Inisialisasi Logger Kustom
@@ -108,9 +96,17 @@ func main() {
 	// }
 
 	// 4. Buat objek dependensi untuk di-inject
+	var notifyService *notify.Service
+	if cfg != nil {
+		notifyService = notify.NewService(&cfg.Notify, appLogger)
+	} else {
+		notifyService = notify.NewService(nil, appLogger)
+	}
+
 	deps := &appdeps.Dependencies{
-		Config: cfg, // bisa nil saat completion, akan di-skip oleh PersistentPreRunE
-		Logger: appLogger,
+		Config:        cfg, // bisa nil saat completion, akan di-skip oleh PersistentPreRunE
+		Logger:        appLogger,
+		NotifyService: notifyService,
 	}
 
 	// 5. Jalankan perintah Cobra dengan dependensi

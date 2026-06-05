@@ -26,6 +26,7 @@ type Config struct {
 
 type Client struct {
 	db      *sql.DB
+	driver  string // sqlite, mysql, postgres
 	onClose func() error
 }
 
@@ -99,10 +100,18 @@ func NewClient(ctx context.Context, cfg Config, timeout time.Duration, maxOpenCo
 		return nil, fmt.Errorf("gagal melakukan ping ke database: %w", err)
 	}
 
-	return &Client{db: db}, nil
+	return &Client{db: db, driver: "mysql"}, nil
 }
 
 // Helper functions removed as we now use strings.Contains from standard library
+
+// Driver mengembalikan nama driver yang digunakan (mysql, postgres).
+func (c *Client) Driver() string {
+	if c == nil {
+		return ""
+	}
+	return c.driver
+}
 
 // Close menutup connection pool. Wajib dipanggil saat aplikasi selesai.
 func (c *Client) Close() error {

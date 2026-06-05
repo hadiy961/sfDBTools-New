@@ -18,6 +18,61 @@ type Config struct {
 	SystemUsers SystemUsersConfig `yaml:"system_users"`
 	Script      ScriptConfig      `yaml:"script"`
 	DBUser      DBUserConfig      `yaml:"db_user"`
+	Notify      NotifyConfig      `yaml:"notify"`
+	Storage     StorageConfig     `yaml:"storage"`
+	Crypto      CryptoConfig      `yaml:"crypto"`
+}
+
+// CryptoConfig untuk encryption key global
+type CryptoConfig struct {
+	EncryptionKey string `yaml:"encryption_key"`
+}
+
+// NotifyConfig mengatur konfigurasi global notification service.
+type NotifyConfig struct {
+	DefaultChannels []string `yaml:"default_channels"`
+	Telegram TelegramConfig `yaml:"telegram"`
+	Discord  DiscordConfig  `yaml:"discord"`
+	Email    EmailConfig    `yaml:"email"`
+}
+
+// DiscordConfig untuk Webhook Discord
+type DiscordConfig struct {
+	Enabled    bool   `yaml:"enabled"`
+	WebhookURL string `yaml:"webhook_url"`
+}
+
+// TelegramConfig mengatur Telegram Bot API
+type TelegramConfig struct {
+	Enabled bool `yaml:"enabled"`
+	// Token dari @BotFather
+	BotToken string `yaml:"bot_token"`
+	// Chat/Group/Channel ID (bisa negatif untuk group)
+	ChatID string `yaml:"chat_id"`
+	// ParseMode: "HTML" atau "Markdown" atau "MarkdownV2"
+	// default: "HTML"
+	ParseMode string `yaml:"parse_mode"`
+}
+
+// EmailConfig mengatur SMTP email sender
+type EmailConfig struct {
+	Enabled bool `yaml:"enabled"`
+	// contoh: "smtp.gmail.com"
+	SMTPHost string `yaml:"smtp_host"`
+	// 587 (TLS) atau 465 (SSL)
+	SMTPPort int `yaml:"smtp_port"`
+	// SMTP username / email sender
+	Username string `yaml:"username"`
+	// SMTP password / app password
+	Password string `yaml:"password"`
+	// contoh: "sfDBTools Alert"
+	FromName string `yaml:"from_name"`
+	// contoh: "alerts@example.com"
+	FromEmail string `yaml:"from_email"`
+	// daftar penerima default
+	ToEmails []string `yaml:"to_emails"`
+	// false = STARTTLS, true = SSL/TLS langsung
+	UseTLS bool `yaml:"use_tls"`
 }
 
 type DBUserConfig struct {
@@ -49,6 +104,16 @@ type ScriptConfig struct {
 	// BundleOutputDir jika diisi, output .sftools akan ditaruh di folder ini.
 	// Jika kosong, default: satu folder dengan entrypoint.
 	BundleOutputDir string `yaml:"bundle_output_dir"`
+}
+
+// StorageConfig mengatur penyimpanan data persisten (SQLite).
+type StorageConfig struct {
+	// LocalDB adalah path lengkap ke file database SQLite.
+	// default: "/etc/sfDBTools/sfdbtools.db"
+	LocalDB string `yaml:"local_db"`
+	// ConfigDir adalah folder utama untuk konfigurasi.
+	// default: "/etc/sfDBTools"
+	ConfigDir string `yaml:"config_dir"`
 }
 
 // Struct untuk bagian 'backup'
