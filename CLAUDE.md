@@ -74,7 +74,7 @@ Backup modes diorganisasi via factory + interface kecil: `internal/app/backup/mo
 
 ### Remote Sync
 
-`internal/app/sync/` mengimplementasi sinkronisasi dua arah (settings, profiles, backup jobs) ke remote hub (MySQL atau Postgres/Supabase). Interface `RemoteProvider` di `provider.go` — implementasinya adalah `SQLRemoteProvider`. Sync berjalan otomatis di startup jika `sync_auto=true` di settings SQLite.
+`internal/app/sync/` mengimplementasi sinkronisasi dua arah (settings, profiles, backup jobs) ke remote hub (MySQL atau Postgres). Interface `RemoteProvider` di `provider.go` — implementasinya adalah `SQLRemoteProvider`. Sync berjalan otomatis di startup jika `sync_auto=true` di settings SQLite.
 
 ### Crypto
 

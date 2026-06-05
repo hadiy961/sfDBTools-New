@@ -134,6 +134,24 @@ func (m *SyncManager) PullAll(ctx context.Context) error {
 }
 
 func (m *SyncManager) PushAll(ctx context.Context) error {
+	// 1. Pull Remote State first to prevent overwriting manual changes
+	remoteSettings, _ := m.remote.PullSettings(ctx, m.clientCode)
+	remoteProfiles, _ := m.remote.PullProfiles(ctx, m.clientCode)
+	remoteJobs, _ := m.remote.PullJobs(ctx, m.clientCode)
+
+	remoteSettingsMap := make(map[string]time.Time)
+	for _, s := range remoteSettings {
+		remoteSettingsMap[s.Key] = s.UpdatedAt
+	}
+	remoteProfilesMap := make(map[string]time.Time)
+	for _, p := range remoteProfiles {
+		remoteProfilesMap[p.Name] = p.UpdatedAt
+	}
+	remoteJobsMap := make(map[string]time.Time)
+	for _, j := range remoteJobs {
+		remoteJobsMap[j.Name] = j.UpdatedAt
+	}
+
 	// 1. Push Settings
 	rows, err := m.localDB.Query("SELECT key, value, category, is_locked, updated_at FROM app_settings")
 	if err != nil {
@@ -149,10 +167,16 @@ func (m *SyncManager) PushAll(ctx context.Context) error {
 			return err
 		}
 		s.IsLocked = isLocked == 1
-		settings = append(settings, s)
+
+		// Only push if local is newer than remote
+		if remoteTS, ok := remoteSettingsMap[s.Key]; !ok || s.UpdatedAt.After(remoteTS) {
+			settings = append(settings, s)
+		}
 	}
-	if err := m.remote.PushSettings(ctx, m.clientCode, settings); err != nil {
-		return err
+	if len(settings) > 0 {
+		if err := m.remote.PushSettings(ctx, m.clientCode, settings); err != nil {
+			return err
+		}
 	}
 
 	// 2. Push Profiles
@@ -168,10 +192,16 @@ func (m *SyncManager) PushAll(ctx context.Context) error {
 		if err := pRows.Scan(&p.Name, &p.EncryptedData, &p.AccountCode, &p.UpdatedAt); err != nil {
 			return err
 		}
-		profiles = append(profiles, p)
+		
+		// Only push if local is newer
+		if remoteTS, ok := remoteProfilesMap[p.Name]; !ok || p.UpdatedAt.After(remoteTS) {
+			profiles = append(profiles, p)
+		}
 	}
-	if err := m.remote.PushProfiles(ctx, m.clientCode, profiles); err != nil {
-		return err
+	if len(profiles) > 0 {
+		if err := m.remote.PushProfiles(ctx, m.clientCode, profiles); err != nil {
+			return err
+		}
 	}
 
 	// 3. Push Jobs
@@ -189,10 +219,16 @@ func (m *SyncManager) PushAll(ctx context.Context) error {
 			return err
 		}
 		j.Enabled = enabled == 1
-		jobs = append(jobs, j)
+		
+		// Only push if local is newer
+		if remoteTS, ok := remoteJobsMap[j.Name]; !ok || j.UpdatedAt.After(remoteTS) {
+			jobs = append(jobs, j)
+		}
 	}
-	if err := m.remote.PushJobs(ctx, m.clientCode, jobs); err != nil {
-		return err
+	if len(jobs) > 0 {
+		if err := m.remote.PushJobs(ctx, m.clientCode, jobs); err != nil {
+			return err
+		}
 	}
 
 	// 4. Push Logs

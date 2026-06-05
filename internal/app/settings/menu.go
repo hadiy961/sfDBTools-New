@@ -221,19 +221,22 @@ func (s *Service) NotifyMenu(db *sql.DB) {
 func (s *Service) BackupMenu(db *sql.DB) {
 	for {
 		options := []string{
-			"🚀 [WIZARD] Quick Backup Engine Setup",
-			"🔧 Edit All Backup Parameters (Manual)",
-			"Back",
+			"1. Manage Backup Jobs (List/Add/Edit)",
+			"2. [WIZARD] Quick Backup Engine Setup",
+			"3. Edit All Backup Parameters (Manual)",
+			"0. Back",
 		}
 		sel, _, err := prompt.SelectOne("Backup Settings:", options, 0)
-		if err != nil || sel == "Back" {
+		if err != nil || strings.Contains(sel, "Back") {
 			return
 		}
 
-		switch sel {
-		case "🚀 [WIZARD] Quick Backup Engine Setup":
+		switch sel[0:1] {
+		case "1":
+			s.ManageJobsMenu(db)
+		case "2":
 			s.SetupBackupWizard()
-		case "🔧 Edit All Backup Parameters (Manual)":
+		case "3":
 			s.GenericCategoryMenu(db, "backup")
 		}
 	}

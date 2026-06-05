@@ -25,10 +25,10 @@ import (
 	"sfdbtools/internal/shared/sanitize"
 	"sfdbtools/internal/ui/menu"
 	"sfdbtools/internal/ui/print"
+	"sfdbtools/internal/ui/progress"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/app/settings"
 	"sfdbtools/internal/autoupdate"
-	"sfdbtools/internal/shared/connectivity"
 	"sfdbtools/internal/app/sync"
 	"strings"
 
@@ -82,33 +82,25 @@ Didesain untuk keandalan dan penggunaan di lingkungan produksi.`,
 		settings.SyncConfig(appdeps.Deps.Config)
 
 		// [STARTUP NETWORK SEQUENCE]
-		isOnline := false
-		if database.GetSettingBool("check_internet_startup") {
-			isOnline = connectivity.IsInternetAvailable(cmd.Context(), 2*time.Second)
-		}
+		checkInternet := database.GetSettingBool("check_internet_startup")
+		autoUpdate := database.GetSettingBool("auto_update_enabled")
+		autoSync := database.GetSettingBool("sync_auto") && database.GetSettingBool("sync_enabled")
 
-		if isOnline {
+		// Hanya jalankan blok network startup jika internet check aktif
+		if checkInternet && (autoUpdate || autoSync) {
 			// 1. Auto Update Check
-			if database.GetSettingBool("auto_update_enabled") {
-				autoupdate.MaybeAutoUpdate(cmd.Context(), appdeps.Deps.Logger)
+			if autoUpdate {
+				sp := progress.NewSpinner("Cek update")
+				sp.Start()
+				_ = autoupdate.MaybeAutoUpdate(cmd.Context(), appdeps.Deps.Logger)
+				sp.Stop()
 			}
 
-			// 2. Remote Sync Check
-			if database.GetSettingBool("sync_auto") && database.GetSettingBool("sync_enabled") {
-				syncType := database.GetSetting("sync_type")
-				fmt.Printf("%s Menyinkronkan data dengan remote hub (%s)...\n", color.BlueString("[SYNC]"), syncType)
-				
-				remote, err := database.ConnectToRemoteHub()
-				if err == nil {
-					defer remote.Close()
-					local, _ := database.GetSQLite()
-					syncSvc := sync.NewService(local, remote, appdeps.Deps.Config.General.ClientCode)
-					
-					ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
-					defer cancel()
-
-					_ = syncSvc.RunSync(ctx, database.GetSetting("sync_mode"))
-				}
+			// 2. Unified Auto Sync
+			if autoSync {
+				ctx, cancel := context.WithTimeout(cmd.Context(), 45*time.Second)
+				_ = sync.PerformFullSync(ctx, appdeps.Deps.Config.General.ClientCode, false)
+				cancel()
 			}
 		}
 

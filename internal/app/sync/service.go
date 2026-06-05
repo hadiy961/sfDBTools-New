@@ -3,7 +3,13 @@ package sync
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"sfdbtools/internal/shared/connectivity"
 	"sfdbtools/internal/shared/database"
+	"sfdbtools/internal/ui/progress"
+	"time"
+
+	"github.com/fatih/color"
 )
 
 // Service is a backward-compatible wrapper for SyncManager.
@@ -22,43 +28,50 @@ func NewService(localDB *sql.DB, remoteDB *database.Client, clientID string) *Se
 	return &Service{manager: manager}
 }
 
-func (s *Service) MigrateRemoteHub(ctx context.Context) error {
-	return s.manager.remote.Migrate(ctx)
-}
-
-func (s *Service) SendHeartbeat(ctx context.Context, backupPath string) error {
-	return s.manager.SendHeartbeat(ctx)
-}
-
 func (s *Service) RunSync(ctx context.Context, mode string) error {
 	return s.manager.RunSync(ctx, mode)
 }
 
-// Additional legacy methods can be mapped to manager...
-func (s *Service) PushSettings(ctx context.Context) error {
-	return s.manager.PushAll(ctx)
-}
+// PerformFullSync menjalankan alur sinkronisasi lengkap dengan feedback UI yang konsisten.
+func PerformFullSync(ctx context.Context, clientCode string, isManual bool) error {
+	sp := progress.NewSpinner("Sinkronisasi data")
+	if isManual {
+		fmt.Println(color.CyanString("\nMemulai sinkronisasi terpadu (Manual Sync)..."))
+	}
+	sp.Start()
+	defer sp.Stop()
 
-func (s *Service) PullSettings(ctx context.Context) error {
-	return s.manager.PullAll(ctx)
-}
+	// 1. Connectivity Check
+	sp.Update("Memeriksa koneksi internet")
+	if !connectivity.IsInternetAvailable(ctx, 3*time.Second) {
+		return fmt.Errorf("tidak ada koneksi internet")
+	}
 
-func (s *Service) PushProfiles(ctx context.Context) error {
-	// Implementation in manager needed
-	return nil
-}
+	// 2. Remote Hub Connection
+	sp.Update("Menghubungkan ke Remote Hub")
+	remote, err := database.ConnectToRemoteHub()
+	if err != nil {
+		return fmt.Errorf("gagal terhubung ke remote hub: %w", err)
+	}
+	defer remote.Close()
 
-func (s *Service) PullProfiles(ctx context.Context) error {
-	// Implementation in manager needed
-	return nil
-}
+	local, err := database.GetSQLite()
+	if err != nil {
+		return fmt.Errorf("gagal mengakses database lokal: %w", err)
+	}
 
-func (s *Service) PushJobs(ctx context.Context) error {
-	// Implementation in manager needed
-	return nil
-}
+	// 3. Execution
+	sp.Update("Sinkronisasi data (Settings, Profiles, Jobs, Heartbeat)")
+	syncSvc := NewService(local, remote, clientCode)
+	
+	mode := database.GetSetting("sync_mode")
+	if err := syncSvc.RunSync(ctx, mode); err != nil {
+		return fmt.Errorf("sinkronisasi gagal: %w", err)
+	}
 
-func (s *Service) PullJobs(ctx context.Context) error {
-	// Implementation in manager needed
+	sp.Stop()
+	if isManual {
+		fmt.Println(color.GreenString("[SUCCESS] Sinkronisasi selesai dengan sukses!"))
+	}
 	return nil
 }

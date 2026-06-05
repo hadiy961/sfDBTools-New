@@ -20,7 +20,7 @@ var cmdInit = &cobra.Command{
 	Use:   "init",
 	Short: "Inisialisasi aplikasi dan migrasi konfigurasi ke database",
 	Long: `Perintah ini digunakan untuk menyiapkan database SQLite lokal, 
-melakukan migrasi setting dari config.yaml, dan menghubungkan ke Supabase.`,
+melakukan migrasi setting dari config.yaml, dan menghubungkan ke Remote Hub (Postgres/MySQL).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Perintah init boleh jalan meskipun config belum lengkap,
 		// tapi kita butuh setidaknya logger.

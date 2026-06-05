@@ -55,7 +55,7 @@ func ConnectToRemoteHub() (*Client, error) {
 	
 	port, _ := strconv.Atoi(portStr)
 
-	if syncType == "postgres" || syncType == "supabase" {
+	if syncType == "postgres" {
 		cfg := PostgresConfig{
 			Host:     host,
 			Port:     port,
@@ -68,11 +68,13 @@ func ConnectToRemoteHub() (*Client, error) {
 
 	// Default to MySQL/MariaDB
 	cfg := Config{
-		Host:     host,
-		Port:     port,
-		User:     user,
-		Password: pass,
-		Database: dbName,
+		Host:                 host,
+		Port:                 port,
+		User:                 user,
+		Password:             pass,
+		Database:             dbName,
+		AllowNativePasswords: true,
+		ParseTime:            true,
 	}
 	return NewClient(context.Background(), cfg, 5*time.Second, 5, 2, 0)
 }

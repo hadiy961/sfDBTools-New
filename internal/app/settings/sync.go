@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sfdbtools/internal/app/sync"
 	appconfig "sfdbtools/internal/services/config"
-	"sfdbtools/internal/shared/connectivity"
 	"sfdbtools/internal/shared/database"
 	"sfdbtools/internal/ui/print"
 	"sfdbtools/internal/ui/prompt"
@@ -28,29 +27,54 @@ func SyncConfig(cfg *appconfig.Config) {
 	if err != nil {
 		return
 	}
-	_ = db
+
+	// 0. General Identity
+	if val := database.GetSetting("client_code"); val != "" {
+		cfg.General.ClientCode = val
+	}
 
 	// 1. Notification - Telegram
 	cfg.Notify.Telegram.Enabled = database.GetSettingBool("telegram_enabled")
 	if val := database.GetSetting("telegram_bot_token"); val != "" {
-		// Use local crypto package for decoding if needed
 		cfg.Notify.Telegram.BotToken = val
 	}
 	if val := database.GetSetting("telegram_chat_id"); val != "" {
 		cfg.Notify.Telegram.ChatID = val
 	}
 	
-	// 2. Cloud & Update (Partial sync to config struct if needed)
-	// Add other fields as necessary based on appconfig.Config structure
+	// 2. Storage & Paths
+	if val := database.GetSetting("local_db"); val != "" {
+		cfg.Storage.LocalDB = val
+	}
+
+	// 3. Backup Jobs
+	rows, err := db.Query("SELECT name, enabled, schedule, mode, output_mode, include_file, profile_name, ticket, output_dir, retention_days FROM backup_jobs")
+	if err == nil {
+		defer rows.Close()
+		var jobs []appconfig.BackupJob
+		for rows.Next() {
+			var j appconfig.BackupJob
+			var enabled int
+			if err := rows.Scan(&j.Name, &enabled, &j.Schedule, &j.Mode, &j.OutputMode, &j.IncludeFile, &j.Profile, &j.Ticket, &j.Output.BaseDirectory, &j.Cleanup.RetentionDays); err == nil {
+				j.Enabled = enabled == 1
+				j.Cleanup.Enabled = true // Assume enabled if in DB? Or should we add cl_enabled to DB?
+				jobs = append(jobs, j)
+			}
+		}
+		if len(jobs) > 0 {
+			cfg.Backup.Scheduler.Jobs = jobs
+		}
+	}
 }
 
 func (s *Service) CloudMenu(db *sql.DB) {
 	for {
 		options := []string{
 			"1. Manual Sync Now (Push/Pull)",
-			"2. Configure Hub Credentials (Host, User, Pass)",
-			"3. Sync Behavior (Mode, Auto, Jobs)",
-			"4. Update & Auto-Update Settings",
+			"2. View Sync History",
+			"3. Configure Hub Credentials (Host, User, Pass)",
+			"4. Sync Behavior (Mode, Auto, Jobs)",
+			"5. Update & Auto-Update Settings",
 			"0. Back",
 		}
 		
@@ -63,10 +87,12 @@ func (s *Service) CloudMenu(db *sql.DB) {
 		case "1":
 			s.RunManualSync()
 		case "2":
-			s.CredentialWizard(db)
+			s.ViewSyncHistory(db)
 		case "3":
-			s.SyncBehaviorWizard(db)
+			s.CredentialWizard(db)
 		case "4":
+			s.SyncBehaviorWizard(db)
+		case "5":
 			s.UpdateSettingsWizard(db)
 		}
 	}
@@ -102,6 +128,12 @@ func (s *Service) SpecificSettingsForm(db *sql.DB, title string, keys []string, 
 	strPtrs := make(map[string]*string)
 	var fields []huh.Field
 
+	// Options for specific keys
+	keyOptions := map[string][]string{
+		"sync_type": {"postgres", "mysql"},
+		"sync_mode": {"two-way", "push-only", "pull-only"},
+	}
+
 	for _, k := range keys {
 		val := valMap[k]
 		isLocked := lockedMap[k]
@@ -124,12 +156,19 @@ func (s *Service) SpecificSettingsForm(db *sql.DB, title string, keys []string, 
 			str := val
 			strPtrs[key] = &str
 			isSecret := strings.Contains(k, "password") || strings.Contains(k, "key")
+			
 			if isLocked {
 				displayVal := str
 				if isSecret {
 					displayVal = "********"
 				}
 				fields = append(fields, huh.NewNote().Title(fTitle).Description(fmt.Sprintf("Current value: %s", displayVal)))
+			} else if opts, ok := keyOptions[k]; ok {
+				// Use Selection for specific keys
+				fields = append(fields, huh.NewSelect[string]().
+					Title(fTitle).
+					Options(huh.NewOptions(opts...)...).
+					Value(strPtrs[key]))
 			} else {
 				input := huh.NewInput().Title(fTitle).Value(strPtrs[key])
 				if isSecret {
@@ -172,12 +211,6 @@ func (s *Service) SpecificSettingsForm(db *sql.DB, title string, keys []string, 
 
 func (s *Service) RunManualSync() {
 	print.PrintAppHeader("Manual Sync")
-	fmt.Println("Sedang mencoba sinkronisasi ke remote hub...")
-
-	if !connectivity.IsInternetAvailable(context.Background(), 3*time.Second) {
-		fmt.Println(color.RedString("[ERROR] Tidak ada koneksi internet."))
-		return
-	}
 
 	// 1. Get Settings
 	syncEnabled := database.GetSettingBool("sync_enabled")
@@ -186,50 +219,12 @@ func (s *Service) RunManualSync() {
 		return
 	}
 
-	// 2. Connect to Remote
-	remote, err := database.ConnectToRemoteHub()
-	if err != nil {
-		fmt.Println(color.RedString("[ERROR] Gagal terhubung ke Remote Hub: %v", err))
-		return
-	}
-	defer remote.Close()
-
-	local, _ := database.GetSQLite()
 	clientCode := s.deps.Config.General.ClientCode
-	
-	syncSvc := sync.NewService(local, remote, clientCode)
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
 
-	// 3. Perform Sync Actions
-	fmt.Println(color.CyanString("Menghubungkan ke Remote Hub..."))
-	
-	// Ensure remote tables
-	_ = syncSvc.MigrateRemoteHub(ctx)
-
-	fmt.Print("- Syncing Settings...")
-	if database.GetSetting("sync_mode") == "two-way" {
-		syncSvc.PullSettings(ctx)
+	// 2. Perform Unified Sync
+	if err := sync.PerformFullSync(ctx, clientCode, true); err != nil {
+		fmt.Printf("\n%s %v\n", color.RedString("[ERROR]"), err)
 	}
-	syncSvc.PushSettings(ctx)
-	fmt.Println(color.GreenString(" OK"))
-
-	fmt.Print("- Syncing Profiles...")
-	if database.GetSetting("sync_mode") == "two-way" {
-		syncSvc.PullProfiles(ctx)
-	}
-	syncSvc.PushProfiles(ctx)
-	fmt.Println(color.GreenString(" OK"))
-
-	fmt.Print("- Syncing Jobs...")
-	if database.GetSetting("sync_mode") == "two-way" {
-		syncSvc.PullJobs(ctx)
-	}
-	syncSvc.PushJobs(ctx)
-	fmt.Println(color.GreenString(" OK"))
-
-	fmt.Print("- Sending Heartbeat...")
-	syncSvc.SendHeartbeat(ctx, database.GetSetting("backup_output_base_directory"))
-	fmt.Println(color.GreenString(" OK"))
-
-	fmt.Println(color.GreenString("\n[SUCCESS] Sinkronisasi selesai!"))
 }

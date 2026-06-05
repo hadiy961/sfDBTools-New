@@ -1,19 +1,15 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"sfdbtools/cmd"
-	"sfdbtools/internal/autoupdate"
 	appdeps "sfdbtools/internal/cli/deps"
 	"sfdbtools/internal/crypto"
 	"sfdbtools/internal/services/config"
 	"sfdbtools/internal/services/notify"
 	"sfdbtools/internal/shared/runtimecfg"
 	"sfdbtools/internal/ui/print"
-	"sfdbtools/internal/ui/progress"
-	"time"
 
 	applog "sfdbtools/internal/services/log"
 	"github.com/fatih/color"
@@ -48,29 +44,6 @@ func main() {
 	if isUpdate {
 		quiet = true // update sebaiknya bersih dan tidak perlu header
 		runtimecfg.SetQuiet(true)
-	}
-
-	// Auto-update dijalankan sebelum load config agar tidak tergantung config.yaml.
-	// Skip untuk completion/version/update.
-	if !isCompletion && !isVersion && !isUpdate {
-		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-		defer cancel()
-		// Logger aman walau cfg nil.
-		tmpLogger := applog.NewLogger(nil)
-
-		// Tampilkan spinner hanya jika auto-update aktif dan tidak dalam quiet.
-		var sp *progress.Spinner
-		if autoupdate.AutoUpdateEnabled() && !runtimecfg.IsQuiet() {
-			sp = progress.NewSpinnerWithElapsed("Cek update")
-			sp.Start()
-		}
-		if err := autoupdate.MaybeAutoUpdate(ctx, tmpLogger); err != nil {
-			// Jangan silent-fail: biasanya error permission (/usr/bin) atau koneksi.
-			tmpLogger.Warnf("Auto-update gagal: %v", err)
-		}
-		if sp != nil {
-			sp.Stop()
-		}
 	}
 
 	if !quiet {

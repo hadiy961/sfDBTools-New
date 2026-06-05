@@ -46,11 +46,11 @@ func (p *SQLRemoteProvider) Migrate(ctx context.Context) error {
 		}
 	} else {
 		queries = []string{
-			`CREATE TABLE IF NOT EXISTS sf_client_settings (client_code VARCHAR(100), s_key VARCHAR(100), s_value TEXT, category VARCHAR(100), is_locked TINYINT DEFAULT 0, updated_at DATETIME, PRIMARY KEY (client_code, s_key))`,
-			`CREATE TABLE IF NOT EXISTS sf_client_profiles (client_code VARCHAR(100), name VARCHAR(100), encrypted_data TEXT, account_code VARCHAR(100), updated_at DATETIME, PRIMARY KEY (client_code, name))`,
-			`CREATE TABLE IF NOT EXISTS sf_client_jobs (client_code VARCHAR(100), name VARCHAR(100), enabled TINYINT, schedule VARCHAR(100), mode VARCHAR(100), output_mode VARCHAR(100), include_file VARCHAR(100), profile_name VARCHAR(100), ticket VARCHAR(100), output_dir TEXT, retention_days INT, updated_at DATETIME, PRIMARY KEY (client_code, name))`,
-			`CREATE TABLE IF NOT EXISTS sf_client_heartbeat (client_code VARCHAR(100) PRIMARY KEY, client_alias VARCHAR(100), os_version VARCHAR(100), tool_version VARCHAR(100), cpu_model VARCHAR(255), mem_total BIGINT, mem_used BIGINT, disk_total BIGINT, disk_free BIGINT, tool_versions_json TEXT, updated_at DATETIME)`,
-			`CREATE TABLE IF NOT EXISTS sf_client_logs (id INT AUTO_INCREMENT PRIMARY KEY, client_code VARCHAR(100), event_type VARCHAR(100), details TEXT, timestamp DATETIME)`,
+			`CREATE TABLE IF NOT EXISTS sf_client_settings (client_code VARCHAR(100), s_key VARCHAR(100), s_value TEXT, category VARCHAR(100), is_locked TINYINT DEFAULT 0, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (client_code, s_key))`,
+			`CREATE TABLE IF NOT EXISTS sf_client_profiles (client_code VARCHAR(100), name VARCHAR(100), encrypted_data TEXT, account_code VARCHAR(100), updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (client_code, name))`,
+			`CREATE TABLE IF NOT EXISTS sf_client_jobs (client_code VARCHAR(100), name VARCHAR(100), enabled TINYINT, schedule VARCHAR(100), mode VARCHAR(100), output_mode VARCHAR(100), include_file VARCHAR(100), profile_name VARCHAR(100), ticket VARCHAR(100), output_dir TEXT, retention_days INT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (client_code, name))`,
+			`CREATE TABLE IF NOT EXISTS sf_client_heartbeat (client_code VARCHAR(100) PRIMARY KEY, client_alias VARCHAR(100), os_version VARCHAR(100), tool_version VARCHAR(100), cpu_model VARCHAR(255), mem_total BIGINT, mem_used BIGINT, disk_total BIGINT, disk_free BIGINT, tool_versions_json TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)`,
+			`CREATE TABLE IF NOT EXISTS sf_client_logs (id INT AUTO_INCREMENT PRIMARY KEY, client_code VARCHAR(100), event_type VARCHAR(100), details TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)`,
 		}
 	}
 

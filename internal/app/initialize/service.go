@@ -312,7 +312,7 @@ func (s *Service) saveSetting(db *sql.DB, key, value, category string) {
 	if value == "" {
 		return
 	}
-	db.Exec(`INSERT OR REPLACE INTO app_settings (key, value, category) VALUES (?, ?, ?)`, key, value, category)
+	db.Exec(`INSERT OR REPLACE INTO app_settings (key, value, category, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)`, key, value, category)
 }
 
 // SaveLeanConfig menulis ulang config.yaml dengan versi minimal
